@@ -14,6 +14,7 @@
 
 #define End1P std::function<SpaceEndomorphism(float)>
 #define End2P std::function<SpaceEndomorphism(float, float)>
+#define maybeMaterial std::optional<MaterialPhong>
 
 template<typename vec> 
 std::vector<float> vecToVecHeHe(vec v);
@@ -56,7 +57,7 @@ public:
 
 class MaterialPhong {
 public:
-	Texture* texture;
+	std::shared_ptr<Texture> texture;
 	glm::vec4 ambientColor;
 	glm::vec4 diffuseColor;
 	glm::vec4 specularColor;
@@ -68,10 +69,12 @@ public:
 	MaterialPhong();
 	MaterialPhong(glm::vec4 ambient, glm::vec4 diffuse, glm::vec4 specular,
 		float ambientIntensity, float diffuseIntensity, float specularIntensity,
-		float shininess, Texture* texture=nullptr);
+		float shininess, const std::shared_ptr<Texture> &texture =nullptr);
+   explicit MaterialPhong(glm::mat4 compressed, const std::shared_ptr<Texture> &texture =nullptr);
 
 	bool textured();
-	glm::mat4 compressToMatrix();
+	glm::mat4 compressToMatrix() const;
+	glm::vec4 compressIntencities() const;
 };
 
 
@@ -118,6 +121,7 @@ public:
 	void flipNormals();
 
 	void addExtraData(std::string name, std::array<glm::vec4, 3> data);
+    void setExtraData(std::string name, int i, glm::vec4 data) { extraData[name][i] = data; }
 	std::array<glm::vec4, 3> getExtraData(std::string name);
 	void addMaterial(MaterialPhong material);
 
@@ -156,7 +160,7 @@ public:
 	operator TriangleR2() const;
 	TriangleComplex operator+(Complex v) const;
 	TriangleComplex operator*(Complex M) const;
-	TriangleComplex operator*(Matrix<Complex, 2> M) const;
+	TriangleComplex operator*(const Matrix<Complex, 2> &M) const;
 	TriangleComplex operator*(Meromorphism f) const;
 	TriangleR3 embeddInR3(float z = 0) const;
 
@@ -164,36 +168,114 @@ public:
 	static std::vector<TriangleComplex> subdivideTriangulation(const std::vector<TriangleComplex> &triangles);
 };
 
+struct MaterialBuffers {
+    std::vector<glm::vec4> ambientColors;
+	std::vector<glm::vec4> diffuseColors;
+	std::vector<glm::vec4> specularColors;
+	std::vector<glm::vec4> intencitiesAndShininess;
+};
+
+struct StdAttributeBuffers {
+	std::vector<glm::vec3>  positions;
+	std::vector<glm::vec3> normals;
+	std::vector<glm::vec4> colors;
+	std::vector<glm::vec2>  uvs;
+};
+
+class IndexedTriangle;
+class CurveSample;
 
 class Vertex {
-public:
 	glm::vec3 position;
 	glm::vec3 normal;
 	glm::vec2 uv;
 	glm::vec4 color;
-	Vertex(glm::vec3 position, glm::vec3 normal, glm::vec2 uv, glm::vec4 color);
-	Vertex(glm::vec3 position, glm::vec3 normal, glm::vec2 uv);
-	Vertex(glm::vec3 position, glm::vec3 normal, glm::vec4 color);
-	Vertex(glm::vec3 position, glm::vec3 normal);
-	Vertex(glm::vec3 position, glm::vec2 uv, glm::vec4 color);
-	Vertex(glm::vec3 position, glm::vec2 uv);
-	Vertex(glm::vec3 position, glm::vec4 color);
-	explicit Vertex(glm::vec3 position);
-	Vertex();
+    maybeMaterial material;
+    std::map<std::string, glm::vec4> extraData = {};
+    int index = -1;
+    std::vector<std::pair<std::weak_ptr<IndexedTriangle>, int>> triangles = {};
+public:
+	Vertex(glm::vec3 position,
+	       glm::vec2 uv,
+	       glm::vec3 normal=e3,
+	       glm::vec4 color=BLACK,
+	       maybeMaterial material=std::nullopt,
+	       std::map<std::string, glm::vec4> extraData = {})
+	{ this->position = position; this->normal = normal; this->uv = uv;
+		this->color = color; this->material = material; this->extraData = extraData; }
+
+	Vertex(glm::vec3 position, glm::vec3 normal=glm::vec3(0,0,1),  glm::vec4 color=glm::vec4(0,0,0,1), // set projected position as uv
+	       maybeMaterial material=std::nullopt) : Vertex(position, glm::vec2(position.x, position.y), normal, color, material) {}
 
 	std::string hash() const;
-
 	bool operator<(const Vertex& v) const;
 	bool operator==(const Vertex& v) const;
-	void translate(glm::vec3 v);
-	void transform(const glm::mat4 &M);
+    void setIndex(int i) { index = i; }
+    int getIndex() const { return index; }
+    bool hasIndex() const { return index != -1; }
+    void gotAddedAsVertex (std::weak_ptr<IndexedTriangle> triangle, int i) { triangles.push_back({triangle, i}); }
+    std::vector<std::pair<std::weak_ptr<IndexedTriangle>, int>> getTriangles() const { return triangles; }
+    std::vector<std::weak_ptr<Vertex>> getNeighbours() const;
+    void recomputeNormals(bool weightByArea=true);
+
+	glm::vec3 getPosition() const { return position; }
+	glm::vec3 getNormal() const { return normal; }
+	glm::vec2 getUV() const { return uv; }
+	glm::vec4 getColor() const { return color; }
+    MaterialPhong getMaterial() const { return material.value(); }
+    glm::vec4 getExtraData(const std::string &name) { return extraData[name]; }
+    glm::vec3 getExtraData_xyz(const std::string &name) { return glm::vec3(extraData[name]); }
+    float getExtraData(const std::string &name, int i) { return extraData[name][i]; }
+    float getExtraLast(const std::string &name) { return extraData[name][3]; }
+    bool hasExtraData() { return !extraData.empty(); }
+    std::vector<std::string> getExtraDataNames();
+    bool hasMaterial() { return material.has_value(); }
+
+    void addExtraData(const std::string &name, glm::vec4 data) { extraData[name] = data; }
+    void addExtraData(const std::string &name, glm::vec3 data);
+    void addExtraData(const std::string &name, float data, int i=3);
+	void translate(glm::vec3 v) { this->position += v; }
+	void transform(const SpaceEndomorphism &M);
 	Vertex operator+(glm::vec3 v) const;
-	Vertex operator*(glm::mat4 M) const;
-	Vertex operator*(glm::mat3 M) const;
 	void operator+=(glm::vec3 v) { this->translate(v); }
-	void operator*=(glm::mat4 M) { this->transform(M); }
-	void operator*=(glm::mat3 M) { this->transform(glm::mat4(M)); }
+	void setMaterial(MaterialPhong material) { this->material = material; }
+	void setPosition(glm::vec3 position) { this->position = position; };
+    void setNormal(glm::vec3 normal) { this->normal = normal; }
+	void setUV(glm::vec2 uv) { this->uv = uv; }
+	void setColor(glm::vec4 color) { this->color = color; }
+    void appendToBuffers(StdAttributeBuffers &buffers, MaterialBuffers &materialBuffers);
+    void appendToBuffers(StdAttributeBuffers &buffers);
+    void appendExtraDataToBuffer(const std::string &name, std::vector<glm::vec4> &buffer) const;
+
+    void appendToList(std::vector<Vertex> &list);
+    void addTriangle(std::shared_ptr<IndexedTriangle> triangle, int i);
+
+    void setCurveParameter(float t) { addExtraData("curvePoint", t); }
+    void setCurvePosition(glm::vec3 pos) { addExtraData("curvePoint", pos); }
+    void setCurveTangent(glm::vec3 v) { addExtraData("curveTangent", v); }
+    void setCurveNormal(glm::vec3 v) { addExtraData("curveNormal", v); }
+    void setCurveNormalAngle(float a) { addExtraData("curveTangent", a); }
+    void setAllParametricCurveExtras(float t, CurveSample &sample);
+
+    float getCurveParameter() { return getExtraLast("curvePoint"); }
+    glm::vec3 getCurvePosition() { return getExtraData_xyz("curvePoint"); }
+    glm::vec3 getCurveTangent() { return getExtraData_xyz("curveTangent"); }
+    glm::vec3 getCurveNormal() { return getExtraData_xyz("curveNormal"); }
+    float getCurveNormalAngle() { return getExtraLast("curveTangent"); }
+    float getCurveWidth() { return norm(getPosition() - getCurvePosition()); }
 };
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
@@ -226,7 +308,7 @@ enum MeshFormat {
 
 
 class TriangularMesh {
-protected:
+public:
 	std::vector <TriangleR3> triangles;
 
 	std::vector <glm::vec3> posBuff;
@@ -241,7 +323,6 @@ protected:
 
 	std::map<std::string, std::vector<glm::vec4>> extraBuff = {};
 
-public:
     std::array<void*, 4> bufferLocations;
     std::array<int, 4> bufferSizes;
 
@@ -262,8 +343,7 @@ public:
 	void operator*=(glm::mat4 M) { this->transform(M); }
 	void operator*=(glm::mat3 M) { this->transform(glm::mat4(M)); }
     void applyMap(const std::function<glm::vec3(glm::vec3)> &f);
-    void applyMap(const std::function<glm::vec3(glm::vec3)> &f,
-             const std::function<glm::vec3(glm::vec3, glm::vec3)> &f_normal);
+    void applyMap(const std::function<glm::vec3(glm::vec3)> &f, const std::function<glm::vec3(glm::vec3, glm::vec3)> &f_normal);
 	void applyMap(const std::function<glm::vec3(glm::vec3)> &f, std::string customDomain);
 	void applyMap(std::function<glm::vec3(glm::vec3)> f, std::function<glm::vec3(glm::vec3, glm::vec3)> f_normal, std::string customDomain);
 
@@ -282,37 +362,6 @@ public:
 };
 
 
-class IndexedMesh {
-public:
-	std::vector <Vertex> vertices;
-	std::vector<std::array<int, 3>> faceIndices;
-	std::vector <glm::vec3> posBuff;
-	std::vector <glm::vec3> normBuff;
-	std::vector <glm::vec4> colorBuff;
-	std::vector <glm::vec2> uvBuff;
-
-	IndexedMesh(const std::vector <Vertex> &vertices, const std::vector<std::array<int, 3>> &faceIndices);
-	explicit IndexedMesh(const char* filename, MeshFormat format = OBJ);
-	explicit operator TriangularMesh();
-
-	std::vector <glm::vec3> calculatePositionBuffer();
-	std::vector <glm::vec3> calculateNormalBuffer();
-	std::vector <glm::vec4> calculateColorBuffer();
-	std::vector <glm::vec2> calculateUVBuffer();
-	void precomputeBuffers();
-
-	void translate(glm::vec3 v);
-	void transform(glm::mat4 M);
-	IndexedMesh operator+(glm::vec3 v) const;
-	IndexedMesh operator*(glm::mat4 M) const;
-	IndexedMesh operator*(glm::mat3 M) const;
-	void operator+=(glm::vec3 v) { this->translate(v); }
-	void operator*=(glm::mat4 M) { this->transform(M); }
-	void operator*=(glm::mat3 M) { this->transform(glm::mat4(M)); }
-
-	void randomiseVertexColors();
-	void flipNormals();
-};
 
 
 class Model3D {
@@ -399,49 +448,8 @@ public:
 
 
 
-#define PolyGroupID std::variant<int, std::string>
-
-inline std::string polyGroupIDtoString(PolyGroupID id) {
-    if (std::holds_alternative<int>(id)) {
-        return std::to_string(std::get<int>(id));
-    } else {
-        return std::get<std::string>(id);
-    }
-}
-
-inline PolyGroupID prefix(PolyGroupID id, std::string prefix) {
-    return PolyGroupID(prefix + polyGroupIDtoString(id));
-}
-
-inline std::string randomString() {
-    int a = rand();
-	return std::to_string(a);
-}
-
-inline PolyGroupID make_unique_id(PolyGroupID id) {
-    return prefix(id, randomString());
-}
 
 
-
-
-inline PolyGroupID bdGroup(int n) { return PolyGroupID("bd" + std::to_string(n));}
-
-inline PolyGroupID curveGroup(int n) { return PolyGroupID("curva" + std::to_string(n));}
-
-struct MaterialBuffers {
-    std::vector<glm::vec4> ambientColors;
-	std::vector<glm::vec4> diffuseColors;
-	std::vector<glm::vec4> specularColors;
-	std::vector<glm::vec4> intencitiesAndShininess;
-};
-
-struct StdAttributeBuffers {
-	std::vector<glm::vec3>  positions;
-	std::vector<glm::vec3> normals;
-	std::vector<glm::vec4> colors;
-	std::vector<glm::vec2>  uvs;
-};
 
 
 
@@ -456,8 +464,8 @@ class SuperMesh {
 	std::map<PolyGroupID, std::vector<TriangleR3>> embedded_points={}; // "loc": extra const attribute for unextruded pt
 	std::map<PolyGroupID, MaterialPhong> materials={};
 
-	MaterialBuffers materialBuffers = {};
-	StdAttributeBuffers stdAttributeBuffers = {};
+	MaterialBuffers materialBuffers = {{}, {}, {}, {}};
+	StdAttributeBuffers stdAttributeBuffers = {{}, {}, {}, {}};
 	std::map<std::string, std::vector<glm::vec4>> extraBuff = {};
 	std::map<std::string, int> extraBufferIndices = {};
 
@@ -491,17 +499,15 @@ public:
 	void actAtEmbeddedPlane(Meromorphism f);
 	void actOnPositionsWithCustomShift(std::function<glm::vec3(glm::vec3)> f, std::map<PolyGroupID, std::string> useShiftOfCustomDomain = {});
 	void translate(glm::vec3 v);
-	void doPerTriangle(std::function<void(TriangleR3&)> f);
+	void doPerTriangle(std::function<void( TriangleR3&)> f);
 	void doPerTriangle(PolyGroupID grp, std::function<void(TriangleR3&)> f);
 
-	void actOnEmbeddedCurve(SpaceEndomorphism f);
+	void actOnEmbeddedCurve(SpaceEndomorphism f, bool buffOnly=false);
 
 
 	void randomizeMaterials(MaterialPhong &min, MaterialPhong &max);
 	void randomiseMaterialsDynamically(float stepMax);
 };
-
-
 
 
 
@@ -521,30 +527,37 @@ class CurveSample {
 	glm::vec3 position;
 	glm::vec3 normal;
 	glm::vec3 tangent;
-	MaterialPhong material;
+	glm::mat4 material;
 	float width;
 	glm::vec4 extraInfo = glm::vec4(0, 0, 0, 0);
 
 public:
 	CurveSample(glm::vec3 position, glm::vec3 normal, glm::vec3 tangent, MaterialPhong material, float width);
-	glm::vec3 getPosition() const {return position;}
-	glm::vec3 getNormal() const {return normal;}
-	glm::vec3 getTangent() const {return tangent;}
-	MaterialPhong getMaterial() const {return material;}
-	float getWidth() const {return width;}
-	glm::vec3 getBinormal() const {return glm::cross(tangent, normal);}
-	void addExtra(glm::vec4 extra) {extraInfo = extra;}
-	void addExtra(glm::vec3 extra) {extraInfo = glm::vec4(extra, 0);}
-	void addExtra(float extra, int position=4) {extraInfo[position] = extra;}
-	glm::vec4 readExtra() const {return extraInfo;}
-	glm::vec3 readExtraXYZ() const {return glm::vec3(extraInfo);}
+    CurveSample(const CurveSample &other);
+    CurveSample(CurveSample &&other) noexcept;
+    CurveSample &operator=(const CurveSample &other);
+    CurveSample &operator=(CurveSample &&other) noexcept;
+
+    float getWidth() const {return width;}
+	glm::vec3 getBinormal() const {return cross(tangent, normal);}
+    glm::vec3 getPosition() const {return position;}
+    glm::vec3 getNormal() const {return normal;}
+    glm::vec3 getTangent() const {return tangent;}
+    MaterialPhong getMaterial() const { return MaterialPhong(material); }
+    glm::mat4 getMaterialMatrix() const { return material; }
 	float readExtra(int position) const {return extraInfo[position];}
 	float readExtraLast() const	{return extraInfo.w;}
+    glm::vec4 readExtra() const {return extraInfo;}
+    glm::vec3 readExtraXYZ() const {return glm::vec3(extraInfo);}
+
 	void updatePosition(glm::vec3 new_position) {position = new_position;}
 	void updateNormal(glm::vec3 new_normal) {normal = new_normal;}
 	void updateTangent(glm::vec3 new_tangent) {tangent = new_tangent;}
-	void updateMaterial(MaterialPhong new_material) {material = new_material;}
+	void updateMaterial(const MaterialPhong &new_material) {material = new_material.compressToMatrix();}
 	void updateWidth(float new_width) {width = new_width;}
+    void updateExtra(glm::vec4 extra) {extraInfo = extra;}
+    void updateExtra(glm::vec3 extra) {extraInfo = glm::vec4(extra, extraInfo.w);}
+    void updateExtra(float extra, int position=3) {extraInfo[position] = extra;}
 };
 
 std::vector<CurveSample> sampleCurve(SmoothParametricCurve curve, std::function<float(float)> width,
@@ -556,40 +569,70 @@ std::vector<CurveSample> sampleCurve(SmoothParametricCurve curve, float width,
                                      MaterialPhong material, float t0=0, float t1=1, int n=100, bool periodic=false);
 
 
-class SuperCurve{
-	float t0, t1;
-	std::vector<CurveSample> samples;
-	std::shared_ptr<SuperMesh> _mesh = nullptr;
-public:
-	SuperCurve(const SmoothParametricCurve &curve, const std::function<float(float)> &width, const std::function<MaterialPhong(float)> &material, float t0=0, float t1=1, int segments=100, bool periodic=true);
-	SuperCurve(SmoothParametricCurve curve, float width, MaterialPhong material, float t0=0, float t1=1, int nSegments=100, bool periodic=true);
-	SuperMesh mesh(int radialSegments) const;
-	std::shared_ptr<SuperMesh> associateMesh(int radialSegments);
 
-	void transformMeshByAmbientMap(
-            const SpaceEndomorphism &f); // just composition
-	void internalDeformation(End1P);
-	void updateCurveMeshOnly(const SmoothParametricCurve &new_curve);
-	void updateCurve(const SmoothParametricCurve &new_curve);
-
-
+enum CurveEmbeddingTypeID {
+  PLANAR,
+  TUBE,
+  NOT_EMBEDDED
 };
+
+const std::map<CurveEmbeddingTypeID, std::string> curveEmbeddingTypes = {
+        {PLANAR, "PLANAR"}, {TUBE, "TUBE"}, {NOT_EMBEDDED, "NOT EMBEDDED"}};
+
+inline std::string embeddingTypeName(CurveEmbeddingTypeID type) {
+  if (curveEmbeddingTypes.contains(type))
+    return curveEmbeddingTypes.at(type);
+  throw UnknownVariantError("Embedding type with id " + std::to_string(type) + " not recognised as valid variant.");
+};
+
+
+class SuperCurve{
+  float t0, t1;
+  std::vector<CurveSample> samples;
+  std::shared_ptr<SuperMesh> _mesh = nullptr;
+  PolyGroupID id;
+  CurveEmbeddingTypeID embeddingType = NOT_EMBEDDED;
+
+  SuperMesh generateMeshTube(int radialSegments) const;
+  void initMesh() { _mesh = std::make_shared<SuperMesh>(); }
+
+public:
+  SuperCurve(const SmoothParametricCurve &curve, const std::function<float(float)> &width, const std::function<MaterialPhong(float)> &material, int segments, float t0=0, float t1=1,  bool periodic=true);
+  SuperCurve(const SmoothParametricCurve &curve, float width, MaterialPhong material, int nSegments, float t0=0, float t1=1, bool periodic=true);
+  // SuperCurve(const SuperCurve &other) : t0(other.t0), t1(other.t1), samples(other.samples), _mesh(other._mesh), _weak_mesh(other._weak_mesh), id(other.id), embeddingType(other.embeddingType) {}
+  // SuperCurve(SuperCurve &&other) noexcept : t0(other.domain().x), t1(other.domain().y), samples(std::move(other.samples)), _mesh(std::move(other._mesh)) {}
+
+  void generateMesh(int radialSegments, CurveEmbeddingTypeID type);
+
+  void transformMeshByAmbientMap( const SpaceEndomorphism &f); // just composition
+  glm::vec2 domain() const {return glm::vec2(t0, t1);}
+
+  void precomputeBuffers();
+
+  void updateCurve(const SmoothParametricCurve &new_curve);
+  std::function<void(float)> pencilDeformerWeak(std::function<SmoothParametricCurve(float)> pencil);
+};
+
+
 
 class SuperPencilCurve : public SuperCurve {
-	float _t = 0;
-	std::unique_ptr<End2P> _ambient_operator = nullptr;
-	std::unique_ptr<std::function<SmoothParametricCurve(float)>> _parametric_operator = nullptr;
+  float _t = 0;
+  std::unique_ptr<End2P> _ambient_operator = nullptr;
+  std::unique_ptr<std::function<SmoothParametricCurve(float)>> _parametric_operator = nullptr;
 public:
-	using SuperCurve::SuperCurve;
-	void addAmbientDeformation(End2P _ambient_operator, float t=0);
-	void addLocalDeformation(End1P _local_operator, float t=0);
-	void addDeformationAlongVectorField(VectorFieldR3 vectorField, float t=0);
-	void addPencil(std::function<SmoothParametricCurve(float)> family,
-                       float t = 0);
-        void updateCurveMeshOnly(SmoothParametricCurve &new_curve);
-	float time() const;
-	void transformMesh(float new_t);
+  using SuperCurve::SuperCurve;
+  SuperPencilCurve(const SuperCurve &other) : SuperCurve(other) {}
+  SuperPencilCurve(SuperCurve &&other) noexcept : SuperCurve(std::move(other)) {}
+
+  void addAmbientDeformation(End2P _ambient_operator, float t=0);
+  void addLocalDeformation(End1P _local_operator, float t=0);
+  void addDeformationAlongVectorField(VectorFieldR3 vectorField, float t=0);
+  void addPencil(std::function<SmoothParametricCurve(float)> family, float t = 0);
+  float time() const;
+  void transformMesh(float new_t);
 };
+
+
 
 
 

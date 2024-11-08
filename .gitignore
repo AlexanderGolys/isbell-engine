@@ -15,7 +15,6 @@ OpenGL-tutorial_v*
 .vscode
 cmake-build-debug
 distrib
-common
 external
 misc-*
 misc*

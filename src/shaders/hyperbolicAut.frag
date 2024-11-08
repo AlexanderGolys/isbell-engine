@@ -3,7 +3,6 @@
 in vec4 v_color;
 in vec3 v_normal;
 in vec3 v_position;
-in vec2 v_complexPlaneCoords;
 in vec4 v_ambientColor;
 in vec4 v_diffuseColor;
 in vec4 v_specularColor;
@@ -40,10 +39,10 @@ vec4 colorFactorFromSingleLight(mat4 light, vec3 camPos, vec3 pos, vec3 n)
 	vec3 light_direction = normalize(lightPosition(light) - pos);
 	float cosTheta = max(dot(n, light_direction), 0.);
 	float distanceSquared = dot(lightPosition(light) - pos, lightPosition(light) - pos);
-	vec3 reflectDirection = reflect(-light_direction, n);
+	vec3 reflectDirection = normalize(reflect(-light_direction, n));
 	vec3 viewDirection = normalize(camPos - pos);
 	float cosAlpha = max(dot(viewDirection, reflectDirection), 0.);
-	return v_ambientColor * v_intencities.x +
+	return v_ambientColor * v_intencities.x/3 +
 		v_diffuseColor * v_intencities.y * cosTheta * lightPower(light) * lightColor(light) / distanceSquared+
 		v_specularColor * v_intencities.z  * pow(cosAlpha, v_intencities.w) * lightColor(light) * lightPower(light) / distanceSquared;
 

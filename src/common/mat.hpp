@@ -9,10 +9,11 @@
 #include <cmath>
 #include <array>
 #include <algorithm>
+#include "macros.hpp"
+#include "metaUtils.hpp"
 
 
-#define PI 3.14159265359f
-#define TAU 6.28318530718f
+
 
 template <typename T>
 concept AbelianSemigroup = requires (T a, T b) {
@@ -163,13 +164,12 @@ public:
 		for (int i = 0; i < 2; i++)
 			for (int j = 0; j < 2; j++)
 				this->coefs[i][j] = c[i][j];
-		a = c[0][0];
-		b = c[0][1];
-		c = c[1][0];
-		d = c[1][1];
+		this->a = c[0][0];
+		this->b = c[0][1];
+		this->c = c[1][0];
+		this->d = c[1][1];
 	}
 	Matrix(T diag) : Matrix(diag, T(0), T(0), diag) {}
-	T mobius(T z) const requires DivisionRing<T>;
 	T mobius_derivative(T z) const requires DivisionRing<T>;
 	T det() const { return a * d - b * c; };
 	T trace() const { return a + d; };
@@ -195,6 +195,7 @@ public:
 	Matrix operator-() const { return *this * -1; }
 	static Matrix zero() { return Matrix(); }
 	T at(int i, int j) const { return this->coefs[i][j]; }
+    T mobius(T z) const requires DivisionRing<T> { return (a * z + b) / (c * z + d); }
 };
 
 
@@ -209,6 +210,9 @@ Matrix<T, n, k> operator*(Matrix<T, n, m> A, Matrix<T, m, k> B);
 float norm2(glm::vec2 v);
 float norm2(glm::vec3 v);
 float norm2(glm::vec4 v);
+inline float det(glm::mat3 m) {return glm::determinant(m);}
+inline float det(glm::mat2 m) {return glm::determinant(m);}
+inline float det(glm::mat4 m) {return glm::determinant(m);}
 
 
 
@@ -222,6 +226,8 @@ T normalise(T v) { return v / float(sqrt(norm2(v))); };
 glm::vec2 intersectLines(glm::vec2 p1, glm::vec2 p2, glm::vec2 q1, glm::vec2 q2);
 glm::vec2 orthogonalComplement(glm::vec2 v);
 std::pair<glm::vec3, glm::vec3> orthogonalComplementBasis(glm::vec3 v);
+glm::mat3 GramSchmidtProcess(glm::mat3 m);
+
 
 class Complex {
 public: 
@@ -276,9 +282,8 @@ inline Complex operator+(float f, Complex c) { return c + f; }
 inline Complex operator-(float f, Complex c) { return Complex(f) - c; }
 
 
-template <int n, int m>
-bool nearlyEqual(Matrix<Complex, n, m> a, Matrix<Complex, n, m> b)
-{
+template<int n, int m>
+bool nearlyEqual(Matrix<Complex, n, m> a, Matrix<Complex, n, m> b) {
     for (int i = 0; i < m; i++)
         for (int j = 0; j < n; j++)
             if (!a.at(i, j).nearlyEqual(b.at(i, j)))
@@ -286,6 +291,17 @@ bool nearlyEqual(Matrix<Complex, n, m> a, Matrix<Complex, n, m> b)
     return true;
 }
 
+inline bool nearlyEqual(glm::mat3 a, glm::mat3 b) {
+    for (int i = 0; i < 3; i++)
+        for (int j = 0; j < 3; j++)
+            if (abs(a[i][j] - b[i][j]) > 1e-6)
+                return false;
+    return true;
+}
+
+inline bool nearlyEqual(float a, float b) {
+    return abs(a - b) < 1e-6;
+}
 
 
 Complex fromExpForm(glm::vec2 e);
@@ -612,11 +628,6 @@ Matrix<T, n> Matrix<T, n>::GramSchmidtProcess() const requires EuclideanSpace<T>
     return result;
 }
 
-template <RingConcept T>
-T Matrix<T, 2>::mobius(T z) const requires DivisionRing<T>
-{
-	return (this->a * z + this->b) / (this->c * z + this->d);
-}
 
 template<RingConcept T>
 T Matrix<T, 2>::mobius_derivative(T z) const requires DivisionRing<T> {
@@ -626,7 +637,7 @@ T Matrix<T, 2>::mobius_derivative(T z) const requires DivisionRing<T> {
 
 const Complex ONE = Complex(1, 0);
 const Complex ZERO = Complex(0, 0);
-const auto I = Complex(0, 1);
+const Complex I = Complex(0, 1);
 
 template<typename vec>
 std::vector<float> vecToVecHeHe(vec v) {

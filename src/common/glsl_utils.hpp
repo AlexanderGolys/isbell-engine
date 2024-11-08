@@ -155,7 +155,9 @@ public:
 	std::shared_ptr<Shader> shader;
 	std::vector<std::shared_ptr<Attribute>> attributes;
 	std::shared_ptr<Model3D> model;
-	std::shared_ptr<SuperMesh> super;
+	std::shared_ptr<SuperMesh> super = nullptr;
+    std::shared_ptr<WeakSuperMesh> weak_super = nullptr;
+    GLuint elementBufferLoc = 0;
 
 	std::map<std::string, GLSLType> uniforms;
 	std::map<std::string, std::shared_ptr<std::function<void(float, std::shared_ptr<Shader>)>>> uniformSetters;
@@ -167,16 +169,20 @@ public:
 
 	void setModel(const std::shared_ptr<Model3D> &model);
 	void setSuperMesh(const std::shared_ptr<SuperMesh> &super);
+    void setWeakSuperMesh(const std::shared_ptr<WeakSuperMesh> &super);
 	void initStdAttributes();
 	void initMaterialAttributes();
+    void initElementBuffer();
 	void resetAttributeBuffers();
 	void initUnusualAttributes(std::vector<std::shared_ptr<Attribute>> attributes);
-	void activate() const;
-	void loadStandardAttributes() const; // 0:position, 1:normal, 2:color, 3:uv
+	void activate();
+	void loadStandardAttributes(); // 0:position, 1:normal, 2:color, 3:uv
+    void loadElementBuffer();
 	void enableAttributes();
 	void disableAttributes();
 	void addCustomAction(const std::function<void(float)> &action);
-	bool superLoaded() const;
+	bool superLoaded() const { return super != nullptr; }
+    bool weakSuperLoaded() const { return weak_super != nullptr; }
 
 	void addUniforms(const std::map<std::string, GLSLType> &uniforms, std::map<std::string, std::shared_ptr<std::function<void(float, std::shared_ptr<Shader>)>>> setters);
 	void addUniform(std::string uniformName, GLSLType uniformType, std::shared_ptr<std::function<void(float, std::shared_ptr<Shader>)>> setter);
@@ -203,7 +209,7 @@ public:
 	std::vector<std::shared_ptr<RenderingStep>> renderingSteps;
 	std::shared_ptr<Camera> camera;
 	std::vector<std::shared_ptr<PointLight>> lights;
-	float time = NULL;
+	float time = 0;
 	float animSpeed;
 	glm::vec4 bgColor;
 	std::unique_ptr<std::function<void(float)>> perFrameFunction;

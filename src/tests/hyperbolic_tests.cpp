@@ -3,101 +3,51 @@
 #include <cassert>
 #include <iostream>
 
-using namespace std;
+using namespace glm;
 
-bool isAdditionH(Mob m) {
-  return abs(m.a - ONE) < 1e-6 && abs(m.d - ONE) < 1e-6 && abs(m.c) < 1e-6;
-}
-
-bool isMultiplicationH(Mob m) {
-  return abs(m.b) < 1e-6 && abs(m.d - ONE) < 1e-6 && abs(m.c) < 1e-6;
-}
-
-bool isInAutH(Mob m) {
-  return abs(m.a.im()) < 0.0001 && abs(m.b.im()) < 0.0001 && abs(m.c.im()) < 0.0001 && abs(m.d.im()) < 0.0001;
-}
-bool isInAutD(Mob m) {
-  return abs(m.a.conj() - m.d) < 0.0001 && abs(m.b.conj() - m.c) < 0.0001;
-}
-
-
-
-void cayleyTransformTest()
-  {
-     auto M = CayleyTransform;
-     assert(M.a == ONE);
-     Complex z = Complex(1, 3);
-     assert(M.mobius(z) == (z - I)/(z + I));
-     cout << "Cayley transform test passed" << endl;
-  }
-
-bool nearlyEqual(Complex a, Complex b) {
-  return abs(a-b)<1e-6;
-}
-
-void MeromorphismsTests()
+float angle(vec3 a, vec3 b)
 {
-    auto exp_f = EXP;
-    auto sqrt_f = SQRT;
-
-    assert( nearlyEqual(sqrt_f(ONE*4), ONE*2) );
-    assert(nearlyEqual(exp_f.compose(sqrt_f)(9), exp(1)*exp(1)*exp(1)) );
-    assert(nearlyEqual(sqrt_f.compose(exp_f)(2), exp(1)));
-    assert(nearlyEqual(sqrt_f.inv(I), -1) );
-    assert(nearlyEqual(Id(I*8 + 2), I*8 + 2) );
-    assert(nearlyEqual(Biholomorphism::linear(I, I)(I*3), I - 3) );
-    cout << "Composition, inverse tests passed" << endl;
-
+  return acos(dot(a, b)/(length(a)*length(b)));
 }
 
 
-void FuchsianGroupTest()
-{
-  auto G1 = Ga(1, 4);
-  auto G2 = Gm(1, 2);
-
-  auto addMatricesD = G1.generateElementsD(13);
-  auto multMatricesD = G2.generateElementsD(5);
-  auto addMatricesH = G1.generateElementsH(13);
-  auto multMatricesH = G2.generateElementsH(5);
-
-  assert(addMatricesD.size() == 13);
-  assert(multMatricesD.size() == 5);
-  assert(addMatricesH.size() == 13);
-  assert(multMatricesH.size() == 5);
-
-  for (auto M : addMatricesD)
+void rotationsTest()
   {
-    assert(isInAutD(M));
+    float t1 = 0;
+    float t2 = 1;
+
+    vec3 n2 = vec3(0, 1, 1);
+    vec3 n3 = vec3(1, -4, 1)/100.f;
+    vec3 n4 = vec3(0, -2, -2);
+
+    assert(nearlyEqual(rotationMatrix3(0), rotationMatrix3(TAU)));
+    assert(nearlyEqual(rotationMatrix3(n2, 0), rotationMatrix3(n2, TAU)));
+
+    mat3 m11 = rotationMatrix3(t1);
+    mat3 m12 = rotationMatrix3(n2, t1);
+    mat3 m13 = rotationMatrix3(n3, t1);
+    mat3 m14 = rotationMatrix3(n4, t1);
+    mat3 m21 = rotationMatrix3(t2);
+    mat3 m22 = rotationMatrix3(n2, t2);
+    mat3 m23 = rotationMatrix3(n3, t2);
+    mat3 m24 = rotationMatrix3(n4, t2);
+
+    float ang = angle(e1, m22*e1);
+    assert(nearlyEqual(ang, t2));
+
+    std::vector<mat3> all = {m11, m12, m13, m14, m21, m22, m23, m24};
+
+    for (auto m: all)
+    {
+      assert(nearlyEqual(abs(det(m)), 1));
+    }
+
+    std::cout << "Rotation matrix tests passed" << std::endl;
   }
-
-  for (auto M : multMatricesD)
-  {
-    assert(isInAutD(M));
-  }
-
-  for (auto M : addMatricesH)
-  {
-    assert(isInAutH(M));
-    assert(isAdditionH(M));
-  }
-
-  for (auto M : multMatricesH)
-  {
-    assert(isInAutH(M));
-    assert(isMultiplicationH(M));
-  }
-
-  cout << "Additive and multiplicative Fuchsian groups seem to work." << endl;
-
-
-}
 
 
   int main(void)
   {
-    cayleyTransformTest();
-    MeromorphismsTests();
-    FuchsianGroupTest();
+    rotationsTest();
     return 0;
   }

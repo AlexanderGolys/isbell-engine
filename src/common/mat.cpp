@@ -123,7 +123,7 @@ std::ostream& operator<<(std::ostream& _stream, Complex const& z)
 	return _stream;
 }
 
-Complex toComplex(glm::vec2 v)
+Complex toComplex(vec2 v)
 {
 	return Complex(v);
 }
@@ -569,17 +569,17 @@ CP1 iCP1()
 
 
 
-float norm2(glm::vec2 v)
+float norm2(vec2 v)
 {
 	return dot(v, v);
 }
 
-float norm2(glm::vec3 v)
+float norm2(vec3 v)
 {
 	return dot(v, v);
 }
 
-float norm2(glm::vec4 v)
+float norm2(vec4 v)
 {
 	return dot(v, v);
 }
@@ -625,7 +625,7 @@ mat3 rotationMatrix3(vec3 axis, float angle)
 {
     auto planeBasis = orthogonalComplementBasis(axis);
 	mat3 change = changeOfBasis(planeBasis.first, planeBasis.second, axis);
-	return change * rotationMatrix3(angle) * inverse(change);
+	return inverse(change) * rotationMatrix3(angle) * change;
 }
 
 float frac(float x)
@@ -638,13 +638,20 @@ vec2 orthogonalComplement(vec2 v)
 	return (vec2(v.y, -v.x))/norm(v);
 }
 
+mat3 GramSchmidtProcess(mat3 m) {
+    vec3 u1 = normalise(m[0]);
+    vec3 u2 = normalise(m[1] - u1 * dot(u1, m[1]));
+    vec3 u3 = cross(u1, u2);
+    return mat3(u1, u2, u3);
+}
+
 std::pair<vec3, vec3> orthogonalComplementBasis(vec3 v)
 {
-	auto v1 = cross(v, vec3(1, 0, 0));
-	if (norm2(v1) < .1f)
-		v1 = cross(v, vec3(0, 1, 0));
-	auto v2 = cross(v, v1);
-	return std::pair<vec3, vec3>(normalise(v1), normalise(v2));
+    vec3 b1 = norm(cross(v, e1)) > norm(cross(v, e3)) ? e1 : e3;
+    vec3 b2 = cross(v, b1);
+    mat3 frame = GramSchmidtProcess(mat3(b1, b2, v));
+    return std::make_pair(frame[0], frame[1]);
+
 }
 
 float pseudorandomizer(float x, float seed)

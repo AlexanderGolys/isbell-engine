@@ -7,7 +7,7 @@ using namespace glm;
 using std::vector, std::array;
 
 
-BoxMesh::BoxMesh(glm::vec3 minCorner, glm::vec3 maxCorner)
+BoxMesh::BoxMesh(vec3 minCorner, vec3 maxCorner)
 {
 	this->triangles = std::vector<TriangleR3>();
 
@@ -77,7 +77,7 @@ void BoxMesh::randomizeFaceColors()
 }
 
 
-BallMesh::BallMesh(vec3 center, float radius, int radialSegments, int verticalSegments, glm::vec3 normal)
+BallMesh::BallMesh(vec3 center, float radius, int radialSegments, int verticalSegments, vec3 normal)
 {
 	this->center = center;
 	this->radius = radius;
@@ -109,7 +109,7 @@ BallMesh::BallMesh(vec3 center, float radius, int radialSegments, int verticalSe
 	this->triangles = trs;
 }
 
-BallMesh::BallMesh(glm::vec3 center, float radius, int radialSegments, int verticalSegments) : BallMesh(center, radius, radialSegments, verticalSegments, vec3(0.0f, 0.0f, 1.0f))
+BallMesh::BallMesh(vec3 center, float radius, int radialSegments, int verticalSegments) : BallMesh(center, radius, radialSegments, verticalSegments, vec3(0.0f, 0.0f, 1.0f))
 {}
 
 BallMesh::BallMesh(int radialSegments, int verticalSegments) : BallMesh(vec3(0.0f, 0.0f, 0.0f), 1.0f, radialSegments, verticalSegments) {}
@@ -193,7 +193,7 @@ TriangularMesh CircularRing::extrudeAlongNormal(float h)
 
 
 
-CircularRing::CircularRing(vec3 center, float radiusBig, float radiusSmall, int radialSegments, int verticalSegments, glm::vec3 normal)
+CircularRing::CircularRing(vec3 center, float radiusBig, float radiusSmall, int radialSegments, int verticalSegments, vec3 normal)
 {
 	this->center = center;
 	this->radiusBig = radiusBig;
@@ -231,7 +231,7 @@ CircularRing::CircularRing(vec3 center, float radiusBig, float radiusSmall, int 
 	this->triangles = trs;
 }
 
-CircularRing::CircularRing(glm::vec3 center, float radiusBig, float radiusSmall, int radialSegments, int verticalSegments) : CircularRing(center, radiusBig, radiusSmall, radialSegments, verticalSegments, vec3(0.0f, 0.0f, 1.0f)){}
+CircularRing::CircularRing(vec3 center, float radiusBig, float radiusSmall, int radialSegments, int verticalSegments) : CircularRing(center, radiusBig, radiusSmall, radialSegments, verticalSegments, vec3(0.0f, 0.0f, 1.0f)){}
 
 CircularRing::CircularRing(int radialSegments, int verticalSegments) : CircularRing(vec3(0.0f, 0.0f, 0.0f), 1.0f, 3.f, radialSegments, verticalSegments){}
 
@@ -361,7 +361,7 @@ PlanarConvexPolygon::PlanarConvexPolygon(vector<vec2> verts)
 	this->triangles = trng;
 }
 
-COLOR_PALETTE::COLOR_PALETTE(glm::vec4 mainColor, glm::vec4 second, glm::vec4 third, glm::vec4 accent, glm::vec4 accent2)
+COLOR_PALETTE::COLOR_PALETTE(vec4 mainColor, vec4 second, vec4 third, vec4 accent, vec4 accent2)
 {
 	this->mainColor = mainColor;
 	this->second = second;
@@ -370,9 +370,9 @@ COLOR_PALETTE::COLOR_PALETTE(glm::vec4 mainColor, glm::vec4 second, glm::vec4 th
 	this->accent2 = accent2;
 }
 
-COLOR_PALETTE::COLOR_PALETTE(glm::vec3 mainColor, glm::vec3 second, glm::vec3 third, glm::vec3 accent, glm::vec3 accent2) : COLOR_PALETTE(vec4(mainColor, 1.0f), vec4(second, 1.0f), vec4(third, 1.0f), vec4(accent, 1.0f), vec4(accent2, 1.0f) ) {}
+COLOR_PALETTE::COLOR_PALETTE(vec3 mainColor, vec3 second, vec3 third, vec3 accent, vec3 accent2) : COLOR_PALETTE(vec4(mainColor, 1.0f), vec4(second, 1.0f), vec4(third, 1.0f), vec4(accent, 1.0f), vec4(accent2, 1.0f) ) {}
 
-COLOR_PALETTE::COLOR_PALETTE(glm::ivec3 mainColor, glm::ivec3 second, glm::ivec3 third, glm::ivec3 accent, glm::ivec3 accent2)
+COLOR_PALETTE::COLOR_PALETTE(ivec3 mainColor, ivec3 second, ivec3 third, ivec3 accent, ivec3 accent2)
 {
 	this->mainColor = vec4(mainColor.x / 255.f, mainColor.y / 255.f, mainColor.z / 255.f, 1.0f);
 	this->second = vec4(second.x / 255.f, second.y / 255.f, second.z / 255.f, 1.0f);
@@ -381,40 +381,160 @@ COLOR_PALETTE::COLOR_PALETTE(glm::ivec3 mainColor, glm::ivec3 second, glm::ivec3
 	this->accent2 = vec4(accent2.x / 255.f, accent2.y / 255.f, accent2.z / 255.f, 1.0f);
 }
 
-std::vector<glm::vec4> COLOR_PALETTE::colors()
+std::vector<vec4> COLOR_PALETTE::colors()
 {
-    return std::vector<glm::vec4>({ mainColor, second, third, accent, accent2 });
+    return std::vector({ mainColor, second, third, accent, accent2 });
 }
 
-glm::vec4 COLOR_PALETTE::operator[](int i)
+vec4 COLOR_PALETTE::operator[](int i)
 {
     return colors()[i];
 }
 
-COLOR_PALETTE10::COLOR_PALETTE10(glm::ivec3 c1, glm::ivec3 c2, glm::ivec3 c3, glm::ivec3 c4, glm::ivec3 c5,
-	glm::ivec3 c6, glm::ivec3 c7, glm::ivec3 c8, glm::ivec3 c9, glm::ivec3 c10) {
-	cls = {vec4(c1.x/255.f, c1.y/255.f, c1.z/255.f, 1.0f), vec4(c2.x/255.f, c2.y/255.f, c2.z/255.f, 1.0f),
-		vec4(c3.x/255.f, c3.y/255.f, c3.z/255.f, 1.0f), vec4(c4.x/255.f, c4.y/255.f, c4.z/255.f, 1.0f),
-		vec4(c5.x/255.f, c5.y/255.f, c5.z/255.f, 1.0f), vec4(c6.x/255.f, c6.y/255.f, c6.z/255.f, 1.0f),
-		vec4(c7.x/255.f, c7.y/255.f, c7.z/255.f, 1.0f), vec4(c8.x/255.f, c8.y/255.f, c8.z/255.f, 1.0f),
-		vec4(c9.x/255.f, c9.y/255.f, c9.z/255.f, 1.0f), vec4(c10.x/255.f, c10.y/255.f, c10.z/255.f, 1.0f)};
+COLOR_PALETTE10::COLOR_PALETTE10(ivec3 c1, ivec3 c2, ivec3 c3,
+                                 ivec3 c4, ivec3 c5, ivec3 c6,
+                                 ivec3 c7, ivec3 c8, ivec3 c9,
+                                 ivec3 c10) {
+  cls = {vec4(c1.x / 255.f, c1.y / 255.f, c1.z / 255.f, 1.0f),
+         vec4(c2.x / 255.f, c2.y / 255.f, c2.z / 255.f, 1.0f),
+         vec4(c3.x / 255.f, c3.y / 255.f, c3.z / 255.f, 1.0f),
+         vec4(c4.x / 255.f, c4.y / 255.f, c4.z / 255.f, 1.0f),
+         vec4(c5.x / 255.f, c5.y / 255.f, c5.z / 255.f, 1.0f),
+         vec4(c6.x / 255.f, c6.y / 255.f, c6.z / 255.f, 1.0f),
+         vec4(c7.x / 255.f, c7.y / 255.f, c7.z / 255.f, 1.0f),
+         vec4(c8.x / 255.f, c8.y / 255.f, c8.z / 255.f, 1.0f),
+         vec4(c9.x / 255.f, c9.y / 255.f, c9.z / 255.f, 1.0f),
+         vec4(c10.x / 255.f, c10.y / 255.f, c10.z / 255.f, 1.0f)};
+
+}
+SmoothParametricPlaneCurve circle(float r, vec2 center, float eps) {
+        return SmoothParametricPlaneCurve(
+                [center, r](float t) {return center + r * vec2(cos(t), sin(t)); },
+                [r](float t) {return r * vec2(-sin(t), cos(t)); },
+                [r](float t) {return r * vec2(-cos(t), -sin(t)); },
+                0, TAU, true, eps);
 }
 
-SuperCurve circle(vec3 v1, vec3 v2, vec3 center, float r, std::function<float(float)> w, std::function<MaterialPhong(float)> mat, int n, float eps) {
-	vec3 v1n = normalize(v1);
-	vec3 v2n = normalize(v2);
-	SmoothParametricCurve curve = SmoothParametricCurve([v1n, v2n, center, r](float t) {return center + r * cos(t) * v1n + r * sin(t) * v2n; },
-	[v1n, v2n, r](float t) {return -r * sin(t) * v1n + r * cos(t) * v2n; },
-	[v1n, v2n, r](float t) {return -r * cos(t) * v1n - r * sin(t) * v2n; }, eps);
-	return SuperCurve(curve, w, mat, 0, TAU, n);
+
+SmoothParametricPlaneCurve ellipse(float a, float b, vec2 center, float eps) {
+    return SmoothParametricPlaneCurve(
+                [center, a, b](float t) {return center + vec2(a*cos(t), b*sin(t)); },
+                [a, b](float t) {return vec2(-a*sin(t),  b*cos(t)); },
+                [a, b](float t) {return vec2(-a*cos(t), -b*sin(t)); },
+                0, TAU, true, eps);
+}
+SmoothParametricPlaneCurve epitrochoid(float r, float R, float d, float eps) {
+    return SmoothParametricPlaneCurve(
+                [r, R, d](float t) {return vec2((r+R)*cos(t) - d*cos((r+R)/r*t), (r+R)*sin(t) - d*sin((r+R)/r*t)); },
+                [r, R, d](float t) {return vec2(-(r+R)*sin(t) + (r+R)/r*d*sin((r+R)/r*t), (r+R)*cos(t) - (r+R)/r*d*cos((r+R)/r*t)); },
+                [r, R, d](float t) {return vec2(-(r+R)*cos(t) + (r+R)*(r+R)/r/r*d*cos((r+R)/r*t), -(r+R)*sin(t) + (r+R)*(r+R)/r/r*d*sin((r+R)/r*t)); },
+                0, TAU, true, eps);
 }
 
-SuperPencilCurve circlePencil(vec3 v1, vec3 v2, vec3 center, float r, std::function<float(float)> w, std::function<MaterialPhong(float)> mat, int n, float eps) {
-	vec3 v1n = normalize(v1);
-	vec3 v2n = normalize(v2);
-	SmoothParametricCurve curve = SmoothParametricCurve([v1n, v2n, center, r](float t) {return center + r * cos(t) * v1n + r * sin(t) * v2n; },
-	[v1n, v2n, r](float t) {return -r * sin(t) * v1n + r * cos(t) * v2n; },
-	[v1n, v2n, r](float t) {return -r * cos(t) * v1n - r * sin(t) * v2n; }, eps);
-	return SuperPencilCurve(curve, w, mat, 0, TAU, n);
+SmoothParametricPlaneCurve hypotrochoid(float r, float R, float d, float eps) {
+    return SmoothParametricPlaneCurve(
+                [r, R, d](float t) {return vec2((R-r)*cos(t) + d*cos((R-r)/r*t), (R-r)*sin(t) - d*sin((R-r)/r*t)); },
+                [r, R, d](float t) {return vec2(-(R-r)*sin(t) - d*(R-r)/r*sin((R-r)/r*t), (R-r)*cos(t) - d*(R-r)/r*cos((R-r)/r*t)); },
+                [r, R, d](float t) {return vec2(-(R-r)*cos(t) - d*(R-r)/r*(R-r)/r*cos((R-r)/r*t), -(R-r)*sin(t) + d*(R-r)/r*(R-r)/r*sin((R-r)/r*t)); },
+                0, TAU, true, eps);
 }
+
+SmoothParametricCurve circle(float r, vec3 center, vec3 v1, vec3 v2, float eps) {
+    return circle(r, PLANE_ORIGIN, eps).embedding(v1, v2, center);
+}
+SmoothParametricCurve VivaniCurve(float r, float eps) {
+    return SmoothParametricCurve(
+                [r](float t) {return vec3(r*(1+cos(t)), r*sin(t), 2*r*sin(t/2)); },
+                [r](float t) {return vec3(-r*sin(t), r*cos(t), r*cos(t/2)); },
+                [r](float t) {return vec3(-r*cos(t), -r*sin(t), -r/2*sin(t/2)); },
+                -TAU, TAU, true, eps);
+}
+
+SmoothParametricPlaneCurve LissajousCurve(float a, float b, float delta, float r1, float r2, float eps) {
+    return SmoothParametricPlaneCurve(
+                [r1, r2, a, b, delta](float t) {return vec2(r1*sin(a*t+delta), r2*cos(b*t)); },
+                [r1, r2, a, b, delta](float t) {return vec2(a*r1*cos(a*t+delta), -b*r2*sin(b*t)); },
+                [r1, r2, a, b, delta](float t) {return vec2(-a*a*r1*sin(a*t+delta), -b*b*r2*cos(b*t)); },
+                0, TAU, true, eps);
+}
+
+SuperCurve circle(float r, std::function<float(float)> w, std::function<MaterialPhong(float)> mat, int n, vec3 center, vec3 v1, vec3 v2, float eps) {
+    return SuperCurve(circle(r, center, v1, v2, eps), w, mat, n, 0, TAU, true);
+}
+
+
+
+SmoothParametricCurve sphericalSpiral(float a, float t_max, PolyGroupID id, float eps) {
+    return SmoothParametricCurve([a](float t) {return vec3(cos(t), sin(t), -a*t)/sqrt(1+a*a*t*t); },
+                                        -t_max, t_max, false, id, eps);
+}
+
+SmoothParametricCurve sphericalSpiral(float a, float r, float t_max, PolyGroupID id, float eps) {
+    return SmoothParametricCurve([a, r](float t) {return vec3(cos(t), sin(t), -a*t)*r/sqrt(1+a*a*t*t); },
+                                        -t_max, t_max, false, id, eps);
+}
+
+WeakSuperMesh singleTrig(vec3 v0, vec3 v1, vec3 v2, MaterialPhong &material, PolyGroupID id) {
+    vec3 n = normalize(cross(v1 - v0, v2 - v0));
+    vector nodes = {Vertex(v0, vec2(0, 0), n, BLACK, material),
+                    Vertex(v1, vec2(0, 1), n, BLACK, material),
+                    Vertex(v2, vec2(1, 1), n, BLACK, material)};
+    return WeakSuperMesh(nodes, {ivec3(0, 1, 2)}, id);
+}
+
+
+WeakSuperMesh singleTrig(vec3 v0, vec3 v1, vec3 v2, MaterialPhong &material1, MaterialPhong &material2, MaterialPhong &material3,
+                                PolyGroupID id) {
+    vec3 n = normalize(cross(v1 - v0, v2 - v0));
+    vector nodes = {Vertex(v0, vec2(0, 0), n, BLACK, material1),
+                    Vertex(v1, vec2(0, 1), n, BLACK, material2),
+                    Vertex(v2, vec2(1, 1), n, BLACK, material3)};
+    return WeakSuperMesh(nodes, {ivec3(0, 1, 2)}, id);
+}
+WeakSuperMesh singleQuadShadeSmooth(vec3 outer1, vec3 inner1, vec3 inner2, vec3 outer2, MaterialPhong &material,
+                                    std::variant<int, std::string> id) {
+    vec3 n1out = normalize(cross(outer1 - inner1, outer1 - inner2));
+    vec3 n2out = normalize(cross(outer2 - inner2, outer2 - inner1));
+    float w1 = norm(cross(inner1-outer1, inner1-inner2));
+    float w2 = norm(cross(inner2-outer2, inner2-inner1));
+    vec3 nin = normalize(w1*inner1 + w2*inner2);
+
+    vector nodes = {Vertex(outer1, vec2(0, 0), n1out, BLACK, material),
+                    Vertex(inner1, vec2(0, 1), nin, BLACK, material),
+                    Vertex(inner2, vec2(1, 0), nin, BLACK, material),
+                    Vertex(outer2, vec2(1, 1), n2out, BLACK, material)};
+    return WeakSuperMesh(nodes, {ivec3(0, 1, 2), ivec3(3, 1, 2)}, id);
+}
+
+WeakSuperMesh singleQuadShadeFlat(glm::vec3 outer1, glm::vec3 inner1, glm::vec3 inner2, glm::vec3 outer2, MaterialPhong &material,
+                                  std::variant<int, std::string> id) {
+    vec3 n1 = normalize(cross(outer1 - inner1, outer1 - inner2));
+    vec3 n2 = normalize(cross(outer2 - inner2, outer2 - inner1));
+
+    vector nodes = {Vertex(outer1, vec2(0, 0), n1, BLACK, material),
+                    Vertex(inner1, vec2(0, 1), n1, BLACK, material),
+                    Vertex(inner2, vec2(1, 1), n1, BLACK, material),
+                    Vertex(inner1, vec2(0, 1), n2, BLACK, material),
+                    Vertex(inner2, vec2(1, 1), n2, BLACK, material),
+                    Vertex(outer2, vec2(1, 1), n2, BLACK, material)};
+    return WeakSuperMesh(nodes, {ivec3(0, 1, 2), ivec3(3, 4, 5)}, id);
+}
+
+WeakSuperMesh singleQuadShadeFlat(glm::vec3 outer1, glm::vec3 inner1, glm::vec3 inner2, glm::vec3 outer2, MaterialPhong &material1, MaterialPhong &material2,
+                                  std::variant<int, std::string> id) {
+    vec3 n1 = normalize(cross(outer1 - inner1, outer1 - inner2));
+    vec3 n2 = normalize(cross(outer2 - inner2, outer2 - inner1));
+
+    vector nodes = {Vertex(outer1, vec2(0, 0), n1, BLACK, material1),
+                    Vertex(inner1, vec2(0, 1), n1, BLACK, material1),
+                    Vertex(inner2, vec2(1, 1), n1, BLACK, material1),
+                    Vertex(inner1, vec2(0, 1), n2, BLACK, material2),
+                    Vertex(inner2, vec2(1, 1), n2, BLACK, material2),
+                    Vertex(outer2, vec2(1, 1), n2, BLACK, material2)};
+    return WeakSuperMesh(nodes, {ivec3(0, 1, 2), ivec3(3, 4, 5)}, id);
+}
+
+
+
+
 

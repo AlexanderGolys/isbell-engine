@@ -51,44 +51,27 @@ int main(void)
     Renderer renderer = Renderer(.05f, vec4(.08f, .0809f, 0.1385f, 1.0f));
     renderer.initMainWindow(UHD, "flows");
 
-	shared_ptr<SmoothParametricCurve> camCurve = make_shared<SmoothParametricCurve>([](float t) { return vec3(cos(t*0)*3, sin(t*0)*3, 2); }, .01f);
+	shared_ptr<SmoothParametricCurve> camCurve = make_shared<SmoothParametricCurve>([](float t) { return vec3(cos(t*1)*3, sin(t*1)*3, 2); }, .01f);
     shared_ptr<Camera> camera = make_shared<Camera>(camCurve, vec3(0.0, 0.0, 0), vec3(0, 0, 1), PI/4);
     auto lights = vector({std::make_shared<PointLight>(vec3(-0.4, -1, 3), vec4(.95, .79, .861, 1), 15.0f),
                           std::make_shared<PointLight>(vec3(0, 3, -0.1), vec4(.9498769, .69864, .694764, 1), 15.0f),
                           std::make_shared<PointLight>(vec3(3, -3, 0.5), vec4(.98, .98, .938, 1), 20.0f)});
 
+    auto m1 =  MaterialPhong(BLUE_PALLETTE[6], BLUE_PALLETTE[6], BLUE_PALLETTE[1], .2031423, .756641656 , .131160145739731, 10.0);
+    auto m2 =  MaterialPhong(BLUE_PALLETTE[6], BLUE_PALLETTE[6], BLUE_PALLETTE[1], .1031423, .956641656 , .131160145739731, 10.0);
+    auto m3 =  MaterialPhong(BLUE_PALLETTE[7], BLUE_PALLETTE[5], BLUE_PALLETTE[1], .2031423, .756641656 , .131160145739731, 10.0);
 
-    auto curva = [](float t) { return sphericalSpiral(.13-.08*sin(t*2), 1.0f, TAU*2, DEFAULT_POLY_GROUP_ID); };
-
-    // auto curva = [](float t) { return sphericalSpiral(.13-.08*sin(t*2), TAU*2, DEFAULT_POLY_GROUP_ID).precompose(SpaceAutomorphism::rotation(-t)); };
-	SuperCurve circ = SuperCurve(curva(0), w, mater, 300, -TAU*2, TAU*2, false);
-
-	circ.generateWeakMesh(13, TUBE);
-
-    // auto curva2 = [](float t) { return sphericalSpiral(.13-.08*cos(t*2), .8, TAU*2, PolyGroupID(2137)).precompose(SpaceAutomorphism::rotation(t*5+2)); };
-    auto curva2 = [](float t) { return sphericalSpiral(.13-.08*cos(t*2), .8, TAU*2, PolyGroupID(2137)); };
-
-    SuperCurve circ2 = SuperCurve(curva2(0), w2, mater2, 300, -TAU*2, TAU*2, false);
-    circ2.addToWeakMesh(13, TUBE, circ.getWeakMesh());
 
     auto step = make_shared<RenderingStep>(make_shared<Shader>(
             "C:\\Users\\PC\\Desktop\\ogl-master\\src\\shaders\\hyperbolicAut.vert",
             "C:\\Users\\PC\\Desktop\\ogl-master\\src\\shaders\\hyperbolicAut.frag"));
 
-	step->setWeakSuperMesh(circ.getWeakMesh());
-
-    float speed = 1.0f;
-
-    auto deformer = [&circ, &circ2, speed, &curva, &curva2](float t) {
-        auto m = curva(t*speed);
-        circ.updateCurve(m);
-        circ2.updateCurve(curva2(t*speed));
-    };
+	step->setWeakSuperMesh(make_shared<WeakSuperMesh>(singleQuadShadeFlat(vec3(-1, 0, .13), vec3(0, -.9, -.1), vec3(0, 1, -.4), vec3(.8, 0, .16), m1, m2, PolyGroupID(1))));
 
     renderer.addRenderingStep(step);
     renderer.setCamera(camera);
     renderer.setLights(lights);
-	renderer.addCustomAction(deformer);
+	// renderer.addCustomAction(deformer);
 
     return renderer.mainLoop();
 }

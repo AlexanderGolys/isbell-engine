@@ -227,17 +227,6 @@ TriangleR3 TriangleR3::operator+(vec3 v) const {
 
 
 
-
-Vertex::Vertex()
-{
-	this->position = vec3(0.0f, 0.0f, 0.0f);
-	this->normal = vec3(0.0f, 0.0f, 1.0f);
-	this->color = vec4(0.0f, 0.0f, 0.0f, 1.0f);
-	this->uv = vec2(0.0f, 0.0f);
-}
-
-
-
 string Vertex::hash() const {
     return to_string(this->position.x) + to_string(this->position.y) + to_string(this->position.z) + 
 	to_string(this->normal.x) + to_string(this->normal.y) + to_string(this->normal.z) + 
@@ -261,99 +250,81 @@ bool Vertex::operator<(const Vertex& v) const
     return this->color.w < v.color.w;
 }
 
-bool Vertex::operator==(const Vertex &v) const
-{
-    return  this->position == v.position &&
-			this->normal == v.normal &&
-			this->uv == v.uv &&
-			this->color == v.color;
+bool Vertex::operator==(const Vertex &v) const {
+    return this->position == v.position && this->normal == v.normal && this->uv == v.uv && this->color == v.color;
+}
+void Vertex::addExtraData(const std::string &name, vec3 data) {
+    if (extraData.contains(name)) {
+        extraData[name].x = data.x;
+        extraData[name].y = data.y;
+        extraData[name].z = data.z;
+    }
+    else
+        extraData.insert({name, vec4(data, 0)});
 }
 
-void Vertex::translate(vec3 v)
-{
-	this->position += v;
+void Vertex::addExtraData(const std::string &name, float data, int i) {
+    if (!extraData.contains(name))
+        extraData.insert({name, vec4(0)});
+    extraData[name][i] = data;
 }
 
-void Vertex::transform(const mat4 &M)
-{
-	this->position = vec3(M * vec4(this->position, 1.0f));
-	this->normal = vec3(M * vec4(this->normal, 0.0f));
+std::vector<std::string> Vertex::getExtraDataNames() {
+	auto names = std::vector<std::string>();
+	for (auto& [name, data] : extraData)
+		names.push_back(name);
+	return names;
 }
+
+void Vertex::transform(const SpaceEndomorphism &M) {
+	this->normal = M.df(this->position)*this->normal;
+	this->position = M(this->position);
+}
+
 
 Vertex Vertex::operator+(vec3 v) const {
-    return Vertex(this->position + v, this->normal, this->uv, this->color);
-}
-
-Vertex Vertex::operator*(mat4 M) const {
-    return Vertex(vec3(M * vec4(this->position, 1.0f)), vec3(M * vec4(this->normal, 0.0f)), this->uv, this->color);
-}
-
-Vertex Vertex::operator*(mat3 M) const {
-    return Vertex(vec3(M * this->position), vec3(M * this->normal), this->uv, this->color);
-}
-
-Vertex::Vertex(vec3 position) : Vertex()
-{
-	this->position = position;
-}
-
-Vertex::Vertex(vec3 position, vec4 color) : Vertex()
-{
-	this->position = position;
-	this->color = color;
-}
-
-Vertex::Vertex(vec3 position, vec3 normal) : Vertex()
-{
-	this->position = position;
-	this->normal = normal;
-}
-
-Vertex::Vertex(vec3 position, vec2 uv, vec4 color) : Vertex()
-{
-	this->position = position;
-	this->uv = uv;
-	this->color = color;
-}
-
-Vertex::Vertex(vec3 position, vec2 uv)
-{
-	this->position = position;
-	this->uv = uv;
-}
-
-Vertex::Vertex(vec3 position, vec3 normal, vec4 color) : Vertex()
-{
-	this->position = position;
-	this->normal = normal;
-	this->color = color;
-}
-
-Vertex::Vertex(vec3 position, vec3 normal, vec2 uv) : Vertex()
-{
-	this->position = position;
-	this->normal = normal;
-	this->uv = uv;
-}
-
-Vertex::Vertex(vec3 position, vec3 normal, vec2 uv, vec4 color)
-{
-	this->position = position;
-	this->normal = normal;
-	this->uv = uv;
-	this->color = color;
+    return Vertex(this->position + v, this->uv, this->normal, this->color, this->material, this->extraData);
 }
 
 
+void Vertex::appendToBuffers(StdAttributeBuffers &buffers, MaterialBuffers &materialBuffers) {
+	appendToBuffers(buffers);
+	if (this->material.has_value()) {
+		materialBuffers.ambientColors.push_back(this->material->ambientColor);
+		materialBuffers.diffuseColors.push_back(this->material->diffuseColor);
+		materialBuffers.specularColors.push_back(this->material->specularColor);
+		materialBuffers.intencitiesAndShininess.push_back(this->material->compressIntencities());
+	}
+}
 
+void Vertex::appendToBuffers(StdAttributeBuffers &buffers) {
+    setIndex(buffers.positions.size());
+	buffers.positions.push_back(this->position);
+	buffers.normals.push_back(this->normal);
+	buffers.uvs.push_back(this->uv);
+	buffers.colors.push_back(this->color);
+}
 
+void Vertex::appendExtraDataToBuffer(const std::string &name, std::vector<vec4> &buffer) const {
+    if (extraData.contains(name))
+        buffer.push_back(extraData.at(name));
+}
+void Vertex::appendToList(std::vector<Vertex> &list) {
+    setIndex(list.size());
+    list.push_back(*this);
+}
+void Vertex::setAllParametricCurveExtras(float t, CurveSample &sample) {
+    setCurveParameter(t);
+    setCurvePosition(sample.getPosition());
+    setCurveNormal(sample.getNormal());
+    setCurveTangent(sample.getTangent());
+}
 
 
 
 TriangularMesh::TriangularMesh() 
 {
 	this->triangles = vector<TriangleR3>();
-
 	this->posBuff = vector<vec3>();
 	this->normBuff = vector<vec3>();
 	this->colorBuff = vector<vec4>();
@@ -732,7 +703,7 @@ void TriangularMesh::applyMap(const std::function<vec3(vec3)> &f, string customD
 }
 
 void TriangularMesh::applyMap(std::function<vec3(vec3)> f,
-	std::function<vec3(vec3, vec3)> f_normal, string customDomain) {
+    std::function<vec3(vec3, vec3)> f_normal, string customDomain) {
 }
 
 
@@ -748,17 +719,28 @@ MaterialPhong::MaterialPhong()
 	this->texture = nullptr;
 }
 
-MaterialPhong::MaterialPhong(vec4 ambient, vec4 diffuse, vec4 specular, float ambientIntensity, float diffuseIntensity, float specularIntensity, float shininess, Texture* texture)
+MaterialPhong::MaterialPhong(vec4 ambient, vec4 diffuse, vec4 specular, float ambientIntensity, float diffuseIntensity,
+                             float specularIntensity, float shininess, const shared_ptr<Texture> &texture)
 
 {
-	this->ambientColor = ambient;
-	this->diffuseColor = diffuse;
-	this->specularColor = specular;
-	this->ambientIntensity = ambientIntensity;
-	this->diffuseIntensity = diffuseIntensity;
-	this->specularIntensity = specularIntensity;
-	this->shininess = shininess;
-	this->texture = texture;
+    this->ambientColor = ambient;
+    this->diffuseColor = diffuse;
+    this->specularColor = specular;
+    this->ambientIntensity = ambientIntensity;
+    this->diffuseIntensity = diffuseIntensity;
+    this->specularIntensity = specularIntensity;
+    this->shininess = shininess;
+    this->texture = texture;
+}
+MaterialPhong::MaterialPhong(mat4 compressed, const shared_ptr<Texture> &texture) {
+    this->ambientColor = compressed[0];
+    this->diffuseColor = compressed[1];
+    this->specularColor = compressed[2];
+    this->ambientIntensity = compressed[3].x;
+    this->diffuseIntensity = compressed[3].y;
+    this->specularIntensity = compressed[3].z;
+    this->shininess = compressed[3].w;
+    this->texture = texture;
 }
 
 
@@ -767,9 +749,14 @@ bool MaterialPhong::textured()
 	return this->texture != nullptr;
 }
 
-mat4 MaterialPhong::compressToMatrix()
+mat4 MaterialPhong::compressToMatrix() const
 {
 	return mat4(ambientColor, diffuseColor, specularColor, vec4(ambientIntensity, diffuseIntensity, specularIntensity, shininess));
+}
+
+vec4 MaterialPhong::compressIntencities() const
+{
+	return vec4(ambientIntensity, diffuseIntensity, specularIntensity, shininess);
 }
 
 MaterialFamily1P::MaterialFamily1P(MaterialPhong m0, MaterialPhong m1) {
@@ -936,7 +923,7 @@ TriangleComplex TriangleComplex::operator*(Complex M) const {
 	return TriangleComplex({ vertices[0] * M, vertices[1] * M, vertices[2] * M }, vertexColors, uvs);
 }
 
-TriangleComplex TriangleComplex::operator*(Matrix<Complex, 2> M) const {
+TriangleComplex TriangleComplex::operator*(const Matrix<Complex, 2> &M) const {
 	return TriangleComplex({ M.mobius(vertices[0]), M.mobius(vertices[1]), M.mobius(vertices[2]) }, vertexColors, uvs);
 }
 
@@ -1441,7 +1428,7 @@ void SuperMesh::precomputeBuffers(bool materials, bool extra) {
 			this->stdAttributeBuffers.colors.size(), this->stdAttributeBuffers.uvs.size() };
 	}
 
-	if (materials and this->materialBuffers.ambientColors.size() == 0) {
+	if (materials && this->materialBuffers.ambientColors.size() == 0) {
 		this-> materialBuffers = {vector<vec4>(), vector<vec4>(), vector<vec4>(), vector<vec4>()};
 
 		for (auto &pair : this->triangleGroups)
@@ -1452,7 +1439,7 @@ void SuperMesh::precomputeBuffers(bool materials, bool extra) {
 				this->materialBuffers.ambientColors.push_back(material.ambientColor);
 				this->materialBuffers.diffuseColors.push_back(material.diffuseColor);
 				this->materialBuffers.specularColors.push_back(material.specularColor);
-				this->materialBuffers.intencitiesAndShininess.push_back(vec4(material.ambientIntensity, material.diffuseIntensity, material.specularIntensity, material.shininess));
+				this->materialBuffers.intencitiesAndShininess.push_back(material.compressIntencities());
 				}
 
 		}
@@ -1464,7 +1451,7 @@ void SuperMesh::precomputeBuffers(bool materials, bool extra) {
 				this->materialBuffers.ambientColors.push_back(material.ambientColor);
 				this->materialBuffers.diffuseColors.push_back(material.diffuseColor);
 				this->materialBuffers.specularColors.push_back(material.specularColor);
-				this->materialBuffers.intencitiesAndShininess.push_back(vec4(material.ambientIntensity, material.diffuseIntensity, material.specularIntensity, material.shininess));
+				this->materialBuffers.intencitiesAndShininess.push_back(material.compressIntencities());
 			}
 
 		}
@@ -1476,7 +1463,7 @@ void SuperMesh::precomputeBuffers(bool materials, bool extra) {
 				this->materialBuffers.ambientColors.push_back(material.ambientColor);
 				this->materialBuffers.diffuseColors.push_back(material.diffuseColor);
 				this->materialBuffers.specularColors.push_back(material.specularColor);
-				this->materialBuffers.intencitiesAndShininess.push_back(vec4(material.ambientIntensity, material.diffuseIntensity, material.specularIntensity, material.shininess));
+				this->materialBuffers.intencitiesAndShininess.push_back(material.compressIntencities());
 			}
 
 		}
@@ -1488,7 +1475,7 @@ void SuperMesh::precomputeBuffers(bool materials, bool extra) {
 				this->materialBuffers.ambientColors.push_back(material.ambientColor);
 				this->materialBuffers.diffuseColors.push_back(material.diffuseColor);
 				this->materialBuffers.specularColors.push_back(material.specularColor);
-				this->materialBuffers.intencitiesAndShininess.push_back(vec4(material.ambientIntensity, material.diffuseIntensity, material.specularIntensity, material.shininess));
+				this->materialBuffers.intencitiesAndShininess.push_back(material.compressIntencities());
 			}
 
 		}
@@ -1499,6 +1486,7 @@ void SuperMesh::precomputeBuffers(bool materials, bool extra) {
 					&this->stdAttributeBuffers.colors[0], &this->stdAttributeBuffers.uvs[0],
 					&this->materialBuffers.ambientColors[0], &this->materialBuffers.diffuseColors[0],
 					&this->materialBuffers.specularColors[0], &this->materialBuffers.intencitiesAndShininess[0] };
+
 		this->bufferSizes = { this->stdAttributeBuffers.positions.size(), this->stdAttributeBuffers.normals.size(),
 				this->stdAttributeBuffers.colors.size(), this->stdAttributeBuffers.uvs.size(),
 				this->materialBuffers.ambientColors.size(), this->materialBuffers.diffuseColors.size(),
@@ -1518,6 +1506,7 @@ void SuperMesh::merge(const SuperMesh &other) {
 		boundaryGroups[prefix(pair.first, prefix_rand)] = pair.second;
 	for (auto &pair : other.embedded_curves)
 		embedded_curves[prefix(pair.first, prefix_rand)] = pair.second;
+
 	for (auto &pair : other.embedded_points)
 		embedded_points[prefix(pair.first, prefix_rand)] = pair.second;
 	for (auto &pair : other.materials)
@@ -1526,8 +1515,8 @@ void SuperMesh::merge(const SuperMesh &other) {
 		extraBuff[pair.first] = pair.second;
 	for (auto &pair : other.extraBufferIndices)
 		extraBufferIndices[pair.first] = pair.second;
-	stdAttributeBuffers = {};
-	materialBuffers = {};
+	// stdAttributeBuffers = {};
+	// materialBuffers = {};
 }
 
 void SuperMesh::precomputeExtraBuffer(string name) {
@@ -1566,10 +1555,6 @@ void SuperMesh::actAtEmbeddedPlane(Meromorphism f) {
 	}
 }
 
-void SuperMesh::actOnPositionsWithCustomShift(std::function<vec3(vec3)> f, std::map<PolyGroupID, string> useShiftOfCustomDomain) {
-// todo implement for bd and curves
-
-}
 
 
 void SuperMesh::translate(vec3 v) {
@@ -1594,34 +1579,33 @@ void SuperMesh::doPerTriangle(std::function<void(TriangleR3 &)> f) {
     for (TriangleR3 &tr : pair.second)
       f(tr);
 }
-void SuperMesh::doPerTriangle(std::variant<int, std::string> id,
-                              std::function<void(TriangleR3 &)> f) {
-	if (triangleGroups.contains(id))
-		for (TriangleR3 &tr : triangleGroups[id])
-			f(tr);
-	if (boundaryGroups.contains(id))
-		for (TriangleR3 &tr : triangleGroups[id])
-			f(tr);
-	if (embedded_curves.contains(id))
-		for (TriangleR3 &tr : triangleGroups[id])
-			f(tr);
-	if (embedded_points.contains(id))
-		for (TriangleR3 &tr : triangleGroups[id])
-			f(tr);
-
+void SuperMesh::doPerTriangle(std::variant<int, std::string> id, std::function<void(TriangleR3 &)> f) {
+    if (triangleGroups.contains(id))
+        for (TriangleR3 &tr: triangleGroups[id])
+            f(tr);
+    if (boundaryGroups.contains(id))
+        for (TriangleR3 &tr: triangleGroups[id])
+            f(tr);
+    if (embedded_curves.contains(id))
+        for (TriangleR3 &tr: triangleGroups[id])
+            f(tr);
+    if (embedded_points.contains(id))
+        for (TriangleR3 &tr: triangleGroups[id])
+            f(tr);
 }
 
-void SuperMesh::actOnEmbeddedCurve(SpaceEndomorphism f) {
-	// for (auto &pair : embedded_curves)
-	// 	for (TriangleR3 &tr : pair.second) {
-	//
-	// 		for (int i = 0; i < 3; i++) {
-	// 			vec3 v = vec3(tr.getExtraData("curvePoint")[i]);
-	// 			vec3 p = f(v);
-	// 			tr.vertices[i] = p + tr.vertices[i] - v;
-	// 		}
-	// 		tr.recalculateNormal();
-	// 	}
+
+void SuperMesh::actOnEmbeddedCurve(SpaceEndomorphism f, bool buffOnly) {
+    if(!buffOnly)
+        for (auto &pair : embedded_curves)
+		    for (TriangleR3 &tr : pair.second) {
+
+			    for (int i = 0; i < 3; i++) {
+				    vec3 v = vec3(tr.getExtraData("curvePoint")[i]);
+				    vec3 p = f(v);
+				    tr.vertices[i] = p + tr.vertices[i] - v;
+			    }
+		    }
 	for (int i = 0; i < stdAttributeBuffers.positions.size(); i++) {
 		stdAttributeBuffers.normals[i] = f.df(vec3(extraBuff["curvePoint"][i]))*stdAttributeBuffers.normals[i];
 		stdAttributeBuffers.positions[i] = f(vec3(extraBuff["curvePoint"][i])) + stdAttributeBuffers.positions[i] - vec3(extraBuff["curvePoint"][i]);
@@ -1653,31 +1637,49 @@ void SuperMesh::randomizeMaterials(MaterialPhong &min, MaterialPhong &max) {
 }
 
 void SuperMesh::randomiseMaterialsDynamically(float stepMax) {
-	precomputeBuffers(true, false);
+    precomputeBuffers(true, false);
 
-	auto seed = std::chrono::system_clock::now().time_since_epoch().count();
-	std::default_random_engine generator(seed);
-	std::uniform_real_distribution<float> distribution(-stepMax, stepMax);
-	for (int i = 3; i < materialBuffers.ambientColors.size(); i+=3) {
-		float p = distribution(generator);
-		materialBuffers.ambientColors[i] += materialBuffers.ambientColors[i-1]*p;
-		materialBuffers.ambientColors[i+1] += materialBuffers.ambientColors[i-1]*p;
-		materialBuffers.ambientColors[i+2] += materialBuffers.ambientColors[i-1]*p;
-		p = distribution(generator);
-		materialBuffers.diffuseColors[i] += materialBuffers.diffuseColors[i-1]*p;
-		materialBuffers.diffuseColors[i+1] += materialBuffers.diffuseColors[i-1]*p;
-		materialBuffers.diffuseColors[i+2] += materialBuffers.diffuseColors[i-1]*p;
-		p = distribution(generator);
-		materialBuffers.specularColors[i] += materialBuffers.specularColors[i-1]*p;
-		materialBuffers.specularColors[i+1] += materialBuffers.specularColors[i-1]*p;
-		materialBuffers.specularColors[i+2] += materialBuffers.specularColors[i-1]*p;
-		p = distribution(generator);
-		materialBuffers.intencitiesAndShininess[i] += materialBuffers.intencitiesAndShininess[i-1]*p;
-		materialBuffers.intencitiesAndShininess[i+1] += materialBuffers.intencitiesAndShininess[i-1]*p;
-		materialBuffers.intencitiesAndShininess[i+2] += materialBuffers.intencitiesAndShininess[i-1]*p;
-
-	}
+    auto seed = std::chrono::system_clock::now().time_since_epoch().count();
+    std::default_random_engine generator(seed);
+    std::uniform_real_distribution<float> distribution(-stepMax, stepMax);
+    for (int i = 3; i < materialBuffers.ambientColors.size(); i += 3) {
+        float p = distribution(generator);
+        materialBuffers.ambientColors[i] += materialBuffers.ambientColors[i - 1] * p;
+        materialBuffers.ambientColors[i + 1] += materialBuffers.ambientColors[i - 1] * p;
+        materialBuffers.ambientColors[i + 2] += materialBuffers.ambientColors[i - 1] * p;
+        p = distribution(generator);
+        materialBuffers.diffuseColors[i] += materialBuffers.diffuseColors[i - 1] * p;
+        materialBuffers.diffuseColors[i + 1] += materialBuffers.diffuseColors[i - 1] * p;
+        materialBuffers.diffuseColors[i + 2] += materialBuffers.diffuseColors[i - 1] * p;
+        p = distribution(generator);
+        materialBuffers.specularColors[i] += materialBuffers.specularColors[i - 1] * p;
+        materialBuffers.specularColors[i + 1] += materialBuffers.specularColors[i - 1] * p;
+        materialBuffers.specularColors[i + 2] += materialBuffers.specularColors[i - 1] * p;
+        p = distribution(generator);
+        materialBuffers.intencitiesAndShininess[i] += materialBuffers.intencitiesAndShininess[i - 1] * p;
+        materialBuffers.intencitiesAndShininess[i + 1] += materialBuffers.intencitiesAndShininess[i - 1] * p;
+        materialBuffers.intencitiesAndShininess[i + 2] += materialBuffers.intencitiesAndShininess[i - 1] * p;
+    }
 }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 void SuperPencilPlanar::makePencil(std::function<Biholomorphism(float)> _time_operator, float t) {
 	this->_time_operator = _time_operator;
@@ -1789,290 +1791,141 @@ void Texture::calculateMipmap()
 
 
 
-
-IndexedMesh::IndexedMesh(const vector<Vertex> &vertices, const vector<array<int, 3>> &faceIndices)
-{
-	this->vertices = vertices;
-	this->faceIndices = faceIndices;
-	this->posBuff = vector<vec3>();
-	this->normBuff = vector<vec3>();
-	this->colorBuff = vector<vec4>();
-	this->uvBuff = vector<vec2>();
-}
-
-IndexedMesh::IndexedMesh(const char* filename, MeshFormat format)
-{
-	this->posBuff = vector<vec3>();
-	this->normBuff = vector<vec3>();
-	this->colorBuff = vector<vec4>();
-	this->uvBuff = vector<vec2>();
-	
-	if (format == 0) {
-		auto pos = vector<vec3>();
-		auto norms = vector<vec3>();
-		auto uvs = vector<vec2>();
-		set<Vertex> uniqueVertices = set<Vertex>();
-
-		FILE* file = fopen(filename, "r");
-		if (file == NULL) {
-			printf("Impossible to open the file !\n");
-			return;
-		}
-
-		while (1) {
-			char lineHeader[1024];
-			// read the first word of the line
-			int res = fscanf(file, "%s", lineHeader);
-			if (res == EOF)
-				break;
-
-			if (strcmp(lineHeader, "v") == 0) {
-				vec3 vertex;
-				fscanf(file, "%_f %_f %_f\n", &vertex.x, &vertex.y, &vertex.z);
-				pos.push_back(vertex);
-			}
-
-			else if (strcmp(lineHeader, "vt") == 0) {
-				vec2 uv;
-				fscanf(file, "%_f %_f\n", &uv.x, &uv.y);
-				uvs.push_back(uv);
-			}
-			else if (strcmp(lineHeader, "vn") == 0) {
-				vec3 normal;
-				fscanf(file, "%_f %_f %_f\n", &normal.x, &normal.y, &normal.z);
-				norms.push_back(normal);
-			}
-
-			else if (strcmp(lineHeader, "_f") == 0) {
-				ivec3 posIndex, uvIndex, normalIndex;
-				int matches = fscanf(file, "%d/%d/%d %d/%d/%d %d/%d/%d\n", &posIndex[0], &uvIndex[0], &normalIndex[0], &posIndex[1], &uvIndex[1], &normalIndex[1], &posIndex[2], &uvIndex[2], &normalIndex[2]);
-				if (matches != 9) {
-					printf("File can't be read by our simple parser : ( Try exporting with other options\n");
-					return;
-				}
-				posIndex -= ivec3(1, 1, 1);
-				uvIndex -= ivec3(1, 1, 1);
-				normalIndex -= ivec3(1, 1, 1);
-
-				uniqueVertices.insert(Vertex(pos.at(posIndex[0]), norms.at(normalIndex[0]), uvs.at(uvIndex[0])));
-				uniqueVertices.insert(Vertex(pos.at(posIndex[1]), norms.at(normalIndex[1]), uvs.at(uvIndex[1])));
-				uniqueVertices.insert(Vertex(pos.at(posIndex[2]), norms.at(normalIndex[2]), uvs.at(uvIndex[2])));
-			}
-		}
-
-		this->vertices = vector<Vertex>(uniqueVertices.begin(), uniqueVertices.end());
-
-		file = fopen(filename, "r");
-		this->faceIndices = vector<array<int, 3>>();
-		this->faceIndices.reserve(this->vertices.size());
-
-		while (1) {
-			char lineHeader[1024];
-			int res = fscanf(file, "%s", lineHeader);
-			if (res == EOF)
-				break;
-
-			if (strcmp(lineHeader, "v") == 0) {
-				vec3 vertex;
-				fscanf(file, "%_f %_f %_f\n", &vertex.x, &vertex.y, &vertex.z);
-
-			}
-
-			else if (strcmp(lineHeader, "vt") == 0) {
-				vec2 uv;
-				fscanf(file, "%_f %_f\n", &uv.x, &uv.y);
-
-			}
-			else if (strcmp(lineHeader, "vn") == 0) {
-				vec3 normal;
-				fscanf(file, "%_f %_f %_f\n", &normal.x, &normal.y, &normal.z);
-	
-			}
-
-			if (strcmp(lineHeader, "_f") == 0) {
-				ivec3 posIndex, uvIndex, normalIndex;
-				int matches = fscanf(file, "%d/%d/%d %d/%d/%d %d/%d/%d\n", &posIndex[0], &uvIndex[0], &normalIndex[0], &posIndex[1], &uvIndex[1], &normalIndex[1], &posIndex[2], &uvIndex[2], &normalIndex[2]);
-				if (matches != 9) {
-					printf("File can't be read by our simple parser : ( Try exporting with other options\n");
-					return;
-				}
-				posIndex -= ivec3(1, 1, 1);
-				uvIndex -= ivec3(1, 1, 1);
-				normalIndex -= ivec3(1, 1, 1);
-
-				auto inds = array<int, 3>();
-				for (int i = 0; i < 3; i++)
-					inds[i] = binSearch(this->vertices, Vertex(pos.at(posIndex[i]), norms.at(normalIndex[i]), uvs.at(uvIndex[i])));
-
-				this->faceIndices.push_back(inds);
-			}
-		}
-	}
-	else 
-	{
-		std::cout << "Format not supported" << std::endl;
-	}
-}
+//
+// IndexedMesh::IndexedMesh(const char* filename, MeshFormat format)
+// {
+// 	this->posBuff = vector<vec3>();
+// 	this->normBuff = vector<vec3>();
+// 	this->colorBuff = vector<vec4>();
+// 	this->uvBuff = vector<vec2>();
+//
+// 	if (format == 0) {
+// 		auto pos = vector<vec3>();
+// 		auto norms = vector<vec3>();
+// 		auto uvs = vector<vec2>();
+// 		set<Vertex> uniqueVertices = set<Vertex>();
+//
+// 		FILE* file = fopen(filename, "r");
+// 		if (file == NULL) {
+// 			printf("Impossible to open the file !\n");
+// 			return;
+// 		}
+//
+// 		while (1) {
+// 			char lineHeader[1024];
+// 			// read the first word of the line
+// 			int res = fscanf(file, "%s", lineHeader);
+// 			if (res == EOF)
+// 				break;
+//
+// 			if (strcmp(lineHeader, "v") == 0) {
+// 				vec3 vertex;
+// 				fscanf(file, "%_f %_f %_f\n", &vertex.x, &vertex.y, &vertex.z);
+// 				pos.push_back(vertex);
+// 			}
+//
+// 			else if (strcmp(lineHeader, "vt") == 0) {
+// 				vec2 uv;
+// 				fscanf(file, "%_f %_f\n", &uv.x, &uv.y);
+// 				uvs.push_back(uv);
+// 			}
+// 			else if (strcmp(lineHeader, "vn") == 0) {
+// 				vec3 normal;
+// 				fscanf(file, "%_f %_f %_f\n", &normal.x, &normal.y, &normal.z);
+// 				norms.push_back(normal);
+// 			}
+//
+// 			else if (strcmp(lineHeader, "_f") == 0) {
+// 				ivec3 posIndex, uvIndex, normalIndex;
+// 				int matches = fscanf(file, "%d/%d/%d %d/%d/%d %d/%d/%d\n", &posIndex[0], &uvIndex[0], &normalIndex[0], &posIndex[1], &uvIndex[1], &normalIndex[1], &posIndex[2], &uvIndex[2], &normalIndex[2]);
+// 				if (matches != 9) {
+// 					printf("File can't be read by our simple parser : ( Try exporting with other options\n");
+// 					return;
+// 				}
+// 				posIndex -= ivec3(1, 1, 1);
+// 				uvIndex -= ivec3(1, 1, 1);
+// 				normalIndex -= ivec3(1, 1, 1);
+//
+// 				uniqueVertices.insert(Vertex(pos.at(posIndex[0]), norms.at(normalIndex[0]), uvs.at(uvIndex[0])));
+// 				uniqueVertices.insert(Vertex(pos.at(posIndex[1]), norms.at(normalIndex[1]), uvs.at(uvIndex[1])));
+// 				uniqueVertices.insert(Vertex(pos.at(posIndex[2]), norms.at(normalIndex[2]), uvs.at(uvIndex[2])));
+// 			}
+// 		}
+//
+// 		this->vertices = vector<Vertex>(uniqueVertices.begin(), uniqueVertices.end());
+//
+// 		file = fopen(filename, "r");
+// 		this->faceIndices = vector<array<int, 3>>();
+// 		this->faceIndices.reserve(this->vertices.size());
+//
+// 		while (1) {
+// 			char lineHeader[1024];
+// 			int res = fscanf(file, "%s", lineHeader);
+// 			if (res == EOF)
+// 				break;
+//
+// 			if (strcmp(lineHeader, "v") == 0) {
+// 				vec3 vertex;
+// 				fscanf(file, "%_f %_f %_f\n", &vertex.x, &vertex.y, &vertex.z);
+//
+// 			}
+//
+// 			else if (strcmp(lineHeader, "vt") == 0) {
+// 				vec2 uv;
+// 				fscanf(file, "%_f %_f\n", &uv.x, &uv.y);
+//
+// 			}
+// 			else if (strcmp(lineHeader, "vn") == 0) {
+// 				vec3 normal;
+// 				fscanf(file, "%_f %_f %_f\n", &normal.x, &normal.y, &normal.z);
+//
+// 			}
+//
+// 			if (strcmp(lineHeader, "_f") == 0) {
+// 				ivec3 posIndex, uvIndex, normalIndex;
+// 				int matches = fscanf(file, "%d/%d/%d %d/%d/%d %d/%d/%d\n", &posIndex[0], &uvIndex[0], &normalIndex[0], &posIndex[1], &uvIndex[1], &normalIndex[1], &posIndex[2], &uvIndex[2], &normalIndex[2]);
+// 				if (matches != 9) {
+// 					printf("File can't be read by our simple parser : ( Try exporting with other options\n");
+// 					return;
+// 				}
+// 				posIndex -= ivec3(1, 1, 1);
+// 				uvIndex -= ivec3(1, 1, 1);
+// 				normalIndex -= ivec3(1, 1, 1);
+//
+// 				auto inds = array<int, 3>();
+// 				for (int i = 0; i < 3; i++)
+// 					inds[i] = binSearch(this->vertices, Vertex(pos.at(posIndex[i]), norms.at(normalIndex[i]), uvs.at(uvIndex[i])));
+//
+// 				this->faceIndices.push_back(inds);
+// 			}
+// 		}
+// 	}
+// 	else
+// 	{
+// 		std::cout << "Format not supported" << std::endl;
+// 	}
+// }
 
 
-IndexedMesh::operator TriangularMesh()
-{
-	vector<TriangleR3> trs = vector<TriangleR3>();
-	trs.reserve(faceIndices.size());
-	for (auto face : faceIndices)
-	{
-		vector<vec3> posVec = { vertices[face[0]].position, vertices[face[1]].position, vertices[face[2]].position };
-		vector<vec3> normsVec = { vertices[face[0]].normal, vertices[face[1]].normal, vertices[face[2]].normal };
-		vector<vec4> colorsVec = { vertices[face[0]].color, vertices[face[1]].color, vertices[face[2]].color };
-		vector<vec2> uvsVec = { vertices[face[0]].uv, vertices[face[1]].uv, vertices[face[2]].uv };
-		trs.emplace_back(posVec, normsVec, colorsVec, uvsVec);
-	}
-	return TriangularMesh(trs);
-}
 
-vector<vec3> IndexedMesh::calculatePositionBuffer()
-{
-	vector<vec3> pos = vector<vec3>();
-	pos.reserve(faceIndices.size() * 3);
-	for (auto face : faceIndices)
-	{
-		pos.push_back(vertices[face[0]].position);
-		pos.push_back(vertices[face[1]].position);
-		pos.push_back(vertices[face[2]].position);
-	}
-	return pos;
-}
 
-vector<vec3> IndexedMesh::calculateNormalBuffer()
-{
-	vector<vec3> norms = vector<vec3>();
-	norms.reserve(faceIndices.size() * 3);
-	for (auto face : faceIndices)
-	{
-		norms.push_back(vertices[face[0]].normal);
-		norms.push_back(vertices[face[1]].normal);
-		norms.push_back(vertices[face[2]].normal);
-	}
-	return norms;
-}
-
-vector<vec4> IndexedMesh::calculateColorBuffer()
-{
-	vector<vec4> colors = vector<vec4>();
-	colors.reserve(faceIndices.size() * 3);
-	for (auto face : faceIndices)
-	{
-		colors.push_back(vertices[face[0]].color);
-		colors.push_back(vertices[face[1]].color);
-		colors.push_back(vertices[face[2]].color);
-	}
-	return colors;
-}
-
-vector<vec2> IndexedMesh::calculateUVBuffer()
-{
-	vector<vec2> colors = vector<vec2>();
-	colors.reserve(faceIndices.size() * 3);
-	for (auto face : faceIndices)
-	{
-		colors.push_back(vertices[face[0]].uv);
-		colors.push_back(vertices[face[1]].uv);
-		colors.push_back(vertices[face[2]].uv);
-	}
-	return colors;
-}
-
-void IndexedMesh::precomputeBuffers()
-{
-	this->posBuff = calculatePositionBuffer();
-	this->normBuff = calculateNormalBuffer();
-	this->colorBuff = calculateColorBuffer();
-	this->uvBuff = calculateUVBuffer();
-}
-
-void IndexedMesh::translate(vec3 v)
-{
-	for (int i = 0; i < vertices.size(); i++)
-		vertices[i].position += v;
-
-}
-
-void IndexedMesh::transform(mat4 M)
-{
-	for (int i = 0; i < vertices.size(); i++)
-	{
-		vertices[i].position = vec3(M * vec4(vertices[i].position, 1.0f));
-		vertices[i].normal = vec3(M * vec4(vertices[i].normal, 0.0f));
-	}
-}
-
-IndexedMesh IndexedMesh::operator+(vec3 v) const {
-    IndexedMesh newMesh = IndexedMesh(this->vertices, this->faceIndices);
-	newMesh.translate(v);
-	return newMesh;
-}
-
-IndexedMesh IndexedMesh::operator*(mat4 v) const {
-    IndexedMesh newMesh = IndexedMesh(this->vertices, this->faceIndices);
-	newMesh.transform(v);
-	return newMesh;
-}
-
-IndexedMesh IndexedMesh::operator*(mat3 M) const {
-	IndexedMesh newMesh = IndexedMesh(this->vertices, this->faceIndices);
-
-    for (int i = 0; i < vertices.size(); i++)
-    {
-		newMesh.vertices[i].position = vec3(M * vertices[i].position);
-		newMesh.vertices[i].normal = vec3(M * vertices[i].normal);
-	}
-	return newMesh;
-}
-
-void IndexedMesh::randomiseVertexColors()
-{
-	auto seed = std::chrono::system_clock::now().time_since_epoch().count();
-	std::default_random_engine generator(seed);
-	std::uniform_real_distribution<double> distribution(0.0, 1.0);
-	auto generatedPositions = set<float>();
-	for (int i = 0; i < vertices.size(); i++)
-	{
-		float posHash = vertices[i].position.x*1000000 + vertices[i].position.y*1000 + vertices[i].position.z;
-		if (generatedPositions.contains(posHash)) {
-			for (int j = 0; j < i; j++) {
-				if (vertices[j].position == vertices[i].position)
-					vertices[i].color = vertices[j].color;
-			}
-		}
-		else {
-			vertices[i].color = vec4(distribution(generator), distribution(generator), distribution(generator), 1.0f);
-			generatedPositions.insert(posHash);
-		}
-	}
-}
-
-void IndexedMesh::flipNormals()
-{
-	for (int i = 0; i < vertices.size(); i++)
-		vertices[i].normal = -vertices[i].normal;
-}
 
 
 SuperCurve::SuperCurve(const SmoothParametricCurve &curve, const std::function<float(float)> &width,
-                       const std::function<MaterialPhong(float)> &material, float t0, float t1, int segments, bool periodic) {
-	samples = sampleCurve(curve, width, material, t0, t1, segments, periodic);
-	this->t0 = t0;
-	this->t1 = t1;
+                       const std::function<MaterialPhong(float)> &material, int segments,
+                       float t0, float t1, bool periodic) {
+    samples = sampleCurve(curve, width, material, t0, t1, segments, periodic);
+    this->t0 = t0;
+    this->t1 = t1;
+    id = curve.getID();
 }
-
-SuperCurve::SuperCurve(SmoothParametricCurve curve, float width, MaterialPhong material, float t0, float t1, int nSegments, bool periodic) {
-	samples = sampleCurve(curve, width, material, t0, t1, nSegments, periodic);
-	this->t0 = t0;
-	this->t1 = t1;
+SuperCurve::SuperCurve(const SmoothParametricCurve &curve, float width, MaterialPhong material, int nSegments, float t0, float t1, bool periodic) {
+    samples = sampleCurve(curve, width, material, t0, t1, nSegments, periodic);
+    this->t0 = t0;
+    this->t1 = t1;
+    id = curve.getID();
 }
-
-SuperMesh SuperCurve::mesh(int radialSegments) const {
-
+SuperMesh SuperCurve::generateMeshTube(int radialSegments) const {
 	SuperMesh mesh = SuperMesh();
 	 for (int i = 0; i < samples.size()-1; i++) {
 		for (int j = 0; j < radialSegments; j++) {
@@ -2095,8 +1948,17 @@ SuperMesh SuperCurve::mesh(int radialSegments) const {
 			float t_a = t0 + (t1 - t0) * i / samples.size();
 			float t_b = t_a + (t1 - t0) / samples.size();
 
+		    vec3 na = samples[i].getNormal();
+		    vec3 nb = samples[i + 1].getNormal();
+		    vec3 ta = samples[i].getTangent();
+		    vec3 tb = samples[i + 1].getTangent();
+
 			tr1.addExtraData("curvePoint", {vec4(pos_a, t_a), vec4(pos_a, t_a), vec4(pos_b, t_b)});
 			tr2.addExtraData("curvePoint", {vec4(pos_b, t_b), vec4(pos_a, t_a), vec4(pos_b, t_b)});
+		    tr1.addExtraData("curveNormal", {vec4(na, cos(theta0)), vec4(na, cos(theta1)), vec4(nb, cos(theta0))});
+		    tr2.addExtraData("curveNormal", {vec4(nb, cos(theta0)), vec4(na, cos(theta1)), vec4(nb, cos(theta1))});
+		    tr1.addExtraData("curveTangent", {vec4(ta, theta0), vec4(ta, theta1), vec4(tb, theta0)});
+		    tr2.addExtraData("curveTangent", {vec4(tb, theta0), vec4(ta, theta1), vec4(tb, theta1)});
 
 			mesh.addEmbeddedCurve({tr1, tr2}, samples[i].getMaterial());
 		}
@@ -2104,16 +1966,25 @@ SuperMesh SuperCurve::mesh(int radialSegments) const {
 	return mesh;
 }
 
-std::shared_ptr<SuperMesh> SuperCurve::associateMesh(int radialSegments) {
-	SuperMesh mesh = this->mesh(radialSegments);
-	_mesh = std::make_shared<SuperMesh>(mesh);
-	return _mesh;
+void SuperCurve::generateMesh(int radialSegments, CurveEmbeddingTypeID type) {
+    embeddingType = type;
+    switch (type) {
+        case TUBE:
+            _mesh = std::make_shared<SuperMesh>(generateMeshTube(radialSegments));
+        break;
+        case PLANAR:
+            throw NotImplementedVariantError("PLANAR", "curve embedding as SuperMesh");
+        case NOT_EMBEDDED:
+            throw IllegalVariantError("NOT_EMBEDDED", "embedding type", "generating embedding as SuperMesh");
+        default:
+            throw UnknownVariantError(embeddingTypeName(type), "curve embedding as SuperMesh");
+
+    }
 }
 
 void SuperCurve::transformMeshByAmbientMap(const SpaceEndomorphism &f) {
-	if (_mesh != nullptr) {
+	if (_mesh != nullptr)
 		_mesh->actOnEmbeddedCurve(f);
-	}
 }
 
 
@@ -2124,15 +1995,16 @@ void SuperCurve::transformMeshByAmbientMap(const SpaceEndomorphism &f) {
                                      std::function<MaterialPhong(float)> material, float t0, float t1, int n, bool periodic) {
 	vector<CurveSample> samples = vector<CurveSample>();
 	samples.reserve(n);
-	for (int i = 0; i < n; i++) {
+	for (int i = 0; i <= n; i++) {
 		float t = t0 + (t1 - t0) * i / n;
 		vec3 pos = curve(t);
 		vec3 tangent = curve.tangent(t);
 		vec3 normal = curve.normal(t);
 		float w = width(t);
+
 		MaterialPhong mat = material(t);
-		samples.push_back(CurveSample(pos, normal, tangent, mat, w));
-		samples.at(i).addExtra(t);
+		samples.emplace_back(pos, normal, tangent, mat, w);
+		samples.at(i).updateExtra(t);
 	}
 	if (periodic) {
 		vec3 pos = curve(t0);
@@ -2141,24 +2013,58 @@ void SuperCurve::transformMeshByAmbientMap(const SpaceEndomorphism &f) {
 		float w = width(t0);
 		MaterialPhong mat = material(t0);
 		samples.push_back(CurveSample(pos, normal, tangent, mat, w));
-		samples.at(n).addExtra(t0);
+		samples.at(n).updateExtra(t0);
 	}
 	return samples;
 }
 inline CurveSample::CurveSample(vec3 position, vec3 normal, vec3 tangent, MaterialPhong material, float width) {
-	this->position = position;
-	this->normal = normal;
-	this->tangent = tangent;
-	this->material = material;
-	this->width = width;
+    this->position = position;
+    this->normal = normal;
+    this->tangent = tangent;
+    this->material = material.compressToMatrix();
+    this->width = width;
+}
+CurveSample::CurveSample(const CurveSample &other) :
+    position(other.position), normal(other.normal), tangent(other.tangent), material(other.material), width(other.width),
+    extraInfo(other.extraInfo) {}
+
+CurveSample::CurveSample(CurveSample &&other) noexcept :
+    position(std::move(other.position)), normal(std::move(other.normal)), tangent(std::move(other.tangent)),
+    material(std::move(other.material)), width(other.width), extraInfo(std::move(other.extraInfo)) {}
+
+CurveSample &CurveSample::operator=(const CurveSample &other) {
+    if (this == &other)
+        return *this;
+    position = other.position;
+    normal = other.normal;
+    tangent = other.tangent;
+    material = other.material;
+    width = other.width;
+    extraInfo = other.extraInfo;
+    return *this;
 }
 
-vector<CurveSample> sampleCurve(SmoothParametricCurve curve, float width, MaterialPhong material, float t0,
-	float t1, int n, bool periodic) {
-	return sampleCurve(curve, [width](float t) {return width; }, [material](float t) {return material; }, t0, t1, n, periodic);
+CurveSample &CurveSample::operator=(CurveSample &&other) noexcept {
+    if (this == &other)
+        return *this;
+    position = std::move(other.position);
+    normal = std::move(other.normal);
+    tangent = std::move(other.tangent);
+    material = std::move(other.material);
+    width = other.width;
+    extraInfo = std::move(other.extraInfo);
+    return *this;
 }
 
+vector<CurveSample> sampleCurve(SmoothParametricCurve curve, float width,
+                                MaterialPhong material, float t0, float t1,
+                                int n, bool periodic) {
+  return sampleCurve(
+      curve, [w=width](float t) { return w; },
+      [m=material](float t) { return m; }, t0, t1, n, periodic);
+}
 
+// SuperPencilCurve::SuperPencilCurve(const SuperCurve &c) : SuperPencilCurve(c){}
 
 void SuperPencilCurve::addAmbientDeformation(End2P _ambient_operator, float t){
 	this->_ambient_operator = make_unique<End2P>(_ambient_operator);
@@ -2166,7 +2072,7 @@ void SuperPencilCurve::addAmbientDeformation(End2P _ambient_operator, float t){
 }
 
 void SuperPencilCurve::addLocalDeformation(End1P _local_operator, float t) {
-	this->_ambient_operator = make_unique<End2P>([_local_operator](float t1, float t2) {return _local_operator(t2-t1); });
+	this->_ambient_operator = make_unique<End2P>([op=_local_operator](float t1, float t2) {return op(t2-t1); });
 	this->_t = t;
 }
 
@@ -2180,24 +2086,28 @@ void SuperPencilCurve::addDeformationAlongVectorField(VectorFieldR3 vectorField,
 }
 
 void SuperPencilCurve::addPencil(std::function<SmoothParametricCurve(float)> family, float t) {
-	_parametric_operator = make_unique<std::function<SmoothParametricCurve(float)>>(family);
-	_t = t;
+    _parametric_operator = make_unique<std::function<SmoothParametricCurve(float)>>(family);
+    _t = t;
 }
 
-void SuperCurve::updateCurveMeshOnly(const SmoothParametricCurve &new_curve) {
-	if (_mesh != nullptr) {
-		// _mesh->updateCurve(new_curve);
-	}
+void SuperCurve::precomputeBuffers() {
+    if (_mesh != nullptr) {
+        _mesh->precomputeBuffers();
+        _mesh->precomputeExtraBuffer("curvePoint");
+        _mesh->precomputeExtraBuffer("curveNormal");
+        _mesh->precomputeExtraBuffer("curveTangent");
+    }
+    else
+        throw std::logic_error("Curve has no associated mesh containing the buffers.");
 }
 
-void SuperCurve::updateCurve(const SmoothParametricCurve &new_curve) {
-	for (auto &sample : samples) {
-		float t = sample.readExtraLast();
-		sample.updatePosition(new_curve(t));
-		sample.updateTangent(new_curve.tangent(t));
-		sample.updateNormal(new_curve.normal(t));
-	}
-	updateCurveMeshOnly(new_curve);
+
+std::function<void(float)> SuperCurve::pencilDeformerWeak(std::function<SmoothParametricCurve(float)> pencil) {
+    return [c=pencil, this](float t) {
+        auto curva = c(t);
+        curva.setID(this->id);
+        // updateCurve(curva);
+    };
 }
 
 float SuperPencilCurve::time() const {
@@ -2209,18 +2119,8 @@ void SuperPencilCurve::transformMesh(float new_t) {
 		transformMeshByAmbientMap((*_ambient_operator)(_t, new_t));
 	if (_parametric_operator != nullptr) {
 		auto slice = (*_parametric_operator)(new_t);
-		updateCurve(slice);
+		// updateCurve(slice);
 	}
 	_t = new_t;
 }
-
-
-
-
-
-
-
-
-
-
 

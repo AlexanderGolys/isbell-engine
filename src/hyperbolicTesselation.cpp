@@ -99,7 +99,7 @@ int main(void)
 	tesselation.transformInPlace(Biholomorphism::linear(I, 1));
 
 	// auto homotopy = mobiusHomotopy(Mob(1, I/2, -I/2, 1));
-	// homotopy = compose(homotopy, Biholomorphism::linear(I, 0));
+	// homotopy = precompose(homotopy, Biholomorphism::linear(I, 0));
 
 
 

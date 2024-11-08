@@ -13,7 +13,6 @@ layout (location = 7) in vec4 intencities;
 out vec4 v_color;
 out vec3 v_position;
 out vec3 v_normal;
-out vec2 v_complexPlaneCoords;
 out vec4 v_ambientColor;
 out vec4 v_diffuseColor;
 out vec4 v_specularColor;
@@ -33,7 +32,7 @@ vec3 normalise(vec3 v)
 
 void main()
 {
-	v_normal = normalise(normal);
+	v_normal = normal;
 	gl_Position = mvp * vec4(position, 1.0);
 	v_position = position;
 	v_color = color;
