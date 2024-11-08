@@ -1,5 +1,4 @@
-#ifndef GEOMETRY_HPP
-#define GEOMETRY_HPP
+#pragma once
 
 #include <vector>
 #include <array>
@@ -9,7 +8,7 @@
 #include <glm/glm.hpp>
 #include <string>
 
-#include "func.hpp"
+#include "surfaces.hpp"
 #include <gl/glew.h>
 
 #define End1P std::function<SpaceEndomorphism(float)>
@@ -513,7 +512,7 @@ public:
 
 class SuperPencilPlanar : public SuperMesh{
 	float _t=0;
-	std::function<Biholomorphism(float)> _time_operator = [](float t){return Id;};
+	std::function<Biholomorphism(float)> _time_operator = [](float t){return Biholomorphism::linear(ONE, ZERO);};
 
 public:
 	using SuperMesh::SuperMesh;
@@ -635,6 +634,4 @@ public:
 
 
 
-
-#endif
 

@@ -1,7 +1,6 @@
-#ifndef MACROS_HPP
-#define MACROS_HPP
-
+#pragma once
 #include <variant>
+#include <glm/glm.hpp>
 
 #define PI 3.14159265359f
 #define TAU 6.28318530718f
@@ -54,4 +53,3 @@ const glm::vec2 PLANE_ORIGIN = glm::vec2(0, 0);
 
 #define REDPINK_PALLETTE COLOR_PALETTE10(glm::ivec3(243, 219, 234), glm::ivec3(236, 197, 221), glm::ivec3(204, 154, 181), glm::ivec3(179, 116, 149), glm::ivec3(153, 77, 116), glm::ivec3(128, 39, 84), glm::ivec3(102, 0, 51), glm::ivec3(85, 6, 45), glm::ivec3(67, 12, 39), glm::ivec3(52, 9, 30))
 
-#endif

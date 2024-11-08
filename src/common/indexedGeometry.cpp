@@ -149,6 +149,8 @@ WeakSuperMesh::WeakSuperMesh(const vector<Vertex> &hardVertices, const vector<iv
 void WeakSuperMesh::addNewPolygroup(const vector<Vertex> &hardVertices, const vector<ivec3> &faceIndices, PolyGroupID id) {
     vertices[id] = vector<BufferedVertex>();
     triangles[id] = vector<IndexedTriangle>();
+    vertices[id].reserve(hardVertices.size());
+    triangles[id].reserve(faceIndices.size());
 
     for (const Vertex &v: hardVertices)
         vertices[id].emplace_back(*boss, v);
@@ -157,6 +159,57 @@ void WeakSuperMesh::addNewPolygroup(const vector<Vertex> &hardVertices, const ve
         triangles[id].emplace_back(ind, vertices[id], *boss);
 }
 
+
+void WeakSuperMesh::addUniformSurface(SmoothParametricSurface surf, int tRes, int uRes, std::variant<int, std::string> id, const MaterialPhong &material) {
+    vector<Vertex> hardVertices = {};
+    vector<ivec3> faceIndices = {};
+    hardVertices.reserve(tRes * uRes + uRes + tRes + 1);
+    faceIndices.reserve(2 * (tRes) * (uRes));
+    for (int i = 0; i < tRes; i++) {
+        for (int j = 0; j < uRes; j++) {
+            float t_ = 1.f * i / (tRes-1);
+            float u_ = 1.f * j / (uRes-1);
+            float t = lerp(surf.tMin(), surf.tMax(), t_);
+            float u = lerp(surf.uMin(), surf.uMax(), u_);
+            hardVertices.emplace_back(surf(t, u), vec2(t_, u_), surf.normal(t, u), BLACK,  material);
+        }
+    }
+
+    for (int i = 0; i < tRes-1; i++) {
+        for (int j = 0; j < uRes-1; j++) {
+            int i0 = j + i*uRes;
+            int i1 = j + (i+1)*uRes;
+            int i2 = j+1 + i*uRes;
+            int i3 = j+1 + (i+1)*uRes;
+            faceIndices.emplace_back(i0, i1, i3);
+            faceIndices.emplace_back(i0, i2, i3);
+        }
+    }
+    // if (surf.isPeriodicT()) {
+    //     for (int j = 1; j < uRes; j++) {
+    //         int i3 = j;
+    //         int i2 = j-1;
+    //         int i1 = j + (tRes-1)*uRes;
+    //         int i0 = j  + (tRes-1)*uRes - 1;
+    //         faceIndices.emplace_back(i0, i1, i3);
+    //         faceIndices.emplace_back(i0, i2, i3);
+    //     }
+    // }
+
+    // if (surf.isPeriodicU()) {
+    //     for (int i = 0; i < tRes; i++) {
+    //         int i3 = (i+1) * uRes;
+    //         int i2 = i * uRes;
+    //         int i1 = (i+1) * (uRes-1);
+    //         int i0 =  i* (uRes-1);
+    //         faceIndices.emplace_back(i0, i1, i3);
+    //         faceIndices.emplace_back(i0, i2, i3);
+    //     }
+
+
+
+    addNewPolygroup(hardVertices, faceIndices, id);
+}
 
 
 void BufferManager::insertValueToSingleBuffer(CommonBufferType type, void *valueAddress) {
@@ -212,6 +265,11 @@ void BufferManager::reserveSpace(int targetSize) {
     normals->reserve(targetSize);
     uvs->reserve(targetSize);
     colors->reserve(targetSize);
+    extra1->reserve(targetSize);
+    extra2->reserve(targetSize);
+    extra3->reserve(targetSize);
+    extra4->reserve(targetSize);
+
     if (isActive(MATERIAL1))
         mat1->reserve(targetSize);
     if (isActive(MATERIAL2))

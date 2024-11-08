@@ -1,5 +1,4 @@
-#ifndef INDEXED_HPP
-#define INDEXED_HPP
+#pragma once
 
 #include "geometry.hpp"
 
@@ -91,12 +90,16 @@ public:
   WeakSuperMesh();
   WeakSuperMesh(const std::vector<Vertex> &hardVertices, const std::vector<glm::ivec3> &faceIndices, PolyGroupID id);
   void addNewPolygroup(const std::vector<Vertex> &hardVertices, const std::vector<glm::ivec3> &faceIndices, PolyGroupID id);
+  void addUniformSurface(SmoothParametricSurface surf, int tRes, int uRes, std::variant<int, std::string> id,
+                         const MaterialPhong &material);
+  void addUniformSurface(SmoothParametricSurface, int tRes, int uRes, PolyGroupID id);
 
   void* bufferIndexLocation() const { return boss->firstElementAddress(INDEX); }
   size_t bufferIndexSize() const { return boss->bufferSize(INDEX); }
   int bufferIndexLength() const { return boss->bufferLength(INDEX); }
   const void* getBufferLocation(CommonBufferType type) const { return boss->firstElementAddress(type); }
   unsigned int getBufferLength(CommonBufferType type) const { return boss->bufferLength(type); }
+
+
 };
 
-#endif

@@ -1,8 +1,24 @@
-#ifndef SPECIFIC_HPP
-#define SPECIFIC_HPP
+#pragma once
 
 #include "indexedGeometry.hpp"
 
+
+const Biholomorphism EXP = Biholomorphism::_EXP();
+const Biholomorphism LOG = Biholomorphism::_LOG();
+const Biholomorphism Id = Biholomorphism::linear(ONE, ZERO);
+const Biholomorphism ADD1 = Biholomorphism::linear(ONE, ONE);
+const Biholomorphism SQUARE = Biholomorphism::power(2);
+const Biholomorphism SQRT = Biholomorphism::power(.5f);
+const Biholomorphism CAYLEY = Biholomorphism::mobius(Matrix<Complex, 2>(ONE, -I, ONE, I));
+const VectorFieldR3 dabbaX = VectorFieldR3::constant(glm::vec3(1, 0, 0));
+const VectorFieldR3 dabbaY = VectorFieldR3::constant(glm::vec3(0, 1, 0));
+const VectorFieldR3 dabbaZ = VectorFieldR3::constant(glm::vec3(0, 0, 1));
+
+#define Mob Matrix<Complex, 2>
+
+const Mob CayleyTransform = Mob(ONE, -I, ONE, I);
+const Mob CayleyTransformInv = ~Mob(ONE, -I, ONE, I);
+const Mob Imob = Mob(1, ZERO, ZERO, 1);
 
 
 class BoxMesh : public TriangularMesh {
@@ -126,9 +142,8 @@ WeakSuperMesh singleQuadShadeSmooth(glm::vec3 outer1, glm::vec3 inner1, glm::vec
 
 WeakSuperMesh singleQuadShadeFlat(glm::vec3 outer1, glm::vec3 inner1, glm::vec3 inner2, glm::vec3 outer2, MaterialPhong &material, PolyGroupID id);
 WeakSuperMesh singleQuadShadeFlat(glm::vec3 outer1, glm::vec3 inner1, glm::vec3 inner2, glm::vec3 outer2, MaterialPhong &material1, MaterialPhong &material2, PolyGroupID id);
-
-
-
 WeakSuperMesh singleQuad(glm::vec3 outer1, glm::vec3 inner1, glm::vec3 inner2, glm::vec3 outer2, MaterialPhong &materiaInner1, MaterialPhong &materialInner2, MaterialPhong &materialOuter1, MaterialPhong &materialOuter2, bool shadeSmooth, PolyGroupID id);
 
-#endif
+
+
+SmoothParametricSurface sphere(float r, glm::vec3 center=ORIGIN, float eps=.01);

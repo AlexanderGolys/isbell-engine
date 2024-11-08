@@ -245,12 +245,10 @@ SmoothParametricCurve::SmoothParametricCurve(std::function<vec3(float)> f, std::
     id = randomCurvaID();
 }
 
-AffinePlane SmoothParametricCurve::osculatingPlane(float t) const {
-	return AffinePlane(binormal(t), dot(binormal(t), _f(t)));
-}
+
 
 SmoothParametricCurve SmoothParametricCurve::constCurve(vec3 v) {
-	return SmoothParametricCurve([v](float t) {return v; },inf, inf, false);
+	return SmoothParametricCurve([v](float t) {return v; },-10, 10, false, 0.01);
 }
 
 float SmoothParametricCurve::length(float t0, float t1, int n) const {
@@ -267,9 +265,9 @@ SmoothParametricCurve SmoothParametricCurve::precompose(SpaceEndomorphism g_) co
                                   id, this->t0, this->t1, this->periodic, this->eps);
 }
 void SmoothParametricCurve::precomposeInPlace(SpaceEndomorphism g) {
-    this->_f = [f = this->_f, g](float t) {return g(f(t)); };
+    this->_f = [f = this->_f, gg=g](float t) {return gg(f(t)); };
     this->_df = [f = this->_f, d = this->_df, g](float t) {return g(f(t)) * d(t); };
-    this->_ddf = [f = this->_f, d = this->_df, dd = this->_ddf, g](float t) {return g(f(t)) * dd(t) + g.df(f(t)) * d(t); };
+    this->_ddf = [f = this->_f, d = this->_df, dd = this->_ddf, gg=g](float t) {return gg(f(t)) * dd(t) + gg.df(f(t)) * d(t); };
 }
 
 
@@ -327,142 +325,6 @@ AffineLine AffineLine::operator+(vec3 v) const {
 	return AffineLine(p0 + v, this->v);
 }
 
-SmoothParametricSurface::SmoothParametricSurface(std::function<vec3(float, float)> f,
-	std::function<vec3(float, float)> df_t, std::function<vec3(float, float)> df_u, float t0, float t1,
-	float u0, float u1, bool t_periodic, bool u_periodic) {
-	_f = f;
-	_df_t = df_t;
-	_df_u = df_u;
-	this->t0 = t0;
-	this->t1 = t1;
-	this->u0 = u0;
-	this->u1 = u1;
-	this->t_periodic = t_periodic;
-	this->u_periodic = u_periodic;
-}
-
-SmoothParametricSurface::SmoothParametricSurface(std::function<vec3(float, float)> f, float t0, float t1, float u0,
-	float u1, bool t_periodic, bool u_periodic, float epsilon) {
-	_f = f;
-	_df_t = [f, epsilon](float t, float u) {
-		return (f(t + epsilon, u) - f(t - epsilon, u)) / (2 * epsilon);
-	};
-	_df_u = [f, epsilon](float t, float u) {
-		return (f(t, u + epsilon) - f(t, u - epsilon)) / (2 * epsilon);
-	};
-	this->t0 = t0;
-	this->t1 = t1;
-	this->u0 = u0;
-	this->u1 = u1;
-	this->t_periodic = t_periodic;
-	this->u_periodic = u_periodic;
-}
-
-SmoothParametricSurface::SmoothParametricSurface(std::function<SmoothParametricCurve(float)> pencil, float t0, float t1,
-	float curve_t0, float curve_t1, bool periodic, bool curve_periodic, float eps) {
-	_f = [pencil](float t, float u) {return pencil(u)(t); };
-	_df_t = [pencil](float t, float u) {return pencil(u).derivative(t); };
-	_df_u = [pencil, eps](float t, float u) {return (pencil(u+eps)(t) - pencil(u - eps)(t))/(2*eps); };
-	this->u0 = t0;
-	this->u1 = t1;
-	this->t0 = curve_t0;
-	this->t1 = curve_t1;
-	u_periodic = periodic;
-	t_periodic = curve_periodic;
-}
-
-vec3 SmoothParametricSurface::operator()(float t, float s) const {
-	return _f(t, s);
-}
-
-SmoothImplicitSurface::SmoothImplicitSurface(SmoothRealFunctionR3 F) {
-	_F = F;
-}
-
-float SmoothImplicitSurface::operator()(vec3 p) const {
-	return _F(p);
-}
-
-AffinePlane::AffinePlane(vec3 n, float d) :
-SmoothImplicitSurface(SmoothRealFunctionR3(
-	[n, d](vec3 p) {return dot(p, n) - d; }, [n](vec3 p) {return n; })) {
-	this->n = normalise(n);
-	this->d = d;
-	auto tangents = orthogonalComplementBasis(n);
-	this->v1 = tangents.first;
-	this->v2 = tangents.second;
-	this->pivot = this->n * d;
-}
-
-AffinePlane::AffinePlane(vec3 pivot, vec3 v1, vec3 v2):
-SmoothImplicitSurface(SmoothRealFunctionR3(
-	[v1, v2, pivot](vec3 p) {return dot(p, normalise(cross(v1, v2))) - dot(pivot, normalise(cross(v1, v2))); },
-	[v1, v2](vec3 p) {return normalise(cross(v1, v2)); })) {
-	this->pivot = pivot;
-	this->v1 = v1;
-	this->v2 = v2;
-	this->n = normalise(cross(v1, v2));
-	this->d = dot(pivot, n);
-}
-
-
-AffinePlane AffinePlane::spanOfPts(vec3 p0, vec3 p1, vec3 p2) {
-	return AffinePlane(cross(p1-p0, p2-p0), dot(p0, cross(p1-p0, p2-p0)));
-}
-
-AffineLine AffinePlane::intersection(AffinePlane &p) const {
-	vec3 v = cross(n, p.normal());
-	float denominator = norm2(n)*norm2(p.normal()) - dot(n, p.normal())*dot(n, p.normal());
-	vec3 pivot = n*(d*norm2(p.normal()) - p.getD()*dot(n, p.normal()))/denominator +
-				p.normal()*(p.getD()*norm2(n) - d*dot(n, p.normal()))/denominator;
-	return AffineLine(pivot, v);
-}
-
-float AffinePlane::distance(vec3 p) const {
-	return (*this)(p);
-}
-
-vec3 AffinePlane::orthogonalProjection(vec3 p) const {
-	return p - (*this)(p) * n;
-}
-
-bool AffinePlane::contains(vec3 p, float eps) const {
-	return abs(distance(p)) < eps;
-}
-
-vec3 AffinePlane::normal() const {
-	return n;
-}
-
-float AffinePlane::getD() const {
-	return d;
-}
-
-std::pair<vec3, float> AffinePlane::equationCoefs() const {
-	return std::pair<vec3, float>(n, d);
-}
-
-vec3 AffinePlane::intersection(AffineLine &l) const {
-	return l.pivot() + dot(pivot - l.pivot(), n) / dot(l.direction(), n) * l.direction();
-}
-
-SmoothRealFunctionR3 AffinePlane::distanceField() const {
-	return SmoothRealFunctionR3([this](vec3 p) {return distance(p); });
-}
-
-AffinePlane::operator SmoothImplicitSurface() const {
-	return SmoothImplicitSurface(SmoothRealFunctionR3(
-		[this](vec3 p) {return distance(p); },
-		[this](vec3 p) {return n; }));
-}
-
-mat3 AffinePlane::pivotAndBasis() const {
-	return mat3(pivot, v1, v2);
-}
-
-vec2 AffinePlane::localCoordinates(vec3 p) const {
-	return vec2(dot(p - pivot, v1), dot(p - pivot, v2));
-}
 
 float AffineLine::distance(vec3 p) const {
 	return norm(cross(p - p0, v)) / norm(v);
@@ -831,22 +693,11 @@ SpaceEndomorphism::SpaceEndomorphism(std::function<vec3(vec3)> f, float epsilon)
     };
 }
 
-vec3 SpaceEndomorphism::directional_derivative(vec3 x, vec3 v) const {
-	return _df(x) * v;
-}
 
-vec3 SpaceEndomorphism::operator()(vec3 v) const {
-	return _f(v);
-}
 
 SpaceEndomorphism SpaceEndomorphism::compose(SpaceEndomorphism g) const {
 	return SpaceEndomorphism([f=_f, g](vec3 v) {return f(g(v)); },
 			[d=_df, g](vec3 x) {return d(g(x)) * g.df(x); });
-}
-
-SpaceEndomorphism SpaceEndomorphism::linear(mat3 A) {
-	return SpaceEndomorphism([A](vec3 v) {return A * v; },
-		[A](vec3 x) {return A; });
 }
 
 SpaceEndomorphism SpaceEndomorphism::translation(vec3 v) {

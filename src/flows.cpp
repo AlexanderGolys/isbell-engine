@@ -35,19 +35,19 @@ map<string, GLuint> initAttributeBuffers() {
 void setAttributes(map<string, GLuint> attributeBufferInfo, Model3D* model)
 {
 	glBindBuffer(GL_ARRAY_BUFFER, attributeBufferInfo["position"]);
-	vector<vec3> vertex_buffer_data = model->mesh.posBuff;
+	vector<vec3> vertex_buffer_data = model->mesh->posBuff;
 	glBufferData(GL_ARRAY_BUFFER, vertex_buffer_data.size() * sizeof(vec3), &vertex_buffer_data[0], GL_STATIC_DRAW);
 
 	glBindBuffer(GL_ARRAY_BUFFER, attributeBufferInfo["normal"]);
-	vector<vec3> normal_buffer_data = model->mesh.normBuff;
+	vector<vec3> normal_buffer_data = model->mesh->normBuff;
 	glBufferData(GL_ARRAY_BUFFER, normal_buffer_data.size() * sizeof(vec3), &normal_buffer_data[0], GL_STATIC_DRAW);
 
 	glBindBuffer(GL_ARRAY_BUFFER, attributeBufferInfo["color"]);
-	vector<vec4> color_buffer_data = model->mesh.colorBuff;
+	vector<vec4> color_buffer_data = model->mesh->colorBuff;
 	glBufferData(GL_ARRAY_BUFFER, color_buffer_data.size() * sizeof(vec4), &color_buffer_data[0], GL_STATIC_DRAW);
 
 	glBindBuffer(GL_ARRAY_BUFFER, attributeBufferInfo["uv"]);
-	vector<vec2> uv_buffer_data = model->mesh.uvBuff;
+	vector<vec2> uv_buffer_data = model->mesh->uvBuff;
 	glBufferData(GL_ARRAY_BUFFER, uv_buffer_data.size() * sizeof(vec2), &uv_buffer_data[0], GL_STATIC_DRAW);
 
 	glEnableVertexAttribArray(0);
@@ -78,7 +78,7 @@ void setPerObjectUniforms(Shader* shader, Model3D* model, vec3 camPosition, floa
 	mat4 mvp = generateMVP(camPosition, vec3(.5, .5, 0), vec3(0, 0, 1), PI / 4.f, screenRatio, 0.1f, 100.0f, meshTransform);
 	shader->setUniform("mvp", mvp);
 
-	mat4 materialMat = model->material.compressToMatrix();
+	mat4 materialMat = model->material->compressToMatrix();
 	shader->setUniform("material", materialMat);
 }
 
@@ -204,7 +204,7 @@ int main(void)
 	flowShader.use();
 	flowShader.setTextureSampler(&texture1, 0);
 	setFlowUniforms(flowSpeedCoeff, 1.0f, (vec4(0, 1, 0, 1)), flowShader);
-	glDrawArrays(GL_TRIANGLES, 0, models.at(0).mesh.triangles.size() * 3);
+	glDrawArrays(GL_TRIANGLES, 0, models.at(0).mesh->triangles.size() * 3);
 
 
 	float lastFrameTime = glfwGetTime();

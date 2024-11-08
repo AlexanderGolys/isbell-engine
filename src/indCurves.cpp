@@ -51,7 +51,7 @@ int main(void)
     Renderer renderer = Renderer(.05f, vec4(.08f, .0809f, 0.1385f, 1.0f));
     renderer.initMainWindow(UHD, "flows");
 
-	shared_ptr<SmoothParametricCurve> camCurve = make_shared<SmoothParametricCurve>([](float t) { return vec3(cos(t*1)*3, sin(t*1)*3, 2); }, .01f);
+	shared_ptr<SmoothParametricCurve> camCurve = make_shared<SmoothParametricCurve>([](float t) { return vec3(cos(t*1)*3, sin(t*1)*3, 2); }, -1, 1, true, .01);
     shared_ptr<Camera> camera = make_shared<Camera>(camCurve, vec3(0.0, 0.0, 0), vec3(0, 0, 1), PI/4);
     auto lights = vector({std::make_shared<PointLight>(vec3(-0.4, -1, 3), vec4(.95, .79, .861, 1), 15.0f),
                           std::make_shared<PointLight>(vec3(0, 3, -0.1), vec4(.9498769, .69864, .694764, 1), 15.0f),
@@ -66,7 +66,16 @@ int main(void)
             "C:\\Users\\PC\\Desktop\\ogl-master\\src\\shaders\\hyperbolicAut.vert",
             "C:\\Users\\PC\\Desktop\\ogl-master\\src\\shaders\\hyperbolicAut.frag"));
 
-	step->setWeakSuperMesh(make_shared<WeakSuperMesh>(singleQuadShadeFlat(vec3(-1, 0, .13), vec3(0, -.9, -.1), vec3(0, 1, -.4), vec3(.8, 0, .16), m1, m2, PolyGroupID(1))));
+    auto supeer = make_shared<WeakSuperMesh>(singleQuadShadeFlat(vec3(-.1, 0, .13), vec3(0, -.09, -.1), vec3(0, 1, -.4), vec3(.08, 0, .16), m1, m2, PolyGroupID(1)));
+
+    SmoothParametricSurface sph = sphere(.9);
+    supeer->addUniformSurface(sph, 30, 21, PolyGroupID(222), m3);
+
+    auto curva = [](float t) { return SmoothParametricSurface(sphericalSpiral(.18-.08*sin(t*2), 1.5f, TAU*3, DEFAULT_POLY_GROUP_ID), w, .01); };
+
+    supeer->addUniformSurface(curva(0), 10, 100, PolyGroupID(2139), m1);
+
+    step->setWeakSuperMesh(supeer);
 
     renderer.addRenderingStep(step);
     renderer.setCamera(camera);

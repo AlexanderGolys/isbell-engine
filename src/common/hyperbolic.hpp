@@ -1,12 +1,7 @@
-#ifndef HYPERBOLIC_HPP
-#define HYPERBOLIC_HPP
+#pragma once
 
 #include "specific.hpp"
-#define Mob Matrix<Complex, 2>
 
-const Mob CayleyTransform = Mob(ONE, -I, ONE, I);
-const Mob CayleyTransformInv = ~Mob(ONE, -I, ONE, I);
-const Mob Imob = Mob(1, ZERO, ZERO, 1);
 Complex planeToDisk(Complex z);
 Complex diskToPlane(Complex z);
 
@@ -206,5 +201,3 @@ public:
 };
 
 
-
-#endif

@@ -1,5 +1,4 @@
-#ifndef FUNC_HPP
-#define FUNC_HPP
+# pragma once
 
 #include "mat.hpp"
 #include <functional>
@@ -10,12 +9,20 @@
 #include <string>
 
 
-#include "func.hpp"
 
 #define endC std::function<Complex(Complex)>
-
-
-
+#define Fooo std::function<float(float)>
+#define Foo12 std::function<glm::vec2(float)>
+#define Foo13 std::function<glm::vec3(float)>
+#define Foo33 std::function<glm::vec3(glm::vec3)>
+#define Foo31 std::function<float(glm::vec3)>
+#define Foo21 std::function<float(glm::vec2)>
+#define Foo22 std::function<glm::vec2(glm::vec2)>
+#define Foo32 std::function<glm::vec2(glm::vec3)>
+#define Foo23 std::function<glm::vec3(glm::vec2)>
+#define Foo113 std::function<glm::vec3(float, float)>
+#define pencilCurv std::function<SmoothParametricCurve(float)>
+#define pencilSurf std::function<SmoothParametricSurface(float)>
 
 inline std::string polyGroupIDtoString(PolyGroupID id) { return std::holds_alternative<int>(id) ? std::to_string(std::get<int>(id)) : std::get<std::string>(id); }
 inline PolyGroupID prefix(const PolyGroupID &id, std::string prefix) { return PolyGroupID(prefix + polyGroupIDtoString(id)); }
@@ -50,28 +57,28 @@ enum Regularity {
 typedef glm::vec2(*func_pt_R22)(glm::vec2);
 typedef glm::vec2(*func_pt_R12)(float);
 
-std::function<float(float)> derivativeOperator(std::function<float(float)> f, float epsilon=0.01);
-std::function<glm::vec2(float)> derivativeOperator(std::function<glm::vec2(float)> f, float epsilon=0.01);
-std::function<glm::vec3(float)> derivativeOperator(std::function<glm::vec3(float)> f, float epsilon=0.01);
+Fooo derivativeOperator(Fooo f, float epsilon=0.01);
+Foo12 derivativeOperator(Foo12 f, float epsilon=0.01);
+Foo13 derivativeOperator(Foo13 f, float epsilon=0.01);
 
 
 class VectorFieldR2 {
 public:
-	std::function<glm::vec2(glm::vec2)> field;
+	Foo22 field;
 	VectorFieldR2();
-	explicit VectorFieldR2(std::function<glm::vec2(glm::vec2)> field);
+	explicit VectorFieldR2(Foo22 field);
 	glm::vec2 operator()(glm::vec2 v) const;
 };
 
 class VectorFieldR3;
 
 class SmoothRealFunctionR3 {
-	std::function<float(glm::vec3)> _f;
-	std::function<glm::vec3(glm::vec3)> _df;
+	Foo31 _f;
+	Foo33 _df;
 public:
 	SmoothRealFunctionR3();
-	SmoothRealFunctionR3(std::function<float(glm::vec3)> f, std::function<glm::vec3(glm::vec3)> df);
-	SmoothRealFunctionR3(std::function<float(glm::vec3)> f, float epsilon=0.01);
+	SmoothRealFunctionR3(Foo31 f, Foo33 df);
+	SmoothRealFunctionR3(Foo31 f, float epsilon=0.01);
 	float operator()(glm::vec3 v) const;
 	glm::vec3 df(glm::vec3 v) const;
 	SmoothRealFunctionR3 operator+(SmoothRealFunctionR3 g) const;
@@ -89,34 +96,39 @@ public:
 	static SmoothRealFunctionR3 projection(int i);
 };
 
-
+// R3 -> R3
 class SpaceEndomorphism {
 protected:
-	std::function<glm::vec3(glm::vec3)> _f;
+	Foo33 _f;
 	std::function<glm::mat3(glm::vec3)> _df;
 public:
   SpaceEndomorphism(const SpaceEndomorphism &other) : _f(other._f), _df(other._df) {}
   SpaceEndomorphism(SpaceEndomorphism &&other) noexcept : _f(std::move(other._f)), _df(std::move(other._df)) {}
+  SpaceEndomorphism(Foo33 f, std::function<glm::mat3(glm::vec3)> df);
+  SpaceEndomorphism(Foo33 f, float epsilon=0.01);
   SpaceEndomorphism &operator=(const SpaceEndomorphism &other);
   SpaceEndomorphism &operator=(SpaceEndomorphism &&other) noexcept;
-	SpaceEndomorphism(std::function<glm::vec3(glm::vec3)> f, std::function<glm::mat3(glm::vec3)> df);
-	SpaceEndomorphism(std::function<glm::vec3(glm::vec3)> f, float epsilon=0.01);
-	glm::vec3 directional_derivative(glm::vec3 x, glm::vec3 v) const;
+  SpaceEndomorphism(glm::mat3 A) : _f([A](glm::vec3 x) { return A * x; }), _df([A](glm::vec3 x) { return A; }) {}
+  SpaceEndomorphism(glm::mat4 A) : _f([A](glm::vec3 x) { return glm::vec3(A * glm::vec4(x, 1)); }), _df([A](glm::vec3 x) { return glm::mat3(A); }) {}
+
+	glm::vec3 directional_derivative(glm::vec3 x, glm::vec3 v) const { return _df(x) * v; }
+    glm::vec3 dfdx(glm::vec3 x, glm::vec3 v) const { return directional_derivative(x, v); }
 	glm::mat3 df(glm::vec3 x) const { return _df(x); }
-	glm::vec3 operator()(glm::vec3 v) const;
+	glm::vec3 operator()(glm::vec3 x) const { return _f(x); }
 	SpaceEndomorphism compose(SpaceEndomorphism g) const;
 
-	static SpaceEndomorphism linear(glm::mat3 A);
+	static SpaceEndomorphism linear(glm::mat3 A) { return SpaceEndomorphism(A); }
 	static SpaceEndomorphism translation(glm::vec3 v);
 	static SpaceEndomorphism scaling(float x, float y, float z);
 	static SpaceEndomorphism affine(glm::mat3 A, glm::vec3 v);
 };
 
+// R3 -> R3
 class VectorFieldR3 {
-	std::function<glm::vec3(glm::vec3)> _field;
+	Foo33 _field;
 public:
 	VectorFieldR3();
-	explicit VectorFieldR3(std::function<glm::vec3(glm::vec3)> field);
+	explicit VectorFieldR3(Foo33 field);
 	explicit VectorFieldR3(SpaceEndomorphism f);
 	VectorFieldR3(VectorFieldR2 f);
 	glm::vec3 operator()(glm::vec3 v) const;
@@ -132,20 +144,17 @@ public:
 	static VectorFieldR3 rotational();
 	static VectorFieldR3 wirlpool();
 	static VectorFieldR3 gradient(SmoothRealFunctionR3 f);
-
 };
 
-const VectorFieldR3 dabbaX = VectorFieldR3::constant(glm::vec3(1, 0, 0));
-const VectorFieldR3 dabbaY = VectorFieldR3::constant(glm::vec3(0, 1, 0));
-const VectorFieldR3 dabbaZ = VectorFieldR3::constant(glm::vec3(0, 0, 1));
 
 
 
+// aut(R3)
 class SpaceAutomorphism : public SpaceEndomorphism {
-	std::function<glm::vec3(glm::vec3)> _f_inv;
+	Foo33 _f_inv;
 public:
-	SpaceAutomorphism(std::function<glm::vec3(glm::vec3)> f, std::function<glm::vec3(glm::vec3)> f_inv, std::function<glm::mat3(glm::vec3)> df);
-	SpaceAutomorphism(std::function<glm::vec3(glm::vec3)> f, std::function<glm::vec3(glm::vec3)> f_inv, float epsilon=0.01);
+	SpaceAutomorphism(Foo33 f, Foo33 f_inv, std::function<glm::mat3(glm::vec3)> df);
+	SpaceAutomorphism(Foo33 f, Foo33 f_inv, float epsilon=0.01);
 
 	glm::vec3 inv(glm::vec3 v) const;
 	SpaceAutomorphism operator~() const;
@@ -163,25 +172,29 @@ public:
 
 class AffinePlane;
 
+// R -> R3
 class SmoothParametricCurve {
 protected:
-  std::function<glm::vec3(float)> _f;
-	std::function<glm::vec3(float)> _df;
-	std::function<glm::vec3(float)> _ddf;
-	std::function<std::function<glm::vec3(float)>(int)> _der_higher =
+  Foo13 _f;
+	Foo13 _df;
+	Foo13 _ddf;
+	std::function<Foo13(int)> _der_higher =
 		[this](int n){return n == 1 ? _df : n == 2 ? _ddf : derivativeOperator(_der_higher(n-1), this->eps);};
 	float eps;
-    RP1 t0 = std::nullopt;
-    RP1 t1 = std::nullopt;
+    RP1 t0 = 0;
+    RP1 t1 = TAU;
     bool periodic;
     PolyGroupID id;
 public:
-    SmoothParametricCurve(std::function<glm::vec3(float)> f, std::function<glm::vec3(float)> df, std::function<glm::vec3(float)> ddf, PolyGroupID id,  RP1 t0=0, RP1 t1=TAU, bool periodic=true, float epsilon=0.01);
-    SmoothParametricCurve(std::function<glm::vec3(float)> f, std::function<glm::vec3(float)> df, std::function<glm::vec3(float)> ddf, RP1 t0=0, RP1 t1=TAU, bool periodic=true, float epsilon=0.01);
-	SmoothParametricCurve(std::function<glm::vec3(float)> f, std::function<glm::vec3(float)> df, RP1 t0 = 0, RP1 t1 = TAU, bool periodic = true, float epsilon = 0.01);
-  SmoothParametricCurve(std::function<glm::vec3(float)> f, std::function<glm::vec3(float)> df, PolyGroupID id, RP1 t0 = 0, RP1 t1 = TAU, bool periodic = true, float epsilon = 0.01);
+    SmoothParametricCurve(Foo13 f, Foo13 df, Foo13 ddf, PolyGroupID id,  RP1 t0=0, RP1 t1=TAU, bool periodic=true, float epsilon=0.01);
+    SmoothParametricCurve(Foo13 f, Foo13 df, Foo13 ddf, RP1 t0=0, RP1 t1=TAU, bool periodic=true, float epsilon=0.01);
+	SmoothParametricCurve(Foo13 f, Foo13 df, RP1 t0 = 0, RP1 t1 = TAU, bool periodic = true, float epsilon = 0.01);
+    SmoothParametricCurve(Foo13 f, Foo13 df, PolyGroupID id, RP1 t0 = 0, RP1 t1 = TAU, bool periodic = true, float epsilon = 0.01);
 
-  SmoothParametricCurve(const SmoothParametricCurve &other);
+    SmoothParametricCurve(Foo13 f, RP1 t0 = 0, RP1 t1 = TAU, bool periodic = true, float epsilon = 0.01) :
+    SmoothParametricCurve(f, derivativeOperator(f, epsilon), t0, t1, periodic, epsilon) {}
+
+    SmoothParametricCurve(const SmoothParametricCurve &other);
     SmoothParametricCurve(SmoothParametricCurve &&other) noexcept;
     SmoothParametricCurve &operator=(const SmoothParametricCurve &other);
     SmoothParametricCurve &operator=(SmoothParametricCurve &&other) noexcept;
@@ -190,13 +203,14 @@ public:
     void setID(PolyGroupID id) { this->id = id; }
     void copyID (const SmoothParametricCurve &other) { this->id = other.id; }
 
-    explicit SmoothParametricCurve(std::function<glm::vec3(float)> f, RP1 t0=0, RP1 t1=TAU, bool periodic=true, PolyGroupID id = PolyGroupID(2137), float epsilon=0.01)
+    explicit SmoothParametricCurve(Foo13 f, RP1 t0=0, RP1 t1=TAU, bool periodic=true, PolyGroupID id = PolyGroupID(2137), float epsilon=0.01)
                           : SmoothParametricCurve(f, derivativeOperator(f, epsilon), id, t0, t1, periodic, epsilon) {}
-	SmoothParametricCurve(std::function<glm::vec3(float)> f, std::function<std::function<glm::vec3(float)>(int)> derivativeOperator, RP1 t0=0, RP1 t1=TAU, bool periodic=true, float epsilon=0.01);
-	SmoothParametricCurve(std::function<glm::vec3(float)> f, std::vector<std::function<glm::vec3(float)>> derivatives, RP1 t0=0, RP1 t1=TAU, bool periodic=true, float epsilon=0.01);
+	SmoothParametricCurve(Foo13 f, std::function<Foo13(int)> derivativeOperator, RP1 t0=0, RP1 t1=TAU, bool periodic=true, float epsilon=0.01);
+	SmoothParametricCurve(Foo13 f, std::vector<Foo13> derivatives, RP1 t0=0, RP1 t1=TAU, bool periodic=true, float epsilon=0.01);
 	glm::vec3 derivative(float t) const { return _df(t); }
 	glm::vec3 df(float t) const { return derivative(t); }
     glm::vec3 operator()(float t) const;
+  glm::vec2 bounds() const { return glm::vec2(t0.value_or(-1), t1.value_or(1)); }
 
 	glm::vec3 second_derivative(float t) const { return _ddf(t); }
 	glm::vec3 higher_derivative(float t, int n) const { return _der_higher(n)(t); }
@@ -212,6 +226,9 @@ public:
 	float torsion(float t) const;
 	glm::vec3 curvature_vector(float t) const;
 	AffinePlane osculatingPlane(float t) const;
+    float speed(float t) const { return norm(df(t));}
+  bool isPeriodic() const { return periodic; }
+
 
 	static SmoothParametricCurve constCurve(glm::vec3 v);
 };
@@ -235,55 +252,6 @@ public:
 	AffineLine operator+(glm::vec3 v) const;
 };
 
-class SmoothParametricSurface {
-	std::function <glm::vec3(float, float)> _f;
-	std::function <glm::vec3(float, float)> _df_t;
-	std::function <glm::vec3(float, float)> _df_u;
-	float t0=NAN, t1=NAN, u0=NAN, u1=NAN;
-	bool t_periodic, u_periodic;
-public:
-	SmoothParametricSurface(std::function <glm::vec3(float, float)> f, std::function <glm::vec3(float, float)> df_t,
-		std::function <glm::vec3(float, float)> df_u, float t0=0, float t1=PI, float u0=0, float u1=PI,
-		bool t_periodic=true, bool u_periodic=true);
-
-	SmoothParametricSurface(std::function <glm::vec3(float, float)> f, float t0=0, float t1=PI, float u0=0, float u1=PI,
-		bool t_periodic=true, bool u_periodic=true, float epsilon=.01);
-
-	SmoothParametricSurface(std::function<SmoothParametricCurve(float)> pencil, float t0=0, float t1=PI, float curve_t0=0,
-	                        float curve_t1=PI, bool periodic=false, bool curve_periodic=true, float eps=.01);
-
-
-	glm::vec3 operator()(float t, float s) const;
-};
-
-class SmoothImplicitSurface {
-	SmoothRealFunctionR3 _F;
-public:
-	SmoothImplicitSurface(SmoothRealFunctionR3 F);
-	float operator()(glm::vec3 p) const;
-};
-
-class AffinePlane : public SmoothImplicitSurface {
-	glm::vec3 n;
-	float d; // (n, x) - d = 0
-	glm::vec3 pivot, v1, v2;
-public:
-	AffinePlane(glm::vec3 n, float d);
-	AffinePlane(glm::vec3 pivot, glm::vec3 v1, glm::vec3 v2);
-	static AffinePlane spanOfPts(glm::vec3 p0, glm::vec3 p1, glm::vec3 p2);
-	AffineLine intersection(AffinePlane &p) const;
-	float distance (glm::vec3 p) const;
-	glm::vec3 orthogonalProjection(glm::vec3 p) const;
-	bool contains(glm::vec3 p, float eps=1e-6) const;
-	glm::vec3 normal() const;
-	float getD() const;
-	std::pair<glm::vec3, float> equationCoefs() const;
-	glm::vec3 intersection(AffineLine &l) const;
-	SmoothRealFunctionR3 distanceField() const;
-	operator SmoothImplicitSurface() const;
-	glm::mat3 pivotAndBasis() const;
-	glm::vec2 localCoordinates(glm::vec3 p) const;
-};
 
 
 
@@ -292,19 +260,19 @@ public:
 
 
 class SmoothParametricPlaneCurve {
-    std::function<glm::vec2(float)> _f;
-    std::function<glm::vec2(float)> _df;
-    std::function<glm::vec2(float)> _ddf;
-    std::function<std::function<glm::vec2(float)>(int)> _der_higher = [this](int n)
+    Foo12 _f;
+    Foo12 _df;
+    Foo12 _ddf;
+    std::function<Foo12(int)> _der_higher = [this](int n)
             {return n == 0 ? _f : n == 1 ? _df : n == 2 ? _ddf : derivativeOperator(_der_higher(n-1), this->eps);};
     float eps = 0.01;
     RP1 t0 = std::nullopt;
     RP1 t1 = std::nullopt;
     bool periodic = true;
 public:
-	explicit SmoothParametricPlaneCurve(const std::function<glm::vec2(float)>& curve, float t0=0, float t1=TAU, bool period=true, float epsilon=0.01);
-    SmoothParametricPlaneCurve(std::function<glm::vec2(float)> f,const std::function<glm::vec2(float)>& df, float t0=0, float t1=TAU, bool period=true, float epsilon=0.01);
-    SmoothParametricPlaneCurve(std::function<glm::vec2(float)> f, std::function<glm::vec2(float)> df, std::function<glm::vec2(float)> ddf,
+	explicit SmoothParametricPlaneCurve(const Foo12& curve, float t0=0, float t1=TAU, bool period=true, float epsilon=0.01);
+    SmoothParametricPlaneCurve(Foo12 f,const Foo12& df, float t0=0, float t1=TAU, bool period=true, float epsilon=0.01);
+    SmoothParametricPlaneCurve(Foo12 f, Foo12 df, Foo12 ddf,
                                float t0 = 0, float t1 = TAU, bool period = true, float epsilon = 0.01);
     SmoothParametricPlaneCurve(const SmoothParametricPlaneCurve &other);
     SmoothParametricPlaneCurve(SmoothParametricPlaneCurve &&other) noexcept;
@@ -322,6 +290,8 @@ public:
 	std::vector<glm::vec2> sample(int n) const {return sample(t0.value_or(-1), t1.value_or(1), n);}
 	std::vector<glm::vec3> adjacency_lines_buffer(float t0, float t1, int n, float z=0) const;
     SmoothParametricCurve embedding(glm::vec3 v1=e1, glm::vec3 v2=e2, glm::vec3 pivot=ORIGIN) const;
+    glm::vec2 bounds() const { return glm::vec2(t0.value_or(-1), t1.value_or(1)); }
+  bool isPeriodic() const { return periodic; }
 };
 
 class ComplexCurve // TODO: make this shit modern
@@ -350,11 +320,11 @@ public:
 
 class PlaneSmoothEndomorphism {
 protected:
-	std::shared_ptr<std::function<glm::vec2(glm::vec2)>> _f;
+	std::shared_ptr<Foo22> _f;
 	std::shared_ptr<std::function<glm::mat2(glm::vec2)>> _df;
 public:
 	PlaneSmoothEndomorphism();
-	PlaneSmoothEndomorphism(std::shared_ptr<std::function<glm::vec2(glm::vec2)>> f, std::shared_ptr<std::function<glm::mat2(glm::vec2)>> _df);
+	PlaneSmoothEndomorphism(std::shared_ptr<Foo22> f, std::shared_ptr<std::function<glm::mat2(glm::vec2)>> _df);
 	glm::vec2 operator()(glm::vec2 x) const;
 	glm::vec2 df(glm::vec2 x, glm::vec2 v) const;
 	glm::mat2 df(glm::vec2 x) const;
@@ -362,9 +332,9 @@ public:
 
 class PlaneAutomorphism : public PlaneSmoothEndomorphism {
 protected:
-	std::shared_ptr<std::function<glm::vec2(glm::vec2)>> _f_inv;
+	std::shared_ptr<Foo22> _f_inv;
 public:
-	PlaneAutomorphism(std::shared_ptr<std::function<glm::vec2(glm::vec2)>> f, std::shared_ptr<std::function<glm::mat2(glm::vec2)>> _df, std::shared_ptr<std::function<glm::vec2(glm::vec2)>> f_inv);
+	PlaneAutomorphism(std::shared_ptr<Foo22> f, std::shared_ptr<std::function<glm::mat2(glm::vec2)>> _df, std::shared_ptr<Foo22> f_inv);
 	glm::vec2 f_inv(glm::vec2 x) const;
 	PlaneAutomorphism operator~() const;
 	PlaneAutomorphism inv() const { return ~(*this); }
@@ -414,13 +384,7 @@ public:
 
 };
 
-const Biholomorphism EXP = Biholomorphism::_EXP();
-const Biholomorphism LOG = Biholomorphism::_LOG();
-const Biholomorphism Id = Biholomorphism::linear(ONE, ZERO);
-const Biholomorphism ADD1 = Biholomorphism::linear(ONE, ONE);
-const Biholomorphism SQUARE = Biholomorphism::power(2);
-const Biholomorphism SQRT = Biholomorphism::power(.5f);
-const Biholomorphism CAYLEY = Biholomorphism::mobius(Matrix<Complex, 2>(ONE, -I, ONE, I));
+
 
 inline Biholomorphism Biholomorphism::operator*(Complex a) const {
 	return Biholomorphism::linear(a, 0).compose(*this);
@@ -459,5 +423,3 @@ void printVector(std::vector<T> v, std::string title="vector")
 
 
 
-
-#endif

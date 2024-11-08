@@ -520,18 +520,21 @@ WeakSuperMesh singleQuadShadeFlat(glm::vec3 outer1, glm::vec3 inner1, glm::vec3 
     return WeakSuperMesh(nodes, {ivec3(0, 1, 2), ivec3(3, 4, 5)}, id);
 }
 
-WeakSuperMesh singleQuadShadeFlat(glm::vec3 outer1, glm::vec3 inner1, glm::vec3 inner2, glm::vec3 outer2, MaterialPhong &material1, MaterialPhong &material2,
-                                  std::variant<int, std::string> id) {
+WeakSuperMesh singleQuadShadeFlat(glm::vec3 outer1, glm::vec3 inner1, glm::vec3 inner2, glm::vec3 outer2, MaterialPhong &material1,
+                                  MaterialPhong &material2, std::variant<int, std::string> id) {
     vec3 n1 = normalize(cross(outer1 - inner1, outer1 - inner2));
     vec3 n2 = normalize(cross(outer2 - inner2, outer2 - inner1));
 
-    vector nodes = {Vertex(outer1, vec2(0, 0), n1, BLACK, material1),
-                    Vertex(inner1, vec2(0, 1), n1, BLACK, material1),
-                    Vertex(inner2, vec2(1, 1), n1, BLACK, material1),
-                    Vertex(inner1, vec2(0, 1), n2, BLACK, material2),
-                    Vertex(inner2, vec2(1, 1), n2, BLACK, material2),
-                    Vertex(outer2, vec2(1, 1), n2, BLACK, material2)};
+    vector nodes = {Vertex(outer1, vec2(0, 0), n1, BLACK, material1), Vertex(inner1, vec2(0, 1), n1, BLACK, material1),
+                    Vertex(inner2, vec2(1, 1), n1, BLACK, material1), Vertex(inner1, vec2(0, 1), n2, BLACK, material2),
+                    Vertex(inner2, vec2(1, 1), n2, BLACK, material2), Vertex(outer2, vec2(1, 1), n2, BLACK, material2)};
     return WeakSuperMesh(nodes, {ivec3(0, 1, 2), ivec3(3, 4, 5)}, id);
+}
+
+SmoothParametricSurface sphere(float r, glm::vec3 center, float eps) {
+    return SmoothParametricSurface([r, center](float t, float u) {
+        return center + vec3(cos(t) * sin(u), sin(t) * sin(u), cos(u))*r;
+    }, vec2(0, TAU*1.1), vec2(0, PI), true, false, .01);
 }
 
 

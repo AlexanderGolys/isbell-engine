@@ -1,8 +1,6 @@
-#ifndef MAT_HPP
-#define MAT_HPP
+# pragma once
 
 
-#include <glm/glm.hpp>
 #include <string>
 #include <vector>
 #include <iostream>
@@ -11,6 +9,7 @@
 #include <algorithm>
 #include "macros.hpp"
 #include "metaUtils.hpp"
+#include "glmUX.hpp"
 
 
 
@@ -368,7 +367,7 @@ Complex intersectLines(Complex p1, Complex p2, Complex q1, Complex q2);
 template<typename V>
 V lerp(V a, V b, float t)
 {
-	return b * t + a * (1 - t);
+	return b * t + a * (1.f - t);
 }
 
 template<typename V>
@@ -648,5 +647,3 @@ std::vector<float> vecToVecHeHe(vec v) {
 	return res;
 };
 
-
-#endif
