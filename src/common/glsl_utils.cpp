@@ -326,6 +326,29 @@ int lengthOfGLSLType(GLSLType type)
 	return -1;
 }
 
+GLenum primitiveGLSLType(GLSLType type)
+{
+    switch (type)
+    {
+    case FLOAT:
+    case VEC2:
+    case VEC3:
+    case VEC4:
+    case MAT2:
+    case MAT3:
+    case MAT4:
+        return GL_FLOAT;
+    case INT:
+    case SAMPLER1D:
+    case SAMPLER2D:
+    case SAMPLER3D:
+        return GL_INT;
+
+    }
+    std::cout << "Error: unknown GLSLType" << std::endl;
+    return -1;
+}
+
 void error_callback(int error, const char *description)
 {
 	fprintf(stderr, "Error: %s\n", description);
@@ -360,6 +383,8 @@ mat4 generateMVP(vec3 camPosition, vec3 camLookAt, vec3 upVector, float fov, flo
 
 Window::Window(int width, int height, const char *title)
 {
+    if (!glfwInit())
+        exit(2137);
 	glfwWindowHint(GLFW_SAMPLES, 4);
 	glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 3);
 	glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 3);
@@ -374,7 +399,7 @@ Window::Window(int width, int height, const char *title)
 		exit(2136);
 	}
 	glfwMakeContextCurrent(this->window);
-	// glfwGetFramebufferSize(window, &width, &height);
+	glfwGetFramebufferSize(window, &width, &height);
 }
 
 Window::Window(Resolution resolution, const char *title)
@@ -409,12 +434,7 @@ Window::~Window()
 	destroy();
 }
 
-void Window::bindToFramebuffer()
-{
-	glBindFramebuffer(GL_DRAW_FRAMEBUFFER, 0);
-	glViewport(0, 0, this->width, this->height);
-	 glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-}
+
 
 void Window::renderFramebufferToScreen()
 {
@@ -476,12 +496,14 @@ bool Window::isOpen()
 	return !glfwWindowShouldClose(this->window);
 }
 
-int Window::destroy()
-{
-	glfwDestroyWindow(this->window);
-	glfwTerminate();
-	exit(EXIT_SUCCESS);
-	return 0;
+int Window::destroy() {
+    glfwDestroyWindow(this->window);
+    glfwTerminate();
+    exit(EXIT_SUCCESS);
+    return 0;
+}
+void Window::initViewport() {
+    glViewport(0, 0, this->width, this->height);
 }
 
 Shader::Shader(const char *vertex_file_path, const char *fragment_file_path)
@@ -761,6 +783,9 @@ void Attribute::initBuffer()
 	GLuint buffer;
 	glGenBuffers(1, &buffer);
 	this->bufferAddress = buffer;
+    // glBufferData(GL_ARRAY_BUFFER, bufferLength * this->size, firstElementAdress, GL_STATIC_DRAW);
+
+
 }
 
 void Attribute::enable()
@@ -779,18 +804,25 @@ void Attribute::disable()
 
 void Attribute::load(const void *firstElementAdress, int bufferLength)
 {
-	if (!bufferInitialized)
-		initBuffer();
+	if (!bufferInitialized) {
+	    initBuffer();
+	    glBindBuffer(GL_ARRAY_BUFFER, this->bufferAddress);
+	    glBufferData(GL_ARRAY_BUFFER, bufferLength * this->size, firstElementAdress, GL_STATIC_DRAW);
+	    return;
+	}
 	glBindBuffer(GL_ARRAY_BUFFER, this->bufferAddress);
-	glBufferData(GL_ARRAY_BUFFER, bufferLength * this->size, firstElementAdress, GL_STATIC_DRAW);
+     glBufferData(GL_ARRAY_BUFFER, bufferLength * this->size, firstElementAdress, GL_STATIC_DRAW);
+    // void *ptr = glMapBuffer(GL_ARRAY_BUFFER, GL_WRITE_ONLY);
+    // memcpy(ptr, firstElementAdress, bufferLength * this->size);
+    // glUnmapBuffer(GL_ARRAY_BUFFER);
+
 }
 
-void Attribute::freeBuffer()
-{
-	glDeleteBuffers(1, &this->bufferAddress);
-	this->bufferAddress = -1;
-	this->bufferInitialized = false;
-	this->enabled = false;
+void Attribute::freeBuffer() {
+    glDeleteBuffers(1, &this->bufferAddress);
+    this->bufferAddress = -1;
+    this->bufferInitialized = false;
+    this->enabled = false;
 }
 
 RenderingStep::RenderingStep(const shared_ptr<Shader> &shader)
@@ -857,6 +889,8 @@ void RenderingStep::initMaterialAttributes() {
 void RenderingStep::initElementBuffer() {
     glGenBuffers(1, &elementBufferLoc);
     glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, elementBufferLoc);
+    glBufferData(GL_ELEMENT_ARRAY_BUFFER, weak_super->bufferIndexSize(), weak_super->bufferIndexLocation(), GL_STREAM_DRAW);
+    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, elementBufferLoc);
 
 }
 
@@ -864,7 +898,7 @@ void RenderingStep::loadElementBuffer() {
     if (!weakSuperLoaded())
         throw std::invalid_argument("Element buffer can only be loaded for weak super mesh");
     glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, elementBufferLoc);
-    glBufferData(GL_ELEMENT_ARRAY_BUFFER, weak_super->bufferIndexSize(), weak_super->bufferIndexLocation(), GL_STATIC_DRAW);
+    // glBufferData(GL_ELEMENT_ARRAY_BUFFER, weak_super->bufferIndexSize(), weak_super->bufferIndexLocation(), GL_STATIC_DRAW);
 }
 
 void RenderingStep::initStdAttributes()
@@ -902,9 +936,7 @@ void RenderingStep::initUnusualAttributes(std::vector<std::shared_ptr<Attribute>
 	}
 }
 
-void RenderingStep::activate() {
-	shader->use();
-}
+
 
 void RenderingStep::loadStandardAttributes() {
     if (weakSuperLoaded())
@@ -1015,6 +1047,8 @@ void RenderingStep::addLightsUniforms(const std::vector<std::shared_ptr<PointLig
 
 void RenderingStep::addMaterialUniform()
 {
+    if (weakSuperLoaded())
+        throw std::invalid_argument("Material uniform can only be added for super mesh");
 	mat4 lightMat = model->material->compressToMatrix();
 	auto materialSetter = [lightMat](float t, const shared_ptr<Shader> &s) {
 		s->setUniform("material", lightMat);
@@ -1034,28 +1068,49 @@ void RenderingStep::addCustomAction(const std::function<void(float)> &action)
 }
 
 
+void RenderingStep::weakMeshRenderStep(float t) {
+    loadStandardAttributes();
+    enableAttributes();
+    customStep(t);
+    setUniforms(t);
+    loadElementBuffer();
 
+    glEnableClientState(GL_VERTEX_ARRAY);
+    // glVertexPointer(3, GL_FLOAT, 0, weak_super->getBufferLocation(POSITION));
+    glDrawElements(GL_TRIANGLES, weak_super->bufferIndexSize(), GL_UNSIGNED_INT, 0);
+    glDisableClientState(GL_VERTEX_ARRAY);
+    disableAttributes();
+}
+
+void RenderingStep::superMeshRenderStep(float t) {
+
+    activate();
+    loadStandardAttributes();
+    enableAttributes();
+    customStep(t);
+    setUniforms(t);
+    glDrawArrays(GL_TRIANGLES, 0, super->bufferSizes[0]*3);
+    disableAttributes();
+}
+void RenderingStep::modelRenderStep(float t) {
+    activate();
+    loadStandardAttributes();
+    enableAttributes();
+    customStep(t);
+    setUniforms(t);
+    glDrawArrays(GL_TRIANGLES, 0, model->mesh->bufferSizes[0]*3);
+    disableAttributes();
+}
 
 void RenderingStep::renderStep(float t)
 {
-
-	activate();
-
-	loadStandardAttributes();
-    if (weakSuperLoaded()) {
-        glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, elementBufferLoc);
-        loadElementBuffer();
-    }
-	enableAttributes();
-	customStep(t);
-	setUniforms(t);
+    shader->use();
     if (weakSuperLoaded())
-        glDrawElements(GL_TRIANGLES, weak_super->bufferIndexSize(), GL_UNSIGNED_INT, 0);
-	else if (superLoaded())
-		glDrawArrays(GL_TRIANGLES, 0, super->bufferSizes[0]*3);
-	else
-	    glDrawArrays(GL_TRIANGLES, 0, model->mesh->bufferSizes[0]*3);
-	disableAttributes();
+        weakMeshRenderStep(t);
+    else if (superLoaded())
+        superMeshRenderStep(t);
+    else
+        modelRenderStep(t);
 }
 
 Renderer::Renderer(float animSpeed, vec4 bgColor)
@@ -1137,9 +1192,9 @@ void Renderer::setLights(const std::vector<std::shared_ptr<PointLight>> &lights)
 
 float Renderer::initFrame()
 {
-	glViewport(0, 0, window->width, window->height);
+	// glViewport(0, 0, window->width, window->height);
 	glClearColor(this->bgColor.x, this->bgColor.y, this->bgColor.z, 1.0f);
-    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT);
 
 	this->frameOlderTimeThanThePublicOne = this->time;
 	this->time = glfwGetTime()*this->animSpeed;
@@ -1167,9 +1222,12 @@ void Renderer::addPerFrameUniform(std::string uniformName, GLSLType uniformType,
 
 void Renderer::initRendering()
 {
-	window->bindToFramebuffer();
+    glBindFramebuffer(GL_DRAW_FRAMEBUFFER, 0);
+	window->initViewport();
+    glShadeModel(GL_SMOOTH);
 	glEnable(GL_DEPTH_TEST);
-	glDepthFunc(GL_3D);
+ //    glEnable(GL_LIGHTING);
+	// glDepthFunc(GL_3D);
 	for (const auto& renderingStep : renderingSteps)
 	{
 	    if (renderingStep->weakSuperLoaded()) {
@@ -1178,6 +1236,8 @@ void Renderer::initRendering()
 	        renderingStep->initMaterialAttributes();
 	        renderingStep->addCameraUniforms(camera);
 	        renderingStep->addLightsUniforms(lights);
+	        renderingStep->loadStandardAttributes();
+	        renderingStep->loadElementBuffer();
 	    }
 		else if (renderingStep->superLoaded()) {
 			renderingStep->initStdAttributes();
@@ -1235,15 +1295,15 @@ void Renderer::renderAllSteps()
 		renderingStep->renderStep(time);
 }
 
-int Renderer::mainLoop()
-{
-	initRendering();
-    while (window->isOpen())
-	{
-		initFrame();
-    	(*perFrameFunction)(time);
-		renderAllSteps();
-		window->renderFramebufferToScreen();
-	}
-	return window->destroy();
+int Renderer::mainLoop() {
+    initRendering();
+    while (window->isOpen()) {
+        initFrame();
+        (*perFrameFunction)(time);
+        renderAllSteps();
+        window->renderFramebufferToScreen();
+    }
+    return window->destroy();
 }
+
+

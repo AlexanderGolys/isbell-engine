@@ -1,7 +1,4 @@
-
-#ifndef GLSL_UTILS_HPP
-#define GLSL_UTILS_HPP
-
+#pragma once
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -48,7 +45,7 @@ public:
 	~Window();
 	int destroy();
 
-	void bindToFramebuffer();
+	void initViewport();
 
 	void showCursor();
 	void disableCursor();
@@ -57,6 +54,7 @@ public:
 	void stickyMouseButtons(bool sticky);
 	void setCallbacks(GLFWkeyfun* keyCallback = nullptr, GLFWcharfun* charCallback = nullptr, GLFWmousebuttonfun* mouseButtonCallback = nullptr, GLFWcursorposfun* cursorPosCallback = nullptr, GLFWcursorenterfun* cursorEnterCallback = nullptr, GLFWscrollfun* scrollCallback = nullptr, GLFWdropfun* dropCallback = nullptr);
 	bool isOpen();
+
 	void renderFramebufferToScreen();
 };
 
@@ -64,6 +62,7 @@ public:
 
 size_t sizeOfGLSLType(GLSLType type);
 int lengthOfGLSLType(GLSLType type);
+GLenum primitiveGLSLType(GLSLType type);
 
 enum ShaderType {
 	CLASSIC,
@@ -141,16 +140,19 @@ public:
 	bool bufferInitialized;
 
 	Attribute(std::string name, GLSLType type, int inputNumber);
-	~Attribute();
+	virtual ~Attribute();
 
-	void initBuffer();
-	void enable();
-	void disable();
-	void load(const void* firstElementAdress, int bufferLength);
-	void freeBuffer();
+	virtual void initBuffer();
+	virtual void enable();
+	virtual void disable();
+	virtual void load(const void* firstElementAdress, int bufferLength);
+	virtual void freeBuffer();
 };
 
 class RenderingStep {
+    void weakMeshRenderStep(float t);
+    void superMeshRenderStep(float t);
+    void modelRenderStep(float t);
 public:
 	std::shared_ptr<Shader> shader;
 	std::vector<std::shared_ptr<Attribute>> attributes;
@@ -175,7 +177,7 @@ public:
     void initElementBuffer();
 	void resetAttributeBuffers();
 	void initUnusualAttributes(std::vector<std::shared_ptr<Attribute>> attributes);
-	void activate();
+	void activate() {};
 	void loadStandardAttributes(); // 0:position, 1:normal, 2:color, 3:uv
     void loadElementBuffer();
 	void enableAttributes();
@@ -201,7 +203,7 @@ public:
 
 class Renderer {
 private:
-	float frameOlderTimeThanThePublicOne = NULL;
+	float frameOlderTimeThanThePublicOne = 0;
 
 public:
 	std::unique_ptr<Window> window;
@@ -259,4 +261,4 @@ public:
 	int mainLoop();
 };
 
-#endif 
+

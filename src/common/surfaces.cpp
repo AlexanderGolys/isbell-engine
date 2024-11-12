@@ -4,8 +4,8 @@
 using namespace glm;
 
 
-SmoothParametricSurface::SmoothParametricSurface(std::function<glm::vec3(float, float)> f, std::function<glm::vec3(float, float)> df_t,
-                                                 std::function<glm::vec3(float, float)> df_u, glm::vec2 t_range, glm::vec2 u_range,
+SmoothParametricSurface::SmoothParametricSurface(std::function<vec3(float, float)> f, std::function<vec3(float, float)> df_t,
+                                                 std::function<vec3(float, float)> df_u, vec2 t_range, vec2 u_range,
                                                  bool t_periodic, bool u_periodic) {
     _f = f;
     _df_t = df_t;
@@ -19,7 +19,7 @@ SmoothParametricSurface::SmoothParametricSurface(std::function<glm::vec3(float, 
     epsilon = .01;
 
 }
-SmoothParametricSurface::SmoothParametricSurface(std::function<glm::vec3(float, float)> f, glm::vec2 t_range, glm::vec2 u_range,
+SmoothParametricSurface::SmoothParametricSurface(std::function<vec3(float, float)> f, vec2 t_range, vec2 u_range,
                                                  bool t_periodic, bool u_periodic, float epsilon)
         : SmoothParametricSurface(f,
            [g=f, epsilon](float t, float u) {return (g(t+epsilon, u) - g(t-epsilon, u))/(epsilon*2); },
@@ -28,7 +28,7 @@ SmoothParametricSurface::SmoothParametricSurface(std::function<glm::vec3(float, 
     this->epsilon = epsilon;
 }
 
-SmoothParametricSurface::SmoothParametricSurface(std::function<SmoothParametricCurve(float)> pencil, glm::vec2 t_range, glm::vec2 u_range,
+SmoothParametricSurface::SmoothParametricSurface(std::function<SmoothParametricCurve(float)> pencil, vec2 t_range, vec2 u_range,
                                                  bool t_periodic, bool u_periodic, float eps) :
     SmoothParametricSurface([pencil](float t, float u) { return pencil(t)(u); }, t_range, u_range, t_periodic, u_periodic, eps) {}
 
@@ -38,12 +38,12 @@ SmoothParametricSurface::SmoothParametricSurface(SmoothParametricCurve canal, st
          canal.bounds(), vec2(0, TAU), canal.isPeriodic(), true, eps) {}
 
 
-SmoothParametricCurve SmoothParametricSurface::precompose(SmoothParametricPlaneCurve c) const {
-    return SmoothParametricCurve([f=*this, g=c](float t) {return f(g(t)); }, c.bounds().x, c.bounds().y, c.isPeriodic(), epsilon);
+SmoothParametricCurve SmoothParametricSurface::precompose(SmoothParametricPlaneCurve c, PolyGroupID id) const {
+    return SmoothParametricCurve([f=*this, g=c](float t) {return f(g(t)); }, id, c.bounds().x, c.bounds().y, c.isPeriodic(), epsilon);
 }
 
-SmoothParametricCurve SmoothParametricSurface::restrictToInterval(glm::vec2 p0, glm::vec2 p1) const {
-    return SmoothParametricCurve([f=*this, p0, p1](float t) {return f(p1*t + p0*(1-t)); }, 0, 1, false, epsilon);
+SmoothParametricCurve SmoothParametricSurface::restrictToInterval(vec2 p0, vec2 p1, PolyGroupID id) const {
+    return SmoothParametricCurve([f=*this, p0, p1](float t) {return f(p1*t + p0*(1-t)); }, id, 0, 1, false, epsilon);
 }
 
 
@@ -53,7 +53,7 @@ vec3 SmoothParametricSurface::operator()(float t, float s) const {
 
 vec3 SmoothParametricSurface::operator()(vec2 tu) const { return _f(tu.x, tu.y); }
 
-glm::vec3 SmoothParametricSurface::normal(float t, float u) const {
+vec3 SmoothParametricSurface::normal(float t, float u) const {
 vec3 vn = cross(_df_t(t, u), _df_u(t, u));
     if (norm(vn) < .02) {
         float e_t = (t1 - t0)/40;
@@ -126,11 +126,6 @@ vec3 AffinePlane::intersection(AffineLine &l) const {
 }
 
 
-AffinePlane::operator SmoothImplicitSurface() const {
-	return SmoothImplicitSurface(SmoothRealFunctionR3(
-		[this](vec3 p) {return distance(p); },
-		[this](vec3 p) {return n; }));
-}
 
 mat3 AffinePlane::pivotAndBasis() const {
 	return mat3(pivot, v1, v2);

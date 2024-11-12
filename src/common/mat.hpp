@@ -647,3 +647,12 @@ std::vector<float> vecToVecHeHe(vec v) {
 	return res;
 };
 
+template <typename vec>
+vec barycenter(vec a, vec b, vec c) {
+    return (a + b + c) / 3.f;
+}
+
+
+
+
+

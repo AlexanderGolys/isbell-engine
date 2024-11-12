@@ -20,7 +20,7 @@
 
 
 using namespace glm;
-using std::vector, std::array, std::string, std::set, std::pair, std::unique_ptr, std::shared_ptr, std::make_shared, std::make_unique, std::to_string;
+using std::vector, std::array, std::string, std::set, std::pair, std::unique_ptr, std::shared_ptr, std::make_shared, std::make_unique, std::to_string, std::map;
 
 
 
@@ -320,6 +320,35 @@ void Vertex::setAllParametricCurveExtras(float t, CurveSample &sample) {
     setCurveTangent(sample.getTangent());
 }
 
+Vertex barycenter(Vertex v1, Vertex v2, Vertex v3) {
+    map<string, vec4> extraData = {};
+    for (auto& key : v1.getExtraDataNames()) {
+        vec4 newData = barycenter(v1.getExtraData(key), v2.getExtraData(key), v3.getExtraData(key));
+        extraData.insert({key, newData});
+    }
+    vec3 n = normalize(cross(v2.getPosition() - v1.getPosition(), v3.getPosition() - v1.getPosition()));
+    n = n*sign(dot(n, v1.getNormal()));
+    return Vertex(barycenter(v1.getPosition(), v2.getPosition(), v3.getPosition()),
+                  barycenter(v1.getUV(), v2.getUV(), v3.getUV()),
+                  n,
+                  barycenter(v1.getColor(), v2.getColor(), v3.getColor()),
+                  MaterialPhong(barycenter(v1.getMaterialMat(), v2.getMaterialMat(), v3.getMaterialMat())),
+                    extraData);
+}
+
+Vertex center(Vertex v1, Vertex v2) {
+    map<string, vec4> extraData = {};
+    for (auto& key : v1.getExtraDataNames()) {
+        vec4 newData =(v1.getExtraData(key) + v2.getExtraData(key))/2.0f;
+        extraData.insert({key, newData});
+    }
+    return Vertex((v1.getPosition() + v2.getPosition())/2.0f,
+                  (v1.getUV() + v2.getUV())/2.0f,
+                  normalize(v1.getNormal() + v2.getNormal()),
+                  (v1.getColor() + v2.getColor())/2.0f,
+                  MaterialPhong((v1.getMaterialMat() + v2.getMaterialMat())/2.0f),
+                    extraData);
+}
 
 
 TriangularMesh::TriangularMesh() 
@@ -1424,8 +1453,9 @@ void SuperMesh::precomputeBuffers(bool materials, bool extra) {
 		this->bufferLocations = { &this->stdAttributeBuffers.positions[0],
 			&this->stdAttributeBuffers.normals[0],
 			&this->stdAttributeBuffers.colors[0], &this->stdAttributeBuffers.uvs[0] };
-		this->bufferSizes = { this->stdAttributeBuffers.positions.size(), this->stdAttributeBuffers.normals.size(),
-			this->stdAttributeBuffers.colors.size(), this->stdAttributeBuffers.uvs.size() };
+
+		this->bufferSizes = {   (int) this->stdAttributeBuffers.positions.size(), (int) this->stdAttributeBuffers.normals.size(),
+			                    (int) this->stdAttributeBuffers.colors.size(),    (int) this->stdAttributeBuffers.uvs.size() };
 	}
 
 	if (materials && this->materialBuffers.ambientColors.size() == 0) {
@@ -1487,10 +1517,10 @@ void SuperMesh::precomputeBuffers(bool materials, bool extra) {
 					&this->materialBuffers.ambientColors[0], &this->materialBuffers.diffuseColors[0],
 					&this->materialBuffers.specularColors[0], &this->materialBuffers.intencitiesAndShininess[0] };
 
-		this->bufferSizes = { this->stdAttributeBuffers.positions.size(), this->stdAttributeBuffers.normals.size(),
-				this->stdAttributeBuffers.colors.size(), this->stdAttributeBuffers.uvs.size(),
-				this->materialBuffers.ambientColors.size(), this->materialBuffers.diffuseColors.size(),
-				this->materialBuffers.specularColors.size(), this->materialBuffers.intencitiesAndShininess.size() };
+		this->bufferSizes = {   (int) this->stdAttributeBuffers.positions.size(),  (int) this->stdAttributeBuffers.normals.size(),
+				                (int) this->stdAttributeBuffers.colors.size(),     (int) this->stdAttributeBuffers.uvs.size(),
+				                (int) this->materialBuffers.ambientColors.size(),  (int) this->materialBuffers.diffuseColors.size(),
+				                (int) this->materialBuffers.specularColors.size(), (int) this->materialBuffers.intencitiesAndShininess.size() };
 	}
 }
 

@@ -23,8 +23,10 @@ public:
 
   glm::vec3 operator()(float t, float s) const;
   glm::vec3 operator()(glm::vec2 tu) const;
-  SmoothParametricCurve precompose(SmoothParametricPlaneCurve c) const;
-  SmoothParametricCurve restrictToInterval(glm::vec2 p0, glm::vec2 p1) const;
+  glm::vec3 parametersNormalised(glm::vec2 tu) const { return operator()(t0 + tu.x*(t1-t0), u0 + tu.y*(u1-u0)); }
+  glm::vec3 parametersNormalised(float t, float u) const { return operator()(t0 + t*(t1-t0), u0 + u*(u1-u0)); }
+  SmoothParametricCurve precompose(SmoothParametricPlaneCurve c, PolyGroupID id=420) const;
+  SmoothParametricCurve restrictToInterval(glm::vec2 p0, glm::vec2 p1, PolyGroupID id=420) const;
 
   glm::vec2 boundsT() const { return glm::vec2(t0, t1); }
   glm::vec2 boundsU() const { return glm::vec2(u0, u1); }
@@ -39,6 +41,7 @@ public:
 
   glm::vec3 normal(float t, float s) const;
   glm::vec3 normal(glm::vec2 tu) const { return normal(tu.x, tu.y); }
+
 
 };
 
@@ -68,7 +71,6 @@ public:
   std::pair<glm::vec3, float> equationCoefs() const { return {n, d}; }
   glm::vec3 intersection(AffineLine &l) const;
   SmoothRealFunctionR3 distanceField() const {return SmoothRealFunctionR3([this](glm::vec3 p) {return distance(p);} ); }
-  operator SmoothImplicitSurface() const;
   glm::mat3 pivotAndBasis() const;
   glm::vec2 localCoordinates(glm::vec3 p) const;
 

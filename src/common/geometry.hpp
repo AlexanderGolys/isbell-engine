@@ -222,6 +222,7 @@ public:
 	glm::vec2 getUV() const { return uv; }
 	glm::vec4 getColor() const { return color; }
     MaterialPhong getMaterial() const { return material.value(); }
+    glm::mat4 getMaterialMat() const { return material.value().compressToMatrix(); }
     glm::vec4 getExtraData(const std::string &name) { return extraData[name]; }
     glm::vec3 getExtraData_xyz(const std::string &name) { return glm::vec3(extraData[name]); }
     float getExtraData(const std::string &name, int i) { return extraData[name][i]; }
@@ -264,7 +265,8 @@ public:
     float getCurveWidth() { return norm(getPosition() - getCurvePosition()); }
 };
 
-
+Vertex barycenter(Vertex v1, Vertex v2, Vertex v3);
+Vertex center(Vertex v1, Vertex v2);
 
 
 
@@ -630,6 +632,7 @@ public:
   float time() const;
   void transformMesh(float new_t);
 };
+
 
 
 

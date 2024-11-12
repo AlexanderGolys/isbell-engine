@@ -446,7 +446,7 @@ SmoothParametricCurve VivaniCurve(float r, float eps) {
     return SmoothParametricCurve(
                 [r](float t) {return vec3(r*(1+cos(t)), r*sin(t), 2*r*sin(t/2)); },
                 [r](float t) {return vec3(-r*sin(t), r*cos(t), r*cos(t/2)); },
-                [r](float t) {return vec3(-r*cos(t), -r*sin(t), -r/2*sin(t/2)); },
+                [r](float t) {return vec3(-r*cos(t), -r*sin(t), -r/2*sin(t/2)); }, 420,
                 -TAU, TAU, true, eps);
 }
 
@@ -458,20 +458,18 @@ SmoothParametricPlaneCurve LissajousCurve(float a, float b, float delta, float r
                 0, TAU, true, eps);
 }
 
-SuperCurve circle(float r, std::function<float(float)> w, std::function<MaterialPhong(float)> mat, int n, vec3 center, vec3 v1, vec3 v2, float eps) {
+SuperCurve circle(float r, std::function<float(float)> w, const std::function<MaterialPhong(float)> &mat, int n, vec3 center, vec3 v1, vec3 v2, float eps) {
     return SuperCurve(circle(r, center, v1, v2, eps), w, mat, n, 0, TAU, true);
 }
 
 
 
 SmoothParametricCurve sphericalSpiral(float a, float t_max, PolyGroupID id, float eps) {
-    return SmoothParametricCurve([a](float t) {return vec3(cos(t), sin(t), -a*t)/sqrt(1+a*a*t*t); },
-                                        -t_max, t_max, false, id, eps);
+    return SmoothParametricCurve([a](float t) {return vec3(cos(t), sin(t), -a*t)/sqrt(1+a*a*t*t); }, id,  -t_max, t_max, false, eps);
 }
 
 SmoothParametricCurve sphericalSpiral(float a, float r, float t_max, PolyGroupID id, float eps) {
-    return SmoothParametricCurve([a, r](float t) {return vec3(cos(t), sin(t), -a*t)*r/sqrt(1+a*a*t*t); },
-                                        -t_max, t_max, false, id, eps);
+    return SmoothParametricCurve([a, r](float t) {return vec3(cos(t), sin(t), -a*t)*r/sqrt(1+a*a*t*t); },id,  -t_max, t_max, false, eps);
 }
 
 WeakSuperMesh singleTrig(vec3 v0, vec3 v1, vec3 v2, MaterialPhong &material, PolyGroupID id) {
@@ -483,8 +481,7 @@ WeakSuperMesh singleTrig(vec3 v0, vec3 v1, vec3 v2, MaterialPhong &material, Pol
 }
 
 
-WeakSuperMesh singleTrig(vec3 v0, vec3 v1, vec3 v2, MaterialPhong &material1, MaterialPhong &material2, MaterialPhong &material3,
-                                PolyGroupID id) {
+WeakSuperMesh singleTrig(vec3 v0, vec3 v1, vec3 v2, MaterialPhong &material1, MaterialPhong &material2, MaterialPhong &material3, PolyGroupID id) {
     vec3 n = normalize(cross(v1 - v0, v2 - v0));
     vector nodes = {Vertex(v0, vec2(0, 0), n, BLACK, material1),
                     Vertex(v1, vec2(0, 1), n, BLACK, material2),
@@ -506,7 +503,7 @@ WeakSuperMesh singleQuadShadeSmooth(vec3 outer1, vec3 inner1, vec3 inner2, vec3 
     return WeakSuperMesh(nodes, {ivec3(0, 1, 2), ivec3(3, 1, 2)}, id);
 }
 
-WeakSuperMesh singleQuadShadeFlat(glm::vec3 outer1, glm::vec3 inner1, glm::vec3 inner2, glm::vec3 outer2, MaterialPhong &material,
+WeakSuperMesh singleQuadShadeFlat(vec3 outer1, vec3 inner1, vec3 inner2, vec3 outer2, MaterialPhong &material,
                                   std::variant<int, std::string> id) {
     vec3 n1 = normalize(cross(outer1 - inner1, outer1 - inner2));
     vec3 n2 = normalize(cross(outer2 - inner2, outer2 - inner1));
@@ -520,7 +517,7 @@ WeakSuperMesh singleQuadShadeFlat(glm::vec3 outer1, glm::vec3 inner1, glm::vec3 
     return WeakSuperMesh(nodes, {ivec3(0, 1, 2), ivec3(3, 4, 5)}, id);
 }
 
-WeakSuperMesh singleQuadShadeFlat(glm::vec3 outer1, glm::vec3 inner1, glm::vec3 inner2, glm::vec3 outer2, MaterialPhong &material1,
+WeakSuperMesh singleQuadShadeFlat(vec3 outer1, vec3 inner1, vec3 inner2, vec3 outer2, MaterialPhong &material1,
                                   MaterialPhong &material2, std::variant<int, std::string> id) {
     vec3 n1 = normalize(cross(outer1 - inner1, outer1 - inner2));
     vec3 n2 = normalize(cross(outer2 - inner2, outer2 - inner1));
@@ -531,13 +528,62 @@ WeakSuperMesh singleQuadShadeFlat(glm::vec3 outer1, glm::vec3 inner1, glm::vec3 
     return WeakSuperMesh(nodes, {ivec3(0, 1, 2), ivec3(3, 4, 5)}, id);
 }
 
-SmoothParametricSurface sphere(float r, glm::vec3 center, float eps) {
+SmoothParametricSurface sphere(float r, vec3 center, float cutdown, float eps) {
     return SmoothParametricSurface([r, center](float t, float u) {
         return center + vec3(cos(t) * sin(u), sin(t) * sin(u), cos(u))*r;
-    }, vec2(0, TAU*1.1), vec2(0, PI), true, false, .01);
+    }, vec2(0, TAU), vec2(cutdown, PI-0.01), true, false, .01);
 }
 
 
+inline WeakSuperMesh icosahedron(float r, vec3 center, MaterialPhong &material, std::variant<int, std::string> id) {
+    float phi = (1.f + sqrt(5)) / 2;
+    vector verts = {
+        Vertex(vec3(1, phi, 0), vec2(0, 0), normalise(vec3(1, phi, 0)), BLACK, material),
+        Vertex(vec3(-1, phi, 0), vec2(0, 0), normalise(vec3(-1, phi, 0)), BLACK, material),
+        Vertex(vec3(1, -phi, 0), vec2(0, 0), normalise(vec3(1, -phi, 0)), BLACK, material),
+        Vertex(vec3(-1, -phi, 0), vec2(0, 0), normalise(vec3(-1, -phi, 0)), BLACK, material),
+        Vertex(vec3(0, 1, phi), vec2(0, 0), normalise(vec3(0, 1, phi)), BLACK, material),
+        Vertex(vec3(0, -1, phi), vec2(0, 0), normalise(vec3(0, -1, phi)), BLACK, material),
+        Vertex(vec3(0, 1, -phi), vec2(0, 0), normalise(vec3(0, 1, -phi)), BLACK, material),
+        Vertex(vec3(0, -1, -phi), vec2(0, 0), normalise(vec3(0, -1, -phi)), BLACK, material),
+        Vertex(vec3(phi, 0, 1), vec2(0, 0), normalise(vec3(phi, 0, 1)), BLACK, material),
+        Vertex(vec3(-phi, 0, 1), vec2(0, 0), normalise(vec3(-phi, 0, 1)), BLACK, material),
+        Vertex(vec3(phi, 0, -1), vec2(0, 0), normalise(vec3(phi, 0, -1)), BLACK, material),
+        Vertex(vec3(-phi, 0, -1), vec2(0, 0), normalise(vec3(-phi, 0, -1)), BLACK, material)
+        };
+    vector<ivec3> faceInds = {};
+    for (int i = 0; i < verts.size()-2; i++) {
+        for (int j = i+1; j < verts.size()-1; j++) {
+            for (int k = j+1; k < verts.size(); k++) {
+                vec3 a = verts[i].getPosition();
+                vec3 b = verts[j].getPosition();
+                vec3 c = verts[k].getPosition();
+                if (norm(a-b) < 2.1 && norm(b-c) < 2.1 && norm(c-a) < 2.1) {
+                    faceInds.push_back(ivec3(i, j, k));
+                }
+            }
+        }
+    }
+    for (int i = 0; i < verts.size(); i++) {
+        verts[i].setPosition(normalise(verts[i].getPosition())*r + center);
+    }
+    return WeakSuperMesh(verts, faceInds, id);
+}
 
+WeakSuperMesh icosphere(float r, int n, vec3 center, MaterialPhong &material, PolyGroupID id) {
+    WeakSuperMesh unitSphere = icosahedron(1, vec3(0, 0, 0), material, id);
+    while (n > 0) {
+        unitSphere = unitSphere.subdivideEdgecentric(id);
+        n--;
+    }
+
+    auto normaliseVertices = [r, center](BufferedVertex &v) {
+        v.setNormal(normalise(v.getPosition()));
+        v.setPosition(normalise(v.getPosition())*r + center);
+    };
+    unitSphere.deformPerVertex(id, normaliseVertices);
+
+    return unitSphere;
+}
 
 
