@@ -3,9 +3,10 @@
 #include <chrono>
 #include <functional>
 #include <iostream>
+#include <src/common/specific.hpp>
 
 using namespace glm;
-using std::vector, std::string, std::map, std::shared_ptr, std::unique_ptr, std::pair, std::make_unique, std::make_shared;
+using std::vector, std::string, std::shared_ptr, std::unique_ptr, std::pair, std::make_unique, std::make_shared;
 
 auto planeToDisk(Complex z) -> Complex {
     return CayleyTransform.mobius(z);
@@ -148,6 +149,12 @@ HyperbolicPlane HyperbolicPlane::transform(Biholomorphism f) const{
 void HyperbolicPlane::transformInPlace(Biholomorphism f) {
     _toH = _toH.compose(f);
 }
+
+HyperbolicPlane HyperbolicPlane::transformByMobiusH(Matrix<Complex, 2> m) {
+    return transform(Biholomorphism::mobius(m));
+}
+
+
 
 
 Biholomorphism HyperbolicPlane::toHTransform() const {
@@ -840,10 +847,3 @@ HyperbolicTesselation HyperbolicTesselation::modular(float max_len, float bd_up,
 void HyperbolicTesselation::transformInPlace(Biholomorphism f) {
     fd.transformInPlace(f);
 }
-
-
-
-
-
-
-

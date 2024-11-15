@@ -8,6 +8,14 @@
 #define maybeFloat std::optional<float>
 #define PolyGroupID std::variant<int, std::string>
 #define Mat2C Matrix<Complex, 2>
+#define INT(x) static_cast<int>(x)
+#define End1P std::function<SpaceEndomorphism(float)>
+#define End2P std::function<SpaceEndomorphism(float, float)>
+#define maybeMaterial std::optional<MaterialPhong>
+#define d2 Morphism<glm::vec2, float>
+#define d3 Morphism<glm::vec3, float>
+#define d4 Morphism<glm::vec4, float>
+#define Mob Matrix<Complex, 2>
 
 const PolyGroupID DEFAULT_POLY_GROUP_ID = PolyGroupID(0);
 constexpr RP1 inf = std::nullopt;
@@ -17,6 +25,7 @@ const glm::vec3 e2 = glm::vec3(0, 1, 0);
 const glm::vec3 e3 = glm::vec3(0, 0, 1);
 const glm::vec3 ORIGIN = glm::vec3(0, 0, 0);
 const glm::vec2 PLANE_ORIGIN = glm::vec2(0, 0);
+const PolyGroupID DFLT_CURV = PolyGroupID(420);
 
 
 #define BLACK glm::vec4(0, 0, 0, 1)
@@ -52,4 +61,3 @@ const glm::vec2 PLANE_ORIGIN = glm::vec2(0, 0);
 #define GREEN_PALLETTE COLOR_PALETTE10(glm::ivec3(219, 234, 215), glm::ivec3(195, 220, 188), glm::ivec3(171, 206, 161), glm::ivec3(148, 193, 134), glm::ivec3(124, 179, 107), glm::ivec3(102, 162, 83), glm::ivec3(85, 135, 69), glm::ivec3(68, 108, 55), glm::ivec3(51, 81, 42), glm::ivec3(32, 51, 26))
 
 #define REDPINK_PALLETTE COLOR_PALETTE10(glm::ivec3(243, 219, 234), glm::ivec3(236, 197, 221), glm::ivec3(204, 154, 181), glm::ivec3(179, 116, 149), glm::ivec3(153, 77, 116), glm::ivec3(128, 39, 84), glm::ivec3(102, 0, 51), glm::ivec3(85, 6, 45), glm::ivec3(67, 12, 39), glm::ivec3(52, 9, 30))
-

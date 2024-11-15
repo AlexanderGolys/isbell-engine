@@ -1,18 +1,18 @@
 #include "mat.hpp"
 
+#include <array>
+#include <cmath>
 #include <iostream>
+#include <set>
 #include <sstream>
-#include <stdio.h>
-#include <stdlib.h>
+#include <cstdio>
+#include <cstdlib>
+#include <vector>
 #include <GL/glew.h>
 #include <GLFW/glfw3.h>
 #include <glm/glm.hpp>
 #include <glm/gtc/matrix_transform.hpp>
 #include <glm/gtx/transform.hpp>
-#include <cmath>
-#include <vector>
-#include <set>
-#include <array>
 
 using namespace glm;
 using std::vector, std::string, std::set, std::array, std::pair, std::exp, std::log, std::cos, std::sin, std::cosh, std::sinh, std::sqrt, std::pow, std::atan2, std::abs;
@@ -628,6 +628,12 @@ mat3 rotationMatrix3(vec3 axis, float angle)
 	return inverse(change) * rotationMatrix3(angle) * change;
 }
 
+glm::mat3 rotationBetween(glm::vec3 v0, glm::vec3 v1) {
+    glm::vec3 axis = normalise(cross(v0, v1));
+    float angle = acos(dot(v0, v1) / (norm(v0) * norm(v1)));
+    return rotationMatrix3(axis, angle);
+}
+
 float frac(float x)
 {
     return x - floor(x);
@@ -678,4 +684,3 @@ float pseudorandomizer(float x, float seed)
 //	}
 //	return [this](T z) {return  (this->coefs[0][0] * z + this->coefs[0][1]) / (this->coefs[1][0] * z + this->coefs[1][1]); };
 //}
-

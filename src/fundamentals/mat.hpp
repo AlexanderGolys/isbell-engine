@@ -7,52 +7,42 @@
 #include <cmath>
 #include <array>
 #include <algorithm>
-#include "macros.hpp"
 #include "metaUtils.hpp"
-#include "glmUX.hpp"
-
 
 
 
 template <typename T>
 concept AbelianSemigroup = requires (T a, T b) {
-	{ a + b } -> std::same_as<T>;
+	{ a + b } -> std::convertible_to<T>;
 };
 
 template <typename T>
-concept MultiplicativeSemigroup = requires (T a, T b) {
-	{ a*b } -> std::same_as<T>;
+concept Semigroup = requires (T a, T b) {
+	{ a*b } -> std::convertible_to<T>;
 };
 
 template <typename T>
 concept AbelianMonoid = AbelianSemigroup<T> && requires {
-	T(0);
+	{T(0)} -> std::convertible_to<T>;
 };
 
 template <typename G>
-concept Monoid = MultiplicativeSemigroup<G> &&  requires {
-	G(1); 
+concept Monoid = Semigroup<G> &&  requires {
+	{G(1)} -> std::convertible_to<G>;
 };
 
 template <typename G>
-concept GroupConcept = Monoid<G> && requires (G g) 
-{
-	{ ~g } -> std::same_as<G>;
-};
+concept GroupConcept = Monoid<G> && (requires (G g)  { { ~g } -> std::convertible_to<G>; } || requires (G g) { { G(1)/g } -> std::convertible_to<G>; });
 
 template <typename G>
 concept AbelianGroupConcept = AbelianMonoid<G> && requires (G g)
 {
-	{ -g } -> std::same_as<G>;
+	{ -g } -> std::convertible_to<G>;
 };
 
 template <typename T>
-concept Rng = requires (T a, T b) {
-	{ a + b } -> std::same_as<T>;
-	-a;
-	{ a* b } -> std::same_as<T>;
-	T(0);
-};
+concept Rng = AbelianGroupConcept<T> && Semigroup<T>;
+
 
 template <typename T>
 concept RingConcept = Rng<T> && Monoid<T>;
@@ -61,14 +51,17 @@ concept RingConcept = Rng<T> && Monoid<T>;
 template <typename T>
 concept DivisionRing = RingConcept<T> && GroupConcept<T>;
 
+template <typename A, typename R>
+concept ModuleConcept = Rng<R> && AbelianGroupConcept<A> && requires (A a, R r) {
+    {a*r} -> std::convertible_to<A>;
+};
+
+template <typename A, typename R>
+concept Algebra = ModuleConcept<A, R> && Rng<A>;
 
 
 template <typename V, typename K> 
-concept VectorSpaceConcept = DivisionRing<K> && requires (V a, V b, K k) {
-	{a + b} -> std::same_as<V>;
-	-a;
-	{a*k} -> std::same_as<V>;
-};
+concept VectorSpaceConcept = ModuleConcept<V, K> && DivisionRing<K>;
 
 template <typename T> 
 concept Normed = requires (T a, float c) {
@@ -76,9 +69,8 @@ concept Normed = requires (T a, float c) {
 	a / c;
 };
 
-template <typename V, typename K=float>
-concept EuclideanSpace = VectorSpaceConcept<V, K> && requires (V a, V b, K c) {
-	{c} -> std::convertible_to<float>;
+template <typename V>
+concept EuclideanSpace = VectorSpaceConcept<V, float> && requires (V a, V b) {
 	{dot(a, b)} -> std::convertible_to<float>;
 };
 
@@ -219,13 +211,17 @@ template <typename T>
 float norm(T v) { return sqrt(norm2(v)); };
 
 template <typename T>
-T normalise(T v) { return v / float(sqrt(norm2(v))); };
+T normalise(T v) { return v / norm(v); };
 
 
 glm::vec2 intersectLines(glm::vec2 p1, glm::vec2 p2, glm::vec2 q1, glm::vec2 q2);
 glm::vec2 orthogonalComplement(glm::vec2 v);
 std::pair<glm::vec3, glm::vec3> orthogonalComplementBasis(glm::vec3 v);
 glm::mat3 GramSchmidtProcess(glm::mat3 m);
+
+inline glm::vec3 projectVectorToPlane(glm::vec3 v, glm::vec3 n) {
+    return v - dot(v, n) * n;
+}
 
 
 class Complex {
@@ -386,6 +382,9 @@ glm::mat3 changeOfBasis(glm::vec3 target1, glm::vec3 target2, glm::vec3 target3)
 glm::mat3 changeOfBasis(glm::vec3 source1, glm::vec3 source2, glm::vec3 source3, glm::vec3 target1, glm::vec3 target2, glm::vec3 target3);
 glm::mat3 rotationMatrix3(float angle);
 glm::mat3 rotationMatrix3(glm::vec3 axis, float angle);
+glm::mat3 rotationBetween(glm::vec3 v0, glm::vec3 v1);
+
+glm::mat3 rotationBetween(glm::vec3 v0, glm::vec3 v1);
 
 template<typename T>
 int binSearch(std::vector<T> v, T x)
@@ -615,8 +614,8 @@ Matrix<T, n> Matrix<T, n>::inv() const requires DivisionRing<T>
 }
 
 template<RingConcept T, int n>
-Matrix<T, n> Matrix<T, n>::GramSchmidtProcess() const requires EuclideanSpace<T> {
-	Matrix<T, n> result;
+Matrix<T, n> Matrix<T, n, n>::GramSchmidtProcess() const requires EuclideanSpace<T> {
+    Matrix result;
     for (int i = 0; i < n; i++) {
         result.coefs[i][i] = this->coefs[i][i];
         for (int j = 0; j < i; j++) {
@@ -651,8 +650,3 @@ template <typename vec>
 vec barycenter(vec a, vec b, vec c) {
     return (a + b + c) / 3.f;
 }
-
-
-
-
-

@@ -1,7 +1,9 @@
 #pragma once
 
-#include <stdio.h>
-#include <stdlib.h>
+#include "indexedRendering.hpp"
+
+#include <cstdio>
+#include <cstdlib>
 #include <GL/glew.h>
 #include <GLFW/glfw3.h>
 #include <glm/glm.hpp>
@@ -9,11 +11,13 @@
 #include <glm/gtx/transform.hpp>
 
 
-#include "specific.hpp"
+// #include "renderingUtils.hpp"
 
 #include <map>
 #include <string>
 #include <memory>
+
+class Texture;
 
 void error_callback(int error, const char* description);
 void key_callback(GLFWwindow* window, int key, int scancode, int action, int mods);
@@ -82,7 +86,7 @@ public:
 
 	Shader(const char* vertex_file_path, const char* fragment_file_path);
 	Shader(const char* vertex_file_path, const char* fragment_file_path, const char* geometry_file_path);
-	Shader(std::string standard_file_path);
+	explicit Shader(std::string standard_file_path);
 	~Shader();
 	void use();
 	void initUniforms(std::map<std::string, GLSLType> uniforms);
@@ -105,14 +109,14 @@ public:
 
 class Camera {
 public:
-	glm::vec3 lookAtPos;
-	glm::vec3 upVector;
 	float fov_x;
 	float aspectRatio;
 	float clippingRangeMin;
 	float clippingRangeMax;
 	bool moving;
 	std::shared_ptr<SmoothParametricCurve> trajectory;
+    std::shared_ptr<SmoothParametricCurve> lookAtFunc;
+    std::function<glm::vec3(float)> up;
 	glm::mat4 projectionMatrix;
 
 	Camera();
@@ -123,7 +127,15 @@ public:
 	Camera(const std::shared_ptr<SmoothParametricCurve> &trajectory, glm::vec3 lookAtPos, glm::vec3 upVector, float fov_x = PI / 4,
 	       float aspectRatio = 16 / 9.f, float clippingRangeMin=.01f, float clippingRangeMax=100.f);
 
-	glm::vec3 position(float t);
+    Camera(const std::shared_ptr<SmoothParametricCurve> &trajectory, const std::shared_ptr<SmoothParametricCurve> &lookAtPos, glm::vec3 upVector, float fov_x = PI / 4,
+       float aspectRatio = 16 / 9.f, float clippingRangeMin=.01f, float clippingRangeMax=100.f);
+
+    Camera(const std::shared_ptr<SmoothParametricCurve> &trajectory, const std::shared_ptr<SmoothParametricCurve> &lookAtPos, const std::function<glm::vec3(float)> &upVector, float fov_x = PI / 4,
+   float aspectRatio = 16 / 9.f, float clippingRangeMin=.01f, float clippingRangeMax=100.f);
+
+	glm::vec3 position(float t) { return trajectory->operator()(t); }
+    glm::vec3 lookAtPoint(float t) { return lookAtFunc->operator()(t); }
+    glm::vec3 upVector(float t) { return up(t); }
 	glm::mat4 mvp(float t, const glm::mat4 &modelTransform);
 	glm::mat4 viewMatrix(float t);
 	glm::mat4 vp(float t);
@@ -165,7 +177,7 @@ public:
 	std::map<std::string, std::shared_ptr<std::function<void(float, std::shared_ptr<Shader>)>>> uniformSetters;
 	std::function<void(float)> customStep;
 
-	RenderingStep(const std::shared_ptr<Shader> &shader);
+	explicit RenderingStep(const std::shared_ptr<Shader> &shader);
 	RenderingStep(const RenderingStep &other);
 	~RenderingStep();
 
@@ -177,7 +189,6 @@ public:
     void initElementBuffer();
 	void resetAttributeBuffers();
 	void initUnusualAttributes(std::vector<std::shared_ptr<Attribute>> attributes);
-	void activate() {};
 	void loadStandardAttributes(); // 0:position, 1:normal, 2:color, 3:uv
     void loadElementBuffer();
 	void enableAttributes();
@@ -185,6 +196,9 @@ public:
 	void addCustomAction(const std::function<void(float)> &action);
 	bool superLoaded() const { return super != nullptr; }
     bool weakSuperLoaded() const { return weak_super != nullptr; }
+    void init(const std::shared_ptr<Camera> &cam, const std::vector<std::shared_ptr<PointLight>> &lights);
+    void initTextures();
+    void bindTextures();
 
 	void addUniforms(const std::map<std::string, GLSLType> &uniforms, std::map<std::string, std::shared_ptr<std::function<void(float, std::shared_ptr<Shader>)>>> setters);
 	void addUniform(std::string uniformName, GLSLType uniformType, std::shared_ptr<std::function<void(float, std::shared_ptr<Shader>)>> setter);
@@ -197,8 +211,10 @@ public:
 	void addLightUniform(const std::shared_ptr<PointLight>& pointLight, int lightIndex=1);
 	void addLightsUniforms(const std::vector<std::shared_ptr<PointLight>> &lights);
 	void addMaterialUniform();
+    void addTexturedMaterialUniforms();
 
 	void renderStep(float t);
+
 };
 
 class Renderer {
@@ -212,9 +228,10 @@ public:
 	std::shared_ptr<Camera> camera;
 	std::vector<std::shared_ptr<PointLight>> lights;
 	float time = 0;
+    float dt = 0;
 	float animSpeed;
 	glm::vec4 bgColor;
-	std::unique_ptr<std::function<void(float)>> perFrameFunction;
+	std::unique_ptr<std::function<void(float, float)>> perFrameFunction;
 	
 
 	explicit Renderer(float animSpeed=1.f, glm::vec4 bgColor=BLACK);
@@ -255,10 +272,9 @@ public:
 	void addTimeUniform();
 	void addConstFloats(std::map<std::string, float> uniforms);
 	void addCustomAction(std::function<void(float)> action);
+    void addCustomAction(std::function<void(float, float)> action);
 
 	void initRendering();
 	void renderAllSteps();
 	int mainLoop();
 };
-
-

@@ -1,27 +1,31 @@
 #pragma once
 
-#include "geometry.hpp"
+#include "renderingUtils.hpp"
+// #include "src/geometry/smoothParametric.hpp"
 
 #include <set>
 
-struct vec4x4 {
-  glm:: vec4 x, y, z, w;
+struct buff4x4 {
+    std::vector<glm::vec4> a, b, c, d;
 };
 
-struct Stds {
-  glm:: vec3 position;
-  glm:: vec3 normal;
-  glm::vec2 uv;
-  glm::vec4 color;
-};
+inline glm::mat4 getMat(const buff4x4 &buff, int index) {
+  return glm::mat4(buff.a[index], buff.b[index], buff.c[index], buff.d[index]);
+}
+
+
 
 #define buff2 std::vector<glm::vec2>
 #define buff3 std::vector<glm::vec3>
 #define buff4 std::vector<glm::vec4>
-#define buff4x4 std::vector<vec4x4>
-#define buffStds std::vector<Stds>
-
 #define ibuff3 std::vector<glm::ivec3>
+
+struct Stds {
+    buff3 positions;
+    buff3 normals;
+    buff2 uvs;
+    buff4 colors;
+};
 
 enum CommonBufferType {
   POSITION, NORMAL, UV, COLOR, MATERIAL1, MATERIAL2, MATERIAL3, MATERIAL4, INDEX, EXTRA0, EXTRA1, EXTRA2, EXTRA3, EXTRA4
@@ -36,33 +40,33 @@ class IndexedTriangle;
 
 
 class BufferManager {
-    std::unique_ptr<buffStds> stds;
+    std::unique_ptr<Stds> stds;
     std::unique_ptr<buff4> extra0;
     std::unique_ptr<buff4x4> mater, extra;
     std::unique_ptr<ibuff3> indices;
     std::set<CommonBufferType> activeBuffers;
-    void insertValueToSingleBuffer(CommonBufferType type, void *value);
+    void insertValueToSingleBuffer(CommonBufferType type, void *valueAddress);
     void insertDefaultValueToSingleBuffer(CommonBufferType type);
 
 
 public:
+    BufferManager(const BufferManager &other);
+    BufferManager & operator=(const BufferManager &other);
+
+
     BufferManager(BufferManager &&other) noexcept;
     BufferManager &operator=(BufferManager &&other) noexcept;
-    BufferManager(std::set<CommonBufferType> activeBuffers = {POSITION, NORMAL, UV, COLOR, INDEX});
-    BufferManager(bool materials,std::set<CommonBufferType> extras = {} );
+    explicit BufferManager(std::set<CommonBufferType> activeBuffers = {POSITION, NORMAL, UV, COLOR, INDEX});
+    explicit BufferManager(bool materials,std::set<CommonBufferType> extras = {} );
 
     int bufferLength(CommonBufferType type) const;
-    static int offset(CommonBufferType type);
-
     size_t bufferSize(CommonBufferType type) const { return bufferLength(type) * bufferElementSize(type); }
     void *firstElementAddress(CommonBufferType type) const;
     bool isActive(CommonBufferType type) const { return activeBuffers.contains(type); }
     bool hasMaterial() const { return isActive(MATERIAL1); }
 
-    int addTriangleVertexIndices(glm::ivec3 ind) {
-        indices->push_back(ind);
-        return bufferLength(INDEX) - 1;
-    }
+    int addTriangleVertexIndices(glm::ivec3 ind);
+
     int addStdAttributesFromVertex(glm::vec3 pos, glm::vec3 norm, glm::vec2 uv, glm::vec4 col);
     int addMaterialBufferData(const MaterialPhong &mat);
     int addMaterialBufferData(glm::mat4 mat);
@@ -76,21 +80,20 @@ public:
     void reserveAdditionalSpaceForIndex(int extraStorage) { reserveSpaceForIndex(bufferLength(INDEX) + extraStorage); }
     void initialiseExtraBufferSlot(int slot);
 
-    glm::vec3 getPosition(int index) const { return (*stds)[index].position; }
-    glm::vec3 getNormal(int index) const { return (*stds)[index].normal; }
-    glm::vec2 getUV(int index) const { return (*stds)[index].uv; }
-    glm::vec4 getColor(int index) const { return (*stds)[index].color; }
-    glm::mat4 getMaterial(int index) const { return glm::mat4((*mater)[index].x, (*mater)[index].y, (*mater)[index].z, (*mater)[index].w); }
+    glm::vec3 getPosition(int index) const { return stds->positions[index]; }
+    glm::vec3 getNormal(int index) const { return stds->normals[index]; }
+    glm::vec2 getUV(int index) const { return stds->uvs[index]; }
+    glm::vec4 getColor(int index) const { return stds->colors[index]; }
+    glm::mat4 getMaterial(int index) const { return getMat(*mater, index); }
     glm::vec4 getExtra(int index, int slot = 1) const;
     float getExtraSlot(int index, int slot = 1, int component = 3) const { return getExtra(index, slot)[component]; }
 
-    void setPosition(int index, glm::vec3 value) { (*stds)[index].position = value; }
-    void setNormal(int index, glm::vec3 value) { (*stds)[index].normal = value; }
-    void setUV(int index, glm::vec2 value) { (*stds)[index].uv = value; }
-    void setColor(int index, glm::vec4 value) { (*stds)[index].color = value; }
-    void setMaterial(int index, glm::mat4 value) {
-        (*mater)[index] = {value[0], value[1], value[2], value[3]};
-    }
+    void setPosition(int index, glm::vec3 value) { stds->positions[index] = value; }
+    void setNormal(int index, glm::vec3 value) { stds->normals[index] = value; }
+    void setUV(int index, glm::vec2 value) { stds->uvs[index] = value; }
+    void setColor(int index, glm::vec4 value) { stds->colors[index] = value; }
+    void setMaterial(int index, glm::mat4 value);
+
     void setExtra(int index, glm::vec4 value, int slot = 1);
     void setExtra(int index, glm::vec3 value, int slot = 1);
     void setExtra(int index, float value, int slot = 1, int component = 3);
@@ -116,7 +119,7 @@ public:
   glm::vec4 getColor() const { return bufferBoss.getColor(index); }
   glm::mat4 getMaterial() const { return bufferBoss.getMaterial(index); }
   glm::vec4 getExtra(int slot = 1) const { return bufferBoss.getExtra(index, slot); }
-  Vertex getVertex() const { return Vertex(getPosition(), getUV(), getNormal(), getColor(), MaterialPhong(getMaterial())); }
+  Vertex getVertex() const { return Vertex(getPosition(), getUV(), getNormal(), getColor()); }
 
   void setPosition(glm::vec3 value) { bufferBoss.setPosition(index, value); }
   void setNormal(glm::vec3 value) { bufferBoss.setNormal(index, value); }
@@ -126,20 +129,23 @@ public:
   void setExtra(glm::vec4 value, int slot = 1) { bufferBoss.setExtra(index, value, slot); }
   void setExtra(glm::vec3 value, int slot = 1) { bufferBoss.setExtra(index, value, slot); }
   void setExtra(float value, int slot = 1, int component = 3) { bufferBoss.setExtra(index, value, slot, component); }
-  void applyFunction(SpaceEndomorphism f);
+  void applyFunction(const SpaceEndomorphism &f);
 
 
 };
 
 class WeakSuperMesh;
 
+
+
+
+
 class IndexedTriangle {
   int metaIndex;
   glm::ivec3 indicesWithinPolygroup;
 
-
 public:
-  IndexedTriangle(glm::ivec3 indices);
+  explicit IndexedTriangle(glm::ivec3 indices);
   IndexedTriangle(glm::ivec3 indices, const std::vector<BufferedVertex> &arrayWithinPoly, BufferManager &bufferBoss);
 
 
@@ -158,21 +164,34 @@ public:
 };
 
 
+
+class SmoothParametricSurface;
+
 class WeakSuperMesh {
   std::unique_ptr<BufferManager> boss;
   std::map<PolyGroupID, std::vector<BufferedVertex>> vertices = {};
   std::map<PolyGroupID, std::vector<IndexedTriangle>> triangles = {};
-  std::map<PolyGroupID, MaterialPhong> materials = {};
-
+  std::shared_ptr<MaterialPhong> material = nullptr;
 
 public:
-  WeakSuperMesh();
-  WeakSuperMesh(const std::vector<Vertex> &hardVertices, const std::vector<glm::ivec3> &faceIndices, PolyGroupID id, MaterialPhong *material = nullptr);
-  void addNewPolygroup(const std::vector<Vertex> &hardVertices, const std::vector<glm::ivec3> &faceIndices, PolyGroupID id, MaterialPhong *material = nullptr);
 
-  WeakSuperMesh(SmoothParametricSurface surf, int tRes, int uRes, PolyGroupID id, const MaterialPhong &material);
-  void addUniformSurface(SmoothParametricSurface surf, int tRes, int uRes, PolyGroupID id, const MaterialPhong &material);
-  int offset (CommonBufferType type) const { return boss->offset(type); }
+  WeakSuperMesh();
+  WeakSuperMesh(const std::vector<Vertex> &hardVertices, const std::vector<glm::ivec3> &faceIndices, const PolyGroupID &id);
+  WeakSuperMesh(const char* filename, const PolyGroupID &id);
+
+  void addNewPolygroup(const std::vector<Vertex> &hardVertices, const std::vector<glm::ivec3> &faceIndices, const PolyGroupID &id);
+  void addNewPolygroup(const char* filename, const PolyGroupID &id);
+
+
+
+  WeakSuperMesh & operator=(const WeakSuperMesh &other);
+  WeakSuperMesh(WeakSuperMesh &&other) noexcept;
+  WeakSuperMesh& operator=(WeakSuperMesh &&other) noexcept;
+  WeakSuperMesh(const WeakSuperMesh &other);
+
+
+  WeakSuperMesh(const SmoothParametricSurface &surf, int tRes, int uRes, const PolyGroupID &id);
+  void addUniformSurface(const SmoothParametricSurface &surf, int tRes, int uRes, const PolyGroupID &id);
 
   void* bufferIndexLocation() const { return boss->firstElementAddress(INDEX); }
   size_t bufferIndexSize() const { return boss->bufferSize(INDEX); }
@@ -183,27 +202,35 @@ public:
   std::vector<PolyGroupID> getPolyGroupIDs() const;
   BufferManager& getBufferBoss() const { return *boss; }
   bool isActive(CommonBufferType type) const { return boss->isActive(type); }
+  bool hasGlobalTextures() const { return !isActive(MATERIAL1) && material->textured(); }
 
-  void deformPerVertex(PolyGroupID id, const std::function<void(BufferedVertex&)> &deformation) { for (auto &v : vertices.at(id)) deformation(v);  }
-  void moveAlongVectorField(PolyGroupID id, VectorFieldR3 X, float delta=1);
-  void deformWithAmbientMap(PolyGroupID id, SpaceEndomorphism f);
+  void deformPerVertex(const PolyGroupID &id, const std::function<void(BufferedVertex&)> &deformation) { for (auto &v : vertices.at(id)) deformation(v);  }
+  void moveAlongVectorField(const PolyGroupID &id, VectorFieldR3 X, float delta=1);
+  void deformWithAmbientMap(const PolyGroupID &id, SpaceEndomorphism f);
+  void initGlobalTextures() {if (hasGlobalTextures()) material->initTextures();}
 
-  void affineTransform(const glm::mat3 &M, glm::vec3 v, PolyGroupID id) {deformWithAmbientMap(id, SpaceEndomorphism::affine(M, v));}
+  void affineTransform(const glm::mat3 &M, glm::vec3 v, const PolyGroupID &id) {deformWithAmbientMap(id, SpaceEndomorphism::affine(M, v));}
   void affineTransform(const glm::mat3 &M, glm::vec3 v) {for (auto& name: getPolyGroupIDs()) affineTransform(M, v, name);}
-  void shift(glm::vec3 v, PolyGroupID id) { affineTransform(glm::mat3(1), v, id); }
+  void shift(glm::vec3 v, const PolyGroupID &id) { affineTransform(glm::mat3(1), v, id); }
   void shift(glm::vec3 v) { affineTransform(glm::mat3(1), v); }
-  void scale(float s, PolyGroupID id) { affineTransform(glm::mat3(s), glm::vec3(0), id); }
+  void scale(float s, const PolyGroupID &id) { affineTransform(glm::mat3(s), glm::vec3(0), id); }
   void scale(float s) { affineTransform(glm::mat3(s), glm::vec3(0)); }
+  void addGlobalMaterial(const MaterialPhong &mat) { material = std::make_shared<MaterialPhong>(mat); }
 
 
 
-  WeakSuperMesh subdivideBarycentric(PolyGroupID id) const;
-  WeakSuperMesh subdivideEdgecentric(PolyGroupID id) const;
+  WeakSuperMesh subdivideBarycentric(const PolyGroupID &id) const;
+  WeakSuperMesh subdivideEdgecentric(const PolyGroupID &id) const;
   WeakSuperMesh wireframe(PolyGroupID id, PolyGroupID targetId, float width, float heightCenter, float heightSide) const;
 
-  std::vector<Vertex> getVertices(PolyGroupID id) const;
-  std::vector<glm::ivec3> getIndices(PolyGroupID id) const;
-  std::vector<IndexedTriangle> getTriangles(PolyGroupID id) const { return triangles.at(id); }
-
+  std::vector<Vertex> getVertices(const PolyGroupID &id) const;
+  std::vector<BufferedVertex> getBufferedVertices(const PolyGroupID &id) const { return vertices.at(id); }
+  std::vector<glm::ivec3> getIndices(const PolyGroupID &id) const;
+  std::vector<IndexedTriangle> getTriangles(const PolyGroupID &id) const { return triangles.at(id); }
+  glm::vec4 getIntencities() const { return material->compressIntencities(); }
+  MaterialPhong getMaterial() const { return *material; }
 };
+std::function<void(float, float)> deformationOperator (const std::function<void(BufferedVertex&, float, float)> &deformation, WeakSuperMesh &mesh, const PolyGroupID &id);
+std::function<void(float)> deformationOperator (const std::function<void(BufferedVertex&, float)> &deformation, WeakSuperMesh &mesh, const PolyGroupID &id);
 
+std::function<void(float, float)> moveAlongCurve(const SmoothParametricCurve &curve, WeakSuperMesh &mesh, const PolyGroupID &id);

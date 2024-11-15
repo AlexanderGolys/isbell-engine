@@ -42,7 +42,7 @@ vec4 colorFactorFromSingleLight(mat4 light, vec3 camPos, vec3 pos, vec3 n)
 	vec3 reflectDirection = normalize(reflect(-light_direction, n));
 	vec3 viewDirection = normalize(camPos - pos);
 	float cosAlpha = max(dot(viewDirection, reflectDirection), 0.);
-	return v_ambientColor * v_intencities.x/3 +
+	return v_ambientColor * v_intencities.x +
 		v_diffuseColor * v_intencities.y * cosTheta * lightPower(light) * lightColor(light) / distanceSquared+
 		v_specularColor * v_intencities.z  * pow(cosAlpha, v_intencities.w) * lightColor(light) * lightPower(light) / distanceSquared;
 
@@ -58,6 +58,5 @@ void main()
 	color = colorFactorFromSingleLight(light1, camPosition, v_position, normal) +
 			colorFactorFromSingleLight(light2, camPosition, v_position, normal) +
 			colorFactorFromSingleLight(light3, camPosition, v_position, normal);
-	color = vec4(.1, 1, 1, 1);
 
 }

@@ -7,239 +7,7 @@ using namespace glm;
 using std::vector, std::array;
 
 
-BoxMesh::BoxMesh(vec3 minCorner, vec3 maxCorner)
-{
-	this->triangles = std::vector<TriangleR3>();
-
-	vector<vec3> vert = {
-		vec3(minCorner.x, minCorner.y, minCorner.z),
-		vec3(minCorner.x, minCorner.y, maxCorner.z),
-		vec3(minCorner.x, maxCorner.y, minCorner.z),
-		vec3(minCorner.x, maxCorner.y, maxCorner.z),
-		vec3(maxCorner.x, minCorner.y, minCorner.z),
-		vec3(maxCorner.x, minCorner.y, maxCorner.z),
-		vec3(maxCorner.x, maxCorner.y, minCorner.z),
-		vec3(maxCorner.x, maxCorner.y, maxCorner.z) };
-
-	vec4 color = vec4(0.0f, 0.0f, 0.0f, 1.0f);
-
-	this->triangles.push_back(TriangleR3({ vert[0], vert[1], vert[2] }, color));
-	this->triangles.push_back(TriangleR3({vert[1], vert[3], vert[2]}, color));
-	this->triangles.push_back(TriangleR3({vert[4], vert[5], vert[6]}, color));
-	this->triangles.push_back(TriangleR3({vert[5], vert[7], vert[6]}, color));
-	this->triangles.push_back(TriangleR3({vert[0], vert[2], vert[4]}, color));
-	this->triangles.push_back(TriangleR3({vert[2], vert[6], vert[4]}, color));
-	this->triangles.push_back(TriangleR3({vert[1], vert[5], vert[3]}, color));
-	this->triangles.push_back(TriangleR3({vert[5], vert[7], vert[3]}, color));
-	this->triangles.push_back(TriangleR3({vert[0], vert[4], vert[1]}, color));
-	this->triangles.push_back(TriangleR3({vert[4], vert[5], vert[1]}, color));
-	this->triangles.push_back(TriangleR3({vert[2], vert[3], vert[6]}, color));
-	this->triangles.push_back(TriangleR3({vert[3], vert[7], vert[6]}, color));
-										 
-	for (TriangleR3 t : this->triangles) {
-		t.recalculateNormal();
-	}
-}
-
-
-
-
-
-void BoxMesh::assignFaceColors(array<vec4, 6> faceColors)
-{
-	for (int i = 0; i < 6; i++) {
-		this->triangles.at(i * 2).vertexColors = { faceColors[i] , faceColors[i], faceColors[i] };
-		this->triangles.at(i * 2 + 1).vertexColors = { faceColors[i] , faceColors[i], faceColors[i] };
-	}
-}
-
-BoxMesh::BoxMesh(vec3 minCorner, vec3 maxCorner, array<vec4, 6> faceColors) : BoxMesh(minCorner, maxCorner)
-{
-	assignFaceColors(faceColors);
-}
-
-BoxMesh::BoxMesh(vec3 minCorner, vec3 maxCorner, vec4 color) : BoxMesh(minCorner, maxCorner)
-{
-	assignFaceColors({ color, color, color, color, color, color });
-}
-
-void BoxMesh::randomizeFaceColors()
-{
-	auto seed = std::chrono::system_clock::now().time_since_epoch().count();
-	std::default_random_engine generator(seed);
-	std::uniform_real_distribution<double> distribution(0.0, 1.0);
-	array<vec4, 6> colors = array<vec4, 6>();
-	for (int i = 0; i < 6; i++) {
-		colors[i] = vec4(distribution(generator), distribution(generator), distribution(generator), 1.0f);
-	}
-	assignFaceColors(colors);
-
-}
-
-
-BallMesh::BallMesh(vec3 center, float radius, int radialSegments, int verticalSegments, vec3 normal)
-{
-	this->center = center;
-	this->radius = radius;
-	this->bdVertices = vector<vec3>();
-	auto tangents = orthogonalComplementBasis(normal);
-	vec3 t1 = tangents.first;
-	vec3 t2 = tangents.second;
-	auto trs = vector<TriangleR3>();
-	for (int i = 0; i < radialSegments; i++)
-		for (int j = 0; j < verticalSegments; j++)
-		{
-			float r1 = radius * j * 1.f / verticalSegments;
-			float r2 = radius * (j + 1) * 1.f / verticalSegments;
-			float theta1 = TAU * i * 1.f / radialSegments;
-			float theta2 = TAU * (i + 1)*1.f / radialSegments;
-			vec3 p1 = center + r1 * t1*cos(theta1)  + t2*r1 * sin(theta1);
-			vec3 p2 = center + r1 * t1*cos(theta2) + t2*r1 * sin(theta2);
-			vec3 p3 = center + r2 * t1*cos(theta1) + t2*r2 * sin(theta1);
-			vec3 p4 = center + r2 * t1*cos(theta2) + t2*r2 * sin(theta2);
-			auto tr1 = TriangleR3({ p1, p2, p3 }, normal);
-			auto tr2 = TriangleR3({ p2, p4, p3 }, normal);
-			trs.push_back(tr1);
-			trs.push_back(tr2);
-			if (j == verticalSegments - 1)
-			{
-				this->bdVertices.push_back(p3);
-			}
-		}
-	this->triangles = trs;
-}
-
-BallMesh::BallMesh(vec3 center, float radius, int radialSegments, int verticalSegments) : BallMesh(center, radius, radialSegments, verticalSegments, vec3(0.0f, 0.0f, 1.0f))
-{}
-
-BallMesh::BallMesh(int radialSegments, int verticalSegments) : BallMesh(vec3(0.0f, 0.0f, 0.0f), 1.0f, radialSegments, verticalSegments) {}
-
-
-BallMesh::BallMesh() : BallMesh(20, 3) { }
-
-
-TriangularMesh BallMesh::extrudeAlongNormal(float h)
-{
-	vec3 normal = this->triangles[0].normals[0];
-
-	auto trs = vector<TriangleR3>();
-	for (TriangleR3 tr : triangles)
-	{
-		TriangleR3 tri = TriangleR3(tr.vertices, tr.normals, tr.vertexColors, tr.uvs);
-		trs.push_back(tri);
-		
-		TriangleR3 tri2 = TriangleR3(tr.vertices, tr.normals, tr.vertexColors, tr.uvs) + (normal * h);
-		tri2.flipNormals();
-		trs.push_back(tri2);
-	}
-	
-	for (int i = 0; i < bdVertices.size(); i++)
-	{
-		auto v = bdVertices[i];
-		auto w = bdVertices[(i + 1) % bdVertices.size()];
-		auto tr = TriangleR3({ v, w, w +normal*h });
-		auto tr2 = TriangleR3({ v, w + normal*h, v + normal*h });
-		tr.recalculateNormal();
-		tr2.recalculateNormal();
-		trs.push_back(tr);
-		trs.push_back(tr2);
-	}
-	
-	return TriangularMesh(trs);
-	
-}
-
-TriangularMesh CircularRing::extrudeAlongNormal(float h)
-{
-	vec3 normal = this->triangles[0].normals[0];
-
-	auto trs = vector<TriangleR3>();
-	for (TriangleR3 tr : triangles)
-	{
-		TriangleR3 tri = TriangleR3(tr.vertices, tr.normals, tr.vertexColors, tr.uvs);
-		trs.push_back(tri);
-
-		TriangleR3 tri2 = TriangleR3(tr.vertices, tr.normals, tr.vertexColors, tr.uvs) + (normal * h);
-		tri2.flipNormals();
-		trs.push_back(tri2);
-	}
-
-	for (int i = 0; i < bdVerticesInner.size(); i++)
-	{
-		auto v = bdVerticesInner[i];
-		auto w = bdVerticesInner[(i + 1) % bdVerticesInner.size()];
-		auto tr = TriangleR3({ v, w, w + normal * h });
-		auto tr2 = TriangleR3({ v, w + normal * h, v + normal * h });
-		tr.recalculateNormal();
-		tr2.recalculateNormal();
-		trs.push_back(tr);
-		trs.push_back(tr2);
-	}
-
-	for (int i = 0; i < bdVerticesOuter.size(); i++)
-	{
-		auto v = bdVerticesOuter[i];
-		auto w = bdVerticesOuter[(i + 1) % bdVerticesOuter.size()];
-		auto tr = TriangleR3({ v, w, w + normal * h });
-		auto tr2 = TriangleR3({ v, w + normal * h, v + normal * h });
-		tr.recalculateNormal();
-		tr2.recalculateNormal();
-		trs.push_back(tr);
-		trs.push_back(tr2);
-	}
-
-	return TriangularMesh(trs);
-}
-
-
-
-CircularRing::CircularRing(vec3 center, float radiusBig, float radiusSmall, int radialSegments, int verticalSegments, vec3 normal)
-{
-	this->center = center;
-	this->radiusBig = radiusBig;
-	this->radiusSmall = radiusSmall;
-	auto tangents = orthogonalComplementBasis(normal);
-	vec3 t1 = tangents.first;
-	vec3 t2 = tangents.second;
-	auto trs = vector<TriangleR3>();
-	for (int i = 0; i < radialSegments; i++)
-	{
-		for (int j = 0; j < verticalSegments; j++)
-		{
-			float r1 = lerp(radiusSmall, radiusBig, j * 1.f / verticalSegments);
-			float r2 = lerp(radiusSmall, radiusBig, (j + 1) * 1.f / verticalSegments);
-			float theta1 = TAU * i / radialSegments;
-			float theta2 = TAU * (i + 1) / radialSegments;
-			vec3 p1 = center + r1 * cos(theta1) * t1 + r1 * sin(theta1) * t2;
-			vec3 p2 = center + r1 * cos(theta2) * t1 + r1 * sin(theta2) * t2;
-			vec3 p3 = center + r2 * cos(theta1) * t1 + r2 * sin(theta1) * t2;
-			vec3 p4 = center + r2 * cos(theta2) * t1 + r2 * sin(theta2) * t2;
-			auto tr1 = TriangleR3({ p1, p2, p3 }, normal);
-			auto tr2 = TriangleR3({ p2, p4, p3 }, normal);
-			trs.push_back(tr1);
-			trs.push_back(tr2);
-			if (j == verticalSegments - 1)
-			{
-				this->bdVerticesOuter.push_back(p3);
-			}
-			if (j == 0)
-			{
-				this->bdVerticesInner.push_back(p1);
-			}
-		}
-	}
-	this->triangles = trs;
-}
-
-CircularRing::CircularRing(vec3 center, float radiusBig, float radiusSmall, int radialSegments, int verticalSegments) : CircularRing(center, radiusBig, radiusSmall, radialSegments, verticalSegments, vec3(0.0f, 0.0f, 1.0f)){}
-
-CircularRing::CircularRing(int radialSegments, int verticalSegments) : CircularRing(vec3(0.0f, 0.0f, 0.0f), 1.0f, 3.f, radialSegments, verticalSegments){}
-
-
-CircularRing::CircularRing() : CircularRing(20, 3){}
-
-
-PlanarUnitDisk::PlanarUnitDisk(int radial_res, int vertical_res)
+PlanarMeshWithBoundary PlanarUnitDisk(int radial_res, int vertical_res)
 	{
 		auto trng = vector<TriangleR2>();
 		vector<vec2> bd = vector<vec2>();
@@ -252,44 +20,33 @@ PlanarUnitDisk::PlanarUnitDisk(int radial_res, int vertical_res)
 			trng.push_back(TriangleR2({ vec2(0, 0), p1, p2 }, { vec2(0, 0), p1, p2 }));
 		}
 		for (int i = 0; i < radial_res; i++)
-		{
-			for (int h = 1; h < vertical_res; h++)
-			{
-				float theta1 = TAU * i / radial_res;
-				float theta2 = TAU * (i + 1) / radial_res;
-				float h1 = h * 1.f / vertical_res;
-				float h2 = (h + 1) * 1.f / vertical_res;
-				vec2 p1 = vec2(cos(theta1) * h1, sin(theta1) * h1);
-				vec2 p2 = vec2(cos(theta2) * h1, sin(theta2) * h1);
-				vec2 p3 = vec2(cos(theta1) * h2, sin(theta1) * h2);
-				vec2 p4 = vec2(cos(theta2) * h2, sin(theta2) * h2);
+            for (int h = 1; h < vertical_res; h++)
+            {
+                float theta1 = TAU * i / radial_res;
+                float theta2 = TAU * (i + 1) / radial_res;
+                float h1 = h * 1.f / vertical_res;
+                float h2 = (h + 1) * 1.f / vertical_res;
+                vec2 p1 = vec2(cos(theta1) * h1, sin(theta1) * h1);
+                vec2 p2 = vec2(cos(theta2) * h1, sin(theta2) * h1);
+                vec2 p3 = vec2(cos(theta1) * h2, sin(theta1) * h2);
+                vec2 p4 = vec2(cos(theta2) * h2, sin(theta2) * h2);
 
-				trng.push_back(TriangleR2(p1, p2, p3));
-				trng.push_back(TriangleR2(p4, p3, p2));
-				if (h == vertical_res - 1)
-				{
-					bd.push_back(p3);
-				}
-			}
-			
-			
-		}
-		this->boundaries = { bd };
-		this->boundaryCyclic = { true };
-		this->triangles = trng;
+                trng.push_back(TriangleR2(p1, p2, p3));
+                trng.push_back(TriangleR2(p4, p3, p2));
+                if (h == vertical_res - 1)
+                    bd.push_back(p3);
+            }
+        return PlanarMeshWithBoundary(trng, { bd }, { true });
 	}
 
 
 
 
 
-PlanarRing::PlanarRing(int radial_res, int vertical_res,vec2 center, float radiusBig, float radiusSmall)
+PlanarMeshWithBoundary PlanarRing(int radial_res, int vertical_res,vec2 center, float radiusBig, float radiusSmall)
 	{
 		auto trng = vector<TriangleR2>();
 		trng.reserve(2 * radial_res * vertical_res);
-		this->center = center;
-		this->radiusBig = radiusBig;
-		this->radiusSmall = radiusSmall;
 		vector<vec2> bd = vector<vec2>();
 		vector<vec2> bd2 = vector<vec2>();
 
@@ -320,21 +77,12 @@ PlanarRing::PlanarRing(int radial_res, int vertical_res,vec2 center, float radiu
 
 
 		}
-		this->boundaries = { bd2, bd };
-		this->boundaryCyclic = { true , true};
-		this->triangles = trng;
+		return PlanarMeshWithBoundary(trng, { bd, bd2 }, { true, true });
 	}
 
-	
-
-void PlanarRing::addRotationalField(float power)
-	{
-		VectorFieldR2 vf = VectorFieldR2(std::function<vec2(vec2)>([power, this](vec2 p) {return vec2(-(p - this->center).y, (p - this->center).x) * power; }));
-		this->addVectorField(vf);
-	}
 
     
-PlanarConvexPolygon::PlanarConvexPolygon(vector<vec2> verts)
+PlanarMeshWithBoundary PlanarConvexPolygon(const vector<vec2> &verts)
 {
 	auto trng = vector<TriangleR2>();
 	float maxRadius = 0;
@@ -355,10 +103,7 @@ PlanarConvexPolygon::PlanarConvexPolygon(vector<vec2> verts)
 		trng.push_back(TriangleR2({ center, p1, p2 }, { vec2(0, 0), (p1 - center) / (2.f * maxRadius), (p2 - center) / (2.f * maxRadius) }));
 		bd.push_back(p1);
 	}
-	this->vertices = verts;
-	this->boundaries = { bd };
-	this->boundaryCyclic = { true };
-	this->triangles = trng;
+    return PlanarMeshWithBoundary(trng, { bd }, { true });
 }
 
 COLOR_PALETTE::COLOR_PALETTE(vec4 mainColor, vec4 second, vec4 third, vec4 accent, vec4 accent2)
@@ -431,6 +176,16 @@ SmoothParametricPlaneCurve epitrochoid(float r, float R, float d, float eps) {
                 0, TAU, true, eps);
 }
 
+SmoothParametricPlaneCurve epicycloid(float r, float R, float eps) { return epitrochoid(r, R, r, eps); }
+
+SmoothParametricPlaneCurve cardioid(float r, float eps) { return epicycloid(r, r, eps); }
+
+SmoothParametricPlaneCurve nephroid(float r, float eps) { return epicycloid(r, 2*r, eps); }
+
+SmoothParametricPlaneCurve trefoiloid(float r, float eps) { return epicycloid(r, 3*r, eps); }
+
+SmoothParametricPlaneCurve quatrefoloid(float r, float eps) { return epicycloid(r, 4*r, eps); }
+
 SmoothParametricPlaneCurve hypotrochoid(float r, float R, float d, float eps) {
     return SmoothParametricPlaneCurve(
                 [r, R, d](float t) {return vec2((R-r)*cos(t) + d*cos((R-r)/r*t), (R-r)*sin(t) - d*sin((R-r)/r*t)); },
@@ -438,6 +193,16 @@ SmoothParametricPlaneCurve hypotrochoid(float r, float R, float d, float eps) {
                 [r, R, d](float t) {return vec2(-(R-r)*cos(t) - d*(R-r)/r*(R-r)/r*cos((R-r)/r*t), -(R-r)*sin(t) + d*(R-r)/r*(R-r)/r*sin((R-r)/r*t)); },
                 0, TAU, true, eps);
 }
+
+SmoothParametricPlaneCurve hypocycloid(float r, float R, float eps) { return hypotrochoid(r, R, r, eps); }
+
+SmoothParametricPlaneCurve astroid(float r, float eps) { return hypocycloid(r, 4*r, eps); }
+
+SmoothParametricPlaneCurve deltoid(float r, float eps) { return hypocycloid(r, 3*r, eps); }
+
+SmoothParametricPlaneCurve pentoid(float r, float eps) { return hypocycloid(r, 5*r, eps); }
+
+SmoothParametricPlaneCurve exoid(float r, float eps) { return hypocycloid(r, 6*r, eps); }
 
 SmoothParametricCurve circle(float r, vec3 center, vec3 v1, vec3 v2, float eps) {
     return circle(r, PLANE_ORIGIN, eps).embedding(v1, v2, center);
@@ -528,6 +293,8 @@ WeakSuperMesh singleQuadShadeFlat(vec3 outer1, vec3 inner1, vec3 inner2, vec3 ou
     return WeakSuperMesh(nodes, {ivec3(0, 1, 2), ivec3(3, 4, 5)}, id);
 }
 
+
+
 SmoothParametricSurface sphere(float r, vec3 center, float cutdown, float eps) {
     return SmoothParametricSurface([r, center](float t, float u) {
         return center + vec3(cos(t) * sin(u), sin(t) * sin(u), cos(u))*r;
@@ -535,21 +302,21 @@ SmoothParametricSurface sphere(float r, vec3 center, float cutdown, float eps) {
 }
 
 
-inline WeakSuperMesh icosahedron(float r, vec3 center, MaterialPhong &material, std::variant<int, std::string> id) {
+inline WeakSuperMesh icosahedron(float r, vec3 center, std::variant<int, std::string> id) {
     float phi = (1.f + sqrt(5)) / 2;
     vector verts = {
-        Vertex(vec3(1, phi, 0), vec2(0, 0), normalise(vec3(1, phi, 0)), BLACK, material),
-        Vertex(vec3(-1, phi, 0), vec2(0, 0), normalise(vec3(-1, phi, 0)), BLACK, material),
-        Vertex(vec3(1, -phi, 0), vec2(0, 0), normalise(vec3(1, -phi, 0)), BLACK, material),
-        Vertex(vec3(-1, -phi, 0), vec2(0, 0), normalise(vec3(-1, -phi, 0)), BLACK, material),
-        Vertex(vec3(0, 1, phi), vec2(0, 0), normalise(vec3(0, 1, phi)), BLACK, material),
-        Vertex(vec3(0, -1, phi), vec2(0, 0), normalise(vec3(0, -1, phi)), BLACK, material),
-        Vertex(vec3(0, 1, -phi), vec2(0, 0), normalise(vec3(0, 1, -phi)), BLACK, material),
-        Vertex(vec3(0, -1, -phi), vec2(0, 0), normalise(vec3(0, -1, -phi)), BLACK, material),
-        Vertex(vec3(phi, 0, 1), vec2(0, 0), normalise(vec3(phi, 0, 1)), BLACK, material),
-        Vertex(vec3(-phi, 0, 1), vec2(0, 0), normalise(vec3(-phi, 0, 1)), BLACK, material),
-        Vertex(vec3(phi, 0, -1), vec2(0, 0), normalise(vec3(phi, 0, -1)), BLACK, material),
-        Vertex(vec3(-phi, 0, -1), vec2(0, 0), normalise(vec3(-phi, 0, -1)), BLACK, material)
+        Vertex(vec3(1, phi, 0),  vec2(1, 0),  normalise(vec3(1, phi, 0)),     BLACK     ),
+        Vertex(vec3(-1, phi, 0), vec2(-1, 0), normalise(vec3(-1, phi, 0)),   BLACK   ),
+        Vertex(vec3(1, -phi, 0), vec2(1, 0), normalise(vec3(1, -phi, 0)),   BLACK   ),
+        Vertex(vec3(-1, -phi, 0),vec2(-1, 0), normalise(vec3(-1, -phi, 0)), BLACK ),
+        Vertex(vec3(0, 1, phi),  vec2(0, phi), normalise(vec3(0, 1, phi)),     BLACK     ),
+        Vertex(vec3(0, -1, phi), vec2(0, phi), normalise(vec3(0, -1, phi)),   BLACK   ),
+        Vertex(vec3(0, 1, -phi), vec2(0, -phi), normalise(vec3(0, 1, -phi)),   BLACK   ),
+        Vertex(vec3(0, -1, -phi),vec2(0, -phi), normalise(vec3(0, -1, -phi)), BLACK ),
+        Vertex(vec3(phi, 0, 1),  vec2(phi, 1), normalise(vec3(phi, 0, 1)),     BLACK     ),
+        Vertex(vec3(-phi, 0, 1), vec2(-phi, 1), normalise(vec3(-phi, 0, 1)),   BLACK   ),
+        Vertex(vec3(phi, 0, -1), vec2(phi, -1), normalise(vec3(phi, 0, -1)),   BLACK   ),
+        Vertex(vec3(-phi, 0, -1),vec2(-phi, -1), normalise(vec3(-phi, 0, -1)), BLACK )
         };
     vector<ivec3> faceInds = {};
     for (int i = 0; i < verts.size()-2; i++) {
@@ -566,12 +333,13 @@ inline WeakSuperMesh icosahedron(float r, vec3 center, MaterialPhong &material, 
     }
     for (int i = 0; i < verts.size(); i++) {
         verts[i].setPosition(normalise(verts[i].getPosition())*r + center);
+        verts[i].setUV(vec2(verts[i].getPosition().y, verts[i].getPosition().z));
     }
     return WeakSuperMesh(verts, faceInds, id);
 }
 
-WeakSuperMesh icosphere(float r, int n, vec3 center, MaterialPhong &material, PolyGroupID id) {
-    WeakSuperMesh unitSphere = icosahedron(1, vec3(0, 0, 0), material, id);
+WeakSuperMesh icosphere(float r, int n, vec3 center, PolyGroupID id) {
+    WeakSuperMesh unitSphere = icosahedron(1, vec3(0, 0, 0), id);
     while (n > 0) {
         unitSphere = unitSphere.subdivideEdgecentric(id);
         n--;
@@ -586,4 +354,95 @@ WeakSuperMesh icosphere(float r, int n, vec3 center, MaterialPhong &material, Po
     return unitSphere;
 }
 
+WeakSuperMesh disk3d(float r, glm::vec3 center, glm::vec3 v1, glm::vec3 v2, int radial_res, int vertical_res, const std::variant<int, std::string> &id) {
+    auto vert = vector<Vertex>();
+    vector<ivec3> inds = {};
+    vec3 n = normalise(cross(v1, v2));
 
+    vert.emplace_back(center, vec2(0, 0), n, vec4(0, 0, 0, 0));
+    for (int h = 1; h <= vertical_res; h++)
+        for (int i = 0; i < radial_res; i++)
+            {
+                float theta = TAU * i / radial_res;
+                vert.emplace_back( center + v1 * (cos(theta) / vertical_res * r * h)  + v2 * (sin(theta) / vertical_res * r * h),
+                    vec2(i * 1.f / radial_res, h * 1.f / vertical_res), n, vec4(theta, 1.0 * h /vertical_res, 0, 0));
+            }
+    for (int i = 0; i < radial_res; i++)
+        inds.push_back(ivec3(0, i + 1, (i + 1) % radial_res + 1));
+    for (int h = 1; h <= vertical_res - 1; h++)
+        for (int i = 0; i < radial_res; i++)
+        {
+            inds.push_back(ivec3(i + 1 + (h - 1) * radial_res, i + 1 + h * radial_res, (i + 1) % radial_res + 1 + h * radial_res));
+            inds.push_back(ivec3(i + 1 + (h - 1) * radial_res, (i + 1) % radial_res + 1 + h * radial_res, (i + 1) % radial_res + 1 + (h - 1) * radial_res));
+        }
+    return WeakSuperMesh(vert, inds, id);
+}
+
+Disk3D::Disk3D(const std::vector<Vertex> &nodes, const std::vector<glm::ivec3> &faceInds, glm::vec3 center, glm::vec3 forward, glm::vec3 down, std::variant<int, std::string> id) :
+    WeakSuperMesh(nodes, faceInds, id), center(center), forward(forward), down(down), normal(normalise(cross(forward, down))), radius(0) , id(id){
+
+    setEmpiricalRadius();
+    setColorInfo();
+    }
+
+Disk3D::Disk3D(const char *filename, glm::vec3 center, glm::vec3 forward, glm::vec3 down, std::variant<int, std::string> id)
+    : WeakSuperMesh(filename, id), center(center), forward(forward), down(down), normal(normalise(cross(forward, down))), radius(0), id(id) {
+
+    setEmpiricalRadius();
+    setColorInfo();
+
+}
+
+Disk3D::Disk3D(float r, glm::vec3 center, glm::vec3 forward, glm::vec3 down, int radial_res, int vertical_res, const std::variant<int, std::string> &id) : WeakSuperMesh(disk3d(r, center, forward, down, radial_res, vertical_res, id)) {
+    this->center = center;
+    this->forward = forward;
+    this->down = down;
+    this->normal = normalise(cross(forward, down));
+    radius = r;
+    this->id = id;
+}
+
+void Disk3D::move(glm::vec3 center, glm::vec3 forward, glm::vec3 down) {
+    glm::vec3 delta = center - this->center;
+    this->center = center;
+    this->forward = forward;
+    this->down = down;
+    this->normal = normalise(cross(forward, down));
+    for (BufferedVertex &v: getBufferedVertices(id)) {
+        v.setPosition(center + forward*cos(angle(v))*rParam(v)*radius + down*sin(angle(v))*rParam(v)*radius + normal*width(v));
+        v.setNormal(normal);
+    }
+}
+
+void Disk3D::moveRotate(glm::vec3 center, glm::vec3 forward, glm::vec3 down) {
+    float distance = norm(center + down - this->center - this->down);
+    float angle = distance / radius;
+    move(center, forward, down);
+    rotate(angle);
+}
+
+void Disk3D::rotate(float angle) {
+    for (BufferedVertex &v: getBufferedVertices(id))
+        v.setColor(v.getColor() + vec4(angle, 0, 0, 0));
+
+    move(center, forward, down);
+}
+
+float Disk3D::rReal(const BufferedVertex &v) {
+    return norm(projectVectorToPlane(v.getPosition() - this->center, this->normal));
+}
+
+void Disk3D::setR(float r) {
+    radius = r;
+    move(center, forward, down);
+}
+
+void Disk3D::setEmpiricalRadius() {
+    for ( auto &v: getBufferedVertices(id))
+        radius = std::max(radius, norm(projectVectorToPlane(v.getPosition() - this->center, this->normal)));
+}
+
+void Disk3D::setColorInfo() {
+    for ( auto &v: getBufferedVertices(id))
+        v.setColor(vec4(atan2(dot(v.getPosition() - center, forward), dot(v.getPosition() - center, down)), rReal(v)/radius, dot(v.getPosition() - center, normal), 0));
+}

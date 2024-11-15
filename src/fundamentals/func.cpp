@@ -1,0 +1,357 @@
+#include "func.hpp"
+#include <functional>
+#include <glm/detail/_vectorize.hpp>
+#include <glm/gtx/transform.hpp>
+#include <iosfwd>
+#include <iostream>
+#include <memory>
+#include <utility>
+#include <vector>
+
+using namespace glm;
+using std::vector, std::shared_ptr, std::make_shared, std::max, std::min;
+
+
+Regularity operator+(Regularity a, int b);
+Regularity operator-(Regularity a, int b) { // NOLINT(*-no-recursion)
+    if (b < 0)
+        return a + (-b);
+    if (INT(a) < 0 || INT(a) > 6)
+        return a;
+    return static_cast<Regularity>(std::max(-1, INT(a) - b));
+}
+
+Regularity operator+(Regularity a, int b) { // NOLINT(*-no-recursion)
+    if (b < 0)
+        return a - (-b);
+    if (INT(a) < -1 || INT(a) > 5)
+        return a;
+    return static_cast<Regularity>(std::min(6, INT(a) + b));
+}
+
+
+
+
+Foo31 partialDerivativeOperator(Foo31 f, int i, float epsilon) {
+    return directionalDerivativeOperator<vec3, float>(std::move(f), vec3(i == 0, i == 1, i == 2), epsilon);
+}
+
+Foo21 partialDerivativeOperator(Foo21 f, int i, float epsilon) {
+    return directionalDerivativeOperator<vec2, float>(std::move(f), vec2(i == 0, i == 1), epsilon);
+}
+
+Foo33 derivativeOperator(const Foo31 &f, float epsilon) {
+    return [f, epsilon](glm::vec3 v) { return
+        glm::vec3(partialDerivativeOperator(f, 0, epsilon)(v), partialDerivativeOperator(f, 1, epsilon)(v), partialDerivativeOperator(f, 2, epsilon)(v)); };
+}
+
+Foo22 derivativeOperator(const Foo21 &f, float epsilon) {
+    return [f, epsilon](glm::vec2 v) { return
+        glm::vec2(partialDerivativeOperator(f, 0, epsilon)(v), partialDerivativeOperator(f, 1, epsilon)(v)); };
+}
+
+Foo13 derivativeOperator(const Foo13  &f, float epsilon) {
+    Fooo f1 = [f](float x) { return f(x).x; };
+    Fooo f2 = [f](float x) { return f(x).y; };
+    Fooo f3 = [f](float x) { return f(x).z; };
+    return [f1, f2, f3, epsilon](float x) { return vec3(derivativeOperator(f1, epsilon)(x), derivativeOperator(f2, epsilon)(x), derivativeOperator(f3, epsilon)(x)); };
+}
+
+Foo12 derivativeOperator(const Foo12  &f, float epsilon) {
+    Fooo f1 = [f](float x) { return f(x).x; };
+    Fooo f2 = [f](float x) { return f(x).y; };
+    return [f1, f2, epsilon](float x) { return vec2(derivativeOperator(f1, epsilon)(x), derivativeOperator(f2, epsilon)(x));};
+}
+
+RealFunctionR3::RealFunctionR3(RealFunctionR3 &&other) noexcept: _f(std::move(other._f)),
+                                                                 _df(std::move(other._df)),
+                                                                 eps(other.eps),
+                                                                 regularity(other.regularity) {}
+
+RealFunctionR3 & RealFunctionR3::operator=(const RealFunctionR3 &other) {
+    if (this == &other)
+        return *this;
+    _f = other._f;
+    _df = other._df;
+    eps = other.eps;
+    regularity = other.regularity;
+    return *this;
+}
+
+RealFunctionR3 & RealFunctionR3::operator=(RealFunctionR3 &&other) noexcept {
+    if (this == &other)
+        return *this;
+    _f = std::move(other._f);
+    _df = std::move(other._df);
+    eps = other.eps;
+    regularity = other.regularity;
+    return *this;
+}
+
+float RealFunctionR3::operator()(vec3 v) const {
+	return _f(v);
+}
+
+vec3 RealFunctionR3::df(vec3 v) const {
+	return _df(v);
+}
+
+
+RealFunctionR3 RealFunctionR3::operator*(float a) const {
+	return RealFunctionR3([this, a](vec3 v) {return this->_f(v) * a; },
+		[this, a](vec3 v) {return this->_df(v) * a; });
+}
+
+RealFunctionR3 RealFunctionR3::operator+(float a) const {
+	return RealFunctionR3([this, a](vec3 v) {return this->_f(v) + a; },
+		[this](vec3 v) {return this->_df(v); });
+}
+
+RealFunctionR3 RealFunctionR3::operator-(float a) const {
+	return RealFunctionR3([this, a](vec3 v) {return this->_f(v) - a; },
+		[this](vec3 v) {return this->_df(v); });
+}
+
+RealFunctionR3 RealFunctionR3::operator/(float a) const {
+    return RealFunctionR3([this, a](vec3 v) { return this->_f(v) / a; }, [this, a](vec3 v) { return this->_df(v) / a; });
+}
+
+RealFunctionR3 RealFunctionR3::operator+(const RealFunctionR3 &g) const {
+    return RealFunctionR3([f=_f, g_=g](vec3 x) { return f(x) + g_(x); },
+                                [df=_df, g_=g](vec3 x) { return df(x) + g_.df(x); });
+}
+
+
+RealFunctionR3 RealFunctionR3::operator*(const RealFunctionR3 &g) const {
+    return RealFunctionR3([f=_f, g_=g](vec3 x) { return f(x) * g_(x); },
+                                [f=_f, df=_df, g_=g](vec3 x) { return f(x) * g_.df(x) + df(x) * g_(x); });
+}
+
+RealFunctionR3 RealFunctionR3::operator/(const RealFunctionR3 &g) const {
+    return RealFunctionR3([f=_f, g_=g](vec3 x) { return f(x) / g_(x); },
+                                [f=_f, df=_df, g_=g](vec3 x) { return (f(x) * g_.df(x) - df(x) * g_(x)) / (g_(x) * g_(x)); });
+}
+
+RealFunctionR3 RealFunctionR3::linear(vec3 v) {
+	return RealFunctionR3([v](vec3 x) {return dot(x, v); },
+		[v](vec3 x) {return v; });
+}
+
+RealFunctionR3 RealFunctionR3::projection(int i) {
+    return RealFunctionR3([i](vec3 x) { return x[i]; }, [i](vec3 x) { return vec3(0, 0, 0); });
+}
+SpaceEndomorphism &SpaceEndomorphism::operator=(const SpaceEndomorphism &other) {
+    if (this == &other)
+        return *this;
+    _f = other._f;
+    _df = other._df;
+    return *this;
+}
+SpaceEndomorphism &SpaceEndomorphism::operator=(SpaceEndomorphism &&other) noexcept {
+    if (this == &other)
+        return *this;
+    _f = std::move(other._f);
+    _df = std::move(other._df);
+    return *this;
+}
+
+
+RealFunctionR3 RealFunctionR3::constant(float a) {
+	return RealFunctionR3([a](vec3 x) {return a; },
+		[a](vec3 x) {return vec3(0, 0, 0); });
+}
+
+
+
+
+
+
+
+
+
+
+PlaneSmoothEndomorphism::PlaneSmoothEndomorphism() {
+	_f = make_shared<std::function<vec2(vec2)>>([](vec2 v) {return v; });
+	_df = make_shared<std::function<mat2(vec2)>>([](vec2 v) {return mat2(1, 0, 0, 1); });
+}
+
+PlaneSmoothEndomorphism::PlaneSmoothEndomorphism(shared_ptr<std::function<vec2(vec2)>> f, shared_ptr<std::function<mat2(vec2)>> df)
+{
+	_f = f;
+	_df = df;
+}
+
+vec2 PlaneSmoothEndomorphism::operator()(vec2 x) const {
+	return (*_f)(x);
+}
+
+vec2 PlaneSmoothEndomorphism::df(vec2 x, vec2 v) const {
+	return (*_df)(x) * v;
+}
+mat2 PlaneSmoothEndomorphism::df(vec2 x) const {
+	return (*_df)(x);
+}
+
+
+PlaneAutomorphism::PlaneAutomorphism(shared_ptr<std::function<vec2(vec2)>> f, shared_ptr<std::function<mat2(vec2)>> df,
+	shared_ptr<std::function<vec2(vec2)>> f_inv) : PlaneSmoothEndomorphism(f, df) {
+	_f_inv = f_inv;
+}
+
+vec2 PlaneAutomorphism::f_inv(vec2 x) const {
+	return (*_f_inv)(x);
+}
+
+PlaneAutomorphism PlaneAutomorphism::operator~() const {
+	auto df_cpy = _df;
+	auto f_inv_cpy = _f_inv;
+	auto df_inv = [df_cpy, f_inv_cpy](vec2 x) { return inverse((*df_cpy)((*f_inv_cpy)(x))); };
+	return PlaneAutomorphism( f_inv_cpy, make_shared<std::function<mat2(vec2)>>(df_inv), _f);
+}
+
+
+
+
+
+SpaceEndomorphism::SpaceEndomorphism(std::function<vec3(vec3)> f, float epsilon) {
+	_f = f;
+    _df = [f, epsilon](vec3 x) {
+        return mat3(
+            (f(x + vec3(epsilon, 0, 0)) - f(x - vec3(epsilon, 0, 0))) / (2 * epsilon),
+            (f(x + vec3(0, epsilon, 0)) - f(x - vec3(0, epsilon, 0))) / (2 * epsilon),
+            (f(x + vec3(0, 0, epsilon)) - f(x - vec3(0, 0, epsilon))) / (2 * epsilon)
+        );
+    };
+}
+
+
+
+SpaceEndomorphism SpaceEndomorphism::compose(const SpaceEndomorphism &g) const {
+	return SpaceEndomorphism([f=_f, g](vec3 v) {return f(g(v)); },
+			[d=_df, g](vec3 x) {return d(g(x)) * g.df(x); });
+}
+
+SpaceEndomorphism SpaceEndomorphism::translation(vec3 v) {
+	return affine(mat3(1), v);
+}
+
+SpaceEndomorphism SpaceEndomorphism::scaling(float x, float y, float z) {
+	return linear(mat3(x, 0, 0, 0, y, 0, 0, 0, z));
+}
+
+SpaceEndomorphism SpaceEndomorphism::affine(mat3 A, vec3 v) {
+	return SpaceEndomorphism([A, v](vec3 x) {return A * x + v; },
+		[A](vec3 x) {return A; });
+}
+
+SpaceAutomorphism SpaceAutomorphism::linear(mat3 A) {
+    return SpaceAutomorphism([A](vec3 v) {return A * v; },
+                            [A](vec3 v) {return inverse(A) * v; },
+                             [A](vec3 x) {return A; });
+}
+SpaceAutomorphism SpaceAutomorphism::translation(vec3 v) {
+    return SpaceAutomorphism([v](vec3 x) {return x + v; },
+                            [v](vec3 x) {return x - v; },
+                             [](vec3 x) {return mat3(1); });
+}
+SpaceAutomorphism SpaceAutomorphism::scaling(float x, float y, float z) {
+    return SpaceAutomorphism([x, y, z](vec3 v) {return vec3(v.x*x, v.y*y, v.z*z); },
+                            [x, y, z](vec3 v) {return vec3(v.x/x, v.y/y, v.z/z); },
+                             [x, y, z](vec3 v) {return mat3(x, 0, 0, 0, y, 0, 0, 0, z); });
+}
+
+
+SpaceAutomorphism SpaceAutomorphism::affine(mat3 A, vec3 v) {
+    return SpaceAutomorphism([A, v](vec3 x) { return A * x + v; }, [A, v](vec3 x) { return inverse(A) * (x - v); },
+                             [A](vec3 x) { return A; });
+}
+SpaceAutomorphism SpaceAutomorphism::rotation(float angle) {
+    return linear(rotationMatrix3(angle));
+}
+
+
+SpaceAutomorphism SpaceAutomorphism::rotation(vec3 axis, float angle) {
+    return linear(rotationMatrix3(axis, angle));
+}
+
+
+VectorFieldR3::VectorFieldR3() {
+    _X = [](vec3 v) { return vec3(0, 0, 0); };
+}
+VectorFieldR3::VectorFieldR3(Foo33 X, float eps) : _X(X), eps(eps) {
+    RealFunctionR3 Fx = RealFunctionR3([X=_X](vec3 x) { return X(x).x;}, eps);
+    RealFunctionR3 Fy = RealFunctionR3([X=_X](vec3 x) { return X(x).y;}, eps);
+    RealFunctionR3 Fz = RealFunctionR3([X=_X](vec3 x) { return X(x).z;}, eps);
+    _dX = [Fx, Fy, Fz](vec3 v) { return mat3(Fx.df(v), Fy.df(v), Fz.df(v)); };
+}
+
+VectorFieldR3::VectorFieldR3(RealFunctionR3 Fx, RealFunctionR3 Fy, RealFunctionR3 Fz, float epsilon) : eps(epsilon) {
+    _X = [fx = Fx, fy = Fy, fz = Fz](vec3 v) { return vec3(fx(v), fy(v), fz(v)); };
+    _dX = [fx = Fx, fy = Fy, fz = Fz](vec3 v) { return mat3(fx.df(v), fy.df(v), fz.df(v)); };
+}
+
+
+VectorFieldR3::VectorFieldR3(VectorFieldR2 f) : VectorFieldR3([_f=f](vec3 v) {return vec3(_f(vec2(v.x, v.y)), 0); }, 0.01) {}
+
+
+
+VectorFieldR3 VectorFieldR3::constant(vec3 v) { return VectorFieldR3([v](vec3 x) {return v; }, 0.01); }
+
+
+VectorFieldR3 VectorFieldR3::operator+(const VectorFieldR3 &Y) const {
+    return VectorFieldR3([f=_X, g=Y._X](vec3 v) {return f(v) + g(v); },  [df=_dX, dg=Y._dX](vec3 v) {return df(v) + dg(v); }, eps);
+}
+
+VectorFieldR3 VectorFieldR3::operator*(float a) const {
+    return VectorFieldR3([f=_X, a](vec3 v) {return f(v) * a; }, [df=_dX, a](vec3 v) {return df(v) * a; }, eps);
+}
+
+VectorFieldR3 VectorFieldR3::operator*(const RealFunctionR3 &f) const {
+    return VectorFieldR3([X=_X, g=f](vec3 v) {return X(v) * g(v); }, [dX=_dX, g=f](vec3 v) {return dX(v) * g(v); }, eps);
+}
+
+VectorFieldR3 VectorFieldR3::linear(mat3 A) {
+    return VectorFieldR3([A](vec3 v) {return A * v; }, [A](vec3 v) {return A; }, 0.01);
+}
+
+VectorFieldR3 VectorFieldR3::radial(vec3 scale) {
+    return VectorFieldR3([scale](vec3 v) {return vec3(v.x*scale.x, v.y*scale.y, v.z*scale.z); }, [scale](vec3 v) {return mat3(scale.x, 0, 0, 0, scale.y, 0, 0, 0, scale.z); }, 0.01);
+}
+
+
+RealFunctionR3 VectorFieldR3::divergence() const {
+    return RealFunctionR3([f = _X](vec3 v) {
+        return dot(f(v), vec3(1, 1, 1));
+    });
+}
+
+VectorFieldR3 VectorFieldR3::curl() const {
+    RealFunctionR3 F1 = F_x();
+    RealFunctionR3 F2 = F_y();
+    RealFunctionR3 F3 = F_z();
+    return VectorFieldR3([F1, F2, F3](vec3 v) {
+        return vec3(F3.dy(v) - F2.dz(v), F1.dz(v) - F3.dx(v), F2.dx(v) - F1.dy(v));
+    }, 0.01);
+}
+
+
+SpaceAutomorphism::SpaceAutomorphism(std::function<vec3(vec3)> f, std::function<vec3(vec3)> f_inv, std::function<mat3(vec3)> df) : SpaceEndomorphism(f, df) {
+	this->_f_inv = f_inv;
+}
+
+SpaceAutomorphism::SpaceAutomorphism(std::function<vec3(vec3)> f, std::function<vec3(vec3)> f_inv, float epsilon) : SpaceEndomorphism(f, epsilon) {
+	this->_f_inv = f_inv;
+}
+
+vec3 SpaceAutomorphism::inv(vec3 v) const {
+	return _f_inv(v);
+}
+
+SpaceAutomorphism SpaceAutomorphism::operator~() const {
+	return SpaceAutomorphism(_f_inv, _f, [d=_df](vec3 x) {return inverse(d(x)); });
+}
+
+SpaceAutomorphism SpaceAutomorphism::compose(SpaceAutomorphism g) const {
+    return SpaceAutomorphism([f = _f, g](vec3 v) { return f(g(v)); }, [f_inv = _f_inv, g](vec3 v) { return g.inv(f_inv(v)); },
+                             [d = _df, g](vec3 x) { return d(g(x)) * g.df(x); });
+}
