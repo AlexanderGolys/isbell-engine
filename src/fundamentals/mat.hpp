@@ -1,12 +1,12 @@
 # pragma once
 
-
-#include <string>
 #include <vector>
 #include <iostream>
 #include <cmath>
 #include <array>
 #include <algorithm>
+#include <format>
+
 #include "metaUtils.hpp"
 
 
@@ -271,10 +271,10 @@ public:
 auto norm2(Complex c) -> float;
 auto abs(Complex c) -> float;
 
-inline Complex operator*(float f, Complex c) { return c * f; }
-inline Complex operator/(float f, Complex c) { return Complex(f) / c; }
-inline Complex operator+(float f, Complex c) { return c + f; }
-inline Complex operator-(float f, Complex c) { return Complex(f) - c; }
+// inline Complex operator*(float f, Complex c) { return c * f; }
+// inline Complex operator/(float f, Complex c) { return Complex(f) / c; }
+// inline Complex operator+(float f, Complex c) { return c + f; }
+// inline Complex operator-(float f, Complex c) { return Complex(f) - c; }
 
 
 template<int n, int m>
@@ -649,4 +649,124 @@ std::vector<float> vecToVecHeHe(vec v) {
 template <typename vec>
 vec barycenter(vec a, vec b, vec c) {
     return (a + b + c) / 3.f;
-}
+};
+
+
+
+
+
+class SparseMatrix {
+  std::vector<std::vector<std::pair<int, float>>> data;
+    int n, m;
+public:
+  SparseMatrix(int n, int m) {
+    this->n = n;
+    this->m = m;
+    this->data = std::vector<std::vector<std::pair<int, float>>>(n);
+  }
+    void set(int i, int j, float val) {
+        this->data[i].push_back({j, val});
+    }
+
+    float get(int i, int j) {
+        for (auto p : this->data[i]) {
+            if (p.first == j)
+                return p.second;
+        }
+        return 0;
+    }
+
+  float operator()(int i, int j) {
+    return get(i, j);
+  }
+
+    SparseMatrix operator*(float f) {
+        SparseMatrix result = SparseMatrix(this->n, this->m);
+        for (int i = 0; i < this->n; i++) {
+        for (auto p : this->data[i]) {
+            result.set(i, p.first, p.second * f);
+        }
+        }
+        return result;
+    }
+
+    SparseMatrix operator+(SparseMatrix M) {
+        SparseMatrix result = SparseMatrix(this->n, this->m);
+        for (int i = 0; i < this->n; i++) {
+        for (auto p : this->data[i]) {
+            result.set(i, p.first, p.second);
+        }
+        }
+        for (int i = 0; i < M.n; i++) {
+        for (auto p : M.data[i]) {
+            result.set(i, p.first, result.get(i, p.first) + p.second);
+        }
+        }
+        return result;
+    }
+
+    SparseMatrix operator-(SparseMatrix M) {
+        SparseMatrix result = SparseMatrix(this->n, this->m);
+        for (int i = 0; i < this->n; i++) {
+        for (auto p : this->data[i]) {
+            result.set(i, p.first, p.second);
+        }
+        }
+        for (int i = 0; i < M.n; i++) {
+        for (auto p : M.data[i]) {
+            result.set(i, p.first, result.get(i, p.first) - p.second);
+        }
+        }
+        return result;
+    }
+};
+
+
+class BigMatrix {
+  MATR$X data;
+public:
+  BigMatrix(int n, int m);
+  explicit BigMatrix(const MATR$X &data);
+    explicit BigMatrix(const vector<float> &data);
+  explicit BigMatrix(const vector<vec2> &data);
+  explicit BigMatrix(const vector<vec3> &data);
+  explicit BigMatrix(const vector<vec4> &data);
+  explicit BigMatrix(MATR$X &&data);
+  void set(int i, int j, float val);
+  float get(int i, int j) { return this->data[i][j]; }
+  float operator()(int i, int j) { return get(i, j); }
+  bool isSquare() { return this->n() == this->m(); }
+  float det();
+  void transpose();
+  BigMatrix operator*(float f) const;
+  BigMatrix operator+(const BigMatrix &M) const;
+  BigMatrix operator-(const BigMatrix &M) const;
+  BigMatrix operator*(const BigMatrix &M) const;
+  BigMatrix operator*(const MATR$X &M) const;
+
+  BigMatrix operator-() { return *this * (-1.f); }
+  BigMatrix operator/(float x) const { return *this * (1.f / x); }
+  BigMatrix inv();
+  BigMatrix pow(int p);
+  BigMatrix operator~() { return inv(); }
+  BigMatrix GramSchmidtProcess();
+  BigMatrix submatrix(int i, int j);
+
+  vec69 operator[] (int i) { return this->data[i]; }
+  BigMatrix operator() (const vec69 &vec) { return *this * vec; }
+  BigMatrix operator*  (const vec69 &vec);
+    friend BigMatrix operator*(const vec2137 &vec, const BigMatrix &M);
+    friend BigMatrix operator*(const MATR$X &M, const BigMatrix &B);
+
+  glm::ivec2 size() {return  glm::ivec2(n(), m());}
+  int n() const { return this->data.size(); }
+  int m() const { return this->data[0].size(); }
+
+    operator float () { if (n() != m() || n() != 1) throw std::format_error("wrong dimension of matrix (not 1x1)"); return this->data[0][0]; }
+    operator vec2 () { if (std::min(n(), m()) != 1 || std::max(m(), n()) != 2) throw std::format_error("wrong dimension of matrix (" + std::to_string(n()) + ", " + std::to_string(m()) + ")" );
+      return (*this)[0].size() > 1 ? vec2((*this)[0][0], (*this)[0][1]) : vec2((*this)[0][0], (*this)[1][0]); }
+    operator vec3 () { if (std::min(n(), m()) != 1 || std::max(m(), n()) != 3) throw std::format_error("wrong dimension of matrix (" + std::to_string(n()) + ", " + std::to_string(m()) + ")" );
+      return (*this)[0].size() > 1 ? vec3((*this)[0][0], (*this)[0][1], (*this)[0][2]) : vec3((*this)[0][0], (*this)[1][0], (*this)[2][0]); }
+    operator vec4 () { if (std::min(n(), m()) != 1 || std::max(m(), n()) != 4) throw std::format_error("wrong dimension of matrix (" + std::to_string(n()) + ", " + std::to_string(m()) + ")" );
+          return (*this)[0].size() > 1 ? vec4((*this)[0][0], (*this)[0][1], (*this)[0][2], (*this)[0][3]) : vec4((*this)[0][0], (*this)[1][0], (*this)[2][0], (*this)[3][0]); }
+};

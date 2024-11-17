@@ -1,5 +1,4 @@
-// ReSharper disable All
-# pragma once
+#pragma once
 
 #include "mat.hpp"
 #include <functional>
@@ -12,22 +11,7 @@
 
 
 
-#define endC std::function<Complex(Complex)>
-#define Fooo std::function<float(float)>
-#define Foo12 std::function<glm::vec2(float)>
-#define Foo13 std::function<glm::vec3(float)>
-#define Foo33 std::function<glm::vec3(glm::vec3)>
-#define Foo31 std::function<float(glm::vec3)>
-#define Foo21 std::function<float(glm::vec2)>
-#define Foo22 std::function<glm::vec2(glm::vec2)>
-#define Foo32 std::function<glm::vec2(glm::vec3)>
-#define Foo23 std::function<glm::vec3(glm::vec2)>
-#define Foo113 std::function<glm::vec3(float, float)>
-#define pencilCurv std::function<SmoothParametricCurve(float)>
-#define pencilSurf std::function<SmoothParametricSurface(float)>
-#define Foo3Foo33 std::function<glm::mat3(glm::vec3)>
-#define coprod(X, Y) std::variant<X, Y>
-#define prod(X, Y) std::pair<X, Y>
+
 
 
 inline std::string polyGroupIDtoString(PolyGroupID id) { return std::holds_alternative<int>(id) ? std::to_string(std::get<int>(id)) : std::get<std::string>(id); }
@@ -132,25 +116,25 @@ Morphism<X, Z> operator&(const Morphism<Y, Z> &f, const Morphism<X, Y> &g) {
 }
 
 // universal morphism of product
-template <typename X, typename Y>
-prod(X, Y) x(X x, Y y) {
-    return prod(X, Y)({x, y});
-}
+// template <typename X, typename Y>
+// prod(X, Y) x(X x, Y y) {
+//     return prod(X, Y)({x, y});
+// }
 
 #define Hom(X, Y) Morphism<X, Y>
 #define Iso(X, Y) Isomorphism<X, Y>
 #define End(X) Endomorphism<X>
 
-template <typename X, typename Y>
-Hom(prod(X, Y), X) pi1 = Morphism([](prod(X, Y) xy) { return xy.first; } );
-
-template <typename X, typename Y>
-Hom(prod(X, Y), Y) pi2 = Morphism([](prod(X, Y) xy) { return xy.second; } );
-
-template <typename X, typename Y, typename Z>
-std::function<Z(X, Y)> f2(Hom(prod(X, Y), Z) f) {
-    return [f](X x, Y y) { return f(p(x, y)); };
-}
+// template <typename X, typename Y>
+// Hom(prod(X, Y), X) pi1 = Morphism([](prod(X, Y) xy) { return xy.first; } );
+//
+// template <typename X, typename Y>
+// Hom(prod(X, Y), Y) pi2 = Morphism([](prod(X, Y) xy) { return xy.second; } );
+//
+// template <typename X, typename Y, typename Z>
+// std::function<Z(X, Y)> f2(Hom(prod(X, Y), Z) f) {
+//     return [f](X x, Y y) { return f(p(x, y)); };
+// }
 
 // template <typename X, typename Y, typename A>
 // auto productUP = auto ([](prod(Hom(A, X), Hom(A, Y)) fg) { return auto ([fg](A a) { return x(fg&pi1(a), fg&pi2(a)); }); });
@@ -286,7 +270,6 @@ public:
     VectorFieldR3(RealFunctionR3 Fx , RealFunctionR3 Fy, RealFunctionR3 Fz, float epsilon=0.01);
 	explicit VectorFieldR3(Foo33 field);
 	explicit VectorFieldR3(VectorFieldR2 f);
-	glm::vec3 operator()(glm::vec3 v) const { return _X(v); }
 	VectorFieldR3 operator+(const VectorFieldR3 &Y) const;
 	VectorFieldR3 operator*(float a) const;
     VectorFieldR3 operator-() const { return *this * -1; }
@@ -296,6 +279,7 @@ public:
     RealFunctionR3 F_y() const { return RealFunctionR3([this](glm::vec3 x) { return _X(x).y; }, [this](glm::vec3 x) { return _dX(x)[1]; }); }
     RealFunctionR3 F_z() const { return RealFunctionR3([this](glm::vec3 x) { return _X(x).z; }, [this](glm::vec3 x) { return _dX(x)[2]; }); }
     std::array<RealFunctionR3, 3> components() const { return {F_x(), F_y(), F_z()}; }
+    R3 operator()(R3 v) { return _X(v); }
 
     friend VectorFieldR3 operator*(const glm::mat3 &A, const VectorFieldR3 &X) {
       return VectorFieldR3([f=X._X, A](glm::vec3 v) {return A * f(v); }, [df=X._dX, A](glm::vec3 v) {return A * df(v); }, X.eps);
@@ -329,14 +313,18 @@ public:
 	SpaceAutomorphism compose(SpaceAutomorphism g) const;
     SpaceAutomorphism operator&(const SpaceAutomorphism &g) const { return compose(g); }
     SpaceAutomorphism applyWithBasis(glm::mat3 A) const { return linear(A) & *this & linear(glm::inverse(A)); }
+    SpaceAutomorphism applyWithBasis(glm::vec3 v1, glm::vec3 v2, glm::vec3 v3) const { return applyWithBasis(glm::mat3(v1, v2, v3)); }
     SpaceAutomorphism applyWithShift(glm::vec3 v) const { return translation(v) & *this & translation(-v); }
 
     static SpaceAutomorphism linear(glm::mat3 A);
     static SpaceAutomorphism translation(glm::vec3 v);
     static SpaceAutomorphism scaling(float x, float y, float z);
+    static SpaceAutomorphism scaling(glm::vec3 factors) { return scaling(factors.x, factors.y, factors.z); }
+
     static SpaceAutomorphism scaling(float x) { return scaling(x, x, x); }
     static SpaceAutomorphism scaling(float x, float y, float z, glm::vec3 center) { return translation(center) & scaling(x, y, z) & translation(-center); }
     static SpaceAutomorphism scaling(float x, glm::vec3 center) { return scaling(x, x, x, center); }
+    static SpaceAutomorphism scaling(glm::vec3 factors, glm::vec3 center) {  return scaling(factors.x, factors.y, factors.z, center); }
 
     static SpaceAutomorphism affine(glm::mat3 A, glm::vec3 v);
     static SpaceAutomorphism rotation(float angle);

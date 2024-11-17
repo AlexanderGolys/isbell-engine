@@ -27,9 +27,9 @@ vec3 normalise(vec3 v)
 void main()
 {
 	v_normal = normal;
+//    v_normal = mvp * vec4(normal, 0.0);
 	gl_Position = mvp * vec4(position, 1.0);
 	v_position = position;
 	v_color = color;
 	v_uv = uv;
 }
-

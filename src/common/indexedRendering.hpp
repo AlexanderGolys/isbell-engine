@@ -15,16 +15,13 @@ inline glm::mat4 getMat(const buff4x4 &buff, int index) {
 
 
 
-#define buff2 std::vector<glm::vec2>
-#define buff3 std::vector<glm::vec3>
-#define buff4 std::vector<glm::vec4>
-#define ibuff3 std::vector<glm::ivec3>
+
 
 struct Stds {
-    buff3 positions;
-    buff3 normals;
-    buff2 uvs;
-    buff4 colors;
+    BUFF3 positions;
+    BUFF3 normals;
+    BUFF2 uvs;
+    BUFF4 colors;
 };
 
 enum CommonBufferType {
@@ -36,14 +33,13 @@ const std::map<CommonBufferType, int> bufferTypeLength = {{POSITION, 3},  {NORMA
 
 inline int bufferElementLength(CommonBufferType type) { return bufferTypeLength.at(type); }
 inline size_t bufferElementSize(CommonBufferType type) { return type != INDEX ? bufferElementLength(type) * sizeof(FLOAT) : bufferElementLength(type) * sizeof(GLuint); }
-class IndexedTriangle;
 
 
 class BufferManager {
     std::unique_ptr<Stds> stds;
-    std::unique_ptr<buff4> extra0;
+    std::unique_ptr<BUFF4> extra0;
     std::unique_ptr<buff4x4> mater, extra;
-    std::unique_ptr<ibuff3> indices;
+    std::unique_ptr<IBUFF3> indices;
     std::set<CommonBufferType> activeBuffers;
     void insertValueToSingleBuffer(CommonBufferType type, void *valueAddress);
     void insertDefaultValueToSingleBuffer(CommonBufferType type);
@@ -87,11 +83,14 @@ public:
     glm::mat4 getMaterial(int index) const { return getMat(*mater, index); }
     glm::vec4 getExtra(int index, int slot = 1) const;
     float getExtraSlot(int index, int slot = 1, int component = 3) const { return getExtra(index, slot)[component]; }
+    glm::ivec3 getFaceIndices(int index) const { return (*indices)[index]; }
+    Vertex getVertex(int index) const { return Vertex(getPosition(index), getUV(index), getNormal(index), getColor(index)); }
 
     void setPosition(int index, glm::vec3 value) { stds->positions[index] = value; }
     void setNormal(int index, glm::vec3 value) { stds->normals[index] = value; }
     void setUV(int index, glm::vec2 value) { stds->uvs[index] = value; }
     void setColor(int index, glm::vec4 value) { stds->colors[index] = value; }
+    void setColor(int index, float value, int component) { stds->colors[index][component] = value; }
     void setMaterial(int index, glm::mat4 value);
 
     void setExtra(int index, glm::vec4 value, int slot = 1);
@@ -125,6 +124,7 @@ public:
   void setNormal(glm::vec3 value) { bufferBoss.setNormal(index, value); }
   void setUV(glm::vec2 value) { bufferBoss.setUV(index, value); }
   void setColor(glm::vec4 value) { bufferBoss.setColor(index, value); }
+  void setColor(float value, int i) { bufferBoss.setColor(index, value, i); }
   void setMaterial(glm::mat4 value) { bufferBoss.setMaterial(index, value); }
   void setExtra(glm::vec4 value, int slot = 1) { bufferBoss.setExtra(index, value, slot); }
   void setExtra(glm::vec3 value, int slot = 1) { bufferBoss.setExtra(index, value, slot); }
@@ -140,13 +140,13 @@ class WeakSuperMesh;
 
 
 
-class IndexedTriangle {
+class IndexedTriangleDeprecated {
   int metaIndex;
   glm::ivec3 indicesWithinPolygroup;
 
 public:
-  explicit IndexedTriangle(glm::ivec3 indices);
-  IndexedTriangle(glm::ivec3 indices, const std::vector<BufferedVertex> &arrayWithinPoly, BufferManager &bufferBoss);
+  explicit IndexedTriangleDeprecated(glm::ivec3 indices);
+  IndexedTriangleDeprecated(glm::ivec3 indices, const std::vector<BufferedVertex> &arrayWithinPoly, BufferManager &bufferBoss);
 
 
   glm::ivec3 bufferIndices (const std::vector<BufferedVertex> &arrayWithinPoly) const;
@@ -161,6 +161,32 @@ public:
   std::array<glm::vec3, 3> borderTriangle(float width, const std::vector<BufferedVertex> &arrayWithinPoly) const;
   Vertex getVertex(int i, const std::vector<BufferedVertex> &arrayWithinPoly) const { return arrayWithinPoly[indicesWithinPolygroup[i]].getVertex(); }
   glm::vec3 faceNormal(const std::vector<BufferedVertex> &arrayWithinPoly) const { return glm::normalize(glm::cross(getVertex(1, arrayWithinPoly).getPosition() - getVertex(0, arrayWithinPoly).getPosition(), getVertex(2, arrayWithinPoly).getPosition() - getVertex(0, arrayWithinPoly).getPosition())); }
+};
+
+
+
+class IndexedTriangle {
+    int index;
+    BufferManager &bufferBoss;
+
+public:
+    IndexedTriangle(BufferManager &bufferBoss, int index) : index(index), bufferBoss(bufferBoss) {}
+    IndexedTriangle(const IndexedTriangle &other) : index(other.index), bufferBoss(other.bufferBoss) {}
+    IndexedTriangle(IndexedTriangle &&other) noexcept : index(other.index), bufferBoss(other.bufferBoss) {}
+    IndexedTriangle(BufferManager &bufferBoss, glm::ivec3 index) : index(bufferBoss.addTriangleVertexIndices(index)), bufferBoss(bufferBoss) {}
+
+    glm::ivec3 getVertexIndices() const { return bufferBoss.getFaceIndices(index); }
+    Vertex getVertex(int i) const { return bufferBoss.getVertex(getVertexIndices()[i]); }
+    glm::mat2 barMatrix() const;
+    glm::mat3 orthonormalFrame() const;
+    glm::vec3 fromPlanar(glm::vec2 v) const;
+    glm::vec2 toPlanar(glm::vec3 v) const;
+    glm::vec3 fromBars(glm::vec2 v) const;
+    glm::vec2 toBars(glm::vec3 v) const;
+    std::array<glm::vec3, 3> borderTriangle(float width) const;
+    glm::vec3 faceNormal() const { return glm::normalize(glm::cross(getVertex(1).getPosition() - getVertex(0).getPosition(), getVertex(2).getPosition() - getVertex(0).getPosition())); }
+    glm::vec3 center() const { return (getVertex(0).getPosition() + getVertex(1).getPosition() + getVertex(2).getPosition()) / 3.f; }
+    float area() const { return 0.5f * glm::length(glm::cross(getVertex(1).getPosition() - getVertex(0).getPosition(), getVertex(2).getPosition() - getVertex(0).getPosition())); }
 };
 
 
@@ -229,8 +255,35 @@ public:
   std::vector<IndexedTriangle> getTriangles(const PolyGroupID &id) const { return triangles.at(id); }
   glm::vec4 getIntencities() const { return material->compressIntencities(); }
   MaterialPhong getMaterial() const { return *material; }
+
+    template<typename T>
+    T integrateOverTriangles(const std::function<T(const IndexedTriangle &)> &f, PolyGroupID id) const;
+    template<typename T>
+    T integrateOverTriangleCenters(const std::function<T(glm::vec3)> &f, PolyGroupID id) const;
+    glm::vec3 centerOfMass(PolyGroupID id) const;
+    glm::mat3 inertiaTensor(PolyGroupID id) const;
+
 };
+
+
+
 std::function<void(float, float)> deformationOperator (const std::function<void(BufferedVertex&, float, float)> &deformation, WeakSuperMesh &mesh, const PolyGroupID &id);
 std::function<void(float)> deformationOperator (const std::function<void(BufferedVertex&, float)> &deformation, WeakSuperMesh &mesh, const PolyGroupID &id);
 
 std::function<void(float, float)> moveAlongCurve(const SmoothParametricCurve &curve, WeakSuperMesh &mesh, const PolyGroupID &id);
+
+template<typename T>
+T WeakSuperMesh::integrateOverTriangles(const std::function<T(const IndexedTriangle &)> &f, PolyGroupID id) const {
+    T sum = T(0);
+    for (const IndexedTriangle &t: triangles.at(id))
+        sum += f(t)*t.area();
+    return sum;
+}
+
+template<typename T>
+T WeakSuperMesh::integrateOverTriangleCenters(const std::function<T(glm::vec3)> &f, PolyGroupID id) const {
+    float sum = T(0);
+    for (const IndexedTriangle &t: triangles.at(id))
+        sum += f(t.center())*t.area();
+    return sum;
+}

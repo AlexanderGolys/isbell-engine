@@ -3,6 +3,7 @@
 #include <exception>
 #include <string>
 #include "macros.hpp"
+#include <glm/glm.hpp>
 
 inline std::string plural (std::string word) {
     if (word.size() == 0)
@@ -106,7 +107,7 @@ public:
     explicit COLOR_PALETTE10(std::array<glm::vec4, 10> colors) : cls(colors) {}
     COLOR_PALETTE10(COLOR_PALETTE p1, COLOR_PALETTE p2) : cls({p1[0], p1[1], p1[2], p1[3], p1[4], p2[0], p2[1], p2[2], p2[3], p2[4]}) {}
     COLOR_PALETTE10(glm::ivec3 c1, glm::ivec3 c2, glm::ivec3 c3, glm::ivec3 c4, glm::ivec3 c5, glm::ivec3 c6, glm::ivec3 c7, glm::ivec3 c8, glm::ivec3 c9, glm::ivec3 c10);
-    std::vector<glm::vec4> colors() const { return std::vector<glm::vec4>(cls.begin(), cls.end()); }
+    std::vector<glm::vec4> colors() const { return std::vector<glm::vec4>(cls.begin(), cls.END()); }
     glm::vec4 operator[] (int i) const { return cls[i]; }
 };
 
@@ -149,3 +150,14 @@ namespace glm {
         }
         std::cout << std::endl;
     }
+
+
+const PolyGroupID DEFAULT_POLY_GROUP_ID = PolyGroupID(0);
+constexpr RP1 inf = std::nullopt;
+constexpr RP1 unbounded = std::nullopt;
+const glm::vec3 e1 = glm::vec3(1, 0, 0);
+const glm::vec3 e2 = glm::vec3(0, 1, 0);
+const glm::vec3 e3 = glm::vec3(0, 0, 1);
+const glm::vec3 ORIGIN = glm::vec3(0, 0, 0);
+const glm::vec2 PLANE_ORIGIN = glm::vec2(0, 0);
+const PolyGroupID DFLT_CURV = PolyGroupID(420);

@@ -1,11 +1,12 @@
- #include "planarGeometry.hpp"
+#include "planarGeometry.hpp"
 #include "src/fundamentals/func.hpp"
+#include "glm/glm.hpp"
 
 using namespace glm;
 using std::vector, std::string, std::shared_ptr, std::unique_ptr, std::pair, std::make_unique, std::make_shared;
 
-SmoothParametricPlaneCurve::SmoothParametricPlaneCurve(std::function<vec2(float)> f, std::function<vec2(float)> df,
-                                                       std::function<vec2(float)> ddf, float t0, float t1, bool period, float epsilon) {
+SmoothParametricPlaneCurve::SmoothParametricPlaneCurve(Foo12 f, std::function<vec2(float)> df,
+                                                       Foo12 ddf, float t0, float t1, bool period, float epsilon) {
     this->_f = f;
     this->t0 = t0;
     this->t1 = t1;

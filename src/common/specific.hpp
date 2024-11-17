@@ -1,6 +1,8 @@
 #pragma once
 
 // #include "buffer_utils.hpp"
+#include <glm/detail/_vectorize.hpp>
+
 #include "glsl_utils.hpp"
 // #include "renderingUtils.hpp"
 
@@ -74,19 +76,27 @@ public:
     Disk3D(const std::vector<Vertex> &nodes, const std::vector<glm::ivec3> &faceInds, glm::vec3 center, glm::vec3 forward, glm::vec3 down, PolyGroupID id);
     Disk3D(const char* filename, glm::vec3 center, glm::vec3 forward, glm::vec3 down, PolyGroupID id);
     Disk3D(float r, glm::vec3 center, glm::vec3 forward, glm::vec3 down, int radial_res, int vertical_res, const PolyGroupID &id);
-    void move(glm::vec3 center, glm::vec3 forward, glm::vec3 down);
-    void moveRotate(glm::vec3 center, glm::vec3 forward, glm::vec3 down);
+    void move(glm::vec3 center, glm::vec3 forward, glm::vec3 down, bool scaleWidth);
+
+
+
+    float moveRotate(glm::vec3 center, glm::vec3 forward, glm::vec3 down);
     void rotate(float angle);
     static float angle(const BufferedVertex &v) { return v.getColor().x; }
     static float rParam(const BufferedVertex &v) { return v.getColor().y; }
     static float width(const BufferedVertex &v) { return v.getColor().z; }
+    static float widthNormalised(const BufferedVertex &v) { return v.getColor().w; }
+    float getR() const {return radius;}
 
     float rReal(const BufferedVertex &v);
-    void setR(float r);
+    void scaleR(float r, bool scaleWidth);
+    void setR(float r);;
+    static void setAbsoluteWidth(BufferedVertex &v, float w) {v.setColor(w, 2);}
+    static void setRelativeWidth(BufferedVertex &v, float w) {v.setColor(w, 3);}
     void setEmpiricalRadius();
     void setColorInfo();
 };
 
-
+inline float angleBetween(glm::vec3 vec3, glm::vec3 down) {return  acos(glm::dot(vec3, down)/glm::length(vec3));}
 
 SmoothParametricSurface sphere(float r, glm::vec3 center=ORIGIN, float cutdown=0, float eps=.01);

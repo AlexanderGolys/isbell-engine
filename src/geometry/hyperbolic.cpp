@@ -614,7 +614,7 @@ SchwarzPolygon::SchwarzPolygon(std::vector<Complex> vertices, std::vector<Hyperb
     this->triangulation = {};
     for (auto t: trs) {
         std::vector<TriangleComplex> tr = t.triangulation(max_len, n);
-        triangulation.insert(triangulation.end(), tr.begin(), tr.end());
+        triangulation.insert(triangulation.END(), tr.begin(), tr.END());
     }
 }
 

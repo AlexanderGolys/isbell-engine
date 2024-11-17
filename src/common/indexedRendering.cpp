@@ -14,11 +14,11 @@ BufferManager::BufferManager(std::set<CommonBufferType> activeBuffers) {
     stds = make_unique<Stds>();
     mater =  activeBuffers.contains(MATERIAL1) ? make_unique<buff4x4>() : nullptr;
 
-    extra0 = activeBuffers.contains(EXTRA0) ? make_unique<buff4>() : nullptr;
+    extra0 = activeBuffers.contains(EXTRA0) ? make_unique<BUFF4>() : nullptr;
     extra = nullptr;
     if (activeBuffers.contains(EXTRA1) || activeBuffers.contains(EXTRA2) || activeBuffers.contains(EXTRA3) || activeBuffers.contains(EXTRA4))
         extra = make_unique<buff4x4>();
-    indices = activeBuffers.contains(INDEX) ? make_unique<ibuff3>() : nullptr;
+    indices = activeBuffers.contains(INDEX) ? make_unique<IBUFF3>() : nullptr;
     this->activeBuffers = activeBuffers;
 }
 BufferManager::BufferManager(bool materials, std::set<CommonBufferType> extras) : BufferManager({POSITION, NORMAL, UV, COLOR, INDEX}) {
@@ -26,7 +26,7 @@ BufferManager::BufferManager(bool materials, std::set<CommonBufferType> extras) 
         mater = make_unique<buff4x4>();
         this->activeBuffers = {POSITION, NORMAL, UV, COLOR, MATERIAL1, MATERIAL2, MATERIAL3, MATERIAL4, INDEX};
     }
-    extra0 = extras.contains(EXTRA0) ? make_unique<buff4>() : nullptr;
+    extra0 = extras.contains(EXTRA0) ? make_unique<BUFF4>() : nullptr;
     extra = nullptr;
     if (extras.contains(EXTRA1) || extras.contains(EXTRA2) || extras.contains(EXTRA3) || extras.contains(EXTRA4))
         extra = make_unique<buff4x4>();
@@ -144,54 +144,34 @@ void BufferedVertex::applyFunction(const SpaceEndomorphism &f) {
 }
 
 
-IndexedTriangle::IndexedTriangle(ivec3 indices) {
-    metaIndex = -1;
-    indicesWithinPolygroup = indices;
-}
-
-IndexedTriangle::IndexedTriangle(ivec3 indices, const vector<BufferedVertex> &arrayWithinPoly, BufferManager &bufferBoss) :
-    IndexedTriangle(indices) {
-    addToBuffer(arrayWithinPoly, bufferBoss);
-}
-
-
-ivec3 IndexedTriangle::bufferIndices(const std::vector<BufferedVertex> &arrayWithinPoly) const {
-    return ivec3(arrayWithinPoly[indicesWithinPolygroup.x].getIndex(), arrayWithinPoly[indicesWithinPolygroup.y].getIndex(), arrayWithinPoly[indicesWithinPolygroup.z].getIndex());
-}
-
-void IndexedTriangle::addToBuffer(const std::vector<BufferedVertex> &arrayWithinPoly, BufferManager &bufferBoss) {
-    metaIndex = bufferBoss.addTriangleVertexIndices(bufferIndices(arrayWithinPoly));
-}
-
-
-glm::mat3 IndexedTriangle::orthonormalFrame(const std::vector<BufferedVertex> &arrayWithinPoly) const {
-    vec3 p0 = getVertex(0, arrayWithinPoly).getPosition();
-    vec3 p1 = getVertex(1, arrayWithinPoly).getPosition();
-    vec3 p2 = getVertex(2, arrayWithinPoly).getPosition();
+glm::mat3 IndexedTriangle::orthonormalFrame() const {
+    vec3 p0 = getVertex(0).getPosition();
+    vec3 p1 = getVertex(1).getPosition();
+    vec3 p2 = getVertex(2).getPosition();
     return  GramSchmidtProcess(mat3(p0-p2, p1-p2, cross(p1-p2, p0-p2)));
 }
 
-glm::vec3 IndexedTriangle::fromPlanar(glm::vec2 v, const std::vector<BufferedVertex> &arrayWithinPoly) const {
-    mat3 frame = orthonormalFrame(arrayWithinPoly);
-    return frame[0]*v.x + frame[1]*v.y + getVertex(2, arrayWithinPoly).getPosition();
+glm::vec3 IndexedTriangle::fromPlanar(glm::vec2 v) const {
+    mat3 frame = orthonormalFrame();
+    return frame[0]*v.x + frame[1]*v.y + getVertex(2).getPosition();
 }
 
-glm::vec2 IndexedTriangle::toPlanar(glm::vec3 v, const std::vector<BufferedVertex> &arrayWithinPoly) const {
-    mat3 frame = orthonormalFrame(arrayWithinPoly);
-    return vec2(dot(frame[0], v-getVertex(2, arrayWithinPoly).getPosition()), dot(frame[1], v-getVertex(2, arrayWithinPoly).getPosition()));
-}
-
-
-glm::vec3 IndexedTriangle::fromBars(glm::vec2 v, const std::vector<BufferedVertex> &arrayWithinPoly) const {
-    return getVertex(0, arrayWithinPoly).getPosition() * v.x + getVertex(1, arrayWithinPoly).getPosition() * v.y +
-           getVertex(2, arrayWithinPoly).getPosition() * (1 - v.x - v.y);
+glm::vec2 IndexedTriangle::toPlanar(glm::vec3 v) const {
+    mat3 frame = orthonormalFrame();
+    return vec2(dot(frame[0], v-getVertex(2).getPosition()), dot(frame[1], v-getVertex(2).getPosition()));
 }
 
 
-std::array<glm::vec3, 3> IndexedTriangle::borderTriangle(float width, const std::vector<BufferedVertex> &arrayWithinPoly) const {
-    vec3 p0 = getVertex(0, arrayWithinPoly).getPosition();
-    vec3 p1 = getVertex(1, arrayWithinPoly).getPosition();
-    vec3 p2 = getVertex(2, arrayWithinPoly).getPosition();
+glm::vec3 IndexedTriangle::fromBars(glm::vec2 v) const {
+    return getVertex(0).getPosition() * v.x + getVertex(1).getPosition() * v.y +
+           getVertex(2).getPosition() * (1 - v.x - v.y);
+}
+
+
+std::array<glm::vec3, 3> IndexedTriangle::borderTriangle(float width) const {
+    vec3 p0 = getVertex(0).getPosition();
+    vec3 p1 = getVertex(1).getPosition();
+    vec3 p2 = getVertex(2).getPosition();
     vec3 n = normalize(cross(p1 - p0, p2 - p0));
     vec3 v01 = p1-p0;
     vec3 v12 = p2-p1;
@@ -210,18 +190,18 @@ std::array<glm::vec3, 3> IndexedTriangle::borderTriangle(float width, const std:
     vec3 p0_20 = p0 + w20 * width;
     vec3 p2_20 = p2 + w20 * width;
 
-    vec2 b0_01 = toPlanar(p0_01, arrayWithinPoly);
-    vec2 b1_01 = toPlanar(p1_01, arrayWithinPoly);
-    vec2 b1_12 = toPlanar(p1_12, arrayWithinPoly);
-    vec2 b2_12 = toPlanar(p2_12, arrayWithinPoly);
-    vec2 b0_20 = toPlanar(p0_20, arrayWithinPoly);
-    vec2 b2_20 = toPlanar(p2_20, arrayWithinPoly);
+    vec2 b0_01 = toPlanar(p0_01);
+    vec2 b1_01 = toPlanar(p1_01);
+    vec2 b1_12 = toPlanar(p1_12);
+    vec2 b2_12 = toPlanar(p2_12);
+    vec2 b0_20 = toPlanar(p0_20);
+    vec2 b2_20 = toPlanar(p2_20);
 
     vec2 b0 = intersectLines(b0_01, b1_01, b0_20, b2_20);
     vec2 b1 = intersectLines(b1_01, b0_01, b1_12, b2_12);
     vec2 b2 = intersectLines(b2_20, b0_20, b2_12, b1_12);
 
-    return {fromPlanar(b0, arrayWithinPoly), fromPlanar(b1, arrayWithinPoly), fromPlanar(b2, arrayWithinPoly)};
+    return {fromPlanar(b0), fromPlanar(b1), fromPlanar(b2)};
 }
 
 
@@ -330,7 +310,7 @@ void WeakSuperMesh::addNewPolygroup(const char *filename, const std::variant<int
                     face[i] = vertices[id].size() - 1;
                 }
             }
-            triangles[id].emplace_back(face, vertices[id], *boss);
+            triangles[id].emplace_back(*boss, face);
         }
     }
 }
@@ -364,7 +344,7 @@ void WeakSuperMesh::addNewPolygroup(const vector<Vertex> &hardVertices, const ve
         vertices[id].emplace_back(*boss, v, false);
 
     for (const ivec3 &ind: faceIndices)
-        triangles[id].emplace_back(ind, vertices[id], *boss);
+        triangles[id].emplace_back(*boss, ind);
 }
 
 WeakSuperMesh::WeakSuperMesh(const WeakSuperMesh &other): boss(&*other.boss),
@@ -452,9 +432,11 @@ vector<ivec3> WeakSuperMesh::getIndices(const std::variant<int, std::string> &id
     vector<ivec3> inds = {};
     inds.reserve(triangles.at(id).size());
     for (const IndexedTriangle &t: triangles.at(id))
-        inds.push_back(t.getLocalIndices());
+        inds.push_back(t.getVertexIndices());
     return inds;
 }
+
+
 
 
 WeakSuperMesh WeakSuperMesh::subdivideBarycentric(const std::variant<int, std::string> &id) const {
@@ -507,30 +489,30 @@ WeakSuperMesh WeakSuperMesh::wireframe(PolyGroupID id, PolyGroupID targetId, flo
         new_verts.push_back(extr);
     }
     for (const auto &tr : trs) {
-        array<vec3, 3> border = tr.borderTriangle(width, verts);
-        vec3 n = tr.faceNormal(verts)*sign(dot(tr.getVertex(0, verts).getNormal(), tr.faceNormal(verts)));
+        array<vec3, 3> border = tr.borderTriangle(width);
+        vec3 n = tr.faceNormal()*sign(dot(tr.getVertex(0).getNormal(), tr.faceNormal()));
 
 
         for (vec3 p : border)
             new_verts.emplace_back(p+n*heightSide, vec2(0, 0), n, BLACK, std::nullopt);
         for (vec3 p : border)
             new_verts.emplace_back(p, vec2(0, 0), n, BLACK, std::nullopt);
-        new_inds.push_back(ivec3(tr.getLocalIndices().x, tr.getLocalIndices().y, tr.getLocalIndices().x + verts.size()));
-        new_inds.push_back(ivec3(tr.getLocalIndices().y, tr.getLocalIndices().y + verts.size(), tr.getLocalIndices().x + verts.size()));
-        new_inds.push_back(ivec3(tr.getLocalIndices().x+verts.size(), tr.getLocalIndices().y+verts.size(), new_verts.size()-6));
-        new_inds.push_back(ivec3(tr.getLocalIndices().y+verts.size(), new_verts.size()-5, new_verts.size()-6));
+        new_inds.push_back(ivec3(tr.getVertexIndices().x, tr.getVertexIndices().y, tr.getVertexIndices().x + verts.size()));
+        new_inds.push_back(ivec3(tr.getVertexIndices().y, tr.getVertexIndices().y + verts.size(), tr.getVertexIndices().x + verts.size()));
+        new_inds.push_back(ivec3(tr.getVertexIndices().x+verts.size(), tr.getVertexIndices().y+verts.size(), new_verts.size()-6));
+        new_inds.push_back(ivec3(tr.getVertexIndices().y+verts.size(), new_verts.size()-5, new_verts.size()-6));
         // new_inds.push_back(ivec3(new_verts.size()-6,new_verts.size()-5, new_verts.size()-3));
         // new_inds.push_back(ivec3(new_verts.size()-5,new_verts.size()-2, new_verts.size()-3));
 
-        new_inds.push_back(ivec3(tr.getLocalIndices().x, tr.getLocalIndices().z, tr.getLocalIndices().x + verts.size()));
-        new_inds.push_back(ivec3(tr.getLocalIndices().z, tr.getLocalIndices().z + verts.size(), tr.getLocalIndices().x + verts.size()));
+        new_inds.push_back(ivec3(tr.getVertexIndices().x, tr.getVertexIndices().z, tr.getVertexIndices().x + verts.size()));
+        new_inds.push_back(ivec3(tr.getVertexIndices().z, tr.getVertexIndices().z + verts.size(), tr.getVertexIndices().x + verts.size()));
         // new_inds.push_back(ivec3(tr.getLocalIndices().x+verts.size(), tr.getLocalIndices().z+verts.size(), new_verts.size()-6));
         // new_inds.push_back(ivec3(tr.getLocalIndices().z+verts.size(), new_verts.size()-4, new_verts.size()-6));
         // new_inds.push_back(ivec3(new_verts.size()-6,new_verts.size()-4, new_verts.size()-3));
         // new_inds.push_back(ivec3(new_verts.size()-4,new_verts.size()-1, new_verts.size()-3));
 
-        new_inds.push_back(ivec3(tr.getLocalIndices().y, tr.getLocalIndices().z, tr.getLocalIndices().y + verts.size()));
-        new_inds.push_back(ivec3(tr.getLocalIndices().z, tr.getLocalIndices().z + verts.size(), tr.getLocalIndices().y + verts.size()));
+        new_inds.push_back(ivec3(tr.getVertexIndices().y, tr.getVertexIndices().z, tr.getVertexIndices().y + verts.size()));
+        new_inds.push_back(ivec3(tr.getVertexIndices().z, tr.getVertexIndices().z + verts.size(), tr.getVertexIndices().y + verts.size()));
         // new_inds.push_back(ivec3(tr.getLocalIndices().y+verts.size(), tr.getLocalIndices().z+verts.size(), new_verts.size()-5));
         // new_inds.push_back(ivec3(tr.getLocalIndices().z+verts.size(), new_verts.size()-4, new_verts.size()-5));
         // new_inds.push_back(ivec3(new_verts.size()-5,new_verts.size()-4, new_verts.size()-2));
@@ -547,19 +529,19 @@ void BufferManager::insertValueToSingleBuffer(CommonBufferType type, void *value
     }
    if (bufferElementLength(type) == 2) {
         vec2* v = static_cast<vec2*>(valueAddress);
-        buff2* b = static_cast<buff2*>(firstElementAddress(type));
+        BUFF2* b = static_cast<BUFF2*>(firstElementAddress(type));
         b->push_back(*v);
         return;
     }
    if (bufferElementLength(type) == 3) {
         vec3* v = static_cast<vec3*>(valueAddress);
-        buff3* b = static_cast<buff3*>(firstElementAddress(type));
+        BUFF3* b = static_cast<BUFF3*>(firstElementAddress(type));
         b->push_back(*v);
         return;
     }
    if (bufferElementLength(type) == 4) {
         vec4* v = static_cast<vec4*>(valueAddress);
-        buff4* b = static_cast<buff4*>(firstElementAddress(type));
+        BUFF4* b = static_cast<BUFF4*>(firstElementAddress(type));
         b->push_back(*v);
         return;
     }
@@ -572,17 +554,17 @@ void BufferManager::insertDefaultValueToSingleBuffer(CommonBufferType type) {
         return;
     }
     if (bufferElementLength(type) == 2) {
-        buff2 *b = static_cast<buff2 *>(firstElementAddress(type));
+        BUFF2 *b = static_cast<BUFF2 *>(firstElementAddress(type));
         b->emplace_back(0, 0);
         return;
     }
     if (bufferElementLength(type) == 3) {
-        buff3 *b = static_cast<buff3 *>(firstElementAddress(type));
+        BUFF3 *b = static_cast<BUFF3 *>(firstElementAddress(type));
         b->emplace_back(0, 0, 0);
         return;
     }
     if (bufferElementLength(type) == 4) {
-        buff4 *b = static_cast<buff4 *>(firstElementAddress(type));
+        BUFF4 *b = static_cast<BUFF4 *>(firstElementAddress(type));
         b->emplace_back(0, 0, 0, 0);
         return;
     }
@@ -591,10 +573,10 @@ void BufferManager::insertDefaultValueToSingleBuffer(CommonBufferType type) {
 
 BufferManager::BufferManager(const BufferManager &other) :
     stds(std::make_unique<Stds>(*other.stds)),
-    extra0(std::make_unique<buff4>(*other.extra0)),
+    extra0(std::make_unique<BUFF4>(*other.extra0)),
     mater(std::make_unique<buff4x4>(*other.mater)),
     extra(std::make_unique<buff4x4>(*other.extra)),
-    indices(std::make_unique<ibuff3>(*other.indices)),
+    indices(std::make_unique<IBUFF3>(*other.indices)),
     activeBuffers(other.activeBuffers) {}
 
 BufferManager & BufferManager::operator=(BufferManager &&other) noexcept {
@@ -621,10 +603,10 @@ BufferManager & BufferManager::operator=(const BufferManager &other) {
     if (this == &other)
         return *this;
     stds = std::make_unique<Stds>(*other.stds);
-    extra0 = std::make_unique<buff4>(*other.extra0);
+    extra0 = std::make_unique<BUFF4>(*other.extra0);
     mater = std::make_unique<buff4x4>(*other.mater);
     extra = std::make_unique<buff4x4>(*other.extra);
-    indices = std::make_unique<ibuff3>(*other.indices);
+    indices = std::make_unique<IBUFF3>(*other.indices);
     activeBuffers = other.activeBuffers;
     return *this;
 }
@@ -633,7 +615,7 @@ void BufferManager::initialiseExtraBufferSlot(int slot) {
     switch (slot) {
         case 0:
             if (extra0 == nullptr)
-                extra0 = make_unique<buff4>();
+                extra0 = make_unique<BUFF4>();
             activeBuffers.insert(EXTRA0);
             return;
     case 1:

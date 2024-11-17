@@ -1,33 +1,109 @@
 #pragma once
-#include <variant>
 #include <glm/glm.hpp>
+
+#include <variant>
+#include <string>
+#include <optional>
+#include <functional>
+#include <ranges>
+
+
+using std::vector, glm::vec2, glm::vec3, glm::vec4, glm::mat3, glm::mat4;
+using std::variant, std::string, std::optional, std::function;
 
 #define PI 3.14159265359f
 #define TAU 6.28318530718f
-#define RP1 std::optional<float>
+#define RP1 optional<float>
 #define maybeFloat std::optional<float>
 #define PolyGroupID std::variant<int, std::string>
 #define Mat2C Matrix<Complex, 2>
 #define INT(x) static_cast<int>(x)
-#define End1P std::function<SpaceEndomorphism(float)>
-#define End2P std::function<SpaceEndomorphism(float, float)>
+#define End1P function<SpaceEndomorphism(float)>
+#define End2P function<SpaceEndomorphism(float, float)>
 #define maybeMaterial std::optional<MaterialPhong>
-#define d2 Morphism<glm::vec2, float>
-#define d3 Morphism<glm::vec3, float>
-#define d4 Morphism<glm::vec4, float>
 #define Mob Matrix<Complex, 2>
 
-const PolyGroupID DEFAULT_POLY_GROUP_ID = PolyGroupID(0);
-constexpr RP1 inf = std::nullopt;
-constexpr RP1 unbounded = std::nullopt;
-const glm::vec3 e1 = glm::vec3(1, 0, 0);
-const glm::vec3 e2 = glm::vec3(0, 1, 0);
-const glm::vec3 e3 = glm::vec3(0, 0, 1);
-const glm::vec3 ORIGIN = glm::vec3(0, 0, 0);
-const glm::vec2 PLANE_ORIGIN = glm::vec2(0, 0);
-const PolyGroupID DFLT_CURV = PolyGroupID(420);
+namespace std {
+#define HOM(B,A) function<A(B)>
+#define FUNC(B, ...) function<B(...)>
+#define END(A) HOM(A, A)
+#define HOM$$(B,A) std::vector<HOM(B, A)>
+#define FUNC$$(B, A) std::vector<FUNC(B, A)>
+#define END$$(A) std::vector<END(A)>
+
+#define endC END(Complex)
+#define Fooo END(float)
+#define Foo12 HOM(float, vec2)
+#define Foo13  HOM(float, vec3)
+#define Foo33  HOM(vec3, vec3)
+#define Foo31  HOM(vec3, float)
+#define Foo21  HOM(vec2, float)
+#define Foo22  HOM(vec2, vec2)
+#define Foo32  HOM(vec3, vec2)
+#define Foo23  HOM(vec3, vec3)
+#define Foo113 HOM(vec2, vec3)
+#define Foo112 function<vec2(float, float)>
+#define Foo111 function<float(float, float)>
+#define betterInFamily(A) HOM(float, A)
+#define procrastinateIn(A) HOM(A, void)
+#define alboLeniwyAlboCwaniak HOM(void, void)
+#define pencilCurv betterInFamily(SmoothParametricCurve)
+#define pencilSurf betterInFamily(SmoothParametricSurface)
+#define Foo3Foo33  HOM(vec3, mat3)
+#define COPROD(X, Y) std::variant<X, Y>
+#define PROD(X, Y) std::pair<X, Y>
 
 
+
+#define BUFF2  vector<vec2>
+#define BUFF3  vector<vec3>
+#define BUFF4  vector<vec4>
+#define IBUFF3 vector<ivec3>
+
+
+}
+
+
+
+#define timePassesDoShit2(A, B) std::function<void(A, B)>
+#define C0(A)         HOM(A, float)
+#define Cinf(A)       RealFunctionR3
+#define O_(A)         HOM(A, float)
+#define burdl(A)      HOM(float, A)
+#define curvy(A)      HOM(float, A)
+#define path(A)       HOM(float, A)
+#define TRG           const IndexedTriangle&
+#define triple_O(A)   HOM(A, vec3)
+#define O_x3(A)       HOM(A, vec3)
+#define H0(A, F)      HOM(A, F)
+
+#define pack(F, vec, ...) [F](...){return F(vec(...));}
+#define unpack(F, vec, ...) [F](vec v, ...){return F(v[0], v[1], ...);}
+#define unpackPair(F, vec, ...) [F](vec v, ...){return F(v.first, v.second, ...);}
+#define unpackTriple(F, vec, ...) [F](vec v, ...){return F(v[0], v[1], v[2], ...);}
+#define unpackQuad(F, vec, ...) [F](vec v, ...){return F(v[0], v[1], v[2], v[3], ...);}
+#define curry(F, arg, ...) [F](arg a, ...){return F(a, ...);}
+#define uncarry(F, arg, arg2, ...) [F](HOM(arg, HOM(arg2, ...)) f, arg a, ...){return f(a)(...);}
+
+// #define Foo(A)_Foo33 Foo33([](float){return hom(A, glm::mat3)(t);};)
+#define vec420 std::vector<float>
+#define vec69 std::vector<float>
+#define vec2137 std::vector<float>
+
+#define V3CTOR$(A) std::vector<std::vector<A>>
+#define MATR$X V3CTOR$(float)
+
+#define RealFunctionRigid    HOM(TRG, float)
+#define RigidBundleV3 triple_O(TRG)
+#define patrickJaneBundle    HOM(float, RigidBundleV3)
+#define patrickJaneCaseRigid HOM(float, RealFunctionRigid)
+// #define Foo1FooRigidFoo33 hom(float, Foo(RigidBody)_Foo33 )
+
+// #define F[vec v] [F](vec v){return F(v[0], v[1]);}
+#define BigMatrix_t HOM(float, BigMatrix)
+#define vec69_t HOM(float, vec69)
+
+namespace glm{
 #define BLACK glm::vec4(0, 0, 0, 1)
 #define WHITE glm::vec4(1, 1, 1, 1)
 #define RED glm::vec4(1, 0, 0, 1)
@@ -49,6 +125,8 @@ const PolyGroupID DFLT_CURV = PolyGroupID(420);
 #define BROWN_SUGAR glm::vec4(169.f/255, 113.f/255, 75.f/255, 1)
 #define POWDER_PINK glm::vec4(255.f/255, 179.f/255, 198.f/255, 1)
 #define DARKDARKBLUE glm::vec4(0, 0.016, .045, 1)
+// #define com glm::vec3
+
 
 #define PALETTE1 COLOR_PALETTE(glm::ivec3(255, 166, 158), glm::ivec3(170, 68, 101), glm::ivec3(70, 34, 85), glm::ivec3(147, 225, 216), glm::ivec3(221, 255, 247))
 #define PALETTE2 COLOR_PALETTE(glm::ivec3(168, 32, 26), glm::ivec3(60, 107, 45), glm::ivec3(215, 68, 56), glm::ivec3(204, 88, 3), glm::ivec3(2, 2, 2))
@@ -61,3 +139,11 @@ const PolyGroupID DFLT_CURV = PolyGroupID(420);
 #define GREEN_PALLETTE COLOR_PALETTE10(glm::ivec3(219, 234, 215), glm::ivec3(195, 220, 188), glm::ivec3(171, 206, 161), glm::ivec3(148, 193, 134), glm::ivec3(124, 179, 107), glm::ivec3(102, 162, 83), glm::ivec3(85, 135, 69), glm::ivec3(68, 108, 55), glm::ivec3(51, 81, 42), glm::ivec3(32, 51, 26))
 
 #define REDPINK_PALLETTE COLOR_PALETTE10(glm::ivec3(243, 219, 234), glm::ivec3(236, 197, 221), glm::ivec3(204, 154, 181), glm::ivec3(179, 116, 149), glm::ivec3(153, 77, 116), glm::ivec3(128, 39, 84), glm::ivec3(102, 0, 51), glm::ivec3(85, 6, 45), glm::ivec3(67, 12, 39), glm::ivec3(52, 9, 30))
+
+#define R3 glm::vec3
+#define R2 glm::vec2
+#define R4 glm::vec4
+
+#define R3_t Hom(float, glm::vec3)
+
+}

@@ -402,39 +402,55 @@ Disk3D::Disk3D(float r, glm::vec3 center, glm::vec3 forward, glm::vec3 down, int
     this->id = id;
 }
 
-void Disk3D::move(glm::vec3 center, glm::vec3 forward, glm::vec3 down) {
+void Disk3D::move(glm::vec3 center, glm::vec3 forward, glm::vec3 down, bool scaleWidth) {
     glm::vec3 delta = center - this->center;
+
+    vec3 n = normalise(cross(forward, down));
+    for (BufferedVertex &v: getBufferedVertices(id)) {
+        vec3 normalComponent = scaleWidth ? normal*widthNormalised(v)*radius : normal*width(v);
+        v.setPosition(center + forward*cos(angle(v))*rParam(v)*radius + down*sin(angle(v))*rParam(v)*radius +  normalComponent);
+        v.setNormal(normalise(dot(v.getNormal(), this->normal)*n + dot(v.getNormal(), this->forward)*forward + dot(v.getNormal(), this->down)*down));
+    }
     this->center = center;
     this->forward = forward;
     this->down = down;
-    this->normal = normalise(cross(forward, down));
-    for (BufferedVertex &v: getBufferedVertices(id)) {
-        v.setPosition(center + forward*cos(angle(v))*rParam(v)*radius + down*sin(angle(v))*rParam(v)*radius + normal*width(v));
-        v.setNormal(normal);
-    }
+    this->normal = n;
 }
 
-void Disk3D::moveRotate(glm::vec3 center, glm::vec3 forward, glm::vec3 down) {
-    float distance = norm(center + down - this->center - this->down);
-    float angle = distance / radius;
-    move(center, forward, down);
-    rotate(angle);
+float Disk3D::moveRotate(glm::vec3 center, glm::vec3 forward, glm::vec3 down) {
+    float distance = norm(center + down- this->center-this->down);
+    float angle = distance / radius - asin(dot(normal, cross(this->down, down)));
+    for (BufferedVertex &v: getBufferedVertices(id))
+        v.setColor(v.getColor() + vec4(angle, 0, 0, 0));
+
+    move(center, forward, down, false);
+    return angle;
 }
 
 void Disk3D::rotate(float angle) {
     for (BufferedVertex &v: getBufferedVertices(id))
         v.setColor(v.getColor() + vec4(angle, 0, 0, 0));
 
-    move(center, forward, down);
+    move(center, forward, down, false);
 }
 
 float Disk3D::rReal(const BufferedVertex &v) {
     return norm(projectVectorToPlane(v.getPosition() - this->center, this->normal));
 }
 
+void Disk3D::scaleR(float r, bool scaleWidth) {
+    vec3 scaleFactors = scaleWidth ? vec3(r/this->radius) : vec3(r/this->radius, r/this->radius, 1);
+    radius = r;
+    SpaceAutomorphism scaling = SpaceAutomorphism::scaling(scaleFactors).applyWithBasis(forward, down, normal).applyWithShift(center);
+    for (BufferedVertex &v: getBufferedVertices(id)) {
+        v.applyFunction(scaling);
+        if (scaleWidth) setAbsoluteWidth(v, dot(v.getPosition() - center, normal));
+        else setRelativeWidth(v, dot(v.getPosition() - center, normal)/radius);
+    }
+}
+
 void Disk3D::setR(float r) {
     radius = r;
-    move(center, forward, down);
 }
 
 void Disk3D::setEmpiricalRadius() {
@@ -444,5 +460,8 @@ void Disk3D::setEmpiricalRadius() {
 
 void Disk3D::setColorInfo() {
     for ( auto &v: getBufferedVertices(id))
-        v.setColor(vec4(atan2(dot(v.getPosition() - center, forward), dot(v.getPosition() - center, down)), rReal(v)/radius, dot(v.getPosition() - center, normal), 0));
+        v.setColor(vec4(   atan2(dot(v.getPosition() - center, forward), dot(v.getPosition() - center, down)),
+                                rReal(v)/radius,
+                                dot(v.getPosition() - center, normal),
+                                dot(v.getPosition() - center, normal)/radius));
 }
