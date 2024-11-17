@@ -2,6 +2,8 @@
 #include "common/specific.hpp"
 #include <memory>
 #include <cmath>
+#include <stdlib.h>
+
 
 using namespace glm;
 using std::vector, std::string, std::map, std::shared_ptr, std::unique_ptr, std::pair, std::make_unique, std::make_shared;
@@ -17,70 +19,85 @@ float debugSin(float t)
 	return -cos(t)/2 + 0.5;
 }
 
-float w(float t)
+
+
+
+
+float width1(float t)
 {
-	return .007f + .00f*sin(1.5*t)*sin(1.5*t) + .01f/(1.5f + abs(.5*t));;
+    return .01f + .01f*sin(4*t)*sin(4*t);
 }
 
 
-
-MaterialPhong mater(float t)
-{
-	auto c = lerp(REDPINK_PALLETTE[6], REDPINK_PALLETTE[6], sin(1.5*t)*sin(1.5*t));
-	return MaterialPhong(c, c, REDPINK_PALLETTE[1], .2031423, .756641656 , .131160145739731, 10.0);
-}
-
-float w2(float t)
-{
-    return .005f + .00f*sin(1.5*t)*sin(1.5*t) + .005f/(1.f + abs(.5*t));;
-}
-
-
-
-MaterialPhong mater2(float t)
-{
-    auto c = lerp(BLUE_PALLETTE[6], BLUE_PALLETTE[7], cos(1.5*t)*cos(1.5*t));
-    return MaterialPhong(c, c, BLUE_PALLETTE[1], .2031423, .756641656 , .131160145739731, 10.0);
-}
 
 
 
 
 int main(void)
 {
-    Renderer renderer = Renderer(.05f, vec4(.08f, .0809f, 0.1385f, 1.0f));
-    renderer.initMainWindow(UHD, "flows");
-
-	shared_ptr<SmoothParametricCurve> camCurve = make_shared<SmoothParametricCurve>([](float t) { return vec3(cos(t*1)*3, sin(t*1)*3, 2); }, -1, 1, true, .01);
+    Renderer renderer = Renderer(.05f, vec4(.07f, .0409f, 0.05585f, 1.0f));
+    renderer.initMainWindow(FHD, "flows");
+    float camSpeed = 1.5/4;
+	shared_ptr<SmoothParametricCurve> camCurve = make_shared<SmoothParametricCurve>([camSpeed](float t) { return vec3(sin(t*camSpeed)*sqrt(8), -cos(t*camSpeed)*2, -cos(t*camSpeed)*2); }, 0, TAU, .1, true, .01);
     shared_ptr<Camera> camera = make_shared<Camera>(camCurve, vec3(0.0, 0.0, 0), vec3(0, 0, 1), PI/4);
-    auto lights = vector({std::make_shared<PointLight>(vec3(-0.4, -1, 3), vec4(.95, .79, .861, 1), 15.0f),
-                          std::make_shared<PointLight>(vec3(0, 3, -0.1), vec4(.9498769, .69864, .694764, 1), 15.0f),
-                          std::make_shared<PointLight>(vec3(3, -3, 0.5), vec4(.98, .98, .938, 1), 20.0f)});
+    auto lights = vector({std::make_shared<PointLight>(vec3(-0.4, -3, 2), vec4(.0952795, .785579, .4197285861, 1), 15.0f),
+                          std::make_shared<PointLight>(vec3(0, -2, 2.1), vec4(.898769, .75369864, .03, 1), 15.0f),
+                          std::make_shared<PointLight>(vec3(2, -1, -2), vec4(.698, .292598, .39785938, 1), 15.0f)});
 
-    auto m1 =  MaterialPhong(BLUE_PALLETTE[6], BLUE_PALLETTE[6], BLUE_PALLETTE[1], .2031423, .756641656 , .131160145739731, 10.0);
-    auto m2 =  MaterialPhong(BLUE_PALLETTE[6], BLUE_PALLETTE[6], BLUE_PALLETTE[1], .1031423, .956641656 , .131160145739731, 10.0);
-    auto m3 =  MaterialPhong(BLUE_PALLETTE[7], BLUE_PALLETTE[5], BLUE_PALLETTE[1], .2031423, .756641656 , .131160145739731, 10.0);
+    auto tex1 = make_shared<Texture>("C:\\Users\\PC\\Desktop\\ogl-master\\src\\textures\\texture1.bmp", 0, "texture_ambient", true);
+    auto tex2 = make_shared<Texture>("C:\\Users\\PC\\Desktop\\ogl-master\\src\\textures\\texture_red.bmp", 1, "texture_diffuse");
+    auto tex3 = make_shared<Texture>("C:\\Users\\PC\\Desktop\\ogl-master\\src\\textures\\texture1.bmp", 2, "texture_specular", true);
+
+    auto curvatex1 = make_shared<Texture>("C:\\Users\\PC\\Desktop\\ogl-master\\src\\textures\\texture_red.bmp", 0, "texture_ambient");
+    auto curvatex2 = make_shared<Texture>("C:\\Users\\PC\\Desktop\\ogl-master\\src\\textures\\texture1.bmp", 1, "texture_diffuse" , true);
+    auto curvatex3 = make_shared<Texture>("C:\\Users\\PC\\Desktop\\ogl-master\\src\\textures\\texture1.bmp", 2, "texture_specular", true);
+
+    auto matcurva =  MaterialPhong(std::move(curvatex1), std::move(curvatex2),std::move(curvatex3), .082257031423, .666483956641656 , .5219131160145739731, 90.0);
+    auto matsp =  MaterialPhong(std::move(tex1), std::move(tex2),std::move(tex3), 0.051031423, .3962453956641656 , .0931160145739731, 60.0);
 
 
     auto step = make_shared<RenderingStep>(make_shared<Shader>(
-            "C:\\Users\\PC\\Desktop\\ogl-master\\src\\shaders\\hyperbolicAut.vert",
-            "C:\\Users\\PC\\Desktop\\ogl-master\\src\\shaders\\hyperbolicAut.frag"));
+            "C:\\Users\\PC\\Desktop\\ogl-master\\src\\shaders\\curvaCircle.vert",
+            "C:\\Users\\PC\\Desktop\\ogl-master\\src\\shaders\\curvaCircle.frag"));
+    auto step2 = make_shared<RenderingStep>(make_shared<Shader>(
+            "C:\\Users\\PC\\Desktop\\ogl-master\\src\\shaders\\curvaCircle.vert",
+            "C:\\Users\\PC\\Desktop\\ogl-master\\src\\shaders\\curvaCircle.frag"));
 
-    auto supeer = make_shared<WeakSuperMesh>(singleQuadShadeFlat(vec3(-.1, 0, .13), vec3(0, -.09, -.1), vec3(0, 1, -.4), vec3(.08, 0, .16), m1, m2, PolyGroupID(1)));
 
-    SmoothParametricSurface sph = sphere(.9);
-    supeer->addUniformSurface(sph, 30, 21, PolyGroupID(222), m3);
+    shared_ptr<WeakSuperMesh> sph = make_shared<WeakSuperMesh>(icosphere(.995, 4, vec3(0, 0, 0), PolyGroupID(222)));
 
-    auto curva = [](float t) { return SmoothParametricSurface(sphericalSpiral(.18-.08*sin(t*2), 1.5f, TAU*3, DEFAULT_POLY_GROUP_ID), w, .01); };
+    PolyGroupID curveID = PolyGroupID(2139);
+    auto curva1 = [&curveID](float t) {
+        return SmoothParametricSurface(sphericalSpiral(.1 + .07 * sin(t), 1.0f, TAU * 4, curveID, .01), width1);
+    };
 
-    supeer->addUniformSurface(curva(0), 10, 100, PolyGroupID(2139), m1);
+    shared_ptr<WeakSuperMesh> cuuurva = make_shared<WeakSuperMesh>(curva1(0), 650, 17, curveID);
 
-    step->setWeakSuperMesh(supeer);
+    cuuurva->addGlobalMaterial(matcurva);
+    sph->addGlobalMaterial(matsp);
 
+    // supeer->addUniformSurface(curva1(0), 150, 10, curveID);
+
+    step->setWeakSuperMesh(cuuurva);
+    step2->setWeakSuperMesh(sph);
+    // step->addUniform("intencities", MAT4, spec_uni([camera](float t, const shared_ptr<Shader> &shader) {shader->setUniform("mvp", camera->mvp(t));}));
     renderer.addRenderingStep(step);
+    renderer.addRenderingStep(step2);
+
+
     renderer.setCamera(camera);
     renderer.setLights(lights);
-	// renderer.addCustomAction(deformer);
+    // renderer.addConstUniform("intencities", VEC4
+    float defSpeed = .75;
+    auto surfaceDeformer = [defSpeed](float t, auto &curva) {
+        return [t, &curva, defSpeed](BufferedVertex &v) {v.setPosition(curva(defSpeed*t-.5*sin(3*t*defSpeed)-.2*sin(5*t*defSpeed)).parametersNormalised(v.getUV()));};
+    };
 
+
+    auto deformer = [&surfaceDeformer, &cuuurva, &curveID, &curva1](float t) {
+        cuuurva->deformPerVertex(curveID, surfaceDeformer(t, curva1));
+    };
+
+	renderer.addCustomAction(deformer);
     return renderer.mainLoop();
 }

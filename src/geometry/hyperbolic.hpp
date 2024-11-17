@@ -1,19 +1,28 @@
 #pragma once
 
-#include "specific.hpp"
+#include "complexGeo.hpp"
+// #include "src/common/specific.hpp"
+
 
 Complex planeToDisk(Complex z);
 Complex diskToPlane(Complex z);
 
+class PlanarMeshWithBoundary;
+class SuperMesh;
+class SuperPencilPlanar;
+class MaterialPhong;
+struct BoundaryEmbeddingStyle;
+class TriangleComplex;
+class TriangularMesh;
 
 class HyperbolicPlane {
 protected:
 	Biholomorphism _toH;
 	Complex _center = I;
 public:
-	virtual ~HyperbolicPlane() {};
+	virtual ~HyperbolicPlane() = default;
 	HyperbolicPlane();
-	HyperbolicPlane(Biholomorphism toH);
+	explicit HyperbolicPlane(Biholomorphism toH);
 	virtual glm::vec2 geodesicEndsH(Complex z0, Complex z1);
 	virtual Mob geodesicToVerticalH(Complex z0, Complex z1);
 	virtual ComplexCurve geodesic(Complex z0, Complex z1);
@@ -23,7 +32,7 @@ public:
 	virtual Complex toDisk(Complex z);
 	virtual Complex fromDisk(Complex z);
 	virtual float distance(Complex z0, Complex z1);
-	virtual PlanarMeshWithBoundary mesh(int radial_res, int vertical_res, float max_r=9, float cut_bd=1.f);
+	virtual PlanarMeshWithBoundary mesh(int radial_res, int vertical_res, float max_r, float cut_bd);
 
 	SuperMesh superMesh(std::vector<std::pair<Complex, Complex>> geodesic_ends, MaterialPhong &material,
 	                    MaterialPhong &material_bd, MaterialPhong &material_geo, int radial_res, int vertical_res,
@@ -35,8 +44,7 @@ public:
 
 	virtual HyperbolicPlane transform(Biholomorphism f) const;
 	void transformInPlace(Biholomorphism f);
-	// virtual HyperbolicPlane transformByMobiusH(Mob m);
-	// virtual HyperbolicPlane transformByMobiusD(Mob m);
+	virtual HyperbolicPlane transformByMobiusH(Mob m);
 	virtual Biholomorphism toHTransform() const;
 	virtual Biholomorphism toDTransform() const;
 
@@ -48,7 +56,7 @@ public:
 	Complex toDisk(Complex z) override;
 	Complex fromDisk(Complex z) override;
 	ComplexCurve boundary() override;
-	PlanarMeshWithBoundary mesh(int radial_res, int vertical_res, float max_r=4, float cut_bd=1.f) override;
+	PlanarMeshWithBoundary mesh(int radial_res, int vertical_res, float max_r, float cut_bd) override;
 };
 
 class HyperbolicBand : public HyperbolicPlane {
@@ -134,7 +142,7 @@ protected:
 	std::vector<TriangleComplex> triangulation;
 
 public:
-	virtual ~SchwarzPolygon() {};
+	virtual ~SchwarzPolygon() = default;
 	SchwarzPolygon();
 	SchwarzPolygon(std::vector<Complex> vertices, Mob mobiusToFDDisk, std::shared_ptr<HyperbolicPlane> plane,
 		std::vector<TriangleComplex> triangulation);
@@ -199,5 +207,3 @@ public:
 
 	void transformInPlace(Biholomorphism f);
 };
-
-

@@ -8,12 +8,10 @@
 #include <glm/glm.hpp>
 #include <string>
 
-#include "surfaces.hpp"
+#include "src/geometry/discreteGeometry.hpp"
 #include <gl/glew.h>
 
-#define End1P std::function<SpaceEndomorphism(float)>
-#define End2P std::function<SpaceEndomorphism(float, float)>
-#define maybeMaterial std::optional<MaterialPhong>
+
 
 template<typename vec> 
 std::vector<float> vecToVecHeHe(vec v);
@@ -42,21 +40,27 @@ public:
 	GLenum textureSlot;
 	const char* samplerName;
 	GLuint frameBufferID;
+    bool alpha=false;
 
 	Texture(int width, int height, int slot = 0, const char* sampler = "tex");
-	explicit Texture(const char* filename, int slot = 0, const char* sampler = "tex");
+    explicit Texture(glm::vec3 color, int slot = 0, const char* sampler = "tex");
+    explicit Texture(glm::vec4 color, int slot = 0, const char* sampler = "tex");
+	explicit Texture(const char* filename, int slot, const char* sampler, bool alpha=false);
 	~Texture();
 
 	void addFilters(GLenum minFilter, GLenum magFilter, GLenum wrapS, GLenum wrapT);
 	void bind();
 	void bindToFrameBuffer();
 	void calculateMipmap();
+    void load();
+
+
 };
 
 
 class MaterialPhong {
 public:
-	std::shared_ptr<Texture> texture;
+
 	glm::vec4 ambientColor;
 	glm::vec4 diffuseColor;
 	glm::vec4 specularColor;
@@ -64,16 +68,25 @@ public:
 	float diffuseIntensity;
 	float specularIntensity;
 	float shininess;
+    std::shared_ptr<Texture> texture_ambient;
+    std::shared_ptr<Texture> texture_diffuse;
+    std::shared_ptr<Texture> texture_specular;
 
-	MaterialPhong();
+    MaterialPhong() = default;
 	MaterialPhong(glm::vec4 ambient, glm::vec4 diffuse, glm::vec4 specular,
 		float ambientIntensity, float diffuseIntensity, float specularIntensity,
 		float shininess, const std::shared_ptr<Texture> &texture =nullptr);
    explicit MaterialPhong(glm::mat4 compressed, const std::shared_ptr<Texture> &texture =nullptr);
 
-	bool textured();
+  MaterialPhong(const std::shared_ptr<Texture> &texture_ambient, const std::shared_ptr<Texture> &texture_diffuse,
+                 const std::shared_ptr<Texture> &texture_specular,
+                float ambientIntensity, float diffuseIntensity, float specularIntensity,
+                float shininess);
+
+	bool textured() const {return texture_ambient != nullptr;}
 	glm::mat4 compressToMatrix() const;
 	glm::vec4 compressIntencities() const;
+    void initTextures() { texture_ambient->load(); texture_diffuse->load(); texture_specular->load(); }
 };
 
 
@@ -145,6 +158,8 @@ public:
 	TriangleR3 embeddInR3(float z = 0);
 	float area() const;
 };
+
+class Meromorphism;
 
 class TriangleComplex {
 public:
@@ -222,6 +237,7 @@ public:
 	glm::vec2 getUV() const { return uv; }
 	glm::vec4 getColor() const { return color; }
     MaterialPhong getMaterial() const { return material.value(); }
+    glm::mat4 getMaterialMat() const { return material.value().compressToMatrix(); }
     glm::vec4 getExtraData(const std::string &name) { return extraData[name]; }
     glm::vec3 getExtraData_xyz(const std::string &name) { return glm::vec3(extraData[name]); }
     float getExtraData(const std::string &name, int i) { return extraData[name][i]; }
@@ -264,7 +280,8 @@ public:
     float getCurveWidth() { return norm(getPosition() - getCurvePosition()); }
 };
 
-
+Vertex barycenter(Vertex v1, Vertex v2, Vertex v3);
+Vertex center(Vertex v1, Vertex v2);
 
 
 
@@ -283,9 +300,10 @@ MaterialPhong lerp(MaterialPhong m0, MaterialPhong m1, float t);
 
 
 class MaterialFamily1P {
-	MaterialPhong m0, m1;
+	MaterialPhong* m0 = nullptr;
+    MaterialPhong *m1 = nullptr;
 public:
-	MaterialFamily1P(MaterialPhong m0, MaterialPhong m1);
+	MaterialFamily1P(MaterialPhong *m0, MaterialPhong *m1);
 	MaterialFamily1P(glm::vec4 c1, glm::vec4 c2, float ambientIntensity, float diffuseIntensity, float specularIntensity, float shininess);
 	MaterialPhong operator()(float t) const;
 };
@@ -304,6 +322,10 @@ public:
 enum MeshFormat {
 	OBJ = 0
 };
+
+std::map<std::string, int> countEstimatedBufferSizesInOBJFile(const char *filename);
+
+
 
 
 class TriangularMesh {
@@ -461,7 +483,7 @@ class SuperMesh {
 	std::map<PolyGroupID, std::vector<TriangleR3>> boundaryGroups={}; // "bdPoint": extra attribute for unextruded pt
 	std::map<PolyGroupID, std::vector<TriangleR3>> embedded_curves={}; // "curvePoint": extra attribute for unextruded pt
 	std::map<PolyGroupID, std::vector<TriangleR3>> embedded_points={}; // "loc": extra const attribute for unextruded pt
-	std::map<PolyGroupID, MaterialPhong> materials={};
+	std::map<PolyGroupID, MaterialPhong> materials = std::map<PolyGroupID, MaterialPhong>();
 
 	MaterialBuffers materialBuffers = {{}, {}, {}, {}};
 	StdAttributeBuffers stdAttributeBuffers = {{}, {}, {}, {}};
@@ -630,8 +652,3 @@ public:
   float time() const;
   void transformMesh(float new_t);
 };
-
-
-
-
-

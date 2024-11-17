@@ -1,18 +1,18 @@
 #include "mat.hpp"
 
+#include <array>
+#include <cmath>
 #include <iostream>
+#include <set>
 #include <sstream>
-#include <stdio.h>
-#include <stdlib.h>
+#include <cstdio>
+#include <cstdlib>
+#include <vector>
 #include <GL/glew.h>
 #include <GLFW/glfw3.h>
 #include <glm/glm.hpp>
 #include <glm/gtc/matrix_transform.hpp>
 #include <glm/gtx/transform.hpp>
-#include <cmath>
-#include <vector>
-#include <set>
-#include <array>
 
 using namespace glm;
 using std::vector, std::string, std::set, std::array, std::pair, std::exp, std::log, std::cos, std::sin, std::cosh, std::sinh, std::sqrt, std::pow, std::atan2, std::abs;
@@ -628,6 +628,12 @@ mat3 rotationMatrix3(vec3 axis, float angle)
 	return inverse(change) * rotationMatrix3(angle) * change;
 }
 
+glm::mat3 rotationBetween(glm::vec3 v0, glm::vec3 v1) {
+    glm::vec3 axis = normalise(cross(v0, v1));
+    float angle = acos(dot(v0, v1) / (norm(v0) * norm(v1)));
+    return rotationMatrix3(axis, angle);
+}
+
 float frac(float x)
 {
     return x - floor(x);
@@ -654,14 +660,188 @@ std::pair<vec3, vec3> orthogonalComplementBasis(vec3 v)
 
 }
 
-float pseudorandomizer(float x, float seed)
-{
-	return frac(sin(x + seed) * 43758.5453f + seed);
+float pseudorandomizer(float x, float seed) { return frac(sin(x + seed) * 43758.5453f + seed); }
+
+
+BigMatrix::BigMatrix(int n, int m) { this->data = MATR$X(n, vec2137(m, 0)); }
+
+BigMatrix submatrix(int i, int j) {
+    MATR$X sub = MATR$X();
+    for (int k = 0; k < n(); k++) {
+        if (k == i) continue;
+        std::vector<float> row = std::vector<float>();
+        for (int l = 0; l < this->m; l++) {
+            if (l == j) continue;
+            row.push_back(this->data[k][l]);
+        }
+        sub.push_back(row);
+    }
+    return BigMatrix(sub);
+}
+
+BigMatrix::BigMatrix(const MATR$X &data) { this->data = data; };
+
+float BigMatrix::det() {
+    if (n() != m())  throw std::invalid_argument("Matrix must be square");
+    if (n() == 1)  return this->data[0][0];
+    float result = 0;
+    for (int j = 0; j < m(); j++)  if (this->data[0][j] != 0)
+        result += this->data[0][j] * submatrix(0, j).det() * (j % 2 == 0 ? 1 : -1);
+    return result;
 }
 
 
+    void BigMatrix::transpose() {
+    MATR$X data = MATR$X();
+    data.reserve(n());
+    for (int i = 0; i < n(); i++) data[i].reserve(m());
+    for (int i = 0; i < m(); i++) {
+        std::vector<float> row = std::vector<float>();
+        for (int j = 0; j < n(); j++)
+            row.push_back(this->data[j][i]);
+        data.push_back(row);
+    }
+    this->data = data;
+}
 
-//template <RingConcept T, int n, int m>
+
+    BigMatrix BigMatrix::operator*(float f) const {
+            BigMatrix result = BigMatrix(this->data);
+            for (int j = 0; j < n(); j++)
+                for (int i = 0; i < m(); i++)
+                    result.data[j][i] *= f;
+        return result;
+    }
+    BigMatrix BigMatrix::operator+(const BigMatrix &M)  const{
+    BigMatrix result = BigMatrix(this->data);
+    for (int j = 0; j < n(); j++)
+        for (int i = 0; i < m(); i++)
+            result.data[j][i] += M.data[j][i];
+    return result;
+}
+
+BigMatrix BigMatrix::operator-(const BigMatrix &M) const {
+    BigMatrix result = BigMatrix(this->data);
+    for (int j = 0; j < n(); j++)
+        for (int i = 0; i < m(); i++)
+            result.data[j][i] -= M.data[j][i];
+    return result;
+}
+
+BigMatrix BigMatrix::operator*(const BigMatrix &M) const {
+    if (m() != M.n())  throw std::invalid_argument("Matrix dimensions must agree");
+    BigMatrix result = BigMatrix(n(), M.m());
+    for (int i = 0; i < n(); i++)
+        for (int j = 0; j < M.m(); j++)
+            for (int k = 0; k < m(); k++)
+                result.data[i][j] += this->data[i][k] * M.data[k][j];
+    return result;
+}
+
+BigMatrix BigMatrix::operator*(const std::vector<std::vector<float>> &M) const {
+    BigMatrix result = BigMatrix(n(), M[0].size());
+    for (int i = 0; i < n(); i++)
+        for (int j = 0; j < M[0].size(); j++)
+            for (int k = 0; k < m(); k++)
+                result.data[i][j] += this->data[i][k] * M[k][j];
+    return result;
+}
+
+BigMatrix operator*(const std::vector<float> &vec, const BigMatrix &M) {
+    std::vector<std::vector<float>> m = {vec};
+    return m * M;
+}
+
+BigMatrix operator*(const std::vector<std::vector<float>> &M, const BigMatrix &B) {
+    BigMatrix result = BigMatrix(M.size(), B.m());
+    for (int i = 0; i < M.size(); i++)
+        for (int j = 0; j < B.m(); j++)
+            for (int k = 0; k < M[0].size(); k++)
+                result.data[i][j] += M[i][k] * B.data[k][j];
+    return result;
+}
+
+BigMatrix BigMatrix::inv() {
+    if (n() != m())  throw std::invalid_argument("Matrix must be square");
+    float d = det();
+    if (d == 0)  throw std::invalid_argument("Matrix must be invertible");
+    BigMatrix result = BigMatrix(n(), m());
+    for (int i = 0; i < n(); i++)
+        for (int j = 0; j < m(); j++)
+            result.data[i][j] = submatrix(j, i).det() * ((i + j) % 2 == 0 ? 1 : -1);
+    return result/d;
+}
+    BigMatrix BigMatrix::pow(int p) {
+    if (n() != m())  throw std::invalid_argument("Matrix must be square");
+    if (p < 0)  return ~(*this).pow(-p);
+    if (p == 0)  return BigMatrix(n(), m());
+    if (p == 1)  return *this;
+    if (p == 2)  return *this * *this;
+    if (p % 2 == 0)  return this->pow(p / 2) * this->pow(p / 2);
+    return (*this) * this->pow(p / 2) * this->pow(p / 2);
+}
+    BigMatrix BigMatrix::GramSchmidtProcess() {
+    BigMatrix result = BigMatrix(this->data);
+    for (int i = 0; i < n(); i++) {
+        for (int j = 0; j < m(); j++) {
+            if (i == 0)  result.data[i][j] = this->data[i][j];
+            else {
+                float sum = 0;
+                for (int k = 0; k < i; k++)  sum += result.data[k][j] * this->data[i][k];
+                result.data[i][j] = this->data[i][j] - sum;
+            }
+        }
+    }
+    return result;
+}
+    BigMatrix BigMatrix::operator*(const std::vector<float> &vec) {
+    auto M = BigMatrix({vec});
+    M.transpose();
+    return (*this)*M;
+}
+    BigMatrix::BigMatrix(MATR$X && data) { data = std::move(data); }
+
+
+    void BigMatrix::set(int i, int j, float val) { this->data[i][j] = val; }
+
+
+    BigMatrix BigMatrix::submatrix(int i, int j) {
+        MATR$X sub = MATR$X();
+        for (int k = 0; k < this->n(); k++) {
+            if (k == i) continue;
+            std::vector<float> row = std::vector<float>();
+            for (int l = 0; l < this->m(); l++) {
+                if (l == j) continue;
+                row.push_back(this->data[k][l]);
+            }
+            sub.push_back(row);
+        }
+        return BigMatrix(sub);
+    }
+
+BigMatrix::BigMatrix(vector<vec2> &data) {
+    this->data = MATR$X();
+    for (auto v : data)
+        this->data.push_back({v.x, v.y});
+}
+
+BigMatrix::BigMatrix(vector<vec3> &data) {
+    this->data = MATR$X();
+    for (auto v : data)
+        this->data.push_back({v.x, v.y, v.z});
+}
+
+BigMatrix::BigMatrix(vector<vec4> &data) {
+    this->data = MATR$X();
+    for (auto v : data)
+        this->data.push_back({v.x, v.y, v.z, v.w});
+}
+
+BigMatrix::BigMatrix(vector<float> &data) {
+    this->data = MATR$X();
+    this->data.push_back(data);
+}
+    // template <RingConcept T, int n, int m>
 //T Matrix<T, n, m>::mobius(T z) requires DivisionRing<T>
 //{
 //	if (n != 2 || m != 2) {
@@ -678,4 +858,3 @@ float pseudorandomizer(float x, float seed)
 //	}
 //	return [this](T z) {return  (this->coefs[0][0] * z + this->coefs[0][1]) / (this->coefs[1][0] * z + this->coefs[1][1]); };
 //}
-

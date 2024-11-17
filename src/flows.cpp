@@ -228,7 +228,7 @@ int main(void)
 			setFlowUniforms(flowSpeedCoeff, deltaTime, (vec4(0, 1, 0, 1)), flowShader);
 			renderedTexture.bind();
 			renderedTexture.bindToFrameBuffer();
-			glDrawArrays(GL_TRIANGLES, 0, models.at(0).mesh.triangles.size() * 3);
+			// glDrawArrays(GL_TRIANGLES, 0, models.at(0).mesh.triangles.size() * 3);
 
 
 
@@ -247,14 +247,14 @@ int main(void)
 			mainShader.setTextureSampler(&renderedTexture, 0);
 
 
-			glDrawArrays(GL_TRIANGLES, 0, models.at(0).mesh.triangles.size() * 3);
+			// glDrawArrays(GL_TRIANGLES, 0, models.at(0).mesh.triangles.size() * 3);
 			disableAttributeArrays(4);
 
 			for (int i = 1; i < models.size(); i++) {
 				Model3D* bd_model = &models.at(i);
 				setPerObjectUniforms(&mainShader, &models.at(i), camPosition, window.aspectRatio);
 				setAttributes(attributeBufferInfo, bd_model);
-				glDrawArrays(GL_TRIANGLES, 0, bd_model->mesh.triangles.size() * 3);
+				// glDrawArrays(GL_TRIANGLES, 0, bd_model->mesh.triangles.size() * 3);
 				disableAttributeArrays(4);
 			}
 

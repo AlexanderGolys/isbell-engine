@@ -16,11 +16,11 @@
 
 
 
-#include "geometry.hpp"
+#include "renderingUtils.hpp"
 
 
 using namespace glm;
-using std::vector, std::array, std::string, std::set, std::pair, std::unique_ptr, std::shared_ptr, std::make_shared, std::make_unique, std::to_string;
+using std::vector, std::array, std::string, std::set, std::pair, std::unique_ptr, std::shared_ptr, std::make_shared, std::make_unique, std::to_string, std::map;
 
 
 
@@ -320,6 +320,40 @@ void Vertex::setAllParametricCurveExtras(float t, CurveSample &sample) {
     setCurveTangent(sample.getTangent());
 }
 
+Vertex barycenter(Vertex v1, Vertex v2, Vertex v3) {
+    map<string, vec4> extraData = {};
+    for (auto& key : v1.getExtraDataNames()) {
+        vec4 newData = barycenter(v1.getExtraData(key), v2.getExtraData(key), v3.getExtraData(key));
+        extraData.insert({key, newData});
+    }
+    vec3 n = normalize(cross(v2.getPosition() - v1.getPosition(), v3.getPosition() - v1.getPosition()));
+    n = n*sign(dot(n, v1.getNormal()));
+    return Vertex(barycenter(v1.getPosition(), v2.getPosition(), v3.getPosition()),
+                  barycenter(v1.getUV(), v2.getUV(), v3.getUV()),
+                  n,
+                  barycenter(v1.getColor(), v2.getColor(), v3.getColor()),
+                  MaterialPhong(barycenter(v1.getMaterialMat(), v2.getMaterialMat(), v3.getMaterialMat())),
+                    extraData);
+}
+
+Vertex center(Vertex v1, Vertex v2) {
+    map<string, vec4> extraData = {};
+    for (auto& key : v1.getExtraDataNames()) {
+        vec4 newData =(v1.getExtraData(key) + v2.getExtraData(key))/2.0f;
+        extraData.insert({key, newData});
+    }
+    if (v1.hasMaterial() && v2.hasMaterial() && !v1.getMaterial().textured() && !v2.getMaterial().textured())
+        return Vertex((v1.getPosition() + v2.getPosition())/2.0f,
+                      (v1.getUV() + v2.getUV())/2.0f,
+                      normalize(v1.getNormal() + v2.getNormal()),
+                      (v1.getColor() + v2.getColor())/2.0f,
+                      MaterialPhong((v1.getMaterialMat() + v2.getMaterialMat())/2.0f),
+                        extraData);
+    return Vertex((v1.getPosition() + v2.getPosition())/2.0f,
+                  (v1.getUV() + v2.getUV())/2.0f,
+                  normalize(v1.getNormal() + v2.getNormal()),
+                  (v1.getColor() + v2.getColor())/2.0f, std::nullopt, extraData);
+}
 
 
 TriangularMesh::TriangularMesh() 
@@ -342,6 +376,33 @@ TriangularMesh::TriangularMesh(const vector<TriangleR3> &triangles) : Triangular
 	this->triangles = triangles;
 }
 
+std::map<std::string, int> countEstimatedBufferSizesInOBJFile(const char *filename) {
+    int positions = 0;
+    int normals = 0;
+    int faces = 0;
+    int uvs = 0;
+
+    FILE* file = fopen(filename, "r");
+
+    while (1) {
+        char lineHeader[1024];
+        // read the first word of the line
+        int res = fscanf(file, "%s", lineHeader);
+        if (res == EOF)
+            break;
+
+        if (strcmp(lineHeader, "v") == 0)
+            positions++;
+        else if (strcmp(lineHeader, "vn") == 0)
+            normals++;
+        else if (strcmp(lineHeader, "vt") == 0)
+            uvs++;
+        else if (strcmp(lineHeader, "f") == 0)
+            faces++;
+    }
+    fclose(file);
+    return std::map<std::string, int> {{"positions", positions}, {"normals", normals}, {"uvs", uvs}, {"faces", faces}};
+}
 
 TriangularMesh::TriangularMesh(const char* filename, MeshFormat format) : TriangularMesh()
 {
@@ -707,17 +768,6 @@ void TriangularMesh::applyMap(std::function<vec3(vec3)> f,
 }
 
 
-MaterialPhong::MaterialPhong()
-{
-	this->ambientColor = vec4(1.0f, 0.0f, 0.0f, 1.0f);
-	this->diffuseColor = vec4(0.0f, 1.0f, 0.0f, 1.0f);
-	this->specularColor = vec4(1.0f, 1.0f, 1.0f, 1.0f);
-	this->ambientIntensity = 1.0f;
-	this->diffuseIntensity = 1.0f;
-	this->specularIntensity = 1.0f;
-	this->shininess = 50.0f;
-	this->texture = nullptr;
-}
 
 MaterialPhong::MaterialPhong(vec4 ambient, vec4 diffuse, vec4 specular, float ambientIntensity, float diffuseIntensity,
                              float specularIntensity, float shininess, const shared_ptr<Texture> &texture)
@@ -730,7 +780,9 @@ MaterialPhong::MaterialPhong(vec4 ambient, vec4 diffuse, vec4 specular, float am
     this->diffuseIntensity = diffuseIntensity;
     this->specularIntensity = specularIntensity;
     this->shininess = shininess;
-    this->texture = texture;
+    this->texture_ambient = texture;
+    texture_diffuse = texture;
+    texture_specular = texture;
 }
 MaterialPhong::MaterialPhong(mat4 compressed, const shared_ptr<Texture> &texture) {
     this->ambientColor = compressed[0];
@@ -740,13 +792,24 @@ MaterialPhong::MaterialPhong(mat4 compressed, const shared_ptr<Texture> &texture
     this->diffuseIntensity = compressed[3].y;
     this->specularIntensity = compressed[3].z;
     this->shininess = compressed[3].w;
-    this->texture = texture;
+    this->texture_ambient = texture;
+    texture_diffuse = texture;
+    texture_specular = texture;
 }
+MaterialPhong::MaterialPhong(const std::shared_ptr<Texture> &texture_ambient, const std::shared_ptr<Texture> &texture_diffuse,
+                             const std::shared_ptr<Texture> &texture_specular, float ambientIntensity, float diffuseIntensity,
+                             float specularIntensity, float shininess) {
+    this->texture_ambient = texture_ambient;
+    this->texture_diffuse = texture_diffuse;
+    this->texture_specular = texture_specular;
+    this->ambientIntensity = ambientIntensity;
+    this->diffuseIntensity = diffuseIntensity;
+    this->specularIntensity = specularIntensity;
+    this->shininess = shininess;
+    ambientColor = vec4(1.0f, 1.0f, 1.0f, 1.0f);
+    diffuseColor = vec4(1.0f, 1.0f, 1.0f, 1.0f);
+    specularColor = vec4(1.0f, 1.0f, 1.0f, 1.0f);
 
-
-bool MaterialPhong::textured()
-{
-	return this->texture != nullptr;
 }
 
 mat4 MaterialPhong::compressToMatrix() const
@@ -759,16 +822,16 @@ vec4 MaterialPhong::compressIntencities() const
 	return vec4(ambientIntensity, diffuseIntensity, specularIntensity, shininess);
 }
 
-MaterialFamily1P::MaterialFamily1P(MaterialPhong m0, MaterialPhong m1) {
-	this->m0 = m0;
-	this->m1 = m1;
-}
+// MaterialFamily1P::MaterialFamily1P(MaterialPhong *m0, MaterialPhong *m1) {
+// 	this->m0 = *m0;
+// 	this->m1 = *m1;
+// }
 
-MaterialFamily1P::MaterialFamily1P(vec4 c1, vec4 c2, float ambientIntensity, float diffuseIntensity,
-	float specularIntensity, float shininess) {
-	this->m0 = MaterialPhong(c1, c1, vec4(1, 1, 1, 1), ambientIntensity, diffuseIntensity, specularIntensity, shininess);
-	this->m1 = MaterialPhong(c2, c2, vec4(1, 1, 1, 1), ambientIntensity, diffuseIntensity, specularIntensity, shininess);
-}
+// MaterialFamily1P::MaterialFamily1P(vec4 c1, vec4 c2, float ambientIntensity, float diffuseIntensity,
+// 	float specularIntensity, float shininess) {
+// 	this->m0 = MaterialPhong(c1, c1, vec4(1, 1, 1, 1), ambientIntensity, diffuseIntensity, specularIntensity, shininess);
+// 	this->m1 = MaterialPhong(c2, c2, vec4(1, 1, 1, 1), ambientIntensity, diffuseIntensity, specularIntensity, shininess);
+// }
 
 MaterialPhong lerp(MaterialPhong m0, MaterialPhong m1, float t) {
 	return MaterialPhong(lerp(m0.ambientColor, m1.ambientColor, t),
@@ -780,9 +843,9 @@ MaterialPhong lerp(MaterialPhong m0, MaterialPhong m1, float t) {
 		lerp(m0.shininess, m1.shininess, t));
 }
 
-MaterialPhong MaterialFamily1P::operator()(float t) const {
-	return lerp(m0, m1, t);
-}
+// MaterialPhong MaterialFamily1P::operator()(float t) const {
+// 	return lerp(m0, m1, t);
+// }
 
 PointLight::PointLight(vec3 position, vec4 color, float intensity)
 {
@@ -923,9 +986,9 @@ TriangleComplex TriangleComplex::operator*(Complex M) const {
 	return TriangleComplex({ vertices[0] * M, vertices[1] * M, vertices[2] * M }, vertexColors, uvs);
 }
 
-TriangleComplex TriangleComplex::operator*(const Matrix<Complex, 2> &M) const {
-	return TriangleComplex({ M.mobius(vertices[0]), M.mobius(vertices[1]), M.mobius(vertices[2]) }, vertexColors, uvs);
-}
+// TriangleComplex TriangleComplex::operator*(const Matrix<Complex, 2> &M) const {
+// 	return TriangleComplex({ M.mobius(vertices[0]), M.mobius(vertices[1]), M.mobius(vertices[2]) }, vertexColors, uvs);
+// }
 
 TriangleComplex TriangleComplex::operator*(Meromorphism f) const {
 	return TriangleComplex({ f(vertices[0]), f(vertices[1]), f(vertices[2]) }, vertexColors, uvs);
@@ -1424,8 +1487,9 @@ void SuperMesh::precomputeBuffers(bool materials, bool extra) {
 		this->bufferLocations = { &this->stdAttributeBuffers.positions[0],
 			&this->stdAttributeBuffers.normals[0],
 			&this->stdAttributeBuffers.colors[0], &this->stdAttributeBuffers.uvs[0] };
-		this->bufferSizes = { this->stdAttributeBuffers.positions.size(), this->stdAttributeBuffers.normals.size(),
-			this->stdAttributeBuffers.colors.size(), this->stdAttributeBuffers.uvs.size() };
+
+		this->bufferSizes = {   (int) this->stdAttributeBuffers.positions.size(), (int) this->stdAttributeBuffers.normals.size(),
+			                    (int) this->stdAttributeBuffers.colors.size(),    (int) this->stdAttributeBuffers.uvs.size() };
 	}
 
 	if (materials && this->materialBuffers.ambientColors.size() == 0) {
@@ -1487,10 +1551,10 @@ void SuperMesh::precomputeBuffers(bool materials, bool extra) {
 					&this->materialBuffers.ambientColors[0], &this->materialBuffers.diffuseColors[0],
 					&this->materialBuffers.specularColors[0], &this->materialBuffers.intencitiesAndShininess[0] };
 
-		this->bufferSizes = { this->stdAttributeBuffers.positions.size(), this->stdAttributeBuffers.normals.size(),
-				this->stdAttributeBuffers.colors.size(), this->stdAttributeBuffers.uvs.size(),
-				this->materialBuffers.ambientColors.size(), this->materialBuffers.diffuseColors.size(),
-				this->materialBuffers.specularColors.size(), this->materialBuffers.intencitiesAndShininess.size() };
+		this->bufferSizes = {   (int) this->stdAttributeBuffers.positions.size(),  (int) this->stdAttributeBuffers.normals.size(),
+				                (int) this->stdAttributeBuffers.colors.size(),     (int) this->stdAttributeBuffers.uvs.size(),
+				                (int) this->materialBuffers.ambientColors.size(),  (int) this->materialBuffers.diffuseColors.size(),
+				                (int) this->materialBuffers.specularColors.size(), (int) this->materialBuffers.intencitiesAndShininess.size() };
 	}
 }
 
@@ -1712,7 +1776,40 @@ Texture::Texture(int width, int height, int slot, const char* sampler)
 	glGenFramebuffers(1, &frameBufferID);
 }
 
-Texture::Texture(const char* filename, int slot, const char* sampler)
+Texture::Texture(glm::vec3 color, int slot, const char *sampler) {
+    width = 1;
+    height = 1;
+    size = 3;
+    this->alpha = false;
+    this->textureSlot = GL_TEXTURE0 + slot;
+    this->samplerName = sampler;
+    this->frameBufferID = 0;
+    this->textureID = 0;
+
+    data = new unsigned char[3];
+    data[0] = (unsigned char) (color.x * 255);
+    data[1] = (unsigned char) (color.y * 255);
+    data[2] = (unsigned char) (color.z * 255);
+}
+
+Texture::Texture(glm::vec4 color, int slot, const char *sampler) {
+    width = 1;
+    height = 1;
+    size = 4;
+    this->alpha = true;
+    this->textureSlot = GL_TEXTURE0 + slot;
+    this->samplerName = sampler;
+    this->frameBufferID = 0;
+    this->textureID = 0;
+
+    data = new unsigned char[4];
+    data[0] = (unsigned char) (color.x * 255);
+    data[1] = (unsigned char) (color.y * 255);
+    data[2] = (unsigned char) (color.z * 255);
+    data[3] = (unsigned char) (color.w * 255);
+}
+
+Texture::Texture(const char* filename, int slot, const char* sampler, bool alpha)
 {
 	unsigned char header[54];
 	unsigned int dataPos;
@@ -1729,6 +1826,7 @@ Texture::Texture(const char* filename, int slot, const char* sampler)
 		printf("Not a correct BMP file\n");
 		return;
 	}
+    this->alpha = alpha;
 	dataPos = *(int*)&(header[0x0A]);
 	this->size = *(int*)&(header[0x22]);
 	this->width = *(int*)&(header[0x12]);
@@ -1741,12 +1839,11 @@ Texture::Texture(const char* filename, int slot, const char* sampler)
 	fread(this->data, 1, size, file);
 	fclose(file);
 
-	glGenTextures(1, &this->textureID);
-	glBindTexture(GL_TEXTURE_2D, this->textureID);
-	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, this->width, this->height, 0, GL_BGRA, GL_UNSIGNED_BYTE, this->data);
+
 	this->textureSlot = GL_TEXTURE0 + slot;
 	this->samplerName = sampler;
 	this->frameBufferID = 0;
+    this->textureID = 0;
 }
 
 Texture::~Texture()
@@ -1784,11 +1881,21 @@ void Texture::bindToFrameBuffer()
 
 
 
-void Texture::calculateMipmap()
-{
-	glGenerateMipmap(this->textureID);
-}
+void Texture::calculateMipmap() { glGenerateMipmap(this->textureID); }
 
+void Texture::load() {
+    glGenTextures(1, &this->textureID);
+    	glActiveTexture(this->textureSlot);
+
+    glBindTexture(GL_TEXTURE_2D, this->textureID);
+    if (alpha)
+        glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, this->width, this->height, 0, GL_BGRA, GL_UNSIGNED_BYTE, this->data);
+    else
+        glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, this->width, this->height, 0, GL_BGR, GL_UNSIGNED_BYTE, this->data);
+
+    glGenerateMipmap(GL_TEXTURE_2D);
+    addFilters(GL_LINEAR_MIPMAP_LINEAR, GL_LINEAR, GL_REPEAT, GL_REPEAT);
+}
 
 
 //
@@ -2123,4 +2230,3 @@ void SuperPencilCurve::transformMesh(float new_t) {
 	}
 	_t = new_t;
 }
-

@@ -245,6 +245,7 @@ void setUniformTextureSampler(GLuint programID, Texture *texture, int textureSlo
 {
 	GLuint samplerUniform = glGetUniformLocation(programID, texture->samplerName);
 	glUniform1i(samplerUniform, textureSlot);
+    texture->bind();
 }
 
 int predefinedWidth(Resolution res) {
@@ -326,6 +327,29 @@ int lengthOfGLSLType(GLSLType type)
 	return -1;
 }
 
+GLenum primitiveGLSLType(GLSLType type)
+{
+    switch (type)
+    {
+    case FLOAT:
+    case VEC2:
+    case VEC3:
+    case VEC4:
+    case MAT2:
+    case MAT3:
+    case MAT4:
+        return GL_FLOAT;
+    case INT:
+    case SAMPLER1D:
+    case SAMPLER2D:
+    case SAMPLER3D:
+        return GL_INT;
+
+    }
+    std::cout << "Error: unknown GLSLType" << std::endl;
+    return -1;
+}
+
 void error_callback(int error, const char *description)
 {
 	fprintf(stderr, "Error: %s\n", description);
@@ -360,6 +384,8 @@ mat4 generateMVP(vec3 camPosition, vec3 camLookAt, vec3 upVector, float fov, flo
 
 Window::Window(int width, int height, const char *title)
 {
+    if (!glfwInit())
+        exit(2137);
 	glfwWindowHint(GLFW_SAMPLES, 4);
 	glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 3);
 	glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 3);
@@ -374,7 +400,7 @@ Window::Window(int width, int height, const char *title)
 		exit(2136);
 	}
 	glfwMakeContextCurrent(this->window);
-	// glfwGetFramebufferSize(window, &width, &height);
+	glfwGetFramebufferSize(window, &width, &height);
 }
 
 Window::Window(Resolution resolution, const char *title)
@@ -409,12 +435,7 @@ Window::~Window()
 	destroy();
 }
 
-void Window::bindToFramebuffer()
-{
-	glBindFramebuffer(GL_DRAW_FRAMEBUFFER, 0);
-	glViewport(0, 0, this->width, this->height);
-	 glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-}
+
 
 void Window::renderFramebufferToScreen()
 {
@@ -476,12 +497,14 @@ bool Window::isOpen()
 	return !glfwWindowShouldClose(this->window);
 }
 
-int Window::destroy()
-{
-	glfwDestroyWindow(this->window);
-	glfwTerminate();
-	exit(EXIT_SUCCESS);
-	return 0;
+int Window::destroy() {
+    glfwDestroyWindow(this->window);
+    glfwTerminate();
+    exit(EXIT_SUCCESS);
+    return 0;
+}
+void Window::initViewport() {
+    glViewport(0, 0, this->width, this->height);
 }
 
 Shader::Shader(const char *vertex_file_path, const char *fragment_file_path)
@@ -677,8 +700,8 @@ void Shader::setUniform(string uniformName, float x, float y, float z, float w)
 
 Camera::Camera()
 {
-	this->lookAtPos = vec3(0.0f, 0.0f, 0.0f);
-	this->upVector = vec3(0.0f, 0.0f, 1.0f);
+	this->lookAtFunc =  std::make_shared<SmoothParametricCurve>(SmoothParametricCurve::constCurve(vec3(0)));
+	this->up = [](float t) { return vec3(0, 0, 1); };
 	this->fov_x = 45.0f;
 	this->aspectRatio = 16.0f / 9.0f;
 	this->clippingRangeMin = 0.1f;
@@ -690,8 +713,8 @@ Camera::Camera()
 
 Camera::Camera(vec3 position, vec3 lookAtPos, vec3 upVector, float fov_x, float aspectRatio, float clippingRangeMin, float clippingRangeMax)
 {
-	this->lookAtPos = lookAtPos;
-	this->upVector = upVector;
+	this->lookAtFunc = std::make_shared<SmoothParametricCurve>(SmoothParametricCurve::constCurve(lookAtPos));
+	this->up = [upVector](float t) { return upVector; };
 	this->fov_x = fov_x;
 	this->aspectRatio = aspectRatio;
 	this->clippingRangeMin = clippingRangeMin;
@@ -703,8 +726,8 @@ Camera::Camera(vec3 position, vec3 lookAtPos, vec3 upVector, float fov_x, float 
 
 Camera::Camera(const shared_ptr<SmoothParametricCurve> &trajectory, vec3 lookAtPos, vec3 upVector, float fov_x, float aspectRatio, float clippingRangeMin, float clippingRangeMax)
 {
-	this->lookAtPos = lookAtPos;
-	this->upVector = upVector;
+    this->lookAtFunc = std::make_shared<SmoothParametricCurve>(SmoothParametricCurve::constCurve(lookAtPos));
+    this->up = [upVector](float t) { return upVector; };
 	this->fov_x = fov_x;
 	this->aspectRatio = aspectRatio;
 	this->clippingRangeMin = clippingRangeMin;
@@ -714,15 +737,38 @@ Camera::Camera(const shared_ptr<SmoothParametricCurve> &trajectory, vec3 lookAtP
 	this->projectionMatrix = perspective(fov_x, aspectRatio, clippingRangeMin, clippingRangeMax);
 }
 
-vec3 Camera::position(float t)
-{
-    return (*trajectory)(t);
+Camera::Camera(const std::shared_ptr<SmoothParametricCurve> &trajectory, const std::shared_ptr<SmoothParametricCurve> &lookAtPos,
+        glm::vec3 upVector, float fov_x, float aspectRatio, float clippingRangeMin, float clippingRangeMax) {
+
+    this->lookAtFunc = lookAtPos;
+    this->up = [upVector](float t) { return upVector; };
+    this->fov_x = fov_x;
+    this->aspectRatio = aspectRatio;
+    this->clippingRangeMin = clippingRangeMin;
+    this->clippingRangeMax = clippingRangeMax;
+    this->trajectory = trajectory;
+    this->moving = true;
+    this->projectionMatrix = perspective(fov_x, aspectRatio, clippingRangeMin, clippingRangeMax);
+}
+
+Camera::Camera(const std::shared_ptr<SmoothParametricCurve> &trajectory, const std::shared_ptr<SmoothParametricCurve> &lookAtPos,
+        const std::function<glm::vec3(float)> &upVector, float fov_x, float aspectRatio, float clippingRangeMin, float clippingRangeMax) {
+
+    this->lookAtFunc = lookAtPos;
+    this->up = upVector;
+    this->fov_x = fov_x;
+    this->aspectRatio = aspectRatio;
+    this->clippingRangeMin = clippingRangeMin;
+    this->clippingRangeMax = clippingRangeMax;
+    this->trajectory = trajectory;
+    this->moving = true;
+    this->projectionMatrix = perspective(fov_x, aspectRatio, clippingRangeMin, clippingRangeMax);
 }
 
 
 mat4 Camera::viewMatrix(float t)
 {
-    return lookAt(position(t), lookAtPos, upVector);
+    return lookAt(position(t), lookAtPoint(t), upVector(t));
 }
 
 mat4 Camera::vp(float t)
@@ -761,6 +807,9 @@ void Attribute::initBuffer()
 	GLuint buffer;
 	glGenBuffers(1, &buffer);
 	this->bufferAddress = buffer;
+    // glBufferData(GL_ARRAY_BUFFER, bufferLength * this->size, firstElementAdress, GL_STATIC_DRAW);
+
+
 }
 
 void Attribute::enable()
@@ -779,18 +828,25 @@ void Attribute::disable()
 
 void Attribute::load(const void *firstElementAdress, int bufferLength)
 {
-	if (!bufferInitialized)
-		initBuffer();
+	if (!bufferInitialized) {
+	    initBuffer();
+	    glBindBuffer(GL_ARRAY_BUFFER, this->bufferAddress);
+	    glBufferData(GL_ARRAY_BUFFER, bufferLength * this->size, firstElementAdress, GL_STATIC_DRAW);
+	    return;
+	}
 	glBindBuffer(GL_ARRAY_BUFFER, this->bufferAddress);
-	glBufferData(GL_ARRAY_BUFFER, bufferLength * this->size, firstElementAdress, GL_STATIC_DRAW);
+     glBufferData(GL_ARRAY_BUFFER, bufferLength * this->size, firstElementAdress, GL_STATIC_DRAW);
+    // void *ptr = glMapBuffer(GL_ARRAY_BUFFER, GL_WRITE_ONLY);
+    // memcpy(ptr, firstElementAdress, bufferLength * this->size);
+    // glUnmapBuffer(GL_ARRAY_BUFFER);
+
 }
 
-void Attribute::freeBuffer()
-{
-	glDeleteBuffers(1, &this->bufferAddress);
-	this->bufferAddress = -1;
-	this->bufferInitialized = false;
-	this->enabled = false;
+void Attribute::freeBuffer() {
+    glDeleteBuffers(1, &this->bufferAddress);
+    this->bufferAddress = -1;
+    this->bufferInitialized = false;
+    this->enabled = false;
 }
 
 RenderingStep::RenderingStep(const shared_ptr<Shader> &shader)
@@ -857,6 +913,8 @@ void RenderingStep::initMaterialAttributes() {
 void RenderingStep::initElementBuffer() {
     glGenBuffers(1, &elementBufferLoc);
     glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, elementBufferLoc);
+    glBufferData(GL_ELEMENT_ARRAY_BUFFER, weak_super->bufferIndexSize(), weak_super->bufferIndexLocation(), GL_STREAM_DRAW);
+    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, elementBufferLoc);
 
 }
 
@@ -871,12 +929,12 @@ void RenderingStep::initStdAttributes()
 {
 	auto positionAttribute = std::make_shared<Attribute>("position", VEC3, 0);
 	auto normalAttribute = std::make_shared<Attribute>("normal", VEC3, 1);
-	auto colorAttribute = std::make_shared<Attribute>("color", VEC4, 2);
-	auto uvAttribute = std::make_shared<Attribute>("uv", VEC2, 3);
+	auto colorAttribute = std::make_shared<Attribute>("color", VEC4, 3);
+	auto uvAttribute = std::make_shared<Attribute>("uv", VEC2, 2);
 	this->attributes.push_back(positionAttribute);
 	this->attributes.push_back(normalAttribute);
-	this->attributes.push_back(colorAttribute);
 	this->attributes.push_back(uvAttribute);
+	this->attributes.push_back(colorAttribute);
 
 	for (const auto& attribute : attributes)
 	{
@@ -893,23 +951,19 @@ void RenderingStep::resetAttributeBuffers()
 	}
 }
 
-void RenderingStep::initUnusualAttributes(std::vector<std::shared_ptr<Attribute>> attributes)
-{
-	this->attributes = attributes;
-	for (const auto& attribute : attributes)
-	{
-		attribute->initBuffer();
-	}
+void RenderingStep::initUnusualAttributes(std::vector<std::shared_ptr<Attribute>> attributes) {
+    this->attributes = attributes;
+    for (const auto &attribute: attributes) {
+        attribute->initBuffer();
+    }
 }
 
-void RenderingStep::activate() {
-	shader->use();
-}
+
 
 void RenderingStep::loadStandardAttributes() {
     if (weakSuperLoaded())
     {
-        for (auto i = 0; i < 8; i++)
+        for (auto i = 0; i < 4; i++)
             attributes[i]->load(weak_super->getBufferLocation(CommonBufferType(i)), weak_super->getBufferLength(CommonBufferType(i)));
         return;
     }
@@ -1013,13 +1067,56 @@ void RenderingStep::addLightsUniforms(const std::vector<std::shared_ptr<PointLig
 		addLightUniform(lights[i-1], i);
 }
 
-void RenderingStep::addMaterialUniform()
-{
-	mat4 lightMat = model->material->compressToMatrix();
-	auto materialSetter = [lightMat](float t, const shared_ptr<Shader> &s) {
-		s->setUniform("material", lightMat);
-	};
-	addUniform("material", MAT4, std::make_shared<std::function<void(float, shared_ptr<Shader>)>>(materialSetter));
+void RenderingStep::addMaterialUniform() {
+    if (weakSuperLoaded())
+        throw std::invalid_argument("Material uniform can only be added for super mesh");
+    mat4 lightMat = weak_super->getMaterial().compressToMatrix();
+    auto materialSetter = [lightMat](float t, const shared_ptr<Shader> &s) { s->setUniform("material", lightMat); };
+    addUniform("material", MAT4, std::make_shared<std::function<void(float, shared_ptr<Shader>)>>(materialSetter));
+}
+void RenderingStep::addTexturedMaterialUniforms() {
+    if (!weakSuperLoaded())
+        throw std::invalid_argument("Material uniform can only be added for super mesh");
+    vec4 intenc = weak_super->getMaterial().compressIntencities();
+    auto materialSetter = [intenc](float t, const shared_ptr<Shader> &s) { s->setUniform("intencities", intenc); };
+    addUniform("intencities", VEC4, std::make_shared<std::function<void(float, shared_ptr<Shader>)>>(materialSetter));
+
+    auto textureSetter = [m=weak_super->getMaterial().texture_ambient](float t, const shared_ptr<Shader> &s) {
+        s->setTextureSampler(m.get(), m->textureSlot);
+    };
+    addUniform("texture_ambient", SAMPLER2D, std::make_shared<std::function<void(float, shared_ptr<Shader>)>>(textureSetter));
+
+    auto textureSetter2 = [i=weak_super->getMaterial().texture_diffuse->textureSlot, tex=weak_super->getMaterial().texture_diffuse.get()](float t, const shared_ptr<Shader> &s) {
+        setUniformTextureSampler(s->programID, tex, i);
+    };
+    addUniform("texture_diffuse", SAMPLER2D, std::make_shared<std::function<void(float, shared_ptr<Shader>)>>(textureSetter2));
+
+    auto textureSetter3 = [this](float t, const shared_ptr<Shader> &s) {
+        setUniformTextureSampler(s->programID, weak_super->getMaterial().texture_specular.get(),
+                                 weak_super->getMaterial().texture_specular->textureSlot);
+    };
+    addUniform("texture_specular", SAMPLER2D, std::make_shared<std::function<void(float, shared_ptr<Shader>)>>(textureSetter3));
+}
+
+void RenderingStep::init(const shared_ptr<Camera> &cam, const std::vector<shared_ptr<PointLight>> &lights) {
+    if (weakSuperLoaded()) {
+        shader->use();
+        initElementBuffer();
+        initStdAttributes();
+        addCameraUniforms(cam);
+        addLightsUniforms(lights);
+        initTextures();
+        addTexturedMaterialUniforms();
+        loadStandardAttributes();
+        loadElementBuffer();
+    }
+}
+void RenderingStep::initTextures() { weak_super->initGlobalTextures(); }
+
+void RenderingStep::bindTextures() {
+    weak_super->getMaterial().texture_ambient->bind();
+    weak_super->getMaterial().texture_diffuse->bind();
+    weak_super->getMaterial().texture_specular->bind();
 }
 
 void RenderingStep::addUniforms(const map<std::string, GLSLType> &uniforms, map<string, shared_ptr<std::function<void(float, shared_ptr<Shader>)>>> setters)
@@ -1034,28 +1131,45 @@ void RenderingStep::addCustomAction(const std::function<void(float)> &action)
 }
 
 
+void RenderingStep::weakMeshRenderStep(float t) {
+    bindTextures();
+    loadStandardAttributes();
+    customStep(t);
+    setUniforms(t);
+    loadElementBuffer();
 
+    enableAttributes();
+    glDrawElements(GL_TRIANGLES, weak_super->bufferIndexSize(), GL_UNSIGNED_INT, 0);
+    disableAttributes();
+}
+
+void RenderingStep::superMeshRenderStep(float t) {
+
+    loadStandardAttributes();
+    enableAttributes();
+    customStep(t);
+    setUniforms(t);
+    glDrawArrays(GL_TRIANGLES, 0, super->bufferSizes[0]*3);
+    disableAttributes();
+}
+void RenderingStep::modelRenderStep(float t) {
+    loadStandardAttributes();
+    enableAttributes();
+    customStep(t);
+    setUniforms(t);
+    glDrawArrays(GL_TRIANGLES, 0, model->mesh->bufferSizes[0]*3);
+    disableAttributes();
+}
 
 void RenderingStep::renderStep(float t)
 {
-
-	activate();
-
-	loadStandardAttributes();
-    if (weakSuperLoaded()) {
-        glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, elementBufferLoc);
-        loadElementBuffer();
-    }
-	enableAttributes();
-	customStep(t);
-	setUniforms(t);
+    shader->use();
     if (weakSuperLoaded())
-        glDrawElements(GL_TRIANGLES, weak_super->bufferIndexSize(), GL_UNSIGNED_INT, 0);
-	else if (superLoaded())
-		glDrawArrays(GL_TRIANGLES, 0, super->bufferSizes[0]*3);
-	else
-	    glDrawArrays(GL_TRIANGLES, 0, model->mesh->bufferSizes[0]*3);
-	disableAttributes();
+        weakMeshRenderStep(t);
+    else if (superLoaded())
+        superMeshRenderStep(t);
+    else
+        modelRenderStep(t);
 }
 
 Renderer::Renderer(float animSpeed, vec4 bgColor)
@@ -1069,7 +1183,7 @@ Renderer::Renderer(float animSpeed, vec4 bgColor)
 		exit(2137);
 	this->bgColor = bgColor;
 	this->animSpeed = animSpeed;
-	this->perFrameFunction = make_unique<std::function<void(float)>>([](float t){});
+	this->perFrameFunction = make_unique<std::function<void(float, float)>>([](float t, float delta){});
 }
 
 Renderer::Renderer(int width, int height, const char *title,
@@ -1137,12 +1251,13 @@ void Renderer::setLights(const std::vector<std::shared_ptr<PointLight>> &lights)
 
 float Renderer::initFrame()
 {
-	glViewport(0, 0, window->width, window->height);
+	// glViewport(0, 0, window->width, window->height);
 	glClearColor(this->bgColor.x, this->bgColor.y, this->bgColor.z, 1.0f);
-    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT);
 
 	this->frameOlderTimeThanThePublicOne = this->time;
 	this->time = glfwGetTime()*this->animSpeed;
+    this->dt = this->time - this->frameOlderTimeThanThePublicOne;
 	return this->time;
 }
 
@@ -1167,17 +1282,17 @@ void Renderer::addPerFrameUniform(std::string uniformName, GLSLType uniformType,
 
 void Renderer::initRendering()
 {
-	window->bindToFramebuffer();
+    window->initViewport();
+    glBindVertexArray(vao);
+    // glBindFramebuffer(GL_DRAW_FRAMEBUFFER, 0);
+    glShadeModel(GL_SMOOTH);
 	glEnable(GL_DEPTH_TEST);
-	glDepthFunc(GL_3D);
+ //    glEnable(GL_LIGHTING);
+	// glDepthFunc(GL_3D);
 	for (const auto& renderingStep : renderingSteps)
 	{
 	    if (renderingStep->weakSuperLoaded()) {
-	        renderingStep->initElementBuffer();
-	        renderingStep->initStdAttributes();
-	        renderingStep->initMaterialAttributes();
-	        renderingStep->addCameraUniforms(camera);
-	        renderingStep->addLightsUniforms(lights);
+	        renderingStep->init(camera, lights);
 	    }
 		else if (renderingStep->superLoaded()) {
 			renderingStep->initStdAttributes();
@@ -1217,10 +1332,18 @@ void Renderer::addConstFloats(std::map<std::string, float> uniforms)
 
 void Renderer::addCustomAction(std::function<void(float)> action)
 {
-	perFrameFunction = make_unique<std::function<void(float)>>([a=*this->perFrameFunction, n=action](float t) {
-		a(t);
+	perFrameFunction = make_unique<std::function<void(float, float)>>([a=*this->perFrameFunction, n=action](float t, float delta) {
+		a(t, delta);
 		n(t);
 	});
+}
+
+void Renderer::addCustomAction(std::function<void(float, float)> action)
+{
+    perFrameFunction = make_unique<std::function<void(float, float)>>([a=*this->perFrameFunction, n=action](float t, float delta) {
+        a(t, delta);
+        n(t, delta);
+    });
 }
 
 void Renderer::addConstUniforms(std::map<std::string, GLSLType> uniforms, std::map<std::string, shared_ptr<std::function<void(std::shared_ptr<Shader>)>>> setters)
@@ -1235,15 +1358,13 @@ void Renderer::renderAllSteps()
 		renderingStep->renderStep(time);
 }
 
-int Renderer::mainLoop()
-{
-	initRendering();
-    while (window->isOpen())
-	{
-		initFrame();
-    	(*perFrameFunction)(time);
-		renderAllSteps();
-		window->renderFramebufferToScreen();
-	}
-	return window->destroy();
+int Renderer::mainLoop() {
+    initRendering();
+    while (window->isOpen()) {
+        initFrame();
+        (*perFrameFunction)(time, dt);
+        renderAllSteps();
+        window->renderFramebufferToScreen();
+    }
+    return window->destroy();
 }
