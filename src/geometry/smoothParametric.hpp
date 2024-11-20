@@ -72,7 +72,7 @@ public:
 	SmoothParametricSurface surfaceOfRevolution(const AffineLine& axis) const;
 	SmoothParametricSurface screwMotion(float speed, int iterations) const;
 	SmoothParametricSurface cylinder(vec3 direction, float h) const;
-	SmoothParametricSurface pipe(float radius) const;
+	SmoothParametricSurface pipe(float radius, bool useFrenetFrame = true) const;
 	SmoothParametricSurface canal(Fooo r) const;
 
 	static SmoothParametricCurve constCurve(vec3 v);
@@ -264,7 +264,29 @@ public:
     Differential2FormPS operator-(const Differential2FormPS& eta) const {return *this + (-eta); }
     Differential2FormPS operator*(const RealFunctionPS& f) const { return Differential2FormPS([w=_omega, f](float t, float s) { return w(t, s)*f(t, s); }, surface); }
     Differential2FormPS operator/(const RealFunctionPS& f) const { return Differential2FormPS([w=_omega, f](float t, float s) { return w(t, s)/f(t, s); }, surface); }
-
-
-
 };
+
+class FunctionalPartitionOfUnity {
+	std::vector<Fooo> _F_i;
+public:
+	explicit  FunctionalPartitionOfUnity(const std::vector<Fooo>& F_i) : _F_i(F_i) {}
+	Fooo operator[](int i) const { return _F_i[i]; }
+	int size() const { return _F_i.size(); }
+};
+
+inline Fooo BernsteinPolynomial(int n, int i, float t0, float t1) { return [n, i, t0, t1](float t) { return binomial(n, i)*pow(t-t0, i)*pow(t1-t, n-i)/pow(t1-t0, n); }; }
+inline Fooo BernsteinPolynomial(int n, int i) { return [n, i](float t) { return binomial(n, i)*pow(t, i)*pow(1-t, n-i); }; }
+
+ FunctionalPartitionOfUnity BernsteinBasis(int n);
+FunctionalPartitionOfUnity BernsteinBasis(int n, float t0, float t1);
+
+inline Fooo BSpline(int i, int k, const std::vector<float>& knots);
+FunctionalPartitionOfUnity BSplineBasis(int n, int k, std::vector<float> knots);
+vector<float> uniformKnots(int n, int k);
+
+
+
+SmoothParametricCurve freeFormCurve(FunctionalPartitionOfUnity family, std::vector<vec3> controlPts, vec2 domain, float eps=0.0001);
+inline SmoothParametricCurve BezierCurve(const std::vector<vec3>& controlPoints, float t0=0, float t1=1, float eps=.001) {return freeFormCurve(BernsteinBasis(controlPoints.size()-1, t0, t1), controlPoints, vec2(t0, t1), eps); }
+SmoothParametricCurve BSplineCurve(const std::vector<vec3>& controlPoints, const std::vector<float>& knots, int k, float eps=.001);
+inline SmoothParametricCurve BSplineCurve(const std::vector<vec3>& controlPoints, float t0, float t1, int k, float eps=.001) {return BSplineCurve(controlPoints, uniformKnots(controlPoints.size()-1, k), k, eps); }

@@ -101,8 +101,8 @@ int BufferManager::addMaterialBufferData(const MaterialPhong &mat) {
     return addMaterialBufferData(mat.compressToMatrix());
 }
 
-int BufferManager::addTriangleVertexIndices(glm::ivec3 ind) {
-    indices->push_back(ind);
+int BufferManager::addTriangleVertexIndices(glm::ivec3 ind, int shift) {
+    indices->push_back(ind+ivec3(shift));
     return bufferLength(INDEX) - 1;
 }
 
@@ -231,6 +231,7 @@ WeakSuperMesh::WeakSuperMesh(const char *filename, const std::variant<int, std::
 }
 
 void WeakSuperMesh::addNewPolygroup(const char *filename, const std::variant<int, std::string> &id) {
+	int shift = boss->bufferLength(POSITION);
     vertices[id] = vector<BufferedVertex>();
     triangles[id] = vector<IndexedTriangle>();
     vector<vec3> norms = {};
@@ -310,7 +311,7 @@ void WeakSuperMesh::addNewPolygroup(const char *filename, const std::variant<int
                     face[i] = vertices[id].size() - 1;
                 }
             }
-            triangles[id].emplace_back(*boss, face);
+            triangles[id].emplace_back(*boss, face, shift);
         }
     }
 }
@@ -332,19 +333,23 @@ WeakSuperMesh::WeakSuperMesh(const SmoothParametricSurface &surf, int tRes, int 
 
 
 void WeakSuperMesh::addNewPolygroup(const vector<Vertex> &hardVertices, const vector<ivec3> &faceIndices, const PolyGroupID &id) {
+
     if (vertices.contains(id) || triangles.contains(id))
         throw IllegalVariantError("Polygroup ID already exists in mesh. ");
 
+	int shift = boss->bufferLength(POSITION);
     vertices[id] = vector<BufferedVertex>();
     triangles[id] = vector<IndexedTriangle>();
     vertices[id].reserve(hardVertices.size());
     triangles[id].reserve(faceIndices.size());
 
-    for (const Vertex &v: hardVertices)
-        vertices[id].emplace_back(*boss, v, false);
+    for (const Vertex &v: hardVertices) {
+	    vertices[id].emplace_back(*boss, v, false);
+//    	boss->addFullVertexData(v, false);
+    }
 
     for (const ivec3 &ind: faceIndices)
-        triangles[id].emplace_back(*boss, ind);
+        triangles[id].emplace_back(*boss, ind, shift);
 }
 
 WeakSuperMesh::WeakSuperMesh(const WeakSuperMesh &other): boss(&*other.boss),
@@ -365,17 +370,17 @@ void WeakSuperMesh::addUniformSurface(const SmoothParametricSurface &surf, int t
             float u_ = 1.f * j / (1.f * uRes - 1);
             float t = lerp(surf.tMin(), surf.tMax(), t_);
             float u = lerp(surf.uMin(), surf.uMax(), u_);
-            hardVertices.emplace_back(surf(t, u), vec2(t_, u_), surf.normal(t, u), BLACK);
+            hardVertices.emplace_back(surf(t, u), vec2(t_, u_), surf.normal(t, u), vec4(t, u, 0, 1));
         }
 
-    for (int i = 0; i < tRes - 1; i++)
-        for (int j = 0; j < uRes - 1; j++) {
-            int i0 = j + i * uRes;
-            int i1 = j + (i + 1) * uRes;
-            int i2 = j + 1 + i * uRes;
-            int i3 = j + 1 + (i + 1) * uRes;
-            faceIndices.emplace_back(i0, i1, i3);
-            faceIndices.emplace_back(i0, i2, i3);
+    for (int i = 1; i < tRes ; i++)
+        for (int j = 1; j < uRes; j++) {
+            int i0 =   i * uRes + j;
+            int i1 =	(i-1) * uRes + j;
+            int i2 =	(i-1) * uRes + j-1;
+            int i3 =	i * uRes + j-1;
+            faceIndices.emplace_back(i0, i1, i2);
+            faceIndices.emplace_back(i0, i3, i2);
         }
     // if (surf.isPeriodicT()) {
     //     for (int j = 1; j < uRes; j++) {
@@ -400,6 +405,11 @@ void WeakSuperMesh::addUniformSurface(const SmoothParametricSurface &surf, int t
 
 
     addNewPolygroup(hardVertices, faceIndices, id);
+}
+
+void WeakSuperMesh::merge(const WeakSuperMesh &other) {
+	for (const auto& id: other.getPolyGroupIDs())
+		addNewPolygroup(other.getVertices(id), other.getIndices(id), make_unique_id(id));
 }
 
 std::vector<PolyGroupID> WeakSuperMesh::getPolyGroupIDs() const {

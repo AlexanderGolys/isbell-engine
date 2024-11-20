@@ -10,8 +10,8 @@
 
 #include "src/geometry/discreteGeometry.hpp"
 #include <gl/glew.h>
-
-
+#include <memory>
+#include <optional>
 
 template<typename vec> 
 std::vector<float> vecToVecHeHe(vec v);

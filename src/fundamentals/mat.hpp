@@ -778,3 +778,12 @@ public:
     explicit operator vec4 () { if (std::min(n(), m()) != 1 || std::max(m(), n()) != 4) throw std::format_error("wrong dimension of matrix (" + std::to_string(n()) + ", " + std::to_string(m()) + ")" );
           return (*this)[0].size() > 1 ? vec4((*this)[0][0], (*this)[0][1], (*this)[0][2], (*this)[0][3]) : vec4((*this)[0][0], (*this)[1][0], (*this)[2][0], (*this)[3][0]); }
 };
+
+
+
+
+inline int binomial(int n, int k) {
+	if (k > n) return 0;
+	if (k == 0 || k == n) return 1;
+	return binomial(n - 1, k - 1) + binomial(n - 1, k);
+}

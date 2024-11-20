@@ -5,6 +5,12 @@
 
 #include <set>
 
+#include <glm/detail/_vectorize.hpp>
+#include <glm/detail/_vectorize.hpp>
+
+
+
+
 struct buff4x4 {
     std::vector<glm::vec4> a, b, c, d;
 };
@@ -61,7 +67,7 @@ public:
     bool isActive(CommonBufferType type) const { return activeBuffers.contains(type); }
     bool hasMaterial() const { return isActive(MATERIAL1); }
 
-    int addTriangleVertexIndices(glm::ivec3 ind);
+    int addTriangleVertexIndices(glm::ivec3 ind, int shift = 0);
 
     int addStdAttributesFromVertex(glm::vec3 pos, glm::vec3 norm, glm::vec2 uv, glm::vec4 col);
     int addMaterialBufferData(const MaterialPhong &mat);
@@ -170,10 +176,10 @@ class IndexedTriangle {
     BufferManager &bufferBoss;
 
 public:
-    IndexedTriangle(BufferManager &bufferBoss, int index) : index(index), bufferBoss(bufferBoss) {}
+//    IndexedTriangle(BufferManager &bufferBoss, int index) : index(index), bufferBoss(bufferBoss) {}
     IndexedTriangle(const IndexedTriangle &other) : index(other.index), bufferBoss(other.bufferBoss) {}
     IndexedTriangle(IndexedTriangle &&other) noexcept : index(other.index), bufferBoss(other.bufferBoss) {}
-    IndexedTriangle(BufferManager &bufferBoss, glm::ivec3 index) : index(bufferBoss.addTriangleVertexIndices(index)), bufferBoss(bufferBoss) {}
+    IndexedTriangle(BufferManager &bufferBoss, glm::ivec3 index, int shift) : index(bufferBoss.addTriangleVertexIndices(index, shift)), bufferBoss(bufferBoss) {}
 
     glm::ivec3 getVertexIndices() const { return bufferBoss.getFaceIndices(index); }
     Vertex getVertex(int i) const { return bufferBoss.getVertex(getVertexIndices()[i]); }
@@ -218,7 +224,7 @@ public:
 
   WeakSuperMesh(const SmoothParametricSurface &surf, int tRes, int uRes, const PolyGroupID &id);
   void addUniformSurface(const SmoothParametricSurface &surf, int tRes, int uRes, const PolyGroupID &id);
-
+	void merge (const WeakSuperMesh &other);
   void* bufferIndexLocation() const { return boss->firstElementAddress(INDEX); }
   size_t bufferIndexSize() const { return boss->bufferSize(INDEX); }
   int bufferIndexLength() const { return boss->bufferLength(INDEX); }

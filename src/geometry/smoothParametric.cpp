@@ -110,13 +110,13 @@ SmoothParametricSurface SmoothParametricCurve::cylinder(vec3 direction, float h)
 	return SmoothParametricSurface(param, vec2(t0, t1), vec2(0, h), periodic, false, eps);
 }
 
-SmoothParametricSurface SmoothParametricCurve::pipe(float r) const {
-	Foo113 param = [f=_f, df=_df, eps=this->eps, r](float t, float s) {
-		vec3 tangent = normalise(df(t));
-		if (norm(tangent) < 1e-6)
-			tangent = normalise(df(t+eps));
-		auto v = orthogonalComplementBasis(tangent);
-		return f(t) + r*cos(s)*v.first + r*sin(s)*v.second;
+SmoothParametricSurface SmoothParametricCurve::pipe(float radius, bool useFrenetFrame) const {
+	Foo113 param = [c=*this, eps=this->eps, radius, useFrenetFrame](float t, float s) {
+		if (!useFrenetFrame) {
+			auto v = orthogonalComplementBasis(c.df(t));
+			return c(t) + v.first*radius*cos(s) + v.second*radius*sin(s);
+		}
+		return c(t) + c.normal(t)*radius*cos(s) + c.binormal(t)*radius*sin(s);
 	};
 	return SmoothParametricSurface(param, vec2(t0, t1), vec2(0, TAU), periodic, true, eps);
 }
@@ -126,4 +126,63 @@ SmoothParametricSurface SmoothParametricCurve::canal(function<float(float)> radi
 		return c(t) - r(t)*dr(t)/norm2(c.df(t))*c.df(t) + (c.normal(t)*cos(s) + c.binormal(t)*sin(s))*r(t)*sqrt(1 - dr(t)*dr(t)/norm2(c.df(t)));
 	};
 	return SmoothParametricSurface(param, vec2(t0, t1), vec2(0, TAU), periodic, true, eps);
+}
+
+ FunctionalPartitionOfUnity BernsteinBasis(int n) {
+	vector<Fooo> basis = {};
+	for (int i = 0; i <= n; i++)
+		basis.push_back(BernsteinPolynomial(n, i));
+	return FunctionalPartitionOfUnity(basis);
+}
+FunctionalPartitionOfUnity BernsteinBasis(int n, float t0, float t1) {
+	vector<Fooo> basis = {};
+	for (int i = 0; i <= n; i++)
+		basis.push_back(BernsteinPolynomial(n, i, t0, t1));
+	return FunctionalPartitionOfUnity(basis);
+}
+
+function<float(float)> BSpline(int i, int k, const std::vector<float> &knots) {
+	return [i, k, &knots](float t) { return i == 1 ? (t >= knots[i] && t < knots[i+k] ? 1 : 0)
+			: (t - knots[i])/(knots[i+k-1] - knots[i])*BSpline(i, k-1, knots)(t) + (knots[i+k] - t)/(knots[i+k] - knots[i+1])*BSpline(i+1, k-1, knots)(t); }; }
+
+FunctionalPartitionOfUnity BSplineBasis(int n, int k, std::vector<float> knots) {
+	vector<Fooo> basis = {};
+	for (int i = 0; i <= n; i++)
+		basis.push_back(BSpline(i, k, knots));
+	return FunctionalPartitionOfUnity(basis);
+}
+
+SmoothParametricCurve freeFormCurve(FunctionalPartitionOfUnity family, std::vector<vec3> controlPts, vec2 domain, float eps) {
+	return SmoothParametricCurve([controlPts, family](float t) {
+		vec3 res = vec3(0);
+		for (int i = 0; i < family.size(); i++)
+			res += family[i](t)*controlPts[i];
+		return res;
+	}, 0, domain.x, domain.y, false, eps);
+}
+
+int findKnot(const std::vector<float> &knots, float t) {
+	for (int i = 0; i < knots.size(); i++)
+		if (t >= knots[i] && t < knots[i+1])
+			return i;
+	return -1;
+}
+
+vector<float> uniformKnots(int n, int k) {
+	vector<float> knots = {};
+	knots.reserve(n+k+1);
+	for (int i = 0; i < n+k+1; i++)
+		knots.push_back(i);
+	return knots;
+}
+
+SmoothParametricCurve BSplineCurve(const std::vector<vec3> &controlPoints, const std::vector<float> &knots, int k, float eps) {
+	auto basis = BSplineBasis(controlPoints.size()-1, k, knots);
+	return SmoothParametricCurve([controlPoints, basis, knots, k](float t) {
+		vec3 res = vec3(0);
+		int l = findKnot(knots, t);
+		for (int i = max(0, l-k+1); i <=l; i++)
+			res += basis[i](t)*controlPoints[i];
+		return res;
+	}, 0, knots[0], knots[knots.size()-1], controlPoints[0] == controlPoints[controlPoints.size()-1], eps);
 }

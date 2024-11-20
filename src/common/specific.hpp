@@ -2,6 +2,10 @@
 
 // #include "buffer_utils.hpp"
 #include <glm/detail/_vectorize.hpp>
+#include <glm/detail/_vectorize.hpp>
+#include <glm/detail/_vectorize.hpp>
+#include <glm/detail/_vectorize.hpp>
+#include <glm/detail/_vectorize.hpp>
 
 #include "glsl_utils.hpp"
 // #include "renderingUtils.hpp"
@@ -62,7 +66,7 @@ WeakSuperMesh singleQuadShadeFlat(glm::vec3 outer1, glm::vec3 inner1, glm::vec3 
 WeakSuperMesh singleQuadShadeFlat(glm::vec3 outer1, glm::vec3 inner1, glm::vec3 inner2, glm::vec3 outer2, MaterialPhong &material1, MaterialPhong &material2, PolyGroupID id);
 WeakSuperMesh singleQuad(glm::vec3 outer1, glm::vec3 inner1, glm::vec3 inner2, glm::vec3 outer2, MaterialPhong &materiaInner1, MaterialPhong &materialInner2, MaterialPhong &materialOuter1, MaterialPhong &materialOuter2, bool shadeSmooth, PolyGroupID id);
 WeakSuperMesh icosahedron(float r, glm::vec3 center, PolyGroupID id);
-WeakSuperMesh icosphere(float r, int n, glm::vec3 center, PolyGroupID id);
+WeakSuperMesh icosphere(float r, int n, glm::vec3 center, PolyGroupID id, vec4 color=BLACK);
 WeakSuperMesh disk3d(float r, glm::vec3 center, glm::vec3 v1, glm::vec3 v2,int radial_res, int vertical_res, const PolyGroupID &id);
 
 class Disk3D : public WeakSuperMesh {
@@ -101,3 +105,10 @@ inline float angleBetween(glm::vec3 vec3, glm::vec3 down) {return  acos(glm::dot
 
 SmoothParametricSurface sphere(float r, glm::vec3 center=ORIGIN, float cutdown=0, float eps=.01);
 SmoothParametricSurface DupinCyclide(float a, float b, float d, float eps=.01);
+
+SmoothParametricCurve PLCurve(std::vector<glm::vec3> points);
+SmoothParametricCurve segment(glm::vec3 p0, glm::vec3 p1, float t0=0, float t1=1);
+
+inline SmoothParametricCurve segment(glm::vec3 p0, glm::vec3 p1, float t0, float t1) {
+	return SmoothParametricCurve([p0, p1, t0, t1](float t) { return (p1*(t-t0) + p0*(t1-t))/(t1-t0); }, "seg", t0, t1, false, .01);
+}

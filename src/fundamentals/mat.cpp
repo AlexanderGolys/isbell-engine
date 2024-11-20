@@ -655,7 +655,7 @@ std::pair<vec3, vec3> orthogonalComplementBasis(vec3 v)
 {
     vec3 b1 = norm(cross(v, e1)) > norm(cross(v, e3)) ? e1 : e3;
     vec3 b2 = cross(v, b1);
-    mat3 frame = GramSchmidtProcess(mat3(b1, b2, v));
+    mat3 frame = GramSchmidtProcess(mat3(b1, b2, normalise(v)));
     return std::make_pair(frame[0], frame[1]);
 
 }

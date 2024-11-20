@@ -341,16 +341,17 @@ inline WeakSuperMesh icosahedron(float r, vec3 center, std::variant<int, std::st
     return WeakSuperMesh(verts, faceInds, id);
 }
 
-WeakSuperMesh icosphere(float r, int n, vec3 center, PolyGroupID id) {
+WeakSuperMesh icosphere(float r, int n, vec3 center, PolyGroupID id, vec4 color) {
     WeakSuperMesh unitSphere = icosahedron(1, vec3(0, 0, 0), id);
     while (n > 0) {
         unitSphere = unitSphere.subdivideEdgecentric(id);
         n--;
     }
 
-    auto normaliseVertices = [r, center](BufferedVertex &v) {
+    auto normaliseVertices = [r, center, color](BufferedVertex &v) {
         v.setNormal(normalise(v.getPosition()));
         v.setPosition(normalise(v.getPosition())*r + center);
+    	v.setColor(color);
     };
     unitSphere.deformPerVertex(id, normaliseVertices);
 
@@ -467,4 +468,13 @@ void Disk3D::setColorInfo() {
                                 rReal(v)/radius,
                                 dot(v.getPosition() - center, normal),
                                 dot(v.getPosition() - center, normal)/radius));
+}
+SmoothParametricCurve PLCurve(std::vector<glm::vec3> points) {
+	return SmoothParametricCurve([points](float t) {
+		if (t<0) return points[0];
+		if (t>=points.size()-1) return points[points.size()-1];
+		int i = static_cast<int>(t);
+		float t1 = t - i;
+		return t1*points[i+1] + (1-t1)*points[i];
+	}, "PL", 0, points.size()-1, points[0]==points[points.size()-1], .01);
 }

@@ -27,6 +27,16 @@ float mod(float a, float b)
     return a - b * floor(a / b);
 }
 
+float floor(float a)
+{
+    return int(a);
+}
+
+float frac(float a)
+{
+    return a - floor(a);
+}
+
 vec3 lightPosition(mat4 m)
 {
 	return (m*vec4(1., 0., 0., 0.)).xyz;
@@ -67,7 +77,7 @@ void main()
     vec4 c = bdColor;
     c.a = 1.;
 	vec3 normal = normalize(v_normal);
-	if (v_uv.y >= t)
+	if ( v_color.x+1 > floor(t ) + frac(t )*frac(t ))
     {
        discard;
     }
@@ -76,7 +86,7 @@ void main()
 			colorFactorFromSingleLight(light3, camPosition, v_position, normal, v_uv);
 
     color.a = 1.;
-    float collar = smoothstep(-.1, 0, v_uv.x -t);
+    float collar = smoothstep(-.1, 0, v_color.x+1 - floor(t ) - frac(t )*frac(t ));
     color = mix(color, c, collar);
 //    collar = 1-smoothstep(0, .1, v_uv.y);
 //    color = mix(color, bdColor, collar);

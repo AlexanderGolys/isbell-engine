@@ -1,5 +1,6 @@
 #include "smoothImplicit.hpp"
 #include "src/fundamentals/func.hpp"
+#include "src/common/indexedRendering.hpp"
 
 using std::vector, std::string, std::shared_ptr, std::unique_ptr, std::pair, std::make_unique, std::make_shared, std::function;
 
@@ -60,9 +61,7 @@ vec2 AffinePlane::localCoordinates(vec3 p) const {
     return vec2(dot(p - pivot, v1), dot(p - pivot, v2));
 }
 
-AffinePlane SmoothParametricCurve::osculatingPlane(float t) const {
-    return AffinePlane(binormal(t), dot(binormal(t), _f(t)));
-}
+
 
 SmoothParametricCurve::SmoothParametricCurve(Foo13 f,Foo13 df,  Foo13 ddf, PolyGroupID id, float t0, float t1, bool periodic, float epsilon)
 {
@@ -225,4 +224,188 @@ float AffineLine::distance(vec3 p) const {
 
 bool AffineLine::contains(vec3 p, float eps) const {
 	return distance(p) < eps;
+}
+
+
+
+ImplicitSurfacePoint::ImplicitSurfacePoint(vec3 p, vec3 normal, bool border) : p(p), border(border) {
+	auto tangents = orthogonalComplementBasis(normal);
+	orthoFrame = mat3(tangents.first, tangents.second, normal);
+}
+
+vec3 ImplicitSurfacePoint::projectOnTangentPlane(vec3 q) const {
+	vec3 ortho_coords = coords_in_frame(q);
+	return getTangent1() * ortho_coords.x + getTangent2() * ortho_coords.y;
+}
+vec3 ImplicitSurfacePoint::rotateAroundNormal(vec3 q, float angle) const {
+	vec3 projected = projectOnTangentPlane(q);
+	return projected*cos(angle) + cross(projected, getNormal())*sin(angle);
+}
+
+void FrontPolygon::recalculate_angle(int index) {
+	if (points.size() < 3)
+		return;
+	vec3 p0 = points[(index - 1 + points.size()) % points.size()].getPosition();
+	vec3 p1 = points[index].getPosition();
+	vec3 p2 = points[(index + 1) % points.size()].getPosition();
+	vec3 v1 = p0 - p1;
+	vec3 v2 = p2 - p1;
+	float angle = acos(dot(v1, v2) / (norm(v1)*norm(v2)));
+	if (dot(cross(v1, v2), points[index].getNormal()) < 0)
+		angle = TAU - angle;
+	points[index].setAngle(angle);
+}
+void FrontPolygon::recalculate_angles() { for (int i = 0; i < points.size(); i++) recalculate_angle(i); }
+
+int FrontPolygon::argminAngle() const {
+	int argmin = 0;
+	float min = points[0].getAngle();
+	for (int i = 1; i < points.size(); i++) {
+		if (points[i].getAngle() < min) {
+			min = points[i].getAngle();
+			argmin = i;
+		}
+	}
+	return argmin;
+}
+float FrontPolygon::minAngle() const { return points[argminAngle()].getAngle(); }
+
+void FrontPolygon::addPoint(ImplicitSurfacePoint p, int index) {
+	points.insert(points.begin() + index, p);
+	recalculate_angle((index - 1 + points.size()) % points.size());
+	recalculate_angle(index);
+	recalculate_angle((1 + index) % points.size());
+	for (int i = 0; i < excluded_for_distance_check.size(); i++) {
+		if (excluded_for_distance_check[i] >= index)
+			excluded_for_distance_check[i]++;
+	}
+}
+
+bool FrontPolygon::removePoint(int index) {
+	if (points.size() <= 2)
+		return true;
+	points.erase(points.begin() + index);
+	recalculate_angle((index - 1 + points.size()) % points.size());
+	recalculate_angle(index % points.size());
+	for (int i = 0; i < excluded_for_distance_check.size(); i++) {
+		if (excluded_for_distance_check[i] == index) {
+			excluded_for_distance_check.erase(excluded_for_distance_check.begin() + i);
+			i--;
+		}
+		else if (excluded_for_distance_check[i] > index)
+			excluded_for_distance_check[i]--;
+	}
+	return false;
+}
+
+void FrontPolygon::expandVertex(int index, TriangulatedImplicitSurface &surface) {
+	if (points.size() < 3)
+		return;
+	vec3 p0 = points[(index - 1 + points.size()) % points.size()].getPosition();
+	vec3 p1 = points[index].getPosition();
+	vec3 p2 = points[(index + 1) % points.size()].getPosition();
+	vec3 v1 = p0 - p1;
+	vec3 v2 = p2 - p1;
+	float angle = points[index].getAngle();
+	int divisions = max(1, 3*(int)(angle/PI) + 1);
+	float delta = angle / divisions;
+
+	if (delta < .8 && divisions > 1) {
+		divisions--;
+		delta = angle / divisions;
+	}
+	if (divisions == 1 && delta > .8 && norm(v1-v2) > 1.25*side) {
+		divisions = 2;
+		delta = angle / divisions;
+	}
+	if (angle<3 && min(norm(v1), norm(v2)) < .5*side) {
+		divisions = 1;
+		delta = angle;
+	}
+	std::vector verts = { points[(index - 1 + points.size()) % points.size()]};
+	for (int i = 1; i < divisions; i++)
+		verts.push_back(surface.findNearbyPoint( p1 + normalize(points[index].rotateAroundNormal(v1, delta*i)) * side));
+	verts.push_back(points[(index + 1) % points.size()]);
+
+	for (int i = 0; i < verts.size()-1; i++)
+		surface.addTriangle({ verts[i].getPosition(), verts[i+1].getPosition(), p1 });
+
+	removePoint(index);
+	for (int i = 0; i < verts.size()-1; i++) {
+		addPoint(verts[i], index + i);
+		index++;
+	}
+}
+void FrontPolygon::step(TriangulatedImplicitSurface &surface) { expandVertex(argminAngle(), surface); }
+bool FrontPolygon::checkForSelfIntersections() { return true; }
+bool FrontPolygon::merge(FrontPolygon &other, int ind_self, int ind_other) { return true; }
+bool FrontPolygon::checkForCrossIntersections(const FrontPolygon &other) { return true; }
+
+
+void TriangulatedImplicitSurface::removeDegeneratePolygons() {
+	for (int i = 0; i < polygons.size(); i++) {
+		if (polygons[i].size() < 3) {
+			polygons.erase(polygons.begin() + i);
+			i--;
+		}
+	}
+}
+ImplicitSurfacePoint TriangulatedImplicitSurface::findNearbyPoint(glm::vec3 p) const {
+	for (int i = 0; i < max_iter; i++) {
+		vec3 next = p - F(p)*F.df(p)/norm2(F.df(p));
+		if (norm(next - p) < eps) {
+			p = next;
+			break;
+		}
+		p = next;
+	}
+	vec3 normal = normalise(F.df(p));
+	return ImplicitSurfacePoint(p, normal, false);
+}
+void TriangulatedImplicitSurface::initHexagon(vec3 p, float side) {
+	vec3 p0 = findNearbyPoint(p).getPosition();
+	vector<ImplicitSurfacePoint> points = {};
+	for (int i = 0; i < 6; i++) {
+		vec3 next = p0 + side * cos(i * TAU / 6) * vec3(1, 0, 0) + side * sin(i * TAU / 6) * vec3(0, 1, 0);
+		points.push_back(findNearbyPoint(next));
+	}
+	triangles = { {points[0].getPosition(), points[1].getPosition(), points[2].getPosition()},
+				  {points[0].getPosition(), points[2].getPosition(), points[3].getPosition()},
+				  {points[0].getPosition(), points[3].getPosition(), points[4].getPosition()},
+				  {points[0].getPosition(), points[4].getPosition(), points[5].getPosition()},
+				  {points[0].getPosition(), points[5].getPosition(), points[1].getPosition()},
+				  {points[1].getPosition(), points[2].getPosition(), points[3].getPosition()},
+				  {points[3].getPosition(), points[4].getPosition(), points[5].getPosition()},
+				  {points[5].getPosition(), points[1].getPosition(), points[2].getPosition()} };
+	polygons = {FrontPolygon(points, side)};
+	front_polygon = 0;
+
+}
+
+bool TriangulatedImplicitSurface::step() {
+	if (polygons.empty()) return false;
+	for (int i = 0; i < polygons.size(); i++)
+		polygons[i].noExcluded();
+	polygons[front_polygon].step(*this);
+	// todo
+
+	current_step++;
+	return true;
+}
+WeakSuperMesh TriangulatedImplicitSurface::compute(int max_iter, vec3 p0, float side) {
+	initHexagon(p0, side);
+	while (step() && current_step < max_iter);
+	vector<Vertex> vertices = {};
+	vector<ivec3> trs = {};
+	for (auto &tr : triangles) {
+		vertices.emplace_back(tr[0], vec2(tr[0].x, tr[0].y));
+		vertices.emplace_back(tr[1], vec2(tr[1].x, tr[1].y));
+		vertices.emplace_back(tr[2], vec2(tr[2].x, tr[2].y));
+		trs.emplace_back(vertices.size()-3, vertices.size()-2, vertices.size()-1);
+	}
+	return WeakSuperMesh(vertices, trs, 0);
+}
+
+AffinePlane SmoothParametricCurve::osculatingPlane(float t) const {
+	return AffinePlane(binormal(t), dot(binormal(t), _f(t)));
 }
