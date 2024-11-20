@@ -301,6 +301,9 @@ SmoothParametricSurface sphere(float r, vec3 center, float cutdown, float eps) {
     }, vec2(0, TAU), vec2(cutdown, PI-0.01), true, false, .01);
 }
 
+SmoothParametricSurface DupinCyclide(float a, float b, float d, float eps) {
+	return ellipse(a, b, PLANE_ORIGIN, eps).embedding().canal([a, b, d](float t){return d - cos(t)*sqrt(abs(a*a-b*b));});
+}
 
 inline WeakSuperMesh icosahedron(float r, vec3 center, std::variant<int, std::string> id) {
     float phi = (1.f + sqrt(5)) / 2;

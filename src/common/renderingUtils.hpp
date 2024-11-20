@@ -83,6 +83,13 @@ public:
                 float ambientIntensity, float diffuseIntensity, float specularIntensity,
                 float shininess);
 
+	MaterialPhong(glm::vec4 ambient, glm::vec4 diffuse, glm::vec4 specular,
+		float ambientIntensity, float diffuseIntensity, float specularIntensity,
+		float shininess,const char* samplerName);
+	MaterialPhong(glm::vec4 ambient,
+	float ambientIntensity, float diffuseIntensity, float specularIntensity,
+	float shininess,const char* samplerName);
+
 	bool textured() const {return texture_ambient != nullptr;}
 	glm::mat4 compressToMatrix() const;
 	glm::vec4 compressIntencities() const;

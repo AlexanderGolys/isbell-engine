@@ -279,7 +279,7 @@ public:
     RealFunctionR3 F_y() const { return RealFunctionR3([this](glm::vec3 x) { return _X(x).y; }, [this](glm::vec3 x) { return _dX(x)[1]; }); }
     RealFunctionR3 F_z() const { return RealFunctionR3([this](glm::vec3 x) { return _X(x).z; }, [this](glm::vec3 x) { return _dX(x)[2]; }); }
     std::array<RealFunctionR3, 3> components() const { return {F_x(), F_y(), F_z()}; }
-    R3 operator()(R3 v) { return _X(v); }
+    R3 operator()(R3 v) const { return _X(v); }
 
     friend VectorFieldR3 operator*(const glm::mat3 &A, const VectorFieldR3 &X) {
       return VectorFieldR3([f=X._X, A](glm::vec3 v) {return A * f(v); }, [df=X._dX, A](glm::vec3 v) {return A * df(v); }, X.eps);

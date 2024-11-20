@@ -812,6 +812,34 @@ MaterialPhong::MaterialPhong(const std::shared_ptr<Texture> &texture_ambient, co
 
 }
 
+MaterialPhong::MaterialPhong(glm::vec4 ambient, glm::vec4 diffuse, glm::vec4 specular, float ambientIntensity, float diffuseIntensity, float specularIntensity, float shininess,
+		const char *samplerName) {
+	this->texture_ambient =  make_shared<Texture>(ambient, 0, "texture_ambient");
+	this->texture_diffuse =  make_shared<Texture>(diffuse, 1, "texture_diffuse");
+	this->texture_specular = make_shared<Texture>(specular, 2, "texture_specular");
+	this->ambientIntensity = ambientIntensity;
+	this->diffuseIntensity = diffuseIntensity;
+	this->specularIntensity = specularIntensity;
+	this->shininess = shininess;
+	ambientColor = ambient;
+	diffuseColor = diffuse;
+	specularColor = specular;
+}
+
+MaterialPhong::MaterialPhong(glm::vec4 ambient, float ambientIntensity, float diffuseIntensity, float specularIntensity, float shininess,
+		const char *samplerName) {
+	this->texture_ambient =  make_shared<Texture>(ambient, 0, "texture_ambient");
+	this->texture_diffuse =  make_shared<Texture>(ambient, 1, "texture_diffuse");
+	this->texture_specular = make_shared<Texture>(WHITE, 2, "texture_specular");
+	this->ambientIntensity = ambientIntensity;
+	this->diffuseIntensity = diffuseIntensity;
+	this->specularIntensity = specularIntensity;
+	this->shininess = shininess;
+	ambientColor = ambient;
+	diffuseColor = ambient;
+	specularColor = WHITE;
+}
+
 mat4 MaterialPhong::compressToMatrix() const
 {
 	return mat4(ambientColor, diffuseColor, specularColor, vec4(ambientIntensity, diffuseIntensity, specularIntensity, shininess));
@@ -1787,9 +1815,9 @@ Texture::Texture(glm::vec3 color, int slot, const char *sampler) {
     this->textureID = 0;
 
     data = new unsigned char[3];
-    data[0] = (unsigned char) (color.x * 255);
+    data[0] = (unsigned char) (color.z * 255);
     data[1] = (unsigned char) (color.y * 255);
-    data[2] = (unsigned char) (color.z * 255);
+    data[2] = (unsigned char) (color.x * 255);
 }
 
 Texture::Texture(glm::vec4 color, int slot, const char *sampler) {
@@ -1803,9 +1831,9 @@ Texture::Texture(glm::vec4 color, int slot, const char *sampler) {
     this->textureID = 0;
 
     data = new unsigned char[4];
-    data[0] = (unsigned char) (color.x * 255);
+    data[0] = (unsigned char) (color.z * 255);
     data[1] = (unsigned char) (color.y * 255);
-    data[2] = (unsigned char) (color.z * 255);
+    data[2] = (unsigned char) (color.x * 255);
     data[3] = (unsigned char) (color.w * 255);
 }
 

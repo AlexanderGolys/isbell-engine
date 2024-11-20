@@ -182,11 +182,11 @@ vec3 SmoothParametricCurve::curvature_vector(float t) const {
 }
 
 AffineLine::AffineLine(vec3 p0, vec3 v) :
-SmoothParametricCurve([p0, v](float t) {return p0 + t * v; },
-					  [v](float t) {return v; },
+SmoothParametricCurve([p0, v](float t) {return p0 + t * normalise(v); },
+					  [v](float t) {return normalise(v); },
 					  [](float t) {return vec3(0, 0, 0); }) {
 	this->p0 = p0;
-	this->v = v;
+	this->v = normalise(v);
 }
 
 AffineLine AffineLine::spanOfPts(vec3 p0, vec3 p1) {

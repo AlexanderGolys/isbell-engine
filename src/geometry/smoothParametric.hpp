@@ -9,6 +9,8 @@
 
 class AffinePlane;
 class SmoothParametricPlaneCurve;
+class SmoothParametricSurface;
+class AffineLine;
 
 class SmoothParametricCurve {
 protected:
@@ -39,35 +41,42 @@ public:
     void copyID (const SmoothParametricCurve &other) { this->id = other.id; }
 
 
-	glm::vec3 derivative(float t) const { return _df(t); }
-	glm::vec3 df(float t) const { return derivative(t); }
-    glm::vec3 operator()(float t) const;
-    glm::vec2 bounds() const { return glm::vec2(t0, t1); }
+	vec3 derivative(float t) const { return _df(t); }
+	vec3 df(float t) const { return derivative(t); }
+    vec3 operator()(float t) const;
+    vec2 bounds() const { return glm::vec2(t0, t1); }
     float getT0() const { return t0; }
     float getT1() const { return t1; }
 
-	glm::vec3 second_derivative(float t) const { return _ddf(t); }
-	glm::vec3 higher_derivative(float t, int n) const { return _der_higher(n)(t); }
-	glm::vec3 ddf(float t) const { return second_derivative(t); }
-	glm::vec3 tangent(float t) const { return normalise(_df(t)); }
-	glm::vec3 normal(float t) const { return normalise(glm::cross(tangent(t), binormal(t))); }
-	glm::vec3 binormal(float t) const { return normalise(cross(_df(t), _ddf(t))); }
+	vec3 second_derivative(float t) const { return _ddf(t); }
+	vec3 higher_derivative(float t, int n) const { return _der_higher(n)(t); }
+	vec3 ddf(float t) const { return second_derivative(t); }
+	vec3 tangent(float t) const { return normalise(_df(t)); }
+	vec3 normal(float t) const { return normalise(glm::cross(tangent(t), binormal(t))); }
+	vec3 binormal(float t) const { return normalise(cross(_df(t), _ddf(t))); }
 	float length(float t0, float t1, int n) const;
 	SmoothParametricCurve precompose(SpaceEndomorphism g_) const;
 	void precomposeInPlace(SpaceEndomorphism g);
 
-	glm::mat3 FrenetFrame(float t) const;
+	mat3 FrenetFrame(float t) const;
 	float curvature(float t) const;
     float curvature_radius(float t) const { return 1/curvature(t); }
 	float torsion(float t) const;
-	glm::vec3 curvature_vector(float t) const;
+	vec3 curvature_vector(float t) const;
     float speed(float t) const { return norm(df(t));}
 
     bool isPeriodic() const { return periodic; }
     float getEps() const { return eps; }
     AffinePlane osculatingPlane(float t) const;
 
-	static SmoothParametricCurve constCurve(glm::vec3 v);
+	SmoothParametricSurface surfaceOfRevolution(const AffineLine& axis) const;
+	SmoothParametricSurface screwMotion(float speed, int iterations) const;
+	SmoothParametricSurface cylinder(vec3 direction, float h) const;
+	SmoothParametricSurface pipe(float radius) const;
+	SmoothParametricSurface canal(Fooo r) const;
+
+	static SmoothParametricCurve constCurve(vec3 v);
+
 };
 
 
@@ -75,7 +84,7 @@ public:
 
 
 class AffineLine : public SmoothParametricCurve {
-	glm::vec3 p0, v; // p0 + tv
+	vec3 p0, v; // p0 + tv
 public:
 	AffineLine(glm::vec3 p0, glm::vec3 v);
 	static AffineLine spanOfPts(glm::vec3 p0, glm::vec3 p1);
@@ -87,6 +96,7 @@ public:
 	glm::vec3 direction() const;
 	float distance(AffineLine &l) const;
 	AffineLine operator+(glm::vec3 v) const;
+	SmoothParametricSurface tube(float radius, float t0, float t1) const;
 };
 
 
@@ -151,7 +161,8 @@ class RealFunctionPS {
     std::shared_ptr<SmoothParametricSurface> surface;
 public:
     RealFunctionPS(const std::function<float(float, float)> &f, const std::shared_ptr<SmoothParametricSurface> &surface) : _f(f), surface(surface) {}
-    RealFunctionPS(const Foo21 &f, const std::shared_ptr<SmoothParametricSurface> &surface) : _f(unpack(f, glm::vec2)), _df(unpack(derivativeOperator(f) vec2)), surface(surface) {}
+    RealFunctionPS(const Foo21 &f, const std::shared_ptr<SmoothParametricSurface> &surface) : surface(surface), _f( pack(f, f, vec2, float)), _df(pack(f, derivativeOperator(f), vec2, float)) {}
+
     RealFunctionPS(const Foo31 &emb_pullback, const std::shared_ptr<SmoothParametricSurface> &surface);
     float operator()(float t, float s) const;
 
@@ -216,12 +227,12 @@ class Differential1FormPS {
     std::shared_ptr<SmoothParametricSurface> surface;
 public:
     Differential1FormPS(const std::function<Linear1Form2D<glm::vec3>(float, float)> &omega, const std::shared_ptr<SmoothParametricSurface> &surface) : _omega(omega), surface(surface) {}
-    Differential1FormPS(const std::function<Linear1Form2D<glm::vec3>(vec2)> &omega, const std::shared_ptr<SmoothParametricSurface> &surface) : _omega(unpack(omega, vec2)), surface(surface) {}
+    Differential1FormPS(const std::function<Linear1Form2D<glm::vec3>(vec2)> &omega, const std::shared_ptr<SmoothParametricSurface> &surface) : _omega(pack(omega, omega, vec2, float)), surface(surface) {}
     Differential1FormPS(const std::function<Linear1Form2D<glm::vec3>(vec3)> &emb_pullback, const std::shared_ptr<SmoothParametricSurface> &surface);
     Linear1Form2D<glm::vec3> operator()(float t, float s) const { return _omega(t, s); }
     Linear1Form2D<glm::vec3> operator()(glm::vec2 tu) const { return _omega(tu.x, tu.y); }
     float operator()(float t, float s, glm::vec3 v) const { return _omega(t, s)(v); }
-    float operator()(glm::vec2 tu, glm::vec3 v) const { return pack(_omega)(tu)(v); }
+    float operator()(glm::vec2 tu, glm::vec3 v) const { return unpack(w=_omega, w, vec2)(tu)(v); }
     Differential1FormPS operator*(float a) const { return Differential1FormPS([w=_omega, a](float t, float s) { return w(t, s)*a; }, surface); }
     Differential1FormPS operator/(float a) const { return (*this)*(1/a); }
     Differential1FormPS operator-() const { return (*this)*(-1); }

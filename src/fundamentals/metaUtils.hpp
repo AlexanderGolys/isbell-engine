@@ -107,7 +107,7 @@ public:
     explicit COLOR_PALETTE10(std::array<glm::vec4, 10> colors) : cls(colors) {}
     COLOR_PALETTE10(COLOR_PALETTE p1, COLOR_PALETTE p2) : cls({p1[0], p1[1], p1[2], p1[3], p1[4], p2[0], p2[1], p2[2], p2[3], p2[4]}) {}
     COLOR_PALETTE10(glm::ivec3 c1, glm::ivec3 c2, glm::ivec3 c3, glm::ivec3 c4, glm::ivec3 c5, glm::ivec3 c6, glm::ivec3 c7, glm::ivec3 c8, glm::ivec3 c9, glm::ivec3 c10);
-    std::vector<glm::vec4> colors() const { return std::vector<glm::vec4>(cls.begin(), cls.END()); }
+    std::vector<glm::vec4> colors() const { return std::vector<glm::vec4>(cls.begin(), cls.end()); }
     glm::vec4 operator[] (int i) const { return cls[i]; }
 };
 

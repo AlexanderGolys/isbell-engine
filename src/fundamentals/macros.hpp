@@ -40,8 +40,8 @@ namespace std {
 #define Foo21  HOM(vec2, float)
 #define Foo22  HOM(vec2, vec2)
 #define Foo32  HOM(vec3, vec2)
-#define Foo23  HOM(vec3, vec3)
-#define Foo113 HOM(vec2, vec3)
+#define Foo23  HOM(vec2, vec3)
+#define Foo113 function<vec3(float, float)>
 #define Foo112 function<vec2(float, float)>
 #define Foo111 function<float(float, float)>
 #define betterInFamily(A) HOM(float, A)
@@ -58,7 +58,7 @@ namespace std {
 #define BUFF2  vector<vec2>
 #define BUFF3  vector<vec3>
 #define BUFF4  vector<vec4>
-#define IBUFF3 vector<ivec3>
+#define IBUFF3 vector<glm::ivec3>
 
 
 }
@@ -77,8 +77,9 @@ namespace std {
 #define O_x3(A)       HOM(A, vec3)
 #define H0(A, F)      HOM(A, F)
 
-#define pack(F, vec, ...) [F](...){return F(vec(...));}
-#define unpack(F, vec, ...) [F](vec v, ...){return F(v[0], v[1], ...);}
+
+#define pack(cap, F, vec, type) [cap](type a, type b){return F(vec(a, b));}
+#define unpack(cup, F, vec) [cup](vec v){return F(v[0], v[1]);}
 #define unpackPair(F, vec, ...) [F](vec v, ...){return F(v.first, v.second, ...);}
 #define unpackTriple(F, vec, ...) [F](vec v, ...){return F(v[0], v[1], v[2], ...);}
 #define unpackQuad(F, vec, ...) [F](vec v, ...){return F(v[0], v[1], v[2], v[3], ...);}
@@ -102,6 +103,14 @@ namespace std {
 // #define F[vec v] [F](vec v){return F(v[0], v[1]);}
 #define BigMatrix_t HOM(float, BigMatrix)
 #define vec69_t HOM(float, vec69)
+#define rigidMotion std::pair<vec3, vec3>
+
+#define BigMatrix_hm std::optional<BigMatrix>
+#define vec69_hm std::optional<vec69>
+#define mat3_hm std::optional<glm::mat3>
+#define float_hm std::optional<float>
+#define R3_hm std::optional<R3>
+#define HM_NO std::nullopt
 
 namespace glm{
 #define BLACK glm::vec4(0, 0, 0, 1)
@@ -144,6 +153,6 @@ namespace glm{
 #define R2 glm::vec2
 #define R4 glm::vec4
 
-#define R3_t Hom(float, glm::vec3)
+#define R3_t HOM(float, glm::vec3)
 
 }

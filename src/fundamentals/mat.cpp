@@ -665,12 +665,12 @@ float pseudorandomizer(float x, float seed) { return frac(sin(x + seed) * 43758.
 
 BigMatrix::BigMatrix(int n, int m) { this->data = MATR$X(n, vec2137(m, 0)); }
 
-BigMatrix submatrix(int i, int j) {
+BigMatrix BigMatrix::submatrix(int i, int j) {
     MATR$X sub = MATR$X();
     for (int k = 0; k < n(); k++) {
         if (k == i) continue;
         std::vector<float> row = std::vector<float>();
-        for (int l = 0; l < this->m; l++) {
+        for (int l = 0; l < m(); l++) {
             if (l == j) continue;
             row.push_back(this->data[k][l]);
         }
@@ -691,7 +691,7 @@ float BigMatrix::det() {
 }
 
 
-    void BigMatrix::transpose() {
+    BigMatrix BigMatrix::transpose() const {
     MATR$X data = MATR$X();
     data.reserve(n());
     for (int i = 0; i < n(); i++) data[i].reserve(m());
@@ -701,7 +701,7 @@ float BigMatrix::det() {
             row.push_back(this->data[j][i]);
         data.push_back(row);
     }
-    this->data = data;
+	return BigMatrix(data);
 }
 
 
@@ -794,67 +794,7 @@ BigMatrix BigMatrix::inv() {
     }
     return result;
 }
-    BigMatrix BigMatrix::operator*(const std::vector<float> &vec) {
-    auto M = BigMatrix({vec});
-    M.transpose();
-    return (*this)*M;
-}
+//    BigMatrix BigMatrix::operator*(const std::vector<float> &vec) {
+//    return (*this)*BigMatrix({vec}).transpose();
+//}
     BigMatrix::BigMatrix(MATR$X && data) { data = std::move(data); }
-
-
-    void BigMatrix::set(int i, int j, float val) { this->data[i][j] = val; }
-
-
-    BigMatrix BigMatrix::submatrix(int i, int j) {
-        MATR$X sub = MATR$X();
-        for (int k = 0; k < this->n(); k++) {
-            if (k == i) continue;
-            std::vector<float> row = std::vector<float>();
-            for (int l = 0; l < this->m(); l++) {
-                if (l == j) continue;
-                row.push_back(this->data[k][l]);
-            }
-            sub.push_back(row);
-        }
-        return BigMatrix(sub);
-    }
-
-BigMatrix::BigMatrix(vector<vec2> &data) {
-    this->data = MATR$X();
-    for (auto v : data)
-        this->data.push_back({v.x, v.y});
-}
-
-BigMatrix::BigMatrix(vector<vec3> &data) {
-    this->data = MATR$X();
-    for (auto v : data)
-        this->data.push_back({v.x, v.y, v.z});
-}
-
-BigMatrix::BigMatrix(vector<vec4> &data) {
-    this->data = MATR$X();
-    for (auto v : data)
-        this->data.push_back({v.x, v.y, v.z, v.w});
-}
-
-BigMatrix::BigMatrix(vector<float> &data) {
-    this->data = MATR$X();
-    this->data.push_back(data);
-}
-    // template <RingConcept T, int n, int m>
-//T Matrix<T, n, m>::mobius(T z) requires DivisionRing<T>
-//{
-//	if (n != 2 || m != 2) {
-//		throw std::invalid_argument("Matrix must be 2x2");
-//	}
-//	return (this->coefs[0][0] * z + this->coefs[0][1]) / (this->coefs[1][0] * z + this->coefs[1][1]);
-//}
-
-//template <RingConcept T, int n, int m>
-//std::function<T(T)> Matrix<T, n, m>::mobius() requires DivisionRing<T>
-//{
-//	if (n != 2 || m != 2) {
-//		throw std::invalid_argument("Matrix must be 2x2");
-//	}
-//	return [this](T z) {return  (this->coefs[0][0] * z + this->coefs[0][1]) / (this->coefs[1][0] * z + this->coefs[1][1]); };
-//}

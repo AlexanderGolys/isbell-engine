@@ -1,20 +1,22 @@
 #include "rigid.hpp"
 #include <glm/glm.hpp>
+#include <glm/detail/_vectorize.hpp>
 
 using namespace glm;
 using std::vector;
 
-glm::vec3 RigidBody::calculateCenterOfMass(float t) {
-    auto res = (_masses*_positions)(t);
-    return vec3(res[0], res[1], res[2]);
+glm::vec3 RigidBody::calculateCenterOfMass() {
+    auto m =  BigMatrix(_masses).transpose()*_positions;
+    return vec3(m);
 }
 
-float RigidBody::kineticEnergy(float t) {
-    return float(BigMatrix(_angularVelocity(t)).transpose()*_I(t)*_angularVelocity(t)) + 0.5*float((_masses*_V*_V)(t));
+float RigidBody::kineticEnergy() {
+	if (!_angularVelocity.has_value()) throw std::logic_error("No angular velocity");
+    return float(_angularVelocity*BigMatrix(_I.or_else(mat3(0)))*_angularVelocity) + 0.5*float((BigMatrix(_masses)*_V).transpose()*_V);
 }
 
-float RigidBody::potentialEnergy(float t) const {
-    return _totalEnergy - kineticEnergy(t);
+float RigidBody::potentialEnergy() const {
+    return _totalEnergy - kineticEnergy();
 }
 
 void RigidBody::setTotalEnergy(float totalEnergy) {
@@ -23,6 +25,49 @@ void RigidBody::setTotalEnergy(float totalEnergy) {
 
 void RigidBody::addForceField(const ForceField &field) {
     throw std::logic_error("Not implemented");
+}
+
+RigidCollisionForce::RigidCollisionForce(const glm::vec3 &normal, const float magnitude, const std::weak_ptr<RigidBody> &body1,
+        const std::weak_ptr<RigidBody> &body2): RigidForce(ForceType::COLLISION),
+                                                normal(normal),
+                                                magnitude(magnitude),
+                                                body1(body1),
+                                                body2(body2) {}
+
+void RigidCollisionForce::movementEvent(int notifierBodyIndex) {
+    if (notifierBodyIndex == 0 && !body2.expired() && !notifierBody2.expired()) {
+        notifierBody2.lock()->operator();
+        return;
+    }
+    if (notifierBodyIndex == 1 && !body1.expired() && !notifierBody1.expired()) {
+        notifierBody1.lock()->operator();
+        return;
+    }
+    noLongerValid();
+    this->~RigidCollisionForce();
+}
+
+function<BigMatrix(float)> dMdt(const function<BigMatrix(float)> &M, float delta) {
+    return [M, delta](float t) {return (M(t) - M(t-delta))/delta;};
+}
+
+RigidBody::RigidBody(const BigMatrix &positions, const vec69 &masses, const BigMatrix &linearVelocities, glm::vec3 centerOfWorld, glm::vec3 angularVelocity, float time):
+	_positions(positions),
+	time(time) {
+			_masses       = masses;
+			_dPos         = HM_NO;
+			_ddPos        = HM_NO;
+			_angularVelocity = angularVelocity;
+			_centerOfMass = calculateCenterOfMass();
+			eps           = 0.01;
+			_V			  =	linearVelocities;
+			_P            = calculateMomentum();
+			_L            = calculateAngularMomentum();
+			_I            = calculateInertiaTensor();
+			_potentialEnergy = calculatePotentialEnergy();
+			_kineticEnergy = calculateKineticEnergy();
+			_totalEnergy  = _potentialEnergy.has_value() && _kineticEnergy.has_value() ? _potentialEnergy.or_else(0.f) + _kineticEnergy.or_else(0.f) : HM_NO;
+
 }
 
 glm::vec3 RigidBody::accumulateForces(glm::vec3 pos) {
@@ -55,9 +100,11 @@ glm::vec3 RigidBody::linearMomentum(float t, int i) {
 }
 
 
-glm::vec3 RigidBody::totalLinearMomentum(float t) {
-    return cast_vec3(_masses*_V(t)) + glm::cross(BigMatrix(_masses(t))*angularVelocity(t), positions(t));
+vec3 RigidBody::totalLinearMomentum(float t) {
+    return cast_vec3(_masses*_V(t)) + glm::cross(BigMatrix(_masses(t))*angularVelocity(t), _positions(t));
 }
+
+mat3 RigidBody::calculateInertiaTensor() { throw std::logic_error("Not implemented"); }
 //
 // glm::vec3 RigidBody::angularMomentum(float t) {
 //     return InertiaTensor(t)*angularVelocity(t);

@@ -1182,7 +1182,7 @@ Renderer::Renderer(float animSpeed, vec4 bgColor)
 	if (!glfwInit())
 		exit(2137);
 	this->bgColor = bgColor;
-	this->animSpeed = animSpeed;
+	this->animSpeed = [animSpeed](float t) { return animSpeed; };
 	this->perFrameFunction = make_unique<std::function<void(float, float)>>([](float t, float delta){});
 }
 
@@ -1255,16 +1255,16 @@ float Renderer::initFrame()
 	glClearColor(this->bgColor.x, this->bgColor.y, this->bgColor.z, 1.0f);
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT);
 
-	this->frameOlderTimeThanThePublicOne = this->time;
-	this->time = glfwGetTime()*this->animSpeed;
-    this->dt = this->time - this->frameOlderTimeThanThePublicOne;
+    this->dt = (glfwGetTime() - this->frameOlderTimeThanThePublicOne)*animSpeed(this->time);
+	this->time += dt;
+	this->frameOlderTimeThanThePublicOne = glfwGetTime();
 	return this->time;
 }
 
 float Renderer::lastDeltaTime() const {
 	if (this->frameOlderTimeThanThePublicOne == NULL)
 		return 0.f;
-    return this->time - this->frameOlderTimeThanThePublicOne;
+    return this->dt;
 }
 
 void Renderer::addPerFrameUniforms(std::map<std::string, GLSLType> uniforms, std::map<std::string, shared_ptr<std::function<void(float, std::shared_ptr<Shader>)>>> setters)
@@ -1287,6 +1287,8 @@ void Renderer::initRendering()
     // glBindFramebuffer(GL_DRAW_FRAMEBUFFER, 0);
     glShadeModel(GL_SMOOTH);
 	glEnable(GL_DEPTH_TEST);
+	glEnable(GL_BLEND);
+	glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
  //    glEnable(GL_LIGHTING);
 	// glDepthFunc(GL_3D);
 	for (const auto& renderingStep : renderingSteps)

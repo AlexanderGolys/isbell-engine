@@ -100,3 +100,4 @@ public:
 inline float angleBetween(glm::vec3 vec3, glm::vec3 down) {return  acos(glm::dot(vec3, down)/glm::length(vec3));}
 
 SmoothParametricSurface sphere(float r, glm::vec3 center=ORIGIN, float cutdown=0, float eps=.01);
+SmoothParametricSurface DupinCyclide(float a, float b, float d, float eps=.01);

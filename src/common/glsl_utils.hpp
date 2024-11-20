@@ -229,7 +229,7 @@ public:
 	std::vector<std::shared_ptr<PointLight>> lights;
 	float time = 0;
     float dt = 0;
-	float animSpeed;
+	Fooo animSpeed;
 	glm::vec4 bgColor;
 	std::unique_ptr<std::function<void(float, float)>> perFrameFunction;
 	
@@ -273,6 +273,7 @@ public:
 	void addConstFloats(std::map<std::string, float> uniforms);
 	void addCustomAction(std::function<void(float)> action);
     void addCustomAction(std::function<void(float, float)> action);
+	void nonlinearSpeed(const Fooo &speed) { animSpeed = speed; }
 
 	void initRendering();
 	void renderAllSteps();

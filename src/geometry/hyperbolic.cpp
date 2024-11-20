@@ -476,10 +476,10 @@ SchwarzPolygon SchwarzPolygon::stripD(float a, float b, float shift, float h0, f
     vector<Complex> vert = {planeToDisk(Complex(a, 0)), planeToDisk(Complex(b, 0)), planeToDisk(Complex(b, h0)), planeToDisk(Complex(b+shift, h1)), -I, planeToDisk(Complex(a+shift, h1)), planeToDisk(Complex(a, h0))};
     float h2 = h1 + h1 - h0;
     std::vector<TriangleComplex> triangulation = {};
-    triangulation.push_back(TriangleComplex({cutbd*planeToDisk(Complex(a, 0)),             cutbd*planeToDisk(Complex(.66*a+.34*b, 0)),    planeToDisk(Complex(b, h0))}));
-    triangulation.push_back(TriangleComplex({cutbd*planeToDisk(Complex(.66*a+.34*b, 0)),   cutbd*planeToDisk(Complex(.34*a+.66*b, 0)),    planeToDisk(Complex(b, h0))}));
-    triangulation.push_back(TriangleComplex({cutbd*planeToDisk(Complex(.34*a+.66*b, 0)),   cutbd*planeToDisk(Complex(b, 0)),              planeToDisk(Complex(b, h0))}));
-    triangulation.push_back(TriangleComplex({cutbd*planeToDisk(Complex(a, 0)),             planeToDisk(Complex(b, h0)),                 planeToDisk(Complex(a, h0))}));
+    triangulation.push_back(TriangleComplex({planeToDisk(Complex(a, 0))*cutbd,    cutbd*planeToDisk(Complex(.66*a+.34*b, 0)),    planeToDisk(Complex(b, h0))}));
+    triangulation.push_back(TriangleComplex({planeToDisk(Complex(.66*a+.34*b, 0))*cutbd,   cutbd*planeToDisk(Complex(.34*a+.66*b, 0)),    planeToDisk(Complex(b, h0))}));
+    triangulation.push_back(TriangleComplex({planeToDisk(Complex(.34*a+.66*b, 0))*cutbd,   cutbd*planeToDisk(Complex(b, 0)),              planeToDisk(Complex(b, h0))}));
+    triangulation.push_back(TriangleComplex({planeToDisk(Complex(a, 0))*cutbd,    planeToDisk(Complex(b, h0)),                 planeToDisk(Complex(a, h0))}));
     triangulation.push_back(TriangleComplex({planeToDisk(Complex(a, h0)),                planeToDisk(Complex(b, h0)),                 planeToDisk(Complex(a+shift, h1))}));
     triangulation.push_back(TriangleComplex({planeToDisk(Complex(b, h0)),                planeToDisk(Complex(a+shift, h1)),           planeToDisk(Complex(b+shift, h1))}));
     triangulation.push_back(TriangleComplex({planeToDisk(Complex(a+shift, h1)),          planeToDisk(Complex(b+shift, h1)),           planeToDisk(Complex(b, h2))}));
@@ -614,7 +614,7 @@ SchwarzPolygon::SchwarzPolygon(std::vector<Complex> vertices, std::vector<Hyperb
     this->triangulation = {};
     for (auto t: trs) {
         std::vector<TriangleComplex> tr = t.triangulation(max_len, n);
-        triangulation.insert(triangulation.END(), tr.begin(), tr.END());
+        triangulation.insert(triangulation.end(), tr.begin(), tr.end());
     }
 }
 

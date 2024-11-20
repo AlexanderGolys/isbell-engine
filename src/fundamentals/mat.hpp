@@ -271,10 +271,10 @@ public:
 auto norm2(Complex c) -> float;
 auto abs(Complex c) -> float;
 
-// inline Complex operator*(float f, Complex c) { return c * f; }
-// inline Complex operator/(float f, Complex c) { return Complex(f) / c; }
-// inline Complex operator+(float f, Complex c) { return c + f; }
-// inline Complex operator-(float f, Complex c) { return Complex(f) - c; }
+ inline Complex operator*(float f, Complex c) { return c * f; }
+ inline Complex operator/(float f, Complex c) { return Complex(f) / c; }
+ inline Complex operator+(float f, Complex c) { return c + f; }
+ inline Complex operator-(float f, Complex c) { return Complex(f) - c; }
 
 
 template<int n, int m>
@@ -727,24 +727,32 @@ class BigMatrix {
 public:
   BigMatrix(int n, int m);
   explicit BigMatrix(const MATR$X &data);
-    explicit BigMatrix(const vector<float> &data);
+  explicit BigMatrix(const vector<float> &data);
   explicit BigMatrix(const vector<vec2> &data);
   explicit BigMatrix(const vector<vec3> &data);
   explicit BigMatrix(const vector<vec4> &data);
+  explicit BigMatrix(const vector<mat3> &data);
+
   explicit BigMatrix(MATR$X &&data);
-  void set(int i, int j, float val);
+  explicit BigMatrix(vec69 &&data) : BigMatrix({data}) {}
+//  explicit BigMatrix(const mat3 &data) : BigMatrix(vecToVecHeHe(data)) {}
+
+  void set(int i, int j, float val) { this->data[i][j] = val; }
   float get(int i, int j) { return this->data[i][j]; }
   float operator()(int i, int j) { return get(i, j); }
-  bool isSquare() { return this->n() == this->m(); }
+  bool isSquare() const { return this->n() == this->m(); }
   float det();
-  void transpose();
+  BigMatrix transpose() const;
   BigMatrix operator*(float f) const;
   BigMatrix operator+(const BigMatrix &M) const;
   BigMatrix operator-(const BigMatrix &M) const;
   BigMatrix operator*(const BigMatrix &M) const;
   BigMatrix operator*(const MATR$X &M) const;
+  BigMatrix operator*(const vec69 &v) const { return *this * vector<vec69>{v}; }
+//  BigMatrix operator*(const mat3 &v) const { return *this * vector<vec69>{v}; }
 
-  BigMatrix operator-() { return *this * (-1.f); }
+
+  BigMatrix operator-() const { return *this * (-1.f); }
   BigMatrix operator/(float x) const { return *this * (1.f / x); }
   BigMatrix inv();
   BigMatrix pow(int p);
@@ -762,11 +770,11 @@ public:
   int n() const { return this->data.size(); }
   int m() const { return this->data[0].size(); }
 
-    operator float () { if (n() != m() || n() != 1) throw std::format_error("wrong dimension of matrix (not 1x1)"); return this->data[0][0]; }
-    operator vec2 () { if (std::min(n(), m()) != 1 || std::max(m(), n()) != 2) throw std::format_error("wrong dimension of matrix (" + std::to_string(n()) + ", " + std::to_string(m()) + ")" );
+    explicit operator float () { if (n() != m() || n() != 1) throw std::format_error("wrong dimension of matrix (not 1x1)"); return this->data[0][0]; }
+    explicit operator vec2 () { if (std::min(n(), m()) != 1 || std::max(m(), n()) != 2) throw std::format_error("wrong dimension of matrix (" + std::to_string(n()) + ", " + std::to_string(m()) + ")" );
       return (*this)[0].size() > 1 ? vec2((*this)[0][0], (*this)[0][1]) : vec2((*this)[0][0], (*this)[1][0]); }
-    operator vec3 () { if (std::min(n(), m()) != 1 || std::max(m(), n()) != 3) throw std::format_error("wrong dimension of matrix (" + std::to_string(n()) + ", " + std::to_string(m()) + ")" );
+    explicit operator vec3 () { if (std::min(n(), m()) != 1 || std::max(m(), n()) != 3) throw std::format_error("wrong dimension of matrix (" + std::to_string(n()) + ", " + std::to_string(m()) + ")" );
       return (*this)[0].size() > 1 ? vec3((*this)[0][0], (*this)[0][1], (*this)[0][2]) : vec3((*this)[0][0], (*this)[1][0], (*this)[2][0]); }
-    operator vec4 () { if (std::min(n(), m()) != 1 || std::max(m(), n()) != 4) throw std::format_error("wrong dimension of matrix (" + std::to_string(n()) + ", " + std::to_string(m()) + ")" );
+    explicit operator vec4 () { if (std::min(n(), m()) != 1 || std::max(m(), n()) != 4) throw std::format_error("wrong dimension of matrix (" + std::to_string(n()) + ", " + std::to_string(m()) + ")" );
           return (*this)[0].size() > 1 ? vec4((*this)[0][0], (*this)[0][1], (*this)[0][2], (*this)[0][3]) : vec4((*this)[0][0], (*this)[1][0], (*this)[2][0], (*this)[3][0]); }
 };
