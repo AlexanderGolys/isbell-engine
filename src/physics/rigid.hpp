@@ -1,6 +1,5 @@
 #pragma once
-#include "src/common/specific.hpp"
-
+#include "solidMeshes.hpp"
 
 class RigidBody;
 

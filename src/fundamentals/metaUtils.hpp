@@ -161,3 +161,40 @@ const glm::vec3 e3 = glm::vec3(0, 0, 1);
 const glm::vec3 ORIGIN = glm::vec3(0, 0, 0);
 const glm::vec2 PLANE_ORIGIN = glm::vec2(0, 0);
 const PolyGroupID DFLT_CURV = PolyGroupID(420);
+
+
+class ivec8 {
+	glm::ivec4 a, b;
+public:
+	ivec8(glm::ivec4 a, glm::ivec4 b) : a(a), b(b) {}
+	explicit ivec8(int i) : a(i), b(i) {}
+	int operator[](int i) const { return i < 4 ? a[i] : b[i - 4]; }
+	ivec8 operator+(int i) const { return ivec8(a + i, b + i); }
+	ivec8 operator-(int i) const { return ivec8(a - i, b - i); }
+	ivec8 operator*(int i) const { return ivec8(a * i, b * i); }
+	ivec8 operator/(int i) const { return ivec8(a / i, b / i); }
+	ivec8 operator+(ivec8 v) const { return ivec8(a + v.a, b + v.b); }
+	ivec8 operator-(ivec8 v) const { return ivec8(a - v.a, b - v.b); }
+	ivec8 operator*(ivec8 v) const { return ivec8(a * v.a, b * v.b); }
+	ivec8 operator/(ivec8 v) const { return ivec8(a / v.a, b / v.b); }
+	ivec8 operator-() const { return ivec8(-a, -b); }
+	ivec8 operator%(ivec8 v) const { return ivec8(a % v.a, b % v.b); }
+	static int size() { return 8; }
+	friend int dot(ivec8 a, ivec8 b) { return dot(a.a, b.a) + dot(a.b, b.b); }
+	glm::ivec4 xyzw() const { return a; }
+	glm::ivec4 stuv() const { return b; }
+	glm::ivec3 xyz() const { return glm::ivec3(a); }
+	glm::ivec3 yzw() const { return glm::ivec3(a.y, a.z, a.w); }
+	glm::ivec3 stv() const { return glm::ivec3(b); }
+	glm::ivec3 tvu() const { return glm::ivec3(b.y, b.z, b.w); }
+	glm::ivec2 xy() const { return glm::ivec2(a); }
+	glm::ivec2 yz() const { return glm::ivec2(a.y, a.z); }
+	glm::ivec2 zw() const { return glm::ivec2(a.z, a.w); }
+	glm::ivec2 st() const { return glm::ivec2(b); }
+	glm::ivec2 tu() const { return glm::ivec2(b.y, b.z); }
+	glm::ivec2 uv() const { return glm::ivec2(b.z, b.w); }
+	int x() const { return a.x; }
+	int y() const { return a.y; }
+	int z() const { return a.z; }
+	int w() const { return a.w; }
+};

@@ -25,6 +25,8 @@ using std::variant, std::string, std::optional, std::function;
 
 namespace std {
 #define HOM(B,A) function<A(B)>
+#define BIHOM(A, B, C) function<C(A, B)>
+
 #define FUNC(B, ...) function<B(...)>
 #define END(A) HOM(A, A)
 #define HOM$$(B,A) std::vector<HOM(B, A)>
@@ -61,7 +63,6 @@ namespace std {
 #define IBUFF3 vector<glm::ivec3>
 
 
-}
 
 
 
@@ -81,10 +82,14 @@ namespace std {
 #define pack(cap, F, vec, type) [cap](type a, type b){return F(vec(a, b));}
 #define unpack(cup, F, vec) [cup](vec v){return F(v[0], v[1]);}
 #define unpackPair(F, vec, ...) [F](vec v, ...){return F(v.first, v.second, ...);}
+#define unpackPairWeird(_F, F, vec, ...) [F](vec v, ...){return F(v.first, v.second, ...);}
 #define unpackTriple(F, vec, ...) [F](vec v, ...){return F(v[0], v[1], v[2], ...);}
+#define unpackTripleWeird(_F, F, vec, ...) [_F](vec v, ...){return F(v[0], v[1], v[2], ...);}
+
 #define unpackQuad(F, vec, ...) [F](vec v, ...){return F(v[0], v[1], v[2], v[3], ...);}
 #define curry(F, arg, ...) [F](arg a, ...){return F(a, ...);}
 #define uncarry(F, arg, arg2, ...) [F](HOM(arg, HOM(arg2, ...)) f, arg a, ...){return f(a)(...);}
+}
 
 // #define Foo(A)_Foo33 Foo33([](float){return hom(A, glm::mat3)(t);};)
 #define vec420 std::vector<float>
@@ -93,6 +98,13 @@ namespace std {
 
 #define V3CTOR$(A) std::vector<std::vector<A>>
 #define MATR$X V3CTOR$(float)
+
+template <typename A, typename B, typename C>
+std::function<A(std::function<B(C)>)> curr(std::function<A(B, C)> f) {
+	return [f](std::function<B(C)> g) { return [f, g](C c) { return f(g(c), c); }; };
+}
+
+
 
 #define RealFunctionRigid    HOM(TRG, float)
 #define RigidBundleV3 triple_O(TRG)

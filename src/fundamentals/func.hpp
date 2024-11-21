@@ -357,3 +357,67 @@ public:
 	PlaneAutomorphism operator~() const;
 	PlaneAutomorphism inv() const { return ~(*this); }
 };
+
+template<typename Dom, typename Cod>
+vector<Cod> map(vector<Dom> v, const HOM(const Dom&, Cod) &f) {
+	vector<Cod> res;
+	res.reserve(v.size());
+	for (auto x : v) res.push_back(f(x));
+	return res;
+}
+
+
+template<typename Dom, typename Cod, int k>
+std::array<Cod, k> map(std::array<Dom, k> v, const HOM(const Dom&, Cod) &f) {
+	std::array<Cod, k> res;
+	for (int i = 0; i < k; i++) res[i] = f(v[i]);
+	return res;
+}
+
+template<typename Dom, typename Cod, int k>
+std::array<Cod, k> mapMove(std::array<Dom, k> v, const HOM( Dom&&, Cod) &f) {
+	std::array<Cod, k> res;
+	for (int i = 0; i < k; i++) res[i] = f(v[i]);
+	return res;
+}
+
+template<typename Dom, typename Cod, int k>
+std::array<Cod, k> mapByVal(std::array<Dom, k> v, const HOM(Dom, Cod) &f) {
+	std::array<Cod, k> res;
+	for (int i = 0; i < k; i++) res[i] = f(v[i]);
+	return res;
+}
+
+
+template<typename container, typename A>
+A combine(container arr, BIHOM(A, A, A) binaryOperator) {
+	A res = arr[0];
+	for (int i = 1; i < arr.size(); i++) res = binaryOperator(res, arr[i]);
+	return res;
+}
+
+template<typename  A=float, typename container=vector<A>>
+A sum(container arr) {
+	A res = arr[0];
+	for (int i = 1; i < arr.size(); i++) res += arr[i];
+	return res;
+}
+
+template<typename container, Semigroup A>
+A mult(container arr) {return combine(arr, [](A a, A b) { return a * b; }); }
+
+
+template<typename A, int k, typename homspace>
+std::array<A, k> arrayComprehension(const homspace &f) {
+	std::array<A, k> res = {f(0)};
+	for (int i = 1; i < k; i++) res[i] = f(i);
+	return res;
+}
+
+template<typename A, typename homspace>
+vector<A> vectorComprehension(const homspace &f, int n) {
+	vector res = {f(0)};
+	res.reserve(n);
+	for (int i = 1; i < n; i++) res[i] = f(i);
+	return res;
+}
