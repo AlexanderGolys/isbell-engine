@@ -1,6 +1,13 @@
-### fundamentals:   
-macro -> metaUtils -> mat -> func 
-### geometry
-planar -> complex -> hyperbolic -> parametric -> implicit -> discrete
-### commons
-rendering -> indexed -> glsl -> buffer -> specific
+# Implemented features:
+- basic hyperbolic geometry
+- shading with Phong material model, both vertex and face based triangular meshes
+- Kleinian groups and hyperbolic tesselations
+- curvatures, torsion, fundamental forms, mean curvature flow
+- deformations of 1-parameter families
+- 2D rigid bodies
+- 2D incompressible fluids
+- discrete exterior calculus
+- Bezier and spline interpolations, Coons patches
+- Function algebras, vector fields, differential forms
+- custom curve rendering not causing deformations
+- Runge-Kutta ODE solver
