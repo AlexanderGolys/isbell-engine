@@ -1,7 +1,7 @@
 # Implemented features:
 - shading with Phong material model, both vertex and face based triangular meshes
 - hyperbolic geometry, conformal metric pullbacks
-- Kleinian groups and hyperbolic tesselations
+- Kleinian groups and hyperbolic tesselations, rendering circular triangles
 - curvatures, torsion, fundamental forms, mean curvature flow
 - deformations of 1-parameter families
 - 2D rigid bodies
