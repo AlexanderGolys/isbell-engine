@@ -16,5 +16,5 @@ In progress:
 - Eulerian incompressible fluids
 - rigid body physics in 3D
 - hyperbolic geometry in 3D
-- different non-Euclidean metrics\
+- different non-Euclidean metrics
 - connections
