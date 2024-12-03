@@ -2,24 +2,30 @@
 
 #include <array>
 #include <cmath>
+#include <cstdio>
+#include <cstdlib>
 #include <iostream>
 #include <set>
 #include <sstream>
-#include <cstdio>
-#include <cstdlib>
 #include <vector>
 #include <GL/glew.h>
-#include <GLFW/glfw3.h>
 #include <glm/glm.hpp>
 #include <glm/gtc/matrix_transform.hpp>
-#include <glm/gtx/transform.hpp>
 
 using namespace glm;
 using std::vector, std::string, std::set, std::array, std::pair, std::exp, std::log, std::cos, std::sin, std::cosh, std::sinh, std::sqrt, std::pow, std::atan2, std::abs;
 
 
-Complex::Complex()
-{
+BigMatrix::operator tvec2<float>() { if (std::min(n(), m()) != 1 || std::max(m(), n()) != 2) throw std::format_error("wrong dimension of matrix (" + std::to_string(n()) + ", " + std::to_string(m()) + ")" );
+	return (*this)[0].size() > 1 ? vec2((*this)[0][0], (*this)[0][1]) : vec2((*this)[0][0], (*this)[1][0]); }
+
+BigMatrix::operator tvec3<float>() { if (std::min(n(), m()) != 1 || std::max(m(), n()) != 3) throw std::format_error("wrong dimension of matrix (" + std::to_string(n()) + ", " + std::to_string(m()) + ")" );
+	return (*this)[0].size() > 1 ? vec3((*this)[0][0], (*this)[0][1], (*this)[0][2]) : vec3((*this)[0][0], (*this)[1][0], (*this)[2][0]); }
+
+BigMatrix::operator tvec4<float>() { if (std::min(n(), m()) != 1 || std::max(m(), n()) != 4) throw std::format_error("wrong dimension of matrix (" + std::to_string(n()) + ", " + std::to_string(m()) + ")" );
+	return (*this)[0].size() > 1 ? vec4((*this)[0][0], (*this)[0][1], (*this)[0][2], (*this)[0][3]) : vec4((*this)[0][0], (*this)[1][0], (*this)[2][0], (*this)[3][0]); }
+
+Complex::Complex() {
 	z = vec2(0, 0);
 	x = 0;
 	y = 0;
@@ -445,10 +451,8 @@ CP1 CP1::operator/(Complex c)
 CP1 CP1::operator+(float f)
 {
 	if (inf)
-	{
 		return CP1(Complex(1, 0), true);
-	}
-	return CP1(z + vec2(f, 0));
+	return CP1(z + f);
 }
 
 CP1 CP1::operator-(float f)
@@ -457,7 +461,7 @@ CP1 CP1::operator-(float f)
 	{
 		return CP1(Complex(1, 0), true);
 	}
-	return CP1(z - vec2(f, 0));
+	return CP1(z -f);
 }
 
 CP1 CP1::operator*(float f)
@@ -569,21 +573,6 @@ CP1 iCP1()
 
 
 
-float norm2(vec2 v)
-{
-	return dot(v, v);
-}
-
-float norm2(vec3 v)
-{
-	return dot(v, v);
-}
-
-float norm2(vec4 v)
-{
-	return dot(v, v);
-}
-
 
 vec2 intersectLines(vec2 p1, vec2 p2, vec2 q1, vec2 q2)
 {
@@ -596,30 +585,22 @@ Complex intersectLines(Complex p1, Complex p2, Complex q1, Complex q2)
 	return Complex(intersectLines(p1.z, p2.z, q1.z, q2.z));
 }
 
-mat3 scaleMatrix3(vec3 s)
-{
+mat3 scaleMatrix3(vec3 s) {
     return mat3(s.x, 0, 0, 0, s.y, 0, 0, 0, s.z);
 }
 
-mat3 scaleMatrix3(float s)
-{
+mat3 scaleMatrix3(float s) {
 	return scaleMatrix3(vec3(s, s, s));
 }
 
-mat3 changeOfBasis(vec3 target1, vec3 target2, vec3 target3)
-{
-    return inverse(mat3(target1, target2, target3));
-}
-
-mat3 changeOfBasis(vec3 source1, vec3 source2, vec3 source3, vec3 target1, vec3 target2, vec3 target3)
-{
-	return inverse(mat3(target1, target2, target3)) * mat3(source1, source2, source3);
-}
-
-mat3 rotationMatrix3(float angle)
-{
+mat3 rotationMatrix3(float angle) {
     return mat3(cos(angle), -sin(angle), 0, sin(angle), cos(angle), 0, 0, 0, 1);
 }
+
+mat2 rotationMatrix2(float angle) {
+	return mat2(cos(angle), -sin(angle), sin(angle), cos(angle));
+}
+
 
 mat3 rotationMatrix3(vec3 axis, float angle)
 {
@@ -628,39 +609,167 @@ mat3 rotationMatrix3(vec3 axis, float angle)
 	return inverse(change) * rotationMatrix3(angle) * change;
 }
 
-glm::mat3 rotationBetween(glm::vec3 v0, glm::vec3 v1) {
-    glm::vec3 axis = normalise(cross(v0, v1));
+mat3 rotationBetween(vec3 v0, vec3 v1) {
+    vec3 axis = normalise(cross(v0, v1));
     float angle = acos(dot(v0, v1) / (norm(v0) * norm(v1)));
     return rotationMatrix3(axis, angle);
 }
 
-float frac(float x)
-{
-    return x - floor(x);
+mat2 rotationBetween(vec2 v0, vec2 v1) {
+	float angle = acos(dot(v0, v1) / (norm(v0) * norm(v1)));
+	return rotationMatrix2(angle);
 }
 
-vec2 orthogonalComplement(vec2 v)
-{
-	return (vec2(v.y, -v.x))/norm(v);
-}
 
 mat3 GramSchmidtProcess(mat3 m) {
     vec3 u1 = normalise(m[0]);
     vec3 u2 = normalise(m[1] - u1 * dot(u1, m[1]));
-    vec3 u3 = cross(u1, u2);
-    return mat3(u1, u2, u3);
+    vec3 u3 = normalise(m[2] - u1 * dot(u1, m[2]) - u2 * dot(u2, m[2]));
+	mat3 ma = mat3(u1, u2, u3);
+    return ma;
+}
+
+vector<int> range(int a, int b, int step) {
+	if (step == 0) throw std::invalid_argument("step cannot be 0");
+
+	vector<int> res = vector<int>();
+	res.reserve(abs(b - a) / abs(step));
+
+	if (step > 0) {
+		for (int i = a; i < b; i += step)
+			res.push_back(i);
+		return res; }
+
+	for (int i = b; i > a; i += step)
+		res.push_back(i);
+	return res;
+}
+
+float randomUniform(float a, float b) {
+	return a + (b - a) * (rand() / (RAND_MAX + 1.0));
+}
+
+vec2 randomUniform(vec2 a, vec2 b) {
+	return vec2(randomUniform(a.x, b.x), randomUniform(a.y, b.y));
+}
+
+vec3 randomUniform(vec3 a, vec3 b) {
+	return vec3(randomUniform(a.x, b.x), randomUniform(a.y, b.y), randomUniform(a.z, b.z));
+}
+
+
+vec3 projectVectorToPlane(vec3 v, vec3 n) {
+	return v - dot(v, n) * n;
 }
 
 std::pair<vec3, vec3> orthogonalComplementBasis(vec3 v)
 {
-    vec3 b1 = norm(cross(v, e1)) > norm(cross(v, e3)) ? e1 : e3;
-    vec3 b2 = cross(v, b1);
-    mat3 frame = GramSchmidtProcess(mat3(b1, b2, normalise(v)));
-    return std::make_pair(frame[0], frame[1]);
+    vec3 b1 = norm(cross(v, normalise(e1-e2+e3))) > norm(cross(v, normalise(e1+e2))) ?  normalise(e1-e2+e3) : normalise(e1+e2);
+    vec3 b2 = cross(normalise(v), b1);
+    mat3 frame = GramSchmidtProcess(mat3(normalise(v), b1, b2 ));
+    return std::make_pair(frame[1], frame[2]);
 
 }
 
 float pseudorandomizer(float x, float seed) { return frac(sin(x + seed) * 43758.5453f + seed); }
+
+
+SparseMatrix::SparseMatrix(int n, int m) {
+	this->n    = n;
+	this->m    = m;
+	this->data = std::vector<std::vector<std::pair<int, float>>>(n);
+}
+
+void SparseMatrix::set(int i, int j, float val) {
+	this->data[i].emplace_back(j, val);
+}
+
+float SparseMatrix::get(int i, int j) {
+	for (auto p : this->data[i])
+		if (p.first == j)
+			return p.second;
+	return 0;
+}
+
+SparseMatrix SparseMatrix::operator*(float f) {
+	SparseMatrix result = SparseMatrix(this->n, this->m);
+	for (int i = 0; i < this->n; i++)
+		for (auto p : this->data[i])
+			result.set(i, p.first, p.second * f);
+	return result;
+}
+
+SparseMatrix SparseMatrix::operator+(SparseMatrix M) {
+	SparseMatrix result = SparseMatrix(this->n, this->m);
+	for (int i = 0; i < this->n; i++)
+		for (auto p : this->data[i])
+			result.set(i, p.first, p.second);
+	for (int i = 0; i < M.n; i++)
+		for (auto p : M.data[i])
+			result.set(i, p.first, result.get(i, p.first) + p.second);
+	return result;
+}
+
+SparseMatrix SparseMatrix::operator-(SparseMatrix M) {
+	SparseMatrix result = SparseMatrix(this->n, this->m);
+	for (int i = 0; i < this->n; i++)
+		for (auto p : this->data[i])
+			result.set(i, p.first, p.second);
+	for (int i = 0; i < M.n; i++)
+		for (auto p : M.data[i])
+			result.set(i, p.first, result.get(i, p.first) - p.second);
+	return result;
+}
+
+BigVector::BigVector(const std::vector<std::vector<float>> &data) {
+	this->data = data[0];
+	for (int i = 1; i < data.size(); i++)
+		for (float j : data[i])
+			this->data.push_back(j);
+}
+
+BigVector::BigVector(int n, float val) {
+	data = std::vector<float>();
+	data.reserve(n);
+	for (int i = 0; i < n; i++)
+		this->data.push_back(val);
+}
+
+BigVector & BigVector::operator=(const BigVector &other) {
+	if (this == &other)
+		return *this;
+	data = other.data;
+	return *this;
+}
+
+BigVector & BigVector::operator=(BigVector &&other) noexcept {
+	if (this == &other)
+		return *this;
+	data = std::move(other.data);
+	return *this;
+}
+
+BigVector BigVector::operator*(float f) const {
+	std::vector<float> result = std::vector<float>(this->data.size());
+	for (int i    = 0; i < this->data.size(); i++)
+		result[i] = this->data[i] * f;
+	return BigVector(result);
+}
+
+BigVector BigVector::operator+(const BigVector& v) const{
+	std::vector<float> res;
+	for (int i = 0; i < this->data.size(); i++)
+		res.push_back(this->data[i] + v[i]);
+	return BigVector(res);
+}
+
+BigVector BigVector::operator-(const BigVector& v)const {
+	std::vector<float> res;
+	for (int i = 0; i < this->data.size(); i++)
+		res.push_back(this->data[i] - v[i]);
+	return BigVector(res);
+}
+
 
 
 BigMatrix::BigMatrix(int n, int m) { this->data = MATR$X(n, vec2137(m, 0)); }
@@ -677,6 +786,15 @@ BigMatrix BigMatrix::submatrix(int i, int j) {
         sub.push_back(row);
     }
     return BigMatrix(sub);
+}
+
+BigMatrix BigMatrix::diagonalComponent() const { BigMatrix res = BigMatrix(this->n(), this->m()); for (int i = 0; i < this->n(); i++) res.set(i, i, this->get(i, i)); return res; }
+BigMatrix BigMatrix::invertedDiagonal() const { BigMatrix res = BigMatrix(this->n(), this->m()); for (int i = 0; i < this->n(); i++) res.set(i, i, 1/this->get(i, i)); return res; }
+
+int binomial(int n, int k) {
+	if (k > n) return 0;
+	if (k == 0 || k == n) return 1;
+	return binomial(n - 1, k - 1) + binomial(n - 1, k);
 }
 
 BigMatrix::BigMatrix(const MATR$X &data) { this->data = data; };
@@ -747,9 +865,12 @@ BigMatrix BigMatrix::operator*(const std::vector<std::vector<float>> &M) const {
     return result;
 }
 
-BigMatrix operator*(const std::vector<float> &vec, const BigMatrix &M) {
-    std::vector<std::vector<float>> m = {vec};
-    return m * M;
+
+float dot(BigVector a, BigVector b) {
+	float res = 0;
+	for (int i = 0; i < a.data.size(); i++)
+		res += a[i] * b[i];
+	return res;
 }
 
 BigMatrix operator*(const std::vector<std::vector<float>> &M, const BigMatrix &B) {
@@ -797,4 +918,22 @@ BigMatrix BigMatrix::inv() {
 //    BigMatrix BigMatrix::operator*(const std::vector<float> &vec) {
 //    return (*this)*BigMatrix({vec}).transpose();
 //}
-    BigMatrix::BigMatrix(MATR$X && data) { data = std::move(data); }
+BigMatrix::BigMatrix(MATR$X && data) { data = std::move(data); }
+
+std::pair<Complex, Complex> eigenvalues(mat2 m) {
+	float tr = m[0][0] + m[1][1];
+	float det = m[0][0] * m[1][1] - m[0][1] * m[1][0];
+	float D = tr * tr - 4 * det;
+	if (D < 0)  return {(tr + I*sqrt(-D)) / 2, (tr - I*sqrt(-D)) / 2};
+	return {(tr + sqrt(D)) / 2, (tr - sqrt(D)) / 2};
+}
+
+
+std::pair<vec2, mat2> eigendecomposition(mat2 m) {
+	vec2 lambda = eigenvaluesReal(m);
+	if (isClose(m[0][1]*m[1][0], 0))
+		lambda = vec2(m[0][0], m[1][1]);
+	vec2 v1 = vec2(lambda.x - m[1][1], m[0][1]);
+	vec2 v2 = vec2(m[1][0], lambda.y - m[0][0]);
+	return std::make_pair(lambda, mat2(v1, v2));
+}

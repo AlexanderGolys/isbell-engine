@@ -20,7 +20,7 @@
 
 
 using namespace glm;
-using std::vector, std::array, std::string, std::set, std::pair, std::unique_ptr, std::shared_ptr, std::make_shared, std::make_unique, std::to_string, std::map;
+using std::vector, std::array, std::string, std::set, std::pair, std::unique_ptr, std::shared_ptr, std::make_shared, std::make_unique, std::to_string;
 
 
 
@@ -287,15 +287,15 @@ Vertex Vertex::operator+(vec3 v) const {
 }
 
 
-void Vertex::appendToBuffers(StdAttributeBuffers &buffers, MaterialBuffers &materialBuffers) {
-	appendToBuffers(buffers);
-	if (this->material.has_value()) {
-		materialBuffers.ambientColors.push_back(this->material->ambientColor);
-		materialBuffers.diffuseColors.push_back(this->material->diffuseColor);
-		materialBuffers.specularColors.push_back(this->material->specularColor);
-		materialBuffers.intencitiesAndShininess.push_back(this->material->compressIntencities());
-	}
-}
+//void Vertex::appendToBuffers(StdAttributeBuffers &buffers, MaterialBuffers &materialBuffers) {
+//	appendToBuffers(buffers);
+//	if (this->material.has_value()) {
+//		materialBuffers.ambientColors.push_back(this->material->ambientColor);
+//		materialBuffers.diffuseColors.push_back(this->material->diffuseColor);
+//		materialBuffers.specularColors.push_back(this->material->specularColor);
+//		materialBuffers.intencitiesAndShininess.push_back(this->material->compressIntencities());
+//	}
+//}
 
 void Vertex::appendToBuffers(StdAttributeBuffers &buffers) {
     setIndex(buffers.positions.size());
@@ -321,7 +321,7 @@ void Vertex::setAllParametricCurveExtras(float t, CurveSample &sample) {
 }
 
 Vertex barycenter(Vertex v1, Vertex v2, Vertex v3) {
-    map<string, vec4> extraData = {};
+    std::map<string, vec4> extraData = {};
     for (auto& key : v1.getExtraDataNames()) {
         vec4 newData = barycenter(v1.getExtraData(key), v2.getExtraData(key), v3.getExtraData(key));
         extraData.insert({key, newData});
@@ -332,12 +332,12 @@ Vertex barycenter(Vertex v1, Vertex v2, Vertex v3) {
                   barycenter(v1.getUV(), v2.getUV(), v3.getUV()),
                   n,
                   barycenter(v1.getColor(), v2.getColor(), v3.getColor()),
-                  MaterialPhong(barycenter(v1.getMaterialMat(), v2.getMaterialMat(), v3.getMaterialMat())),
+                  MaterialPhongConstColor(barycenter(v1.getMaterialMat(), v2.getMaterialMat(), v3.getMaterialMat())),
                     extraData);
 }
 
 Vertex center(Vertex v1, Vertex v2) {
-    map<string, vec4> extraData = {};
+    std::map<string, vec4> extraData = {};
     for (auto& key : v1.getExtraDataNames()) {
         vec4 newData =(v1.getExtraData(key) + v2.getExtraData(key))/2.0f;
         extraData.insert({key, newData});
@@ -347,7 +347,7 @@ Vertex center(Vertex v1, Vertex v2) {
                       (v1.getUV() + v2.getUV())/2.0f,
                       normalize(v1.getNormal() + v2.getNormal()),
                       (v1.getColor() + v2.getColor())/2.0f,
-                      MaterialPhong((v1.getMaterialMat() + v2.getMaterialMat())/2.0f),
+                      MaterialPhongConstColor((v1.getMaterialMat() + v2.getMaterialMat())/2.0f),
                         extraData);
     return Vertex((v1.getPosition() + v2.getPosition())/2.0f,
                   (v1.getUV() + v2.getUV())/2.0f,
@@ -375,6 +375,7 @@ TriangularMesh::TriangularMesh(const vector<TriangleR3> &triangles) : Triangular
 {
 	this->triangles = triangles;
 }
+
 
 std::map<std::string, int> countEstimatedBufferSizesInOBJFile(const char *filename) {
     int positions = 0;
@@ -769,36 +770,22 @@ void TriangularMesh::applyMap(std::function<vec3(vec3)> f,
 
 
 
-MaterialPhong::MaterialPhong(vec4 ambient, vec4 diffuse, vec4 specular, float ambientIntensity, float diffuseIntensity,
-                             float specularIntensity, float shininess, const shared_ptr<Texture> &texture)
 
-{
-    this->ambientColor = ambient;
-    this->diffuseColor = diffuse;
-    this->specularColor = specular;
-    this->ambientIntensity = ambientIntensity;
-    this->diffuseIntensity = diffuseIntensity;
-    this->specularIntensity = specularIntensity;
-    this->shininess = shininess;
-    this->texture_ambient = texture;
-    texture_diffuse = texture;
-    texture_specular = texture;
+std::shared_ptr<Texture> MaterialPhong::constAmbientTexture(vec4 color) {
+	return make_shared<Texture>(color, 0, "texture_ambient");
 }
-MaterialPhong::MaterialPhong(mat4 compressed, const shared_ptr<Texture> &texture) {
-    this->ambientColor = compressed[0];
-    this->diffuseColor = compressed[1];
-    this->specularColor = compressed[2];
-    this->ambientIntensity = compressed[3].x;
-    this->diffuseIntensity = compressed[3].y;
-    this->specularIntensity = compressed[3].z;
-    this->shininess = compressed[3].w;
-    this->texture_ambient = texture;
-    texture_diffuse = texture;
-    texture_specular = texture;
+
+std::shared_ptr<Texture> MaterialPhong::constDiffuseTexture(vec4 color) {
+	return make_shared<Texture>(color, 1, "texture_diffuse");
 }
+
+std::shared_ptr<Texture> MaterialPhong::constSpecularTexture(vec4 color) {
+	return make_shared<Texture>(color, 2, "texture_specular");
+}
+
 MaterialPhong::MaterialPhong(const std::shared_ptr<Texture> &texture_ambient, const std::shared_ptr<Texture> &texture_diffuse,
-                             const std::shared_ptr<Texture> &texture_specular, float ambientIntensity, float diffuseIntensity,
-                             float specularIntensity, float shininess) {
+							 const std::shared_ptr<Texture> &texture_specular, float ambientIntensity, float diffuseIntensity,
+							 float specularIntensity, float shininess) {
     this->texture_ambient = texture_ambient;
     this->texture_diffuse = texture_diffuse;
     this->texture_specular = texture_specular;
@@ -806,96 +793,21 @@ MaterialPhong::MaterialPhong(const std::shared_ptr<Texture> &texture_ambient, co
     this->diffuseIntensity = diffuseIntensity;
     this->specularIntensity = specularIntensity;
     this->shininess = shininess;
-    ambientColor = vec4(1.0f, 1.0f, 1.0f, 1.0f);
-    diffuseColor = vec4(1.0f, 1.0f, 1.0f, 1.0f);
-    specularColor = vec4(1.0f, 1.0f, 1.0f, 1.0f);
 
+	initTextures();
 }
 
-MaterialPhong::MaterialPhong(glm::vec4 ambient, glm::vec4 diffuse, glm::vec4 specular, float ambientIntensity, float diffuseIntensity, float specularIntensity, float shininess,
-		const char *samplerName) {
-	this->texture_ambient =  make_shared<Texture>(ambient, 0, "texture_ambient");
-	this->texture_diffuse =  make_shared<Texture>(diffuse, 1, "texture_diffuse");
-	this->texture_specular = make_shared<Texture>(specular, 2, "texture_specular");
-	this->ambientIntensity = ambientIntensity;
-	this->diffuseIntensity = diffuseIntensity;
-	this->specularIntensity = specularIntensity;
-	this->shininess = shininess;
-	ambientColor = ambient;
-	diffuseColor = diffuse;
-	specularColor = specular;
-}
 
-MaterialPhong::MaterialPhong(glm::vec4 ambient, float ambientIntensity, float diffuseIntensity, float specularIntensity, float shininess,
-		const char *samplerName) {
-	this->texture_ambient =  make_shared<Texture>(ambient, 0, "texture_ambient");
-	this->texture_diffuse =  make_shared<Texture>(ambient, 1, "texture_diffuse");
-	this->texture_specular = make_shared<Texture>(WHITE, 2, "texture_specular");
-	this->ambientIntensity = ambientIntensity;
-	this->diffuseIntensity = diffuseIntensity;
-	this->specularIntensity = specularIntensity;
-	this->shininess = shininess;
-	ambientColor = ambient;
-	diffuseColor = ambient;
-	specularColor = WHITE;
-}
-
-mat4 MaterialPhong::compressToMatrix() const
-{
-	return mat4(ambientColor, diffuseColor, specularColor, vec4(ambientIntensity, diffuseIntensity, specularIntensity, shininess));
-}
 
 vec4 MaterialPhong::compressIntencities() const
 {
 	return vec4(ambientIntensity, diffuseIntensity, specularIntensity, shininess);
 }
 
-// MaterialFamily1P::MaterialFamily1P(MaterialPhong *m0, MaterialPhong *m1) {
-// 	this->m0 = *m0;
-// 	this->m1 = *m1;
-// }
 
-// MaterialFamily1P::MaterialFamily1P(vec4 c1, vec4 c2, float ambientIntensity, float diffuseIntensity,
-// 	float specularIntensity, float shininess) {
-// 	this->m0 = MaterialPhong(c1, c1, vec4(1, 1, 1, 1), ambientIntensity, diffuseIntensity, specularIntensity, shininess);
-// 	this->m1 = MaterialPhong(c2, c2, vec4(1, 1, 1, 1), ambientIntensity, diffuseIntensity, specularIntensity, shininess);
-// }
 
-MaterialPhong lerp(MaterialPhong m0, MaterialPhong m1, float t) {
-	return MaterialPhong(lerp(m0.ambientColor, m1.ambientColor, t),
-		lerp(m0.diffuseColor, m1.diffuseColor, t),
-		lerp(m0.specularColor, m1.specularColor, t),
-		lerp(m0.ambientIntensity, m1.ambientIntensity, t),
-		lerp(m0.diffuseIntensity, m1.diffuseIntensity, t),
-		lerp(m0.specularIntensity, m1.specularIntensity, t),
-		lerp(m0.shininess, m1.shininess, t));
-}
 
-// MaterialPhong MaterialFamily1P::operator()(float t) const {
-// 	return lerp(m0, m1, t);
-// }
 
-PointLight::PointLight(vec3 position, vec4 color, float intensity)
-{
-	this->position = position;
-	this->color = color;
-	this->intensity = intensity;
-}
-
-PointLight::PointLight()
-{
-	this->position = vec3(0.0f, 0.0f, 0.0f);
-	this->color = vec4(1.0f, 1.0f, 1.0f, 1.0f);
-	this->intensity = 1.0f;
-}
-
-mat4 PointLight::compressToMatrix()
-{
-	mat4 result = mat4();
-	result[0] = vec4(position, intensity);
-	result[1] = color;
-	return result;
-}
 
 Model3D::Model3D()
 {
@@ -904,14 +816,14 @@ Model3D::Model3D()
 	this->transform = mat4(1.0f);
 }
 
-Model3D::Model3D(TriangularMesh &mesh, MaterialPhong &material, mat4 transform)
+Model3D::Model3D(TriangularMesh &mesh, MaterialPhong &material, const mat4 &transform)
 {
 	this->mesh = std::make_shared<TriangularMesh>(mesh);
 	this->material = std::make_shared<MaterialPhong>(material);
 	this->transform = transform;
 }
 
-void Model3D::addTransform(mat4 transform)
+void Model3D::addTransform(const mat4 &transform)
 {
 	this->transform = this->transform * transform;
 }
@@ -1418,18 +1330,18 @@ SuperMesh::SuperMesh(const char *filename, MeshFormat format) {
 
 }
 
-SuperMesh::SuperMesh(TriangularMesh &mesh, const MaterialPhong &material) : SuperMesh(mesh) {
-	doPerTriangle([this, material](TriangleR3 &tr) {
+SuperMesh::SuperMesh(TriangularMesh &mesh, const MaterialPhongConstColor &material) : SuperMesh(mesh) {
+	doPerTriangle([material](TriangleR3 &tr) {
 		tr.addMaterial(material);
 	});
 }
 
-SuperMesh::SuperMesh(const char *filename, MaterialPhong &material, MeshFormat format) : SuperMesh(filename, format) {
+SuperMesh::SuperMesh(const char *filename, const MaterialPhongConstColor &material, MeshFormat format) : SuperMesh(filename, format) {
 	materials[PolyGroupID(0)] = material;
 }
 
 
-SuperMesh::SuperMesh(PlanarMeshWithBoundary &mesh, MaterialPhong &material, MaterialPhong &material_bd, BoundaryEmbeddingStyle style) {
+SuperMesh::SuperMesh(PlanarMeshWithBoundary &mesh, const MaterialPhongConstColor &material, MaterialPhongConstColor &material_bd, BoundaryEmbeddingStyle style) {
 	TriangularMesh embedded = mesh.embeddInR3(0.0f);
 	auto a = PolyGroupID(0);
 	triangleGroups[PolyGroupID(0)] = embedded.getTriangles();
@@ -1442,59 +1354,59 @@ SuperMesh::SuperMesh(PlanarMeshWithBoundary &mesh, MaterialPhong &material, Mate
 	}
 }
 
-SuperMesh::SuperMesh(const vector<TriangleR3> &triangles, const MaterialPhong &material) {
+SuperMesh::SuperMesh(const vector<TriangleR3> &triangles, const MaterialPhongConstColor &material) {
 	triangleGroups[PolyGroupID(0)] = triangles;
 	materials[PolyGroupID(0)] = material;
 }
 
-SuperMesh::SuperMesh(const std::map<PolyGroupID, vector<TriangleR3>> &triangleGroups, const std::map<PolyGroupID, MaterialPhong> &materials) {
+SuperMesh::SuperMesh(const std::map<PolyGroupID, vector<TriangleR3>> &triangleGroups, const std::map<PolyGroupID, MaterialPhongConstColor> &materials) {
 	this->triangleGroups = triangleGroups;
 	this->materials = materials;
 
 }
 
-void SuperMesh::addPolyGroup(PolyGroupID id, const vector<TriangleR3> &triangles, const MaterialPhong &material) {
+void SuperMesh::addPolyGroup(PolyGroupID id, const vector<TriangleR3> &triangles, const MaterialPhongConstColor &material) {
 	triangleGroups[id] = triangles;
 	materials[id] = material;
 }
 
-void SuperMesh::addBdGroup(PolyGroupID id, const vector<TriangleR3> &triangles, const MaterialPhong &material) {
+void SuperMesh::addBdGroup(PolyGroupID id, const vector<TriangleR3> &triangles, const MaterialPhongConstColor &material) {
 	boundaryGroups[id] = triangles;
 	materials[id] = material;
 }
 
-void SuperMesh::addEmbeddedCurve(PolyGroupID id, const vector<TriangleR3> &triangles, const MaterialPhong &material) {
+void SuperMesh::addEmbeddedCurve(PolyGroupID id, const vector<TriangleR3> &triangles, const MaterialPhongConstColor &material) {
 	embedded_curves[id] = triangles;
 	materials[id] = material;
 }
 
-void SuperMesh::addEmbeddedPoint(PolyGroupID id, const vector<TriangleR3> &triangles, const MaterialPhong &material) {
+void SuperMesh::addEmbeddedPoint(PolyGroupID id, const vector<TriangleR3> &triangles, const MaterialPhongConstColor &material) {
 	embedded_points[id] = triangles;
 	materials[id] = material;
 }
 
-void SuperMesh::addPolyGroup(const vector<TriangleR3> &triangles, const MaterialPhong &material) {
+void SuperMesh::addPolyGroup(const vector<TriangleR3> &triangles, const MaterialPhongConstColor &material) {
 	PolyGroupID id = static_cast<int>(triangleGroups.size());
 	addPolyGroup(id, triangles, material);
 }
 
-void SuperMesh::addPolyGroup(const TriangularMesh &mesh, const MaterialPhong &material) {
+void SuperMesh::addPolyGroup(const TriangularMesh &mesh, const MaterialPhongConstColor &material) {
 	addPolyGroup(mesh.getTriangles(), material);
 }
 
-void SuperMesh::addBdGroup(const vector<TriangleR3> &triangles, const MaterialPhong &material) {
+void SuperMesh::addBdGroup(const vector<TriangleR3> &triangles, const MaterialPhongConstColor &material) {
 	addBdGroup(bdGroup(boundaryGroups.size()), triangles, material);
 }
 
-void SuperMesh::addEmbeddedCurve(const vector<TriangleR3> &triangles, const MaterialPhong &material) {
+void SuperMesh::addEmbeddedCurve(const vector<TriangleR3> &triangles, const MaterialPhongConstColor &material) {
 	addEmbeddedCurve(curveGroup(embedded_curves.size()), triangles, material);
 }
 
-void SuperMesh::addEmbeddedPoint(const vector<TriangleR3> &triangles, const MaterialPhong &material) {
+void SuperMesh::addEmbeddedPoint(const vector<TriangleR3> &triangles, const MaterialPhongConstColor &material) {
 	addEmbeddedPoint(static_cast<int>(-embedded_points.size() - 1), triangles, material);
 }
 
-void SuperMesh::embedCurve(ComplexCurve *curve, int nSegments, float h_middle, float w_middle, float w_side, const MaterialPhong &material) {
+void SuperMesh::embedCurve(ComplexCurve *curve, int nSegments, float h_middle, float w_middle, float w_side, const MaterialPhongConstColor &material) {
 	auto embedded = TriangularMesh(curve, nSegments, h_middle, w_middle, w_side);
 	PolyGroupID id = curveGroup(embedded_curves.size());
 	embedded_curves[id] = embedded.getTriangles();
@@ -1526,7 +1438,7 @@ void SuperMesh::precomputeBuffers(bool materials, bool extra) {
 		for (auto &pair : this->triangleGroups)
 		{
 			PolyGroupID id = pair.first;
-			MaterialPhong material = this->materials[id];
+			MaterialPhongConstColor material = this->materials[id];
 			for (int i = 0; i < 3*pair.second.size(); i++) {
 				this->materialBuffers.ambientColors.push_back(material.ambientColor);
 				this->materialBuffers.diffuseColors.push_back(material.diffuseColor);
@@ -1538,7 +1450,7 @@ void SuperMesh::precomputeBuffers(bool materials, bool extra) {
 		for (auto &pair : this->boundaryGroups)
 		{
 			PolyGroupID id = pair.first;
-			MaterialPhong material = this->materials[id];
+			MaterialPhongConstColor material = this->materials[id];
 			for (int i = 0; i < 3*pair.second.size(); i++) {
 				this->materialBuffers.ambientColors.push_back(material.ambientColor);
 				this->materialBuffers.diffuseColors.push_back(material.diffuseColor);
@@ -1550,7 +1462,7 @@ void SuperMesh::precomputeBuffers(bool materials, bool extra) {
 		for (auto &pair : this->embedded_curves)
 		{
 			PolyGroupID id = pair.first;
-			MaterialPhong material = this->materials[id];
+			MaterialPhongConstColor material = this->materials[id];
 			for (int i = 0; i < 3*pair.second.size(); i++) {
 				this->materialBuffers.ambientColors.push_back(material.ambientColor);
 				this->materialBuffers.diffuseColors.push_back(material.diffuseColor);
@@ -1562,7 +1474,7 @@ void SuperMesh::precomputeBuffers(bool materials, bool extra) {
 		for (auto &pair : this->embedded_points)
 		{
 			PolyGroupID id = pair.first;
-			MaterialPhong material = this->materials[id];
+			MaterialPhongConstColor material = this->materials[id];
 			for (int i = 0; i < 3*pair.second.size(); i++) {
 				this->materialBuffers.ambientColors.push_back(material.ambientColor);
 				this->materialBuffers.diffuseColors.push_back(material.diffuseColor);
@@ -1631,10 +1543,10 @@ void SuperMesh::actOnPositions(std::function<vec3(vec3)> f) {
 	}
 }
 
-void SuperMesh::actAtEmbeddedPlane(Meromorphism f) {
+void SuperMesh::actAtEmbeddedPlane(const Meromorphism& f) {
 	auto ff = [f](vec3 w) {
 		vec2 p = vec2(w.x, w.y);
-		vec2 q = f(p);
+		vec2 q = f(p).z;
 		return vec3(q.x, q.y, w.z);
 	};
 	doPerTriangle([ff](TriangleR3 &tr) {
@@ -1705,7 +1617,7 @@ void SuperMesh::actOnEmbeddedCurve(SpaceEndomorphism f, bool buffOnly) {
 	}
 }
 
-void SuperMesh::randomizeMaterials(MaterialPhong &min, MaterialPhong &max) {
+void SuperMesh::randomizeMaterials(MaterialPhongConstColor &min, MaterialPhongConstColor &max) {
 	// precomputeBuffers(true, false);
 
 	auto seed = std::chrono::system_clock::now().time_since_epoch().count();
@@ -1721,10 +1633,7 @@ void SuperMesh::randomizeMaterials(MaterialPhong &min, MaterialPhong &max) {
 		materialBuffers.specularColors[i] = vec4(distribution(generator)*(max.specularColor.x - min.specularColor.x) + min.specularColor.x,
 			distribution(generator)*(max.specularColor.y - min.specularColor.y) + min.specularColor.y,
 			distribution(generator)*(max.specularColor.z - min.specularColor.z) + min.specularColor.z, 1.0f);
-		materialBuffers.intencitiesAndShininess[i] = vec4(distribution(generator)*(max.ambientIntensity - min.ambientIntensity) + min.ambientIntensity,
-			distribution(generator)*(max.diffuseIntensity - min.diffuseIntensity) + min.diffuseIntensity,
-			distribution(generator)*(max.specularIntensity - min.specularIntensity) + min.specularIntensity,
-			distribution(generator)*(max.shininess - min.shininess) + min.shininess);
+		materialBuffers.intencitiesAndShininess[i] = max.compressIntencities();
 	}
 }
 
@@ -1818,6 +1727,8 @@ Texture::Texture(glm::vec3 color, int slot, const char *sampler) {
     data[0] = (unsigned char) (color.z * 255);
     data[1] = (unsigned char) (color.y * 255);
     data[2] = (unsigned char) (color.x * 255);
+
+	load();
 }
 
 Texture::Texture(glm::vec4 color, int slot, const char *sampler) {
@@ -1835,12 +1746,14 @@ Texture::Texture(glm::vec4 color, int slot, const char *sampler) {
     data[1] = (unsigned char) (color.y * 255);
     data[2] = (unsigned char) (color.x * 255);
     data[3] = (unsigned char) (color.w * 255);
+
+	load();
 }
 
 Texture::Texture(const char* filename, int slot, const char* sampler, bool alpha)
 {
 	unsigned char header[54];
-	unsigned int dataPos;
+
 	FILE* file = fopen(filename, "rb");
 	if (!file) {
 		printf("Image could not be opened\n");
@@ -1855,7 +1768,7 @@ Texture::Texture(const char* filename, int slot, const char* sampler, bool alpha
 		return;
 	}
     this->alpha = alpha;
-	dataPos = *(int*)&(header[0x0A]);
+	unsigned int dataPos = *(int*)&(header[0x0A]);
 	this->size = *(int*)&(header[0x22]);
 	this->width = *(int*)&(header[0x12]);
 	this->height = *(int*)&(header[0x16]);
@@ -1863,6 +1776,7 @@ Texture::Texture(const char* filename, int slot, const char* sampler, bool alpha
 		size = width * height * 3;
 	if (dataPos == 0)
 		dataPos = 54;
+
 	this->data = new unsigned char[size];
 	fread(this->data, 1, size, file);
 	fclose(file);
@@ -1872,16 +1786,17 @@ Texture::Texture(const char* filename, int slot, const char* sampler, bool alpha
 	this->samplerName = sampler;
 	this->frameBufferID = 0;
     this->textureID = 0;
+
+	load();
 }
 
-Texture::~Texture()
+void Texture::deleteTexture()
 {
+//	free(this->data);
 	glDeleteTextures(1, &this->textureID);
 }
 
-void Texture::addFilters(GLenum minFilter, GLenum magFilter, GLenum wrapS, GLenum wrapT)
-{
-	glBindTexture(GL_TEXTURE_2D, this->textureID);
+void Texture::addFilters(GLenum minFilter, GLenum magFilter, GLenum wrapS, GLenum wrapT) {
 	if (minFilter == GL_LINEAR_MIPMAP_LINEAR || minFilter == GL_LINEAR_MIPMAP_NEAREST || minFilter == GL_NEAREST_MIPMAP_LINEAR || minFilter == GL_NEAREST_MIPMAP_NEAREST)
 	{
 		glGenerateMipmap(GL_TEXTURE_2D);
@@ -1892,14 +1807,14 @@ void Texture::addFilters(GLenum minFilter, GLenum magFilter, GLenum wrapS, GLenu
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, wrapT);
 }
 
-void Texture::bind()
+void Texture::bind() const
 {
 	glActiveTexture(this->textureSlot);
 	glBindTexture(GL_TEXTURE_2D, this->textureID);
 }
 
 
-void Texture::bindToFrameBuffer()
+void Texture::bindToFrameBuffer() const
 {
 	glBindFramebuffer(GL_DRAW_FRAMEBUFFER, frameBufferID);
 	glBindTexture(GL_TEXTURE_2D, this->textureID);
@@ -1907,22 +1822,20 @@ void Texture::bindToFrameBuffer()
 	glViewport(0, 0, this->width, this->height);
 }
 
-
-
-void Texture::calculateMipmap() { glGenerateMipmap(this->textureID); }
+void Texture::calculateMipmap() const { glGenerateMipmap(this->textureID); }
 
 void Texture::load() {
     glGenTextures(1, &this->textureID);
-    	glActiveTexture(this->textureSlot);
+//	glActiveTexture(this->textureSlot);
+	glBindTexture(GL_TEXTURE_2D, this->textureID);
+	addFilters( GL_LINEAR_MIPMAP_LINEAR, GL_LINEAR, GL_CLAMP_TO_EDGE, GL_CLAMP_TO_EDGE);
 
-    glBindTexture(GL_TEXTURE_2D, this->textureID);
     if (alpha)
         glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, this->width, this->height, 0, GL_BGRA, GL_UNSIGNED_BYTE, this->data);
     else
         glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, this->width, this->height, 0, GL_BGR, GL_UNSIGNED_BYTE, this->data);
 
     glGenerateMipmap(GL_TEXTURE_2D);
-    addFilters(GL_LINEAR_MIPMAP_LINEAR, GL_LINEAR, GL_REPEAT, GL_REPEAT);
 }
 
 
@@ -2047,14 +1960,14 @@ void Texture::load() {
 
 
 SuperCurve::SuperCurve(const SmoothParametricCurve &curve, const std::function<float(float)> &width,
-                       const std::function<MaterialPhong(float)> &material, int segments,
+                       const std::function<MaterialPhongConstColor(float)> &material, int segments,
                        float t0, float t1, bool periodic) {
     samples = sampleCurve(curve, width, material, t0, t1, segments, periodic);
     this->t0 = t0;
     this->t1 = t1;
     id = curve.getID();
 }
-SuperCurve::SuperCurve(const SmoothParametricCurve &curve, float width, MaterialPhong material, int nSegments, float t0, float t1, bool periodic) {
+SuperCurve::SuperCurve(const SmoothParametricCurve &curve, float width, MaterialPhongConstColor material, int nSegments, float t0, float t1, bool periodic) {
     samples = sampleCurve(curve, width, material, t0, t1, nSegments, periodic);
     this->t0 = t0;
     this->t1 = t1;
@@ -2127,7 +2040,7 @@ void SuperCurve::transformMeshByAmbientMap(const SpaceEndomorphism &f) {
 
 
  vector<CurveSample> sampleCurve(SmoothParametricCurve curve, std::function<float(float)> width,
-                                     std::function<MaterialPhong(float)> material, float t0, float t1, int n, bool periodic) {
+                                     std::function<MaterialPhongConstColor(float)> material, float t0, float t1, int n, bool periodic) {
 	vector<CurveSample> samples = vector<CurveSample>();
 	samples.reserve(n);
 	for (int i = 0; i <= n; i++) {
@@ -2137,7 +2050,7 @@ void SuperCurve::transformMeshByAmbientMap(const SpaceEndomorphism &f) {
 		vec3 normal = curve.normal(t);
 		float w = width(t);
 
-		MaterialPhong mat = material(t);
+		MaterialPhongConstColor mat = material(t);
 		samples.emplace_back(pos, normal, tangent, mat, w);
 		samples.at(i).updateExtra(t);
 	}
@@ -2146,19 +2059,13 @@ void SuperCurve::transformMeshByAmbientMap(const SpaceEndomorphism &f) {
 		vec3 tangent = curve.tangent(t0);
 		vec3 normal = curve.normal(t0);
 		float w = width(t0);
-		MaterialPhong mat = material(t0);
+		MaterialPhongConstColor mat = material(t0);
 		samples.push_back(CurveSample(pos, normal, tangent, mat, w));
 		samples.at(n).updateExtra(t0);
 	}
 	return samples;
 }
-inline CurveSample::CurveSample(vec3 position, vec3 normal, vec3 tangent, MaterialPhong material, float width) {
-    this->position = position;
-    this->normal = normal;
-    this->tangent = tangent;
-    this->material = material.compressToMatrix();
-    this->width = width;
-}
+
 CurveSample::CurveSample(const CurveSample &other) :
     position(other.position), normal(other.normal), tangent(other.tangent), material(other.material), width(other.width),
     extraInfo(other.extraInfo) {}
@@ -2192,7 +2099,7 @@ CurveSample &CurveSample::operator=(CurveSample &&other) noexcept {
 }
 
 vector<CurveSample> sampleCurve(SmoothParametricCurve curve, float width,
-                                MaterialPhong material, float t0, float t1,
+                                MaterialPhongConstColor material, float t0, float t1,
                                 int n, bool periodic) {
   return sampleCurve(
       curve, [w=width](float t) { return w; },

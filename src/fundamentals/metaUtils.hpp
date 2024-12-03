@@ -1,6 +1,8 @@
 #pragma once
 
 #include <exception>
+#include <map>
+#include <set>
 #include <string>
 #include "macros.hpp"
 #include <glm/glm.hpp>
@@ -138,6 +140,20 @@ namespace glm {
     inline vec4 xyz1(const vec3& v) {
         return vec4(v, 1);
     }
+
+	inline vec2 operator*(const vec2& v, int i) { return v*(1.f*i); }
+	inline vec3 operator*(const vec3& v, int i) { return v*(1.f*i); }
+	inline vec4 operator*(const vec4& v, int i) { return v*(1.f*i); }
+	inline mat2 operator*(const mat2& v, int i) { return v*(1.f*i); }
+	inline mat3 operator*(const mat3& v, int i) { return v*(1.f*i); }
+	inline mat4 operator*(const mat4& v, int i) { return v*(1.f*i); }
+	inline vec2 operator/(const vec2& v, int i) { return v/(1.f*i); }
+	inline vec3 operator/(const vec3& v, int i) { return v/(1.f*i); }
+	inline vec4 operator/(const vec4& v, int i) { return v/(1.f*i); }
+	inline mat2 operator/(const mat2& v, int i) { return v/(1.f*i); }
+	inline mat3 operator/(const mat3& v, int i) { return v/(1.f*i); }
+	inline mat4 operator/(const mat4& v, int i) { return v/(1.f*i); }
+
 }
 
     template<typename T>
@@ -167,6 +183,7 @@ class ivec8 {
 	glm::ivec4 a, b;
 public:
 	ivec8(glm::ivec4 a, glm::ivec4 b) : a(a), b(b) {}
+	ivec8(int a, int b, int c, int d, int e, int f, int g, int h) : a(a, b, c, d), b(e, f, g, h) {}
 	explicit ivec8(int i) : a(i), b(i) {}
 	int operator[](int i) const { return i < 4 ? a[i] : b[i - 4]; }
 	ivec8 operator+(int i) const { return ivec8(a + i, b + i); }
@@ -180,7 +197,7 @@ public:
 	ivec8 operator-() const { return ivec8(-a, -b); }
 	ivec8 operator%(ivec8 v) const { return ivec8(a % v.a, b % v.b); }
 	static int size() { return 8; }
-	friend int dot(ivec8 a, ivec8 b) { return dot(a.a, b.a) + dot(a.b, b.b); }
+//	friend int dot(ivec8 a, ivec8 b) { return dot(1.F*a.a, b.a) + dot(a.b, b.b); }
 	glm::ivec4 xyzw() const { return a; }
 	glm::ivec4 stuv() const { return b; }
 	glm::ivec3 xyz() const { return glm::ivec3(a); }
@@ -198,3 +215,221 @@ public:
 	int z() const { return a.z; }
 	int w() const { return a.w; }
 };
+
+class ivec6 {
+	glm::ivec3 a, b;
+public:
+	ivec6(glm::ivec3 a, glm::ivec3 b) : a(a), b(b) {}
+	ivec6(int a, int b, int c, int d, int e, int f) : a(a, b, c), b(d, e, f) {}
+	explicit ivec6(int i) : a(i), b(i) {}
+	int operator[](int i) const { return i < 3 ? a[i] : b[i - 3]; }
+	ivec6 operator+(int i) const { return ivec6(a + i, b + i); }
+	ivec6 operator-(int i) const { return ivec6(a - i, b - i); }
+	ivec6 operator*(int i) const { return ivec6(a * i, b * i); }
+	ivec6 operator/(int i) const { return ivec6(a / i, b / i); }
+	ivec6 operator+(ivec6 v) const { return ivec6(a + v.a, b + v.b); }
+	ivec6 operator-(ivec6 v) const { return ivec6(a - v.a, b - v.b); }
+	ivec6 operator*(ivec6 v) const { return ivec6(a * v.a, b * v.b); }
+	ivec6 operator/(ivec6 v) const { return ivec6(a / v.a, b / v.b); }
+	ivec6 operator-() const { return ivec6(-a, -b); }
+	ivec6 operator%(ivec6 v) const { return ivec6(a % v.a, b % v.b); }
+	static int size() { return 6; }
+	bool operator==(ivec6 v) const { return a == v.a && b == v.b; }
+//	friend int dot(ivec6 a, ivec6 b) { return dot(a.a, b.a) + dot(a.b, b.b); }
+	glm::ivec3 xyz() const { return glm::ivec3(a); }
+	glm::ivec3 stv() const { return glm::ivec3(b); }
+	glm::ivec2 xy() const { return glm::ivec2(a); }
+	glm::ivec2 yz() const { return glm::ivec2(a.y, a.z); }
+	glm::ivec2 st() const { return glm::ivec2(b); }
+	glm::ivec2 tu() const { return glm::ivec2(b.y, b.z); }
+	int x() const { return a.x; }
+	int y() const { return a.y; }
+	int z() const { return a.z; }
+	int s() const { return b.x; }
+	int t() const { return b.y; }
+	int u() const { return b.z; }
+
+	std::vector<int> toVec() const { return {a.x, a.y, a.z, b.x, b.y, b.z}; }
+};
+
+
+template<typename T>
+std::vector<T> flattened2DVector(std::vector<std::vector<T>> v)
+{
+	std::vector<T> res;
+	for (auto& row : v)
+		res.insert(res.end(), row.begin(), row.end());
+	return res;
+}
+
+
+inline int flattened2DVectorIndex(int i, int j, glm::ivec2 size) {
+	return i * size.y + j;
+}
+
+
+template<typename T>
+T flattened2DVectorSample(std::vector<T> flattened, int i, int j, glm::ivec2 size) {
+	return flattened[flattened2DVectorIndex(i, j, size)];
+}
+
+
+
+template<typename T>
+std::vector<T> flattened3DVector(std::vector<std::vector<std::vector<T>>> v)
+{
+	std::vector<T> res;
+	for (auto& row : v)
+		for (auto& col : row)
+			res.insert(res.end(), col.begin(), col.end());
+	return res;
+}
+
+
+inline int flattened3DVectorIndex(int i, int j, int k,  glm::ivec3 size) {
+	return i * size.y * size.z + j * size.z + k;
+}
+
+
+template<typename T>
+T flattened3DVectorSample(std::vector<T> flattened, int i, int j, int k, glm::ivec3 size) {
+	return flattened[flattened3DVectorIndex(i, j, k, size)];
+}
+
+inline int flattened4DVectorIndex(int i, int j, int k, int m,  glm::ivec4 size) {
+	return i * size.y * size.z * size.w + j * size.z * size.w + k * size.w + m;
+}
+
+
+template<typename T>
+T flattened4DVectorSample(std::vector<T> flattened, int i, int j, int k, int m, glm::ivec4 size) {
+	return flattened[flattened4DVectorIndex(i, j, k, m, size)];
+}
+
+template<typename T>
+bool contains(const std::vector<T> &v, T x) {
+	return std::find(v.begin(), v.end(), x) != v.end();
+}
+
+template<typename T, typename U>
+std::vector<T> keys(const std::map<T, U> &m) {
+	std::vector<T> res;
+	for (auto& [k, v] : m)
+		res.push_back(k);
+	return res;
+}
+
+template<typename T, typename U>
+std::set<U> values(const std::map<T, U> &m) {
+	std::set<U> res;
+	for (auto& [k, v] : m)
+		res.insert(v);
+	return res;
+}
+
+template<typename T, typename U>
+std::vector<U> valuesVec(const std::map<T, U> &m) {
+	std::vector<U> res;
+	for (auto& [k, v] : m)
+		res.push_back(v);
+	return res;
+}
+
+template<typename T>
+std::vector<T> setToVector(const std::set<T> &s) {
+	std::vector<T> res;
+	for (auto& x : s)
+		res.push_back(x);
+	return res;
+}
+
+template<typename T, int n>
+std::array<T, n> vectorToArray(const std::vector<T> &s) {
+	std::array<T, n> res;
+	for (int i = 0; i < n; i++)
+		res[i] = s[i];
+	return res;
+}
+
+template<typename T, int n, int m=n>
+std::array<std::array<T, n>, m> vecVecToArray(const std::vector<T> &s) {
+	std::array<std::array<T, n>, m> res;
+	for (int i = 0; i < m; i++)
+		for (int j = 0; j < n; j++)
+			res[i][j] = s[i * n + j];
+	return res;
+}
+
+template<typename T, int n, int m=n>
+std::vector<std::vector<T>> arrayToVecVec(const std::array<std::array<T, n>, m> &s) {
+	std::vector<std::vector<T>> res;
+	res.reserve(m);
+	for (int i = 0; i < m; i++)
+		res.emplace_back(s[i].begin(), s[i].end());
+	return res;
+}
+
+template<typename T, int n>
+std::array<T, n> setToArray(const std::set<T> &s) {
+	return vectorToArray<T, n>(setToVector(s));
+}
+
+inline float dot(float x, float y) { return x * y; }
+
+template<typename  V>
+float norm2(V v) { return dot(v, v); }
+
+inline float norm2(mat2 m) { return m[0][0]*m[0][0] + m[0][1]*m[0][1] + m[1][0]*m[1][0] + m[1][1]*m[1][1]; }
+
+template <typename  T>
+float norm(T v) { return sqrt(norm2(v)); }
+
+inline std::array<std::array<float, 2>, 2> mat2ToArray(mat2 m) {
+	return vectorToArray<std::array<float, 2>, 2>({{m[0][0], m[0][1]}, {m[1][0], m[1][1]} }); }
+
+inline std::array<std::array<float, 3>, 3> mat3ToArray(mat3 m) {
+	return vectorToArray<std::array<float, 3>, 3>({{m[0][0], m[0][1], m[0][2]}, {m[1][0], m[1][1], m[1][2]}, {m[2][0], m[2][1], m[2][2]} }); }
+
+//inline std::array<std::array<float, 4>, 4> mat4ToArray(mat4 m) {
+//	return {{{m[0][0], m[0][1], m[0][2], m[0][3]}, {m[1][0], m[1][1], m[1][2], m[1][3]}, {m[2][0], m[2][1], m[2][2], m[2][3]}, {m[3][0], m[3][1], m[3][2], m[3][3]} }};}
+
+
+inline MATR$X matToVecVec(const mat2 &m) { return { {m[0][0], m[0][1]}, {m[1][0], m[1][1]} }; }
+inline MATR$X matToVecVec(const mat3 &m) { return { {m[0][0], m[0][1], m[0][2]}, {m[1][0], m[1][1], m[1][2]}, {m[2][0], m[2][1], m[2][2]} }; }
+//inline MATR$X matToVecVec(const mat4 &m) { return arrayToVecVec(mat4ToArray(m)); }
+
+template<typename T>
+vector<T> flatten  (vector<vector<T>> v) {
+	vector<T> res;
+	for (auto& row : v)
+		res.insert(res.end(), row.begin(), row.end());
+	return res;
+}
+
+template<typename T>
+vector<vector<T>> grid (T x0, T d1, T d2, int n1, int n2) {
+	vector<vector<T>> res;
+	for (int i = 0; i < n1; i++) {
+		vector<T> row;
+		for (int j = 0; j < n2; j++)
+			row.push_back(x0 + d1 * i + d2 * j);
+		res.push_back(row);
+	}
+	return res;
+}
+
+template<typename T>
+vector<vector<vector<T>>> grid (T x0, T d1, T d2, T d3, int n1, int n2, int n3) {
+	vector<vector<vector<T>>> res;
+	for (int i = 0; i < n1; i++) {
+		vector<vector<T>> row;
+		for (int j = 0; j < n2; j++) {
+			vector<T> col;
+			for (int k = 0; k < n3; k++)
+				col.push_back(x0 + d1 * i + d2 * j + d3 * k);
+			row.push_back(col);
+		}
+		res.push_back(row);
+	}
+	return res;
+}

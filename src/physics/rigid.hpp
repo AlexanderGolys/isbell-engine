@@ -65,14 +65,14 @@ inline BigMatrix_t operator* (const BigMatrix_t &M, float f) { return [M, f](flo
 inline BigMatrix_t operator+ (const BigMatrix_t & M, const BigMatrix_t & M2) { return [M, M2](float t) {return M(t)+M2(t);}; };
 // BigMatrix_t operator- BigMatrix_t(const BigMatrix_t & M, const BigMatrix_t & M2) { return [M, M2](float t) {return M(t)-M2(t);}; };
 
-Fooo dot(const vec69_t &v1, const vec69_t &v2) {
-    return [v1, v2](float t) {
-        float result = 0;
-        for (int i = 0; i < v1(t).size(); i++)
-            result += v1(t)[i] * v2(t)[i];
-        return result;
-    };
-};
+//Fooo dot(const vec69_t &v1, const vec69_t &v2) {
+//    return [v1, v2](float t) {
+//        float result = 0;
+//        for (int i = 0; i < v1(t).size(); i++)
+//            result += v1(t)[i] * v2(t)[i];
+//        return result;
+//    };
+//};
 
 inline vec3 cast_vec3(const vector<float> &v) {return vec3(v[0], v[1], v[2]);};
 
@@ -125,4 +125,37 @@ class PhysicalEnvironment {
     void addRigidBody(const RigidBody &body) {
         bodies.push_back(body);
     };
+};
+
+
+class RigidBodyTriangulated2D {
+	std::shared_ptr<WeakSuperMesh> mesh;
+	vec3 centerOfMass = vec3(0);
+	mat3 I = mat3(0);
+	vec3 angularVelocity;
+	vec3 linearVelocityCM;
+	vec3 angularAcceleration;
+	vec3 linearAccelerationCM;
+public:
+	RigidBodyTriangulated2D(std::shared_ptr<WeakSuperMesh> mesh, vec3 angularVelocity,  vec3 linearVelocity,  vec3 angularAcceleration,  vec3 linearAcceleration);
+
+	void update(float dt);
+
+	void setAngularVelocity(const vec3 &omega) {angularVelocity = omega;}
+	void setLinearVelocity(const vec3 &v) {linearVelocityCM = v;}
+	void setAngularAcceleration(const vec3 &alpha) {angularAcceleration = alpha;}
+	void setLinearAcceleration(const vec3 &a) {linearAccelerationCM = a;}
+	void addAngularVelocity(const vec3 &omega) {angularVelocity += omega;}
+	void addLinearVelocity(const vec3 &v) {linearVelocityCM += v;}
+	void addAngularAcceleration(const vec3 &alpha) {angularAcceleration += alpha;}
+	void addLinearAcceleration(const vec3 &a) {linearAccelerationCM += a;}
+
+	void approximateInertiaTensor(vec3 p);
+	void approximateInertiaTensorCM() {approximateInertiaTensor(centerOfMass);}
+	void calculateCenterOfMass();
+
+	vec3 getCm() const {return centerOfMass;}
+	mat3 getI() const {return I;}
+
+
 };

@@ -99,22 +99,21 @@ PlanarMeshWithBoundary HyperbolicPlane::mesh(int radial_res, int vertical_res, f
     PlanarMeshWithBoundary diskMesh = PlanarUnitDisk(radial_res, vertical_res);
     for (int i = 0; i < diskMesh.triangles.size(); i++) {
         for (int j = 0; j < 3; j++) {
-            Complex p = fromDisk(diskMesh.triangles[i].vertices[j]*cut_bd);
+            Complex p = fromDisk(Complex(diskMesh.triangles[i].vertices[j] * cut_bd));
             if (norm(p - _center) > max_r)
                 p = _center + (p - _center) * max_r/norm(p - _center);
-            diskMesh.triangles[i].vertices[j] = p;
+            diskMesh.triangles[i].vertices[j] = p.z;
         }
 
     }
 
 	for (int i = 0; i < diskMesh.boundaries.at(0).size(); i++)
-		diskMesh.boundaries.at(0).at(i) = fromDisk(diskMesh.boundaries.at(0).at(i)*cut_bd);
-
+		diskMesh.boundaries.at(0).at(i) = fromDisk(Complex(diskMesh.boundaries.at(0).at(i) * cut_bd)).z;
     return diskMesh;
 }
 
 SuperMesh HyperbolicPlane::superMesh(std::vector<std::pair<Complex, Complex>> geodesic_ends,
-    MaterialPhong &material, MaterialPhong &material_bd, MaterialPhong &material_geo, int radial_res, int vertical_res,
+    MaterialPhongConstColor &material, MaterialPhongConstColor &material_bd, MaterialPhongConstColor &material_geo, int radial_res, int vertical_res,
     float max_r, float cut_bd, BoundaryEmbeddingStyle style, BoundaryEmbeddingStyle geodesic_style) {
 
     PlanarMeshWithBoundary planar_mesh = mesh(radial_res, vertical_res, max_r, cut_bd);
@@ -129,7 +128,7 @@ SuperMesh HyperbolicPlane::superMesh(std::vector<std::pair<Complex, Complex>> ge
 }
 
 SuperPencilPlanar HyperbolicPlane::superPencil(std::vector<std::pair<Complex, Complex>> geodesic_ends,
-    MaterialPhong &material, MaterialPhong &material_bd, MaterialPhong &material_geo, int radial_res, int vertical_res,
+    MaterialPhongConstColor &material, MaterialPhongConstColor &material_bd, MaterialPhongConstColor &material_geo, int radial_res, int vertical_res,
     float max_r, float cut_bd, BoundaryEmbeddingStyle style, BoundaryEmbeddingStyle geodesic_style) {
 
     PlanarMeshWithBoundary planar_mesh = mesh(radial_res, vertical_res, max_r, cut_bd);

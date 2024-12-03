@@ -8,8 +8,8 @@
 #include <ranges>
 
 
-using std::vector, glm::vec2, glm::vec3, glm::vec4, glm::mat3, glm::mat4;
-using std::variant, std::string, std::optional, std::function;
+using std::vector, glm::vec2, glm::vec3, glm::vec4, glm::mat3, glm::mat4, glm::mat2, glm::mat2x3, glm::ivec2, glm::ivec3;
+using std::variant, std::string, std::optional;
 
 #define PI 3.14159265359f
 #define TAU 6.28318530718f
@@ -18,16 +18,20 @@ using std::variant, std::string, std::optional, std::function;
 #define PolyGroupID std::variant<int, std::string>
 #define Mat2C Matrix<Complex, 2>
 #define INT(x) static_cast<int>(x)
-#define End1P function<SpaceEndomorphism(float)>
-#define End2P function<SpaceEndomorphism(float, float)>
-#define maybeMaterial std::optional<MaterialPhong>
+#define End1P std::function<SpaceEndomorphism(float)>
+#define End2P std::function<SpaceEndomorphism(float, float)>
+#define maybeMaterial std::optional<MaterialPhongConstColor>
 #define Mob Matrix<Complex, 2>
+#define isClose nearlyEqual
+
+#define GEN_VEC(R) GenericTensor<R, R>
+#define GEN_MAT(R) GenericTensor<R, GEN_VEC(R)>
 
 namespace std {
-#define HOM(B,A) function<A(B)>
-#define BIHOM(A, B, C) function<C(A, B)>
+#define HOM(B,A) std::function<A(B)>
+#define BIHOM(A, B, C) std::function<C(A,B)>
 
-#define FUNC(B, ...) function<B(...)>
+#define FUNC(B, ...) std::function<B(...)>
 #define END(A) HOM(A, A)
 #define HOM$$(B,A) std::vector<HOM(B, A)>
 #define FUNC$$(B, A) std::vector<FUNC(B, A)>
@@ -43,15 +47,16 @@ namespace std {
 #define Foo22  HOM(vec2, vec2)
 #define Foo32  HOM(vec3, vec2)
 #define Foo23  HOM(vec2, vec3)
-#define Foo113 function<vec3(float, float)>
-#define Foo112 function<vec2(float, float)>
-#define Foo111 function<float(float, float)>
+#define Foo113 std::function<vec3(float, float)>
+#define Foo112 std::function<vec2(float, float)>
+#define Foo111 std::function<float(float, float)>
 #define betterInFamily(A) HOM(float, A)
 #define procrastinateIn(A) HOM(A, void)
 #define alboLeniwyAlboCwaniak HOM(void, void)
 #define pencilCurv betterInFamily(SmoothParametricCurve)
 #define pencilSurf betterInFamily(SmoothParametricSurface)
 #define Foo3Foo33  HOM(vec3, mat3)
+#define Foo2Foo22  HOM(glm::vec2, glm::mat2)
 #define COPROD(X, Y) std::variant<X, Y>
 #define PROD(X, Y) std::pair<X, Y>
 

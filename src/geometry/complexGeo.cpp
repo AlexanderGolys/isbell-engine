@@ -2,7 +2,7 @@
 #include <map>
 
 using namespace glm;
-using std::vector, std::string, std::map, std::shared_ptr, std::unique_ptr, std::pair, std::make_unique, std::make_shared;
+using std::vector, std::string, std::shared_ptr, std::unique_ptr, std::pair, std::make_unique, std::make_shared;
 
 ComplexCurve::ComplexCurve(std::function<Complex(float)> curve, float t0, float t1, float period, float epsilon)
 {
@@ -21,7 +21,7 @@ ComplexCurve::ComplexCurve(std::function<Complex(float)> curve, float t0, float 
 	});
 
 	this->N = std::make_unique<std::function<Complex(float)>>([this](float t) {
-		return Complex(normalise<vec2>((*ddf)(t))); });
+		return Complex(normalise<vec2>(tvec2<float>((*ddf)(t)))); });
 
 	this->period = period;
 }

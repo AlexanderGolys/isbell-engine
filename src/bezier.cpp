@@ -2,7 +2,6 @@
 #include "common/specific.hpp"
 #include <memory>
 #include <cmath>
-#include <stdlib.h>
 
 using namespace glm;
 using std::vector, std::string, std::map, std::shared_ptr, std::unique_ptr, std::pair, std::make_unique, std::make_shared;
@@ -65,9 +64,9 @@ int main(void) {
 	auto camCurve2 = make_shared<SmoothParametricCurve>([](float t) { return vec3(0); }, curveID, 0, TAU, true, .01);
 
 	shared_ptr<Camera> camera = make_shared<Camera>(camCurve, camCurve2, vec3(0, 0, 1));
-	auto lights = vector({std::make_shared<PointLight>(vec3(1, 4, 0), vec4(.90952795, .785579, .94197285861, 1), 9.0f),
-						  std::make_shared<PointLight>(vec3(1, 0, -3.1), vec4(.898769, .75369864, .903, 1), 9.0f),
-						  std::make_shared<PointLight>(vec3(-2, -.1, -4), vec4(.9698, .9292598, .9399785938, 1), 5.0f)});
+	auto lights = vector({std::make_shared<PointLightQuadric>(vec3(1, 4, 0), vec4(.90952795, .785579, .94197285861, 1), 9.0f),
+						  std::make_shared<PointLightQuadric>(vec3(1, 0, -3.1), vec4(.898769, .75369864, .903, 1), 9.0f),
+						  std::make_shared<PointLightQuadric>(vec3(-2, -.1, -4), vec4(.9698, .9292598, .9399785938, 1), 5.0f)});
 
 	auto midmat =  MaterialPhong(BLUE_PALLETTE[5], 0.031031423, .5962453956641656 , 0.21931160145739731, 50.0, "");
 	auto redmat =  MaterialPhong(REDPINK_PALLETTE[5], 0.031031423, .5962453956641656 , 0.21931160145739731, 50.0, "");

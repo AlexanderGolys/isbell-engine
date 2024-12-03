@@ -66,28 +66,33 @@ void main()
 //    vec4 c = bdColor;
 //    c.a = 1.;
 	vec3 normal = normalize(v_normal);
-//	if (v_uv.y >= t)
-//    {
-//       discard;
-//    }
-    float t= time*8.;
-	color = colorFactorFromSingleLight(light1, camPosition, v_position, normal,1*v_uv-1*v_color.zz*(t+0.1)) +
-			colorFactorFromSingleLight(light2, camPosition, v_position, normal,1*v_uv-1*v_color.zz*(t+0.1)) +
-			colorFactorFromSingleLight(light3, camPosition, v_position, normal,1*v_uv-1*v_color.zz*(t+0.1));
-    vec4 blue =vec4(.3, .4, .99, 1);
-    vec4 red = vec4(.9, .3, .3, 1);
-	vec4 color_blue = color*blue;
-	vec4 color_red = color *red;
 
-    color = color*.4;
-    color.a = 1.;
-    float collar = smoothstep(0.05,5+2*sin(t), v_color.z);
+    float t= time*4.;
+    if (v_color.x >= t/2)
+    {
+       discard;
+    }
+	color = colorFactorFromSingleLight(light1, camPosition, v_position, normal, 1.5*v_uv+0.5*vec2(-v_color.z, v_color.z)*t) +
+			colorFactorFromSingleLight(light2, camPosition, v_position, normal, 1.5*v_uv+0.5*vec2(-v_color.z, v_color.z)*t) +
+			colorFactorFromSingleLight(light3, camPosition, v_position, normal, 1.5*v_uv+0.5*vec2(-v_color.z, v_color.z)*t);
+
+	color.a = 1.;
+	vec4 red = vec4(.89, .4, .3, 1);
+	vec4 blue = vec4(.3, .5, .85, 1);
+	vec4 color_blue = min(color*blue*2, vec4(1));
+	vec4 color_red =  min(color*red*2, vec4(1));
+
+//	color = color*(.8+abs(v_color.w)/2);
+
+//	color = color*color*1.9;
+
+    float collar = smoothstep(0.1, 2, v_color.z);
     color = mix(color, color_red, collar);
-    collar = smoothstep(5+2*sin(t), 18, v_color.z);
+    collar = smoothstep(2, 10, v_color.z);
     color = mix(color, red, collar);
 
-    collar = smoothstep(.05, 3+2*cos(t), -v_color.z);
-    color = mix(color,color_blue, collar);
-    collar = smoothstep(3+2*cos(t),15, -v_color.z);
-    color = mix(color,blue, collar);
+    collar = smoothstep(.1, 2, -v_color.z);
+    color = mix(color, color_blue, collar);
+    collar = smoothstep(2,10, -v_color.z);
+    color = mix(color, blue, collar);
 }

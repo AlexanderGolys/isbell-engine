@@ -40,7 +40,9 @@ public:
 	Meromorphism(std::shared_ptr<endC> f, std::shared_ptr<endC> df);
 	Meromorphism(std::shared_ptr<endC> f, float eps); // todo
 	Complex operator()(Complex z) const;
+	Complex operator()(vec2 z) const { return (*_f)(Complex(z)); }
 	Complex df(Complex z) const;
+	Complex df(vec2 z) const { return (*_df)(Complex(z)); }
 	operator PlaneSmoothEndomorphism() const; // todo
 	Meromorphism compose(Meromorphism g) const;
 	Meromorphism operator+(Meromorphism g) const;

@@ -41,9 +41,9 @@ int main(void)
     shared_ptr<SmoothParametricCurve> lookCamCurve = make_shared<SmoothParametricCurve>([&curve](float t) { return vec3(cos(t+.1), 1.5*sin(t+.1), sin(5*t)/5.f); }, 0, TAU, .1, true, .01);
 
     shared_ptr<Camera> camera = make_shared<Camera>(camCurve, curve, [curve](float t){return vec3(0, 0, 1);}, PI/4);
-    auto lights = vector({std::make_shared<PointLight>(vec3(-0.4, -3, 2), vec4(.90952795, .785579, .94197285861, 1), 9.0f),
-                          std::make_shared<PointLight>(vec3(2, 3, 2.1), vec4(.898769, .75369864, .903, 1), 9.0f),
-                          std::make_shared<PointLight>(vec3(-4, -.1, -2), vec4(.9698, .9292598, .9399785938, 1), 9.0f)});
+    auto lights = vector({std::make_shared<PointLightQuadric>(vec3(-0.4, -3, 2), vec4(.90952795, .785579, .94197285861, 1), 9.0f),
+                          std::make_shared<PointLightQuadric>(vec3(2, 3, 2.1), vec4(.898769, .75369864, .903, 1), 9.0f),
+                          std::make_shared<PointLightQuadric>(vec3(-4, -.1, -2), vec4(.9698, .9292598, .9399785938, 1), 9.0f)});
 
     auto midmat1 = make_shared<Texture>("C:\\Users\\PC\\Desktop\\ogl-master\\src\\textures\\plastic1.bmp", 0, "texture_ambient");
     auto midmat2 = make_shared<Texture>("C:\\Users\\PC\\Desktop\\ogl-master\\src\\textures\\texture_red.bmp", 1, "texture_diffuse");

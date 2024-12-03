@@ -5,18 +5,15 @@
 
 #include <set>
 
-#include <glm/detail/_vectorize.hpp>
-#include <glm/detail/_vectorize.hpp>
-
 
 
 
 struct buff4x4 {
-    std::vector<glm::vec4> a, b, c, d;
+    std::vector<vec4> a, b, c, d;
 };
 
-inline glm::mat4 getMat(const buff4x4 &buff, int index) {
-  return glm::mat4(buff.a[index], buff.b[index], buff.c[index], buff.d[index]);
+inline mat4 getMat(const buff4x4 &buff, int index) {
+  return mat4(buff.a[index], buff.b[index], buff.c[index], buff.d[index]);
 }
 
 
@@ -44,7 +41,7 @@ inline size_t bufferElementSize(CommonBufferType type) { return type != INDEX ? 
 class BufferManager {
     std::unique_ptr<Stds> stds;
     std::unique_ptr<BUFF4> extra0;
-    std::unique_ptr<buff4x4> mater, extra;
+    std::unique_ptr<buff4x4> extra;
     std::unique_ptr<IBUFF3> indices;
     std::set<CommonBufferType> activeBuffers;
     void insertValueToSingleBuffer(CommonBufferType type, void *valueAddress);
@@ -58,8 +55,8 @@ public:
 
     BufferManager(BufferManager &&other) noexcept;
     BufferManager &operator=(BufferManager &&other) noexcept;
-    explicit BufferManager(std::set<CommonBufferType> activeBuffers = {POSITION, NORMAL, UV, COLOR, INDEX});
-    explicit BufferManager(bool materials,std::set<CommonBufferType> extras = {} );
+    explicit BufferManager(const std::set<CommonBufferType> &activeBuffers = {POSITION, NORMAL, UV, COLOR, INDEX});
+    explicit BufferManager(bool materials, const std::set<CommonBufferType> &extras = {} );
 
     int bufferLength(CommonBufferType type) const;
     size_t bufferSize(CommonBufferType type) const { return bufferLength(type) * bufferElementSize(type); }
@@ -69,12 +66,10 @@ public:
 
     int addTriangleVertexIndices(glm::ivec3 ind, int shift = 0);
 
-    int addStdAttributesFromVertex(glm::vec3 pos, glm::vec3 norm, glm::vec2 uv, glm::vec4 col);
+    int addStdAttributesFromVertex(vec3 pos, vec3 norm, vec2 uv, vec4 col);
     int addMaterialBufferData(const MaterialPhong &mat);
-    int addMaterialBufferData(glm::mat4 mat);
-    int addMaterialBufferData(glm::vec4 ambient, glm::vec4 diffuse, glm::vec4 specular, glm::vec4 intencity);
-    int addFullVertexData(glm::vec3 pos, glm::vec3 norm, glm::vec2 uv, glm::vec4 col, glm::mat4 mat, bool material=false);
-    int addFullVertexData(const Vertex &v, bool material=false);
+    int addFullVertexData(vec3 pos, vec3 norm, vec2 uv, vec4 col);
+    int addFullVertexData(const Vertex &v);
 
     void reserveSpace(int targetSize);
     void reserveSpaceForIndex(int targetSize) { indices->reserve(targetSize); }
@@ -82,25 +77,24 @@ public:
     void reserveAdditionalSpaceForIndex(int extraStorage) { reserveSpaceForIndex(bufferLength(INDEX) + extraStorage); }
     void initialiseExtraBufferSlot(int slot);
 
-    glm::vec3 getPosition(int index) const { return stds->positions[index]; }
-    glm::vec3 getNormal(int index) const { return stds->normals[index]; }
-    glm::vec2 getUV(int index) const { return stds->uvs[index]; }
-    glm::vec4 getColor(int index) const { return stds->colors[index]; }
-    glm::mat4 getMaterial(int index) const { return getMat(*mater, index); }
-    glm::vec4 getExtra(int index, int slot = 1) const;
+    vec3 getPosition(int index) const { return stds->positions[index]; }
+    vec3 getNormal(int index) const { return stds->normals[index]; }
+    vec2 getUV(int index) const { return stds->uvs[index]; }
+    vec4 getColor(int index) const { return stds->colors[index]; }
+    vec4 getExtra(int index, int slot = 1) const;
     float getExtraSlot(int index, int slot = 1, int component = 3) const { return getExtra(index, slot)[component]; }
     glm::ivec3 getFaceIndices(int index) const { return (*indices)[index]; }
     Vertex getVertex(int index) const { return Vertex(getPosition(index), getUV(index), getNormal(index), getColor(index)); }
 
-    void setPosition(int index, glm::vec3 value) { stds->positions[index] = value; }
-    void setNormal(int index, glm::vec3 value) { stds->normals[index] = value; }
-    void setUV(int index, glm::vec2 value) { stds->uvs[index] = value; }
-    void setColor(int index, glm::vec4 value) { stds->colors[index] = value; }
+    void setPosition(int index, vec3 value) { stds->positions[index] = value; }
+    void setNormal(int index, vec3 value) { stds->normals[index] = value; }
+    void setUV(int index, vec2 value) { stds->uvs[index] = value; }
+    void setColor(int index, vec4 value) { stds->colors[index] = value; }
     void setColor(int index, float value, int component) { stds->colors[index][component] = value; }
-    void setMaterial(int index, glm::mat4 value);
+    void setMaterial(int index, mat4 value);
 
-    void setExtra(int index, glm::vec4 value, int slot = 1);
-    void setExtra(int index, glm::vec3 value, int slot = 1);
+    void setExtra(int index, vec4 value, int slot = 1);
+    void setExtra(int index, vec3 value, int slot = 1);
     void setExtra(int index, float value, int slot = 1, int component = 3);
 };
 
@@ -113,29 +107,29 @@ class BufferedVertex {
   int index;
 public:
   BufferedVertex(BufferManager &bufferBoss, int index) : bufferBoss(bufferBoss), index(index) {}
-  BufferedVertex(const BufferedVertex &other) : bufferBoss(other.bufferBoss), index(other.index) {}
+  BufferedVertex(const BufferedVertex &other) = default;
   BufferedVertex(BufferedVertex &&other) noexcept : bufferBoss(other.bufferBoss), index(other.index) {}
-  BufferedVertex(BufferManager &bufferBoss, const Vertex &v, bool material);
+  BufferedVertex(BufferManager &bufferBoss, const Vertex &v);
 
   int getIndex() const { return index; }
-  glm::vec3 getPosition() const { return bufferBoss.getPosition(index); }
-  glm::vec3 getNormal() const { return bufferBoss.getNormal(index); }
-  glm::vec2 getUV() const { return bufferBoss.getUV(index); }
-  glm::vec4 getColor() const { return bufferBoss.getColor(index); }
-  glm::mat4 getMaterial() const { return bufferBoss.getMaterial(index); }
-  glm::vec4 getExtra(int slot = 1) const { return bufferBoss.getExtra(index, slot); }
+  vec3 getPosition() const { return bufferBoss.getPosition(index); }
+  vec3 getNormal() const { return bufferBoss.getNormal(index); }
+  vec2 getUV() const { return bufferBoss.getUV(index); }
+  vec4 getColor() const { return bufferBoss.getColor(index); }
+  vec4 getExtra(int slot = 1) const { return bufferBoss.getExtra(index, slot); }
   Vertex getVertex() const { return Vertex(getPosition(), getUV(), getNormal(), getColor()); }
 
-  void setPosition(glm::vec3 value) { bufferBoss.setPosition(index, value); }
-  void setNormal(glm::vec3 value) { bufferBoss.setNormal(index, value); }
-  void setUV(glm::vec2 value) { bufferBoss.setUV(index, value); }
-  void setColor(glm::vec4 value) { bufferBoss.setColor(index, value); }
+  void setPosition(vec3 value) { bufferBoss.setPosition(index, value); }
+  void setNormal(vec3 value) { bufferBoss.setNormal(index, value); }
+  void setUV(vec2 value) { bufferBoss.setUV(index, value); }
+  void setColor(vec4 value) { bufferBoss.setColor(index, value); }
   void setColor(float value, int i) { bufferBoss.setColor(index, value, i); }
-  void setMaterial(glm::mat4 value) { bufferBoss.setMaterial(index, value); }
-  void setExtra(glm::vec4 value, int slot = 1) { bufferBoss.setExtra(index, value, slot); }
-  void setExtra(glm::vec3 value, int slot = 1) { bufferBoss.setExtra(index, value, slot); }
+  void setMaterial(const mat4 &value) { bufferBoss.setMaterial(index, value); }
+  void setExtra(vec4 value, int slot = 1) { bufferBoss.setExtra(index, value, slot); }
+  void setExtra(vec3 value, int slot = 1) { bufferBoss.setExtra(index, value, slot); }
   void setExtra(float value, int slot = 1, int component = 3) { bufferBoss.setExtra(index, value, slot, component); }
   void applyFunction(const SpaceEndomorphism &f);
+  void setVertex(const Vertex &v) { setPosition(v.getPosition()); setUV(v.getUV()); setNormal(v.getNormal()); setColor(v.getColor()); }
 
 
 };
@@ -158,15 +152,15 @@ public:
   glm::ivec3 bufferIndices (const std::vector<BufferedVertex> &arrayWithinPoly) const;
   void addToBuffer(const std::vector<BufferedVertex> &arrayWithinPoly, BufferManager &bufferBoss);
   glm::ivec3 getLocalIndices() const { return indicesWithinPolygroup; }
-  glm::mat2 barMatrix(const std::vector<BufferedVertex> &arrayWithinPoly) const;
-  glm::mat3 orthonormalFrame(const std::vector<BufferedVertex> &arrayWithinPoly) const;
-  glm::vec3 fromPlanar(glm::vec2, const std::vector<BufferedVertex> &arrayWithinPoly) const;
-  glm::vec2 toPlanar(glm::vec3, const std::vector<BufferedVertex> &arrayWithinPoly) const;
-  glm::vec3 fromBars(glm::vec2, const std::vector<BufferedVertex> &arrayWithinPoly) const;
-  glm::vec2 toBars(glm::vec3, const std::vector<BufferedVertex> &arrayWithinPoly) const;
-  std::array<glm::vec3, 3> borderTriangle(float width, const std::vector<BufferedVertex> &arrayWithinPoly) const;
+  mat2 barMatrix(const std::vector<BufferedVertex> &arrayWithinPoly) const;
+  mat3 orthonormalFrame(const std::vector<BufferedVertex> &arrayWithinPoly) const;
+  vec3 fromPlanar(vec2, const std::vector<BufferedVertex> &arrayWithinPoly) const;
+  vec2 toPlanar(vec3, const std::vector<BufferedVertex> &arrayWithinPoly) const;
+  vec3 fromBars(vec2, const std::vector<BufferedVertex> &arrayWithinPoly) const;
+  vec2 toBars(vec3, const std::vector<BufferedVertex> &arrayWithinPoly) const;
+  std::array<vec3, 3> borderTriangle(float width, const std::vector<BufferedVertex> &arrayWithinPoly) const;
   Vertex getVertex(int i, const std::vector<BufferedVertex> &arrayWithinPoly) const { return arrayWithinPoly[indicesWithinPolygroup[i]].getVertex(); }
-  glm::vec3 faceNormal(const std::vector<BufferedVertex> &arrayWithinPoly) const { return glm::normalize(glm::cross(getVertex(1, arrayWithinPoly).getPosition() - getVertex(0, arrayWithinPoly).getPosition(), getVertex(2, arrayWithinPoly).getPosition() - getVertex(0, arrayWithinPoly).getPosition())); }
+  vec3 faceNormal(const std::vector<BufferedVertex> &arrayWithinPoly) const { return normalize(cross(getVertex(1, arrayWithinPoly).getPosition() - getVertex(0, arrayWithinPoly).getPosition(), getVertex(2, arrayWithinPoly).getPosition() - getVertex(0, arrayWithinPoly).getPosition())); }
 };
 
 
@@ -183,16 +177,16 @@ public:
 
     glm::ivec3 getVertexIndices() const { return bufferBoss.getFaceIndices(index); }
     Vertex getVertex(int i) const { return bufferBoss.getVertex(getVertexIndices()[i]); }
-    glm::mat2 barMatrix() const;
-    glm::mat3 orthonormalFrame() const;
-    glm::vec3 fromPlanar(glm::vec2 v) const;
-    glm::vec2 toPlanar(glm::vec3 v) const;
-    glm::vec3 fromBars(glm::vec2 v) const;
-    glm::vec2 toBars(glm::vec3 v) const;
-    std::array<glm::vec3, 3> borderTriangle(float width) const;
-    glm::vec3 faceNormal() const { return glm::normalize(glm::cross(getVertex(1).getPosition() - getVertex(0).getPosition(), getVertex(2).getPosition() - getVertex(0).getPosition())); }
-    glm::vec3 center() const { return (getVertex(0).getPosition() + getVertex(1).getPosition() + getVertex(2).getPosition()) / 3.f; }
-    float area() const { return 0.5f * glm::length(glm::cross(getVertex(1).getPosition() - getVertex(0).getPosition(), getVertex(2).getPosition() - getVertex(0).getPosition())); }
+    mat2 barMatrix() const;
+    mat3 orthonormalFrame() const;
+    vec3 fromPlanar(vec2 v) const;
+    vec2 toPlanar(vec3 v) const;
+    vec3 fromBars(vec2 v) const;
+    vec2 toBars(vec3 v) const;
+    std::array<vec3, 3> borderTriangle(float width) const;
+    vec3 faceNormal() const { return normalize(cross(getVertex(1).getPosition() - getVertex(0).getPosition(), getVertex(2).getPosition() - getVertex(0).getPosition())); }
+    vec3 center() const { return (getVertex(0).getPosition() + getVertex(1).getPosition() + getVertex(2).getPosition()) / 3.f; }
+    float area() const { return 0.5f * length(cross(getVertex(1).getPosition() - getVertex(0).getPosition(), getVertex(2).getPosition() - getVertex(0).getPosition())); }
 };
 
 
@@ -200,6 +194,7 @@ public:
 class SmoothParametricSurface;
 
 class WeakSuperMesh {
+protected:
   std::unique_ptr<BufferManager> boss;
   std::map<PolyGroupID, std::vector<BufferedVertex>> vertices = {};
   std::map<PolyGroupID, std::vector<IndexedTriangle>> triangles = {};
@@ -223,8 +218,10 @@ public:
 
 
   WeakSuperMesh(const SmoothParametricSurface &surf, int tRes, int uRes, const PolyGroupID &id);
+	WeakSuperMesh(const SmoothParametricSurface &surf, int tRes, int uRes) : WeakSuperMesh(surf, tRes, uRes, randomID()	) {}
   void addUniformSurface(const SmoothParametricSurface &surf, int tRes, int uRes, const PolyGroupID &id);
-	void merge (const WeakSuperMesh &other);
+	void addUniformSurface(const SmoothParametricSurface &surf, int tRes, int uRes) {return addUniformSurface(surf, tRes, uRes, randomID());}
+  void merge (const WeakSuperMesh &other);
   void* bufferIndexLocation() const { return boss->firstElementAddress(INDEX); }
   size_t bufferIndexSize() const { return boss->bufferSize(INDEX); }
   int bufferIndexLength() const { return boss->bufferLength(INDEX); }
@@ -235,20 +232,35 @@ public:
   BufferManager& getBufferBoss() const { return *boss; }
   bool isActive(CommonBufferType type) const { return boss->isActive(type); }
   bool hasGlobalTextures() const { return !isActive(MATERIAL1) && material->textured(); }
+  BufferedVertex& getAnyVertexFromPolyGroup(const PolyGroupID &id) { return vertices.at(id).front(); }
 
   void deformPerVertex(const PolyGroupID &id, const std::function<void(BufferedVertex&)> &deformation) { for (auto &v : vertices.at(id)) deformation(v);  }
+  void deformPerVertex(const std::function<void(BufferedVertex&)> &deformation) { for (auto id: getPolyGroupIDs()) for (auto &v : vertices.at(id)) deformation(v);  }
+  void deformPerVertex(const PolyGroupID &id, const std::function<void(int, BufferedVertex&)> &deformation);
+  void deformPerId(const std::function<void(BufferedVertex&, PolyGroupID)> &deformation) { for (auto id: getPolyGroupIDs()) for (auto &v : vertices.at(id)) deformation(v, id);  }
+
+  vec2 getSurfaceParameters(const BufferedVertex &v) const;
+  void encodeSurfacePoint(BufferedVertex &v, const SmoothParametricSurface &surf, vec2 tu);
+  void adjustToNewSurface(const SmoothParametricSurface &surf, const PolyGroupID &id);
+  void adjustToNewSurface(const SmoothParametricSurface &surf);
+
   void moveAlongVectorField(const PolyGroupID &id, VectorFieldR3 X, float delta=1);
   void deformWithAmbientMap(const PolyGroupID &id, SpaceEndomorphism f);
+  void deformWithAmbientMap(const SpaceEndomorphism &f) { for (auto id: getPolyGroupIDs()) deformWithAmbientMap(id, f); }
   void initGlobalTextures() {if (hasGlobalTextures()) material->initTextures();}
 
-  void affineTransform(const glm::mat3 &M, glm::vec3 v, const PolyGroupID &id) {deformWithAmbientMap(id, SpaceEndomorphism::affine(M, v));}
-  void affineTransform(const glm::mat3 &M, glm::vec3 v) {for (auto& name: getPolyGroupIDs()) affineTransform(M, v, name);}
-  void shift(glm::vec3 v, const PolyGroupID &id) { affineTransform(glm::mat3(1), v, id); }
-  void shift(glm::vec3 v) { affineTransform(glm::mat3(1), v); }
-  void scale(float s, const PolyGroupID &id) { affineTransform(glm::mat3(s), glm::vec3(0), id); }
-  void scale(float s) { affineTransform(glm::mat3(s), glm::vec3(0)); }
+  void affineTransform(const mat3 &M, vec3 v, const PolyGroupID &id) {deformWithAmbientMap(id, SpaceEndomorphism::affine(M, v));}
+  void affineTransform(const mat3 &M, vec3 v) {for (auto& name: getPolyGroupIDs()) affineTransform(M, v, name);}
+  void shift(vec3 v, const PolyGroupID &id) { affineTransform(mat3(1), v, id); }
+  void shift(vec3 v) { affineTransform(mat3(1), v); }
+  void scale(float s, const PolyGroupID &id) { affineTransform(mat3(s), vec3(0), id); }
+  void scale(float s) { affineTransform(mat3(s), vec3(0)); }
   void addGlobalMaterial(const MaterialPhong &mat) { material = std::make_shared<MaterialPhong>(mat); }
 
+  void flipNormals(const PolyGroupID &id) { deformPerVertex(id, [](BufferedVertex &v) { v.setNormal(-v.getNormal()); }); }
+  void flipNormals() { for (auto &name: getPolyGroupIDs()) flipNormals(name); }
+  void pointNormalsInDirection(vec3 dir, const PolyGroupID &id);
+  void pointNormalsInDirection(vec3 dir) { for (auto &name: getPolyGroupIDs()) pointNormalsInDirection(dir, name); }
 
 
   WeakSuperMesh subdivideBarycentric(const PolyGroupID &id) const;
@@ -259,23 +271,21 @@ public:
   std::vector<BufferedVertex> getBufferedVertices(const PolyGroupID &id) const { return vertices.at(id); }
   std::vector<glm::ivec3> getIndices(const PolyGroupID &id) const;
   std::vector<IndexedTriangle> getTriangles(const PolyGroupID &id) const { return triangles.at(id); }
-  glm::vec4 getIntencities() const { return material->compressIntencities(); }
+  vec4 getIntencities() const { return material->compressIntencities(); }
   MaterialPhong getMaterial() const { return *material; }
 
     template<typename T>
     T integrateOverTriangles(const std::function<T(const IndexedTriangle &)> &f, PolyGroupID id) const;
-    template<typename T>
-    T integrateOverTriangleCenters(const std::function<T(glm::vec3)> &f, PolyGroupID id) const;
-    glm::vec3 centerOfMass(PolyGroupID id) const;
-    glm::mat3 inertiaTensor(PolyGroupID id) const;
 
+    vec3 centerOfMass(PolyGroupID id) const;
+	mat3 inertiaTensorCM(PolyGroupID id) const;
+	mat3 inertiaTensor(PolyGroupID id, vec3 p) const;
 };
 
 
 
 std::function<void(float, float)> deformationOperator (const std::function<void(BufferedVertex&, float, float)> &deformation, WeakSuperMesh &mesh, const PolyGroupID &id);
 std::function<void(float)> deformationOperator (const std::function<void(BufferedVertex&, float)> &deformation, WeakSuperMesh &mesh, const PolyGroupID &id);
-
 std::function<void(float, float)> moveAlongCurve(const SmoothParametricCurve &curve, WeakSuperMesh &mesh, const PolyGroupID &id);
 
 template<typename T>
@@ -283,13 +293,5 @@ T WeakSuperMesh::integrateOverTriangles(const std::function<T(const IndexedTrian
     T sum = T(0);
     for (const IndexedTriangle &t: triangles.at(id))
         sum += f(t)*t.area();
-    return sum;
-}
-
-template<typename T>
-T WeakSuperMesh::integrateOverTriangleCenters(const std::function<T(glm::vec3)> &f, PolyGroupID id) const {
-    float sum = T(0);
-    for (const IndexedTriangle &t: triangles.at(id))
-        sum += f(t.center())*t.area();
     return sum;
 }

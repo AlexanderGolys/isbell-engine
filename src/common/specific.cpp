@@ -1,7 +1,36 @@
 
 #include "specific.hpp"
+
+#include <chrono>
+#include <chrono>
+#include <chrono>
+#include <chrono>
+#include <chrono>
+#include <chrono>
 #include <random>
 #include <chrono>
+#include <iosfwd>
+#include <iosfwd>
+#include <iosfwd>
+#include <iosfwd>
+#include <iosfwd>
+#include <iosfwd>
+#include <vector>
+#include <vector>
+#include <vector>
+#include <vector>
+#include <vector>
+#include <vector>
+#include <glm/detail/_vectorize.hpp>
+#include <glm/detail/_vectorize.hpp>
+#include <glm/detail/_vectorize.hpp>
+#include <glm/detail/_vectorize.hpp>
+#include <glm/detail/_vectorize.hpp>
+#include <glm/detail/_vectorize.hpp>
+#include <glm/detail/_vectorize.hpp>
+#include <glm/detail/_vectorize.hpp>
+#include <glm/detail/_vectorize.hpp>
+#include <glm/detail/_vectorize.hpp>
 
 using namespace glm;
 using std::vector, std::array;
@@ -31,7 +60,7 @@ PlanarMeshWithBoundary PlanarUnitDisk(int radial_res, int vertical_res)
                 vec2 p3 = vec2(cos(theta1) * h2, sin(theta1) * h2);
                 vec2 p4 = vec2(cos(theta2) * h2, sin(theta2) * h2);
 
-                trng.push_back(TriangleR2(p1, p2, p3));
+                trng.emplace_back(p1, p2, p3);
                 trng.push_back(TriangleR2(p4, p3, p2));
                 if (h == vertical_res - 1)
                     bd.push_back(p3);
@@ -223,7 +252,7 @@ SmoothParametricPlaneCurve LissajousCurve(float a, float b, float delta, float r
                 0, TAU, true, eps);
 }
 
-SuperCurve circle(float r, std::function<float(float)> w, const std::function<MaterialPhong(float)> &mat, int n, vec3 center, vec3 v1, vec3 v2, float eps) {
+SuperCurve circle(float r, std::function<float(float)> w, const std::function<MaterialPhongConstColor(float)> &mat, int n, vec3 center, vec3 v1, vec3 v2, float eps) {
     return SuperCurve(circle(r, center, v1, v2, eps), w, mat, n, 0, TAU, true);
 }
 
@@ -237,7 +266,7 @@ SmoothParametricCurve sphericalSpiral(float a, float r, float t_max, PolyGroupID
     return SmoothParametricCurve([a, r](float t) {return vec3(cos(t), sin(t), -a*t)*r/sqrt(1+a*a*t*t); },id,  -t_max, t_max, false, eps);
 }
 
-WeakSuperMesh singleTrig(vec3 v0, vec3 v1, vec3 v2, MaterialPhong &material, PolyGroupID id) {
+WeakSuperMesh singleTrig(vec3 v0, vec3 v1, vec3 v2, MaterialPhongConstColor &material, PolyGroupID id) {
     vec3 n = normalize(cross(v1 - v0, v2 - v0));
     vector nodes = {Vertex(v0, vec2(0, 0), n, BLACK, material),
                     Vertex(v1, vec2(0, 1), n, BLACK, material),
@@ -246,14 +275,14 @@ WeakSuperMesh singleTrig(vec3 v0, vec3 v1, vec3 v2, MaterialPhong &material, Pol
 }
 
 
-WeakSuperMesh singleTrig(vec3 v0, vec3 v1, vec3 v2, MaterialPhong &material1, MaterialPhong &material2, MaterialPhong &material3, PolyGroupID id) {
+WeakSuperMesh singleTrig(vec3 v0, vec3 v1, vec3 v2, MaterialPhongConstColor &material1, MaterialPhongConstColor &material2, MaterialPhongConstColor &material3, PolyGroupID id) {
     vec3 n = normalize(cross(v1 - v0, v2 - v0));
     vector nodes = {Vertex(v0, vec2(0, 0), n, BLACK, material1),
                     Vertex(v1, vec2(0, 1), n, BLACK, material2),
                     Vertex(v2, vec2(1, 1), n, BLACK, material3)};
     return WeakSuperMesh(nodes, {ivec3(0, 1, 2)}, id);
 }
-WeakSuperMesh singleQuadShadeSmooth(vec3 outer1, vec3 inner1, vec3 inner2, vec3 outer2, MaterialPhong &material,
+WeakSuperMesh singleQuadShadeSmooth(vec3 outer1, vec3 inner1, vec3 inner2, vec3 outer2, MaterialPhongConstColor &material,
                                     std::variant<int, std::string> id) {
     vec3 n1out = normalize(cross(outer1 - inner1, outer1 - inner2));
     vec3 n2out = normalize(cross(outer2 - inner2, outer2 - inner1));
@@ -268,7 +297,7 @@ WeakSuperMesh singleQuadShadeSmooth(vec3 outer1, vec3 inner1, vec3 inner2, vec3 
     return WeakSuperMesh(nodes, {ivec3(0, 1, 2), ivec3(3, 1, 2)}, id);
 }
 
-WeakSuperMesh singleQuadShadeFlat(vec3 outer1, vec3 inner1, vec3 inner2, vec3 outer2, MaterialPhong &material,
+WeakSuperMesh singleQuadShadeFlat(vec3 outer1, vec3 inner1, vec3 inner2, vec3 outer2, MaterialPhongConstColor &material,
                                   std::variant<int, std::string> id) {
     vec3 n1 = normalize(cross(outer1 - inner1, outer1 - inner2));
     vec3 n2 = normalize(cross(outer2 - inner2, outer2 - inner1));
@@ -282,8 +311,8 @@ WeakSuperMesh singleQuadShadeFlat(vec3 outer1, vec3 inner1, vec3 inner2, vec3 ou
     return WeakSuperMesh(nodes, {ivec3(0, 1, 2), ivec3(3, 4, 5)}, id);
 }
 
-WeakSuperMesh singleQuadShadeFlat(vec3 outer1, vec3 inner1, vec3 inner2, vec3 outer2, MaterialPhong &material1,
-                                  MaterialPhong &material2, std::variant<int, std::string> id) {
+WeakSuperMesh singleQuadShadeFlat(vec3 outer1, vec3 inner1, vec3 inner2, vec3 outer2, MaterialPhongConstColor &material1,
+                                  MaterialPhongConstColor &material2, std::variant<int, std::string> id) {
     vec3 n1 = normalize(cross(outer1 - inner1, outer1 - inner2));
     vec3 n2 = normalize(cross(outer2 - inner2, outer2 - inner1));
 
@@ -303,6 +332,16 @@ SmoothParametricSurface sphere(float r, vec3 center, float cutdown, float eps) {
 
 SmoothParametricSurface DupinCyclide(float a, float b, float d, float eps) {
 	return ellipse(a, b, PLANE_ORIGIN, eps).embedding().canal([a, b, d](float t){return d - cos(t)*sqrt(abs(a*a-b*b));});
+}
+
+SmoothParametricSurface disk(float r, vec3 center, vec3 v1, vec3 v2,float eps) {
+	auto w1 = normalise(v1);
+	auto w2 = normalise(v2);
+	return SmoothParametricSurface([r, center, w1, w2](float u, float v) { return center + (w1*cos(u) + w2*sin(u))*r; },  vec2(0, TAU), vec2(0, 1), false,true,  eps);
+}
+
+SmoothParametricSurface cylinder(float r, vec3 c1, vec3 c2, vec3 v1, vec3 v2, float eps) {
+	return  SmoothParametricSurface([r, c1, c2, v1, v2](float u, float v) { return c1 + (cos(u)*v1 + sin(u)*v2)*r + v*(c2 - c1); }, vec2(0, TAU), vec2(0, 1), true, false, eps);
 }
 
 inline WeakSuperMesh icosahedron(float r, vec3 center, std::variant<int, std::string> id) {
@@ -350,6 +389,7 @@ WeakSuperMesh icosphere(float r, int n, vec3 center, PolyGroupID id, vec4 color)
 
     auto normaliseVertices = [r, center, color](BufferedVertex &v) {
         v.setNormal(normalise(v.getPosition()));
+    	v.setUV(vec2(v.getPosition().y - v.getPosition().z, v.getPosition().x+ v.getPosition().z));
         v.setPosition(normalise(v.getPosition())*r + center);
     	v.setColor(color);
     };
@@ -358,7 +398,7 @@ WeakSuperMesh icosphere(float r, int n, vec3 center, PolyGroupID id, vec4 color)
     return unitSphere;
 }
 
-WeakSuperMesh disk3d(float r, glm::vec3 center, glm::vec3 v1, glm::vec3 v2, int radial_res, int vertical_res, const std::variant<int, std::string> &id) {
+WeakSuperMesh disk3d(float r, vec3 center, vec3 v1, vec3 v2, int radial_res, int vertical_res, const std::variant<int, std::string> &id) {
     auto vert = vector<Vertex>();
     vector<ivec3> inds = {};
     vec3 n = normalise(cross(v1, v2));
@@ -372,24 +412,24 @@ WeakSuperMesh disk3d(float r, glm::vec3 center, glm::vec3 v1, glm::vec3 v2, int 
                     vec2(i * 1.f / radial_res, h * 1.f / vertical_res), n, vec4(theta, 1.0 * h /vertical_res, 0, 0));
             }
     for (int i = 0; i < radial_res; i++)
-        inds.push_back(ivec3(0, i + 1, (i + 1) % radial_res + 1));
+        inds.emplace_back(0, i + 1, (i + 1) % radial_res + 1);
     for (int h = 1; h <= vertical_res - 1; h++)
         for (int i = 0; i < radial_res; i++)
         {
-            inds.push_back(ivec3(i + 1 + (h - 1) * radial_res, i + 1 + h * radial_res, (i + 1) % radial_res + 1 + h * radial_res));
-            inds.push_back(ivec3(i + 1 + (h - 1) * radial_res, (i + 1) % radial_res + 1 + h * radial_res, (i + 1) % radial_res + 1 + (h - 1) * radial_res));
+            inds.emplace_back(i + 1 + (h - 1) * radial_res, i + 1 + h * radial_res, (i + 1) % radial_res + 1 + h * radial_res);
+            inds.emplace_back(i + 1 + (h - 1) * radial_res, (i + 1) % radial_res + 1 + h * radial_res, (i + 1) % radial_res + 1 + (h - 1) * radial_res);
         }
     return WeakSuperMesh(vert, inds, id);
 }
 
-Disk3D::Disk3D(const std::vector<Vertex> &nodes, const std::vector<glm::ivec3> &faceInds, glm::vec3 center, glm::vec3 forward, glm::vec3 down, std::variant<int, std::string> id) :
+Disk3D::Disk3D(const std::vector<Vertex> &nodes, const std::vector<ivec3> &faceInds, vec3 center, vec3 forward, vec3 down, std::variant<int, std::string> id) :
     WeakSuperMesh(nodes, faceInds, id), center(center), forward(forward), down(down), normal(normalise(cross(forward, down))), radius(0) , id(id){
 
     setEmpiricalRadius();
     setColorInfo();
     }
 
-Disk3D::Disk3D(const char *filename, glm::vec3 center, glm::vec3 forward, glm::vec3 down, std::variant<int, std::string> id)
+Disk3D::Disk3D(const char *filename, vec3 center, vec3 forward, vec3 down, std::variant<int, std::string> id)
     : WeakSuperMesh(filename, id), center(center), forward(forward), down(down), normal(normalise(cross(forward, down))), radius(0), id(id) {
 
     setEmpiricalRadius();
@@ -397,7 +437,7 @@ Disk3D::Disk3D(const char *filename, glm::vec3 center, glm::vec3 forward, glm::v
 
 }
 
-Disk3D::Disk3D(float r, glm::vec3 center, glm::vec3 forward, glm::vec3 down, int radial_res, int vertical_res, const std::variant<int, std::string> &id) : WeakSuperMesh(disk3d(r, center, forward, down, radial_res, vertical_res, id)) {
+Disk3D::Disk3D(float r, vec3 center, vec3 forward, vec3 down, int radial_res, int vertical_res, const std::variant<int, std::string> &id) : WeakSuperMesh(disk3d(r, center, forward, down, radial_res, vertical_res, id)) {
     this->center = center;
     this->forward = forward;
     this->down = down;
@@ -406,8 +446,8 @@ Disk3D::Disk3D(float r, glm::vec3 center, glm::vec3 forward, glm::vec3 down, int
     this->id = id;
 }
 
-void Disk3D::move(glm::vec3 center, glm::vec3 forward, glm::vec3 down, bool scaleWidth) {
-    glm::vec3 delta = center - this->center;
+void Disk3D::move(vec3 center, vec3 forward, vec3 down, bool scaleWidth) {
+    vec3 delta = center - this->center;
 
     vec3 n = normalise(cross(forward, down));
     for (BufferedVertex &v: getBufferedVertices(id)) {
@@ -421,7 +461,7 @@ void Disk3D::move(glm::vec3 center, glm::vec3 forward, glm::vec3 down, bool scal
     this->normal = n;
 }
 
-float Disk3D::moveRotate(glm::vec3 center, glm::vec3 forward, glm::vec3 down) {
+float Disk3D::moveRotate(vec3 center, vec3 forward, vec3 down) {
     float distance = norm(center + down- this->center-this->down);
     float angle = distance / radius - asin(dot(normal, cross(this->down, down)));
     for (BufferedVertex &v: getBufferedVertices(id))
@@ -469,7 +509,87 @@ void Disk3D::setColorInfo() {
                                 dot(v.getPosition() - center, normal),
                                 dot(v.getPosition() - center, normal)/radius));
 }
-SmoothParametricCurve PLCurve(std::vector<glm::vec3> points) {
+
+SmoothParametricSurface cone(const SmoothParametricCurve &base, vec3 apex, float eps) {
+	return SmoothParametricSurface([base, apex](float u, float v) {return base(u) + v*(apex - base(u)); }, [base, apex](float u, float v) {return cross(base.tangent(u), apex - base(u)); }, [base, apex](float u, float v) {return cross(base.tangent(u), apex - base(u)); }, base.bounds(), vec2(0, 1), base.isPeriodic(), false, eps);
+}
+
+SmoothParametricSurface coneSide(float r, float h, vec3 center, vec3 v1, vec3 v2, vec3 dir, float eps) {
+	return cone(circle(r, center, v1, v2, eps), center + normalise(dir)*h, eps);
+}
+
+WeakSuperMesh arrow(vec3 start, vec3 head, float radius, float head_len, float head_radius, int radial, int straight, float eps, std::variant<int, std::string> id) {
+	vec3 direction     = normalise(head - start);
+	auto w  = orthogonalComplementBasis(direction);
+	vec3 w1  = w.first;
+	vec3 w2  = w.second;
+	auto id1 = randomID();
+	WeakSuperMesh mesh = WeakSuperMesh(WeakSuperMesh(cylinder(radius, start, head, w1, w2, eps), radial, straight, id1));
+	mesh.deformPerVertex(id1, [start, head](BufferedVertex &v) {
+		v.setColor(vec4(start, head.z));
+		v.setUV(vec2(head.x, head.y));
+	});
+	id1 = randomID();
+	mesh.addUniformSurface(coneSide(head_radius, head_len, head, w1, w2, direction, eps), radial, straight, id1);
+	mesh.deformPerVertex(id1, [start, head](BufferedVertex &v) {
+		v.setColor(vec4(start, head.z));
+		v.setUV(vec2(head.x, head.y));
+	});
+	id1 = randomID();
+	mesh.addUniformSurface( disk(head_radius, head, w1, w2, eps), radial,  straight, id1);
+	mesh.deformPerVertex(id1, [start, head](BufferedVertex &v) {
+		v.setColor(vec4(start, head.z));
+		v.setUV(vec2(head.x, head.y));
+	});
+	return mesh;
+}
+
+WeakSuperMesh drawArrows(const vector<vec3> &points, const vector<vec3> &directions, float radius, float head_len, float head_radius, int radial, int straight, float eps,
+						 const std::variant<int, std::string> &id) {
+	WeakSuperMesh mesh;
+	for (int i = 0; i < points.size(); i++)
+		mesh.merge(arrow(points[i], directions[i], radius, head_len, head_radius, radial, straight, eps,  randomID()));
+	return mesh;
+}
+
+WeakSuperMesh drawArrows(const vector<vec3> &points, const VectorFieldR3 &field, const std::function<float(float)>& radius,const std::function<float(float)>& len, const std::function<float(float)> &head_len, const std::function<float(float)> &head_radius,
+		int radial, int straight, float eps, const std::variant<int, std::string> &id) {
+	WeakSuperMesh mesh;
+	for (int i = 0; i < points.size(); i++) {
+		float size = length(field(points[i]));
+		mesh.merge(arrow(points[i], points[i]+field(points[i])*len(size), radius(size), head_len(size), head_radius(size), radial, straight, eps, randomID()));
+	}
+	return mesh;
+}
+
+WeakSuperMesh drawVectorFieldArrows(const VectorFieldR3 &field, const vector<vec3> &points, const std::function<float(float)>& len, const std::function<float(float)> &radius, const std::function<float(float)>& head_len,
+		const std::function<float(float)>& head_radius, int radial, int straight, float eps, const std::variant<int, std::string> &id) {
+	WeakSuperMesh mesh;
+	for (auto point : points) {
+		float s = norm(field(point));
+		mesh.merge(arrow(point, point + normalise(field(point))*len(s), radius(s), head_len(s), head_radius(s), radial, straight, eps, randomID()));
+	}
+	return mesh;
+}
+
+vec3 getArrayStart(const BufferedVertex &v) {
+	return vec3(v.getColor().x, v.getColor().y, v.getColor().z);
+}
+
+vec3 getArrayHead(const BufferedVertex &v) {
+	return vec3(v.getUV().x, v.getUV().y, v.getColor().w);
+}
+
+vec3 getArrayDirection(const BufferedVertex &v) {
+	return getArrayHead(v) - getArrayStart(v);
+}
+
+vec3 getArrayHead(const std::variant<int, std::string>& id, WeakSuperMesh &mesh) {return getArrayHead(mesh.getAnyVertexFromPolyGroup(id));}
+vec3 getArrayStart(const std::variant<int, std::string>& id, WeakSuperMesh &mesh) {return getArrayStart(mesh.getAnyVertexFromPolyGroup(id));}
+vec3 getArrayDirection(const std::variant<int, std::string>& id, WeakSuperMesh &mesh) {return getArrayDirection(mesh.getAnyVertexFromPolyGroup(id));}
+
+
+SmoothParametricCurve PLCurve(std::vector<vec3> points) {
 	return SmoothParametricCurve([points](float t) {
 		if (t<0) return points[0];
 		if (t>=points.size()-1) return points[points.size()-1];
@@ -477,4 +597,63 @@ SmoothParametricCurve PLCurve(std::vector<glm::vec3> points) {
 		float t1 = t - i;
 		return t1*points[i+1] + (1-t1)*points[i];
 	}, "PL", 0, points.size()-1, points[0]==points[points.size()-1], .01);
+}
+
+SmoothParametricPlaneCurve GernsterWave(float a, float b, float k, float c) {
+	return SmoothParametricPlaneCurve([a, b, k, c](float t) {
+		return vec2(a + ::exp(b*k)/k* ::sin(a*k + t*k*c),
+					b- ::exp(b*k)/k* ::cos(a*k + t*k*c)); }, 0, 1, false, .01);
+}
+
+VectorFieldR3 PousevillePlanarFlow(float h, float nabla_p, float mu, float v0, float eps) {
+	return VectorFieldR3([h, nabla_p, mu, v0](vec3 p) {return vec3(0,nabla_p/(2*mu)*p.z*(h-p.z) + v0*p.z/h, 0); }, eps);
+}
+
+VectorFieldR3 PousevillePipeFlow(float nabla_p, float mu, float c1, float c2, float eps) {
+	return VectorFieldR3([nabla_p, mu, c1, c2](vec3 p) {
+		float r = norm(p);
+		return vec3(-nabla_p*r*r/(4*mu) + c1* ::log(r) + c2); }, eps);
+}
+
+vec3 freeSurfaceComponent(float amplitude, float phase, vec2 waveNumber, float angFrequency, float h, vec2 ab, float t) {
+	float k     = norm(waveNumber);
+	float kx    = waveNumber.x;
+	float ky    = waveNumber.y;
+	float theta = kx*ab.x + ky*ab.y - angFrequency*t - phase;
+
+	return vec3(-kx/k*amplitude/tanh(k*h)*sin(theta),
+				-ky/k*amplitude/tanh(k*h)*sin(theta),
+				amplitude*cos(theta));
+}
+
+SurfaceParametricPencil freeSurface(vector<float> a_m, vector<float> phi_m, vector<vec2> k_m, vector<float> omega_m, float h) {
+	return SurfaceParametricPencil([a_m, phi_m, k_m, omega_m, h](float t, vec2 tu) {
+		vec3 sum = vec3(tu.x, tu.y, 0);
+		for (int i = 0; i < a_m.size(); i++)
+			sum += freeSurfaceComponent(a_m[i], phi_m[i], k_m[i], omega_m[i], h, tu, t);
+		return sum;
+	}, vec2(-0, PI), vec2(-0, PI));
+}
+
+WeakSuperMesh particles(int n, vec3 bound1, vec3 bound2, float radius) {
+	WeakSuperMesh mesh = WeakSuperMesh();
+	for (int i = 0; i < n; i++) {
+		vec3 pos  = randomUniform(bound1, bound2);
+		auto part = icosphere(radius, 1, pos, randomID(), vec4(pos, 0));
+		mesh.merge(part);
+	}
+	return mesh;
+}
+
+SmoothParametricCurve trefoil(float r, float R, float eps) {
+	return SmoothParametricCurve([r, R](float t) {return
+		vec3(r*cos(t) - R*cos(2*t),
+			r*sin(t) + R*sin(2*t),
+			R*sin(3*t)); }, "Trefoil", 0, TAU, true, eps);
+}
+ SmoothParametricCurve torusKnot23(float scale, float R, float eps) {
+	return SmoothParametricCurve([scale, R](float t)
+		{return vec3((R + cos(3 * t)) * cos(2 * t),
+			(R + cos(3 * t)) * sin(2 * t),
+			sin(3 * t))*scale; }, "TorusKnot23", 0, TAU, true, eps);
 }

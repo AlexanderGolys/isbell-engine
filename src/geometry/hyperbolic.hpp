@@ -10,7 +10,7 @@ Complex diskToPlane(Complex z);
 class PlanarMeshWithBoundary;
 class SuperMesh;
 class SuperPencilPlanar;
-class MaterialPhong;
+class MaterialPhongConstColor;
 struct BoundaryEmbeddingStyle;
 class TriangleComplex;
 class TriangularMesh;
@@ -34,12 +34,12 @@ public:
 	virtual float distance(Complex z0, Complex z1);
 	virtual PlanarMeshWithBoundary mesh(int radial_res, int vertical_res, float max_r, float cut_bd);
 
-	SuperMesh superMesh(std::vector<std::pair<Complex, Complex>> geodesic_ends, MaterialPhong &material,
-	                    MaterialPhong &material_bd, MaterialPhong &material_geo, int radial_res, int vertical_res,
+	SuperMesh superMesh(std::vector<std::pair<Complex, Complex>> geodesic_ends, MaterialPhongConstColor &material,
+	                    MaterialPhongConstColor &material_bd, MaterialPhongConstColor &material_geo, int radial_res, int vertical_res,
 	                    float max_r, float cut_bd, BoundaryEmbeddingStyle style, BoundaryEmbeddingStyle geodesic_style);
 
-	SuperPencilPlanar superPencil(std::vector<std::pair<Complex, Complex>> geodesic_ends, MaterialPhong &material,
-						MaterialPhong &material_bd, MaterialPhong &material_geo, int radial_res, int vertical_res,
+	SuperPencilPlanar superPencil(std::vector<std::pair<Complex, Complex>> geodesic_ends, MaterialPhongConstColor &material,
+						MaterialPhongConstColor &material_bd, MaterialPhongConstColor &material_geo, int radial_res, int vertical_res,
 						float max_r, float cut_bd, BoundaryEmbeddingStyle style, BoundaryEmbeddingStyle geodesic_style);
 
 	virtual HyperbolicPlane transform(Biholomorphism f) const;

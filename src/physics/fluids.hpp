@@ -1,72 +1,102 @@
 #pragma once
-#include <utility>
-
 #include "rigid.hpp"
 
-enum CELL_ATTRIBUTE {
-	VELOCITY="v",
-	PRESSURE="p",
-	TEMPERATURE="T",
-	ANGULAR_VELOCITY="omega",
-	ANGULAR_ACCELERATION="alpha",
-	FORCE="F",
-	TORQUE="tau",
-	MASS="m",
-	DENSITY="rho",
-	HEAT_CAPACITY="k",
-	EXTRA_FLOAT="extra1",
-	EXTRA_VEC2="extra2",
-	EXTRA_VEC3="extra3",
-	EXTRA_VEC4="extra4"
-};
 
-int cellAttributeSize(CELL_ATTRIBUTE a);
-int cellAttributeOffset(CELL_ATTRIBUTE a, std::vector<CELL_ATTRIBUTE> activeAttributes);
-int attributeVectorSize(std::vector<CELL_ATTRIBUTE> activeAttributes);
-
-
-
-class CellAttributeMatrix : public BigMatrix {
-	std::vector<CELL_ATTRIBUTE> activeAttributes;
-
+class FluidSimulation {
+protected:
+	HexVolumetricMeshWithBoundary mesh;
+	std::vector<BigVector> cellAttributes;
+	BIHOM(int, float, BigVector) cellAttributeChange;
+	BIHOM(BufferedVertex&, std::vector<float>&, void) updateBdWithCellIndex;
 public:
-	CellAttributeMatrix(int n, int m, std::vector<CELL_ATTRIBUTE> activeAttributes) : BigMatrix(n, attributeVectorSize(activeAttributes)), activeAttributes(std::move(activeAttributes)) {}
-	CellAttributeMatrix(int n, int m, MATR$X coefs,  std::vector<CELL_ATTRIBUTE> activeAttributes) : BigMatrix(coefs), activeAttributes(std::move(activeAttributes)) {}
+	FluidSimulation(const std::vector<ivec6> &hexahedra, const std::vector<glm::ivec4> &faces,
+		const std::vector<Vertex> &vertices, const std::vector<glm::ivec2> &faceNbhd,
+		const std::vector<int>& bdFaces,
+		const MATR$X& initialAttributes, BIHOM(int, float, BigVector) cellAttributeChange,
+		BIHOM(BufferedVertex&, std::vector<float>&, void) updateBdWithCellIndex);
+
+	FluidSimulation(HexVolumetricMeshWithBoundary mesh,
+		const MATR$X& initialAttributes, BIHOM(int, float, BigVector) cellAttributeChange,
+		BIHOM(BufferedVertex&, std::vector<float>&, void) updateBdWithCellIndex);
+
+	BigVector attributesWithNbhrs(int i) const;
+	BigVector meanVertexAttributes(int i) const;
+	void updateAttributes (float dt);
+
+	void updateBdMesh();
+	void update (float dt) { updateAttributes(dt); updateBdMesh(); }
+	std::shared_ptr<WeakSuperMesh> getBoundaryMesh() const { return mesh.boundary; }
+	BIHOM(float, float, void) updater() { return [this](float t, float dt) { this->update(dt); }; }
 };
 
 
-class CFDHexahedralMesh : public IndexedHexahedralVolumetricMesh {
-	std::vector<CELL_ATTRIBUTE> cellAttributes;
-	std::vector<CELL_ATTRIBUTE> cellUniforms;
-	int parameterSize() const { return attributeVectorSize(cellAttributes); }
-	MATR$X buffer;
-	std::vector<CellAttributeMatrix> localDeformations;
-
+class FluidSimulationFVM : public FluidSimulation {
+	std::vector<BigMatrix> attributeMatrices;
 public:
-	CFDHexahedralMesh(const std::vector<Vertex> &vertices, const std::vector<ivec8>& hexahedra, const std::vector<int> &bdFacesInd);
-	void updateBuffer(CELL_ATTRIBUTE, int i, float value);
-	void updateBuffer(CELL_ATTRIBUTE, int i, vec2 value);
-	void updateBuffer(CELL_ATTRIBUTE, int i, vec3 value);
-	void updateBuffer(CELL_ATTRIBUTE, int i, vec4 value);
-	void updateMatrix(int i, HOM(CellAttributeMatrix*, void) updateOperator);
-	void updateMatrices (BIHOM(CellAttributeMatrix*, int, void) updateOperators);
+	FluidSimulationFVM(const std::vector<ivec6> &hexahedra, const std::vector<glm::ivec4> &faces,
+		const std::vector<Vertex> &vertices, const std::vector<glm::ivec2> &faceNbhd,
+		const std::vector<int>& bdFaces,
+		const MATR$X& initialAttributes, std::vector<BigMatrix> attributeMatrices,
+		BIHOM(BufferedVertex&, std::vector<float>&, void) updateBdWithCellIndex);
+
+	FluidSimulationFVM(HexVolumetricMeshWithBoundary mesh,
+		const MATR$X& initialAttributes, std::vector<BigMatrix> attributeMatrices,
+		BIHOM(BufferedVertex&, std::vector<float>&, void) updateBdWithCellIndex);
+
+	FluidSimulationFVM(HexVolumetricMeshWithBoundary mesh,
+		HOM(HexahedronWithNbhd&, BigVector) initAttr, HOM(HexahedronWithNbhd&, BigMatrix) initMatrices,
+		BIHOM(BufferedVertex&, std::vector<float>&, void) updateBdWithCellIndex);
+
+};
+
+class IncompressibleCell {
+public:
+	bool isValid = true;
+	vec2 upleft, upright, downleft, downright;
+	bool upBd = false, downBd = false, leftBd = false, rightBd = false;
+	float density;
+	vec2 velocity;
+	float pressure;
+	vec2 pressureGradient;
+	float temperature;
+	float viscosity;
+	IncompressibleCell(vec2 upleft, vec2 upright, vec2 downleft, vec2 downright, float density, vec2 velocity, float pressure, float temperature, float viscosity, bool upBd=false, bool downBd=false, bool leftBd=false, bool rightBd=false) : upBd(upBd), downBd(downBd), leftBd(leftBd), rightBd(rightBd),
+        density(density), velocity(velocity), pressure(pressure), temperature(temperature), viscosity(viscosity) , upleft(upleft), upright(upright), downleft(downleft), downright(downright) {}
+
+	IncompressibleCell() : isValid(false),  density(0), velocity(vec2(0)), pressure(0), temperature(0), viscosity(0) {}
+	vector<float> toVector() const { return {density, velocity.x, velocity.y, pressure, temperature, viscosity}; }
+	float rho() const { return density; }
+	vec2 v() const { return velocity; }
+	float p() const { return pressure; }
+	float T() const { return temperature; }
+	float mu() const { return viscosity; }
+	vec2 corner(int i) const;
+	vec2 center() const;
+	bool valid() const { return isValid; }
+
+	void updateDensity(float newDensity) { density = newDensity; }
+	void updateVelocity(vec2 newVelocity) { velocity = newVelocity; }
+	void updatePressure(float newPressure) { pressure = newPressure; }
+	void updateTemperature(float newTemperature) { temperature = newTemperature; }
+	void updateViscosity(float newViscosity) { viscosity = newViscosity; }
+	void updateCell(const IncompressibleCell &newCell) { *this = newCell; }
+	void updatePressureGradient(vec2 newPressureGradient) { pressureGradient = newPressureGradient; }
 };
 
 
+class IncompressibleNewtonianFluid2D {
+	vector<IncompressibleCell> cells;
+	glm::ivec2 gridSize;
+	BigMatrix M;
 
 
-
-class FluidSimulationFVM {
-	CFDHexahedralMesh mesh;
-
-
-	float t=0;
-	HOM(float, HOM(HexahedronWithNbhd&, void)) __step;
-	void _step(float t) { mesh.applyPerCell(__step(t)); }
 public:
-	FluidSimulationFVM(CFDHexahedralMesh mesh, HOM(float, HOM(HexahedronWithNbhd&, void)) __step) : mesh(std::move(mesh)), forces(std::move(forces)), __step(std::move(__step)) {}
-	void step(float dt) {_step(dt); t+=dt;}
-
-
+	explicit IncompressibleNewtonianFluid2D(const vector<vector<IncompressibleCell>> &cells) :  cells(flatten(cells)), gridSize(cells.size(), cells[0].size()), M(6*gridSize.x*gridSize.y, 6*gridSize.x*gridSize.y) {}
+	void updateMatrix (float dt);
+	vec69 velocities_x_vector() const;
+	vec69 velocities_y_vector() const;
+	void updatePressuresGradients(const vec69 &pressures_x, const vec69 &pressures_y) {for (int i = 0; i < cells.size(); i++) cells[i].updatePressureGradient(vec2(pressures_x[i], pressures_y[i]));}
+	void updateVelocities(const vec69 &velocities_x, const vec69 &velocities_y) {for (int i = 0; i < cells.size(); i++) cells[i].updateVelocity(vec2(velocities_x[i], velocities_y[i]));}
+	void updateDensities(const vec69 &densities) {for (int i = 0; i < cells.size(); i++) cells[i].updateDensity(densities[i]);}
 
 };

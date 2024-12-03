@@ -24,7 +24,7 @@ void key_callback(GLFWwindow* window, int key, int scancode, int action, int mod
 
 GLuint bindVAO();
 void disableAttributeArrays(int how_many=4);
-glm::mat4 generateMVP(glm::vec3 camPosition, glm::vec3 camLookAt, glm::vec3 upVector, float fov, float aspectRatio, float clippingRangeMin, float clippingRangeMax, glm::mat4 modelTransform);
+mat4 generateMVP(vec3 camPosition, vec3 camLookAt, vec3 upVector, float fov, float aspectRatio, float clippingRangeMin, float clippingRangeMax, mat4 modelTransform);
 GLuint LoadShaders(const char* vertex_file_path, const char* fragment_file_path);
 void setUniformTextureSampler(GLuint programID, Texture* texture, int textureSlot);
 
@@ -56,7 +56,7 @@ public:
 	void hideCursorWithinWindow();
 	void stickyKeys(bool sticky);
 	void stickyMouseButtons(bool sticky);
-	void setCallbacks(GLFWkeyfun* keyCallback = nullptr, GLFWcharfun* charCallback = nullptr, GLFWmousebuttonfun* mouseButtonCallback = nullptr, GLFWcursorposfun* cursorPosCallback = nullptr, GLFWcursorenterfun* cursorEnterCallback = nullptr, GLFWscrollfun* scrollCallback = nullptr, GLFWdropfun* dropCallback = nullptr);
+	void setCallbacks(const GLFWkeyfun* keyCallback = nullptr, const GLFWcharfun* charCallback = nullptr, const GLFWmousebuttonfun* mouseButtonCallback = nullptr, GLFWcursorposfun* cursorPosCallback = nullptr, GLFWcursorenterfun* cursorEnterCallback = nullptr, GLFWscrollfun* scrollCallback = nullptr, GLFWdropfun* dropCallback = nullptr);
 	bool isOpen();
 
 	void renderFramebufferToScreen();
@@ -86,25 +86,25 @@ public:
 
 	Shader(const char* vertex_file_path, const char* fragment_file_path);
 	Shader(const char* vertex_file_path, const char* fragment_file_path, const char* geometry_file_path);
-	explicit Shader(std::string standard_file_path);
+	explicit Shader(const std::string &standard_file_path);
 	~Shader();
 	void use();
-	void initUniforms(std::map<std::string, GLSLType> uniforms);
+	void initUniforms(const std::map<std::string, GLSLType> &uniforms);
 
-	void setTextureSampler(Texture* texture, int textureSlot);
-	void setUniforms(std::map<std::string, const GLfloat*> uniformValues);
-	void setUniform(std::string uniformName, const GLfloat* uniformValue);
-	void setUniform(std::string uniformName, float uniformValue);
-	void setUniform(std::string uniformName, int uniformValue);
-	void setUniform(std::string uniformName, glm::vec2 uniformValue);
-	void setUniform(std::string uniformName, glm::vec3 uniformValue);
-	void setUniform(std::string uniformName, glm::vec4 uniformValue);
-	void setUniform(std::string uniformName, glm::mat2 uniformValue);
-	void setUniform(std::string uniformName, glm::mat3 uniformValue);
-	void setUniform(std::string uniformName, glm::mat4 uniformValue);
-	void setUniform(std::string uniformName, float x, float y);
-	void setUniform(std::string uniformName, float x, float y, float z);
-	void setUniform(std::string uniformName, float x, float y, float z, float w);
+	void setTextureSampler(const Texture* texture, int textureSlot) const;
+	void setUniforms(const std::map<std::string, const GLfloat*> &uniformValues);
+	void setUniform(const std::string &uniformName, const GLfloat* uniformValue);
+	void setUniform(const std::string &uniformName, float uniformValue);
+	void setUniform(const std::string &uniformName, int uniformValue);
+	void setUniform(const std::string &uniformName, vec2 uniformValue);
+	void setUniform(const std::string &uniformName, vec3 uniformValue);
+	void setUniform(const std::string &uniformName, vec4 uniformValue);
+	void setUniform(const std::string &uniformName, mat2 uniformValue);
+	void setUniform(const std::string &uniformName, mat3 uniformValue);
+	void setUniform(const std::string& uniformName, mat4 uniformValue);
+	void setUniform(const std::string& uniformName, float x, float y);
+	void setUniform(const std::string &uniformName, float x, float y, float z);
+	void setUniform(const std::string &uniformName, float x, float y, float z, float w);
 };
 
 class Camera {
@@ -116,29 +116,32 @@ public:
 	bool moving;
 	std::shared_ptr<SmoothParametricCurve> trajectory;
     std::shared_ptr<SmoothParametricCurve> lookAtFunc;
-    std::function<glm::vec3(float)> up;
-	glm::mat4 projectionMatrix;
+    std::function<vec3(float)> up;
+	mat4 projectionMatrix;
 
 	Camera();
 
-	Camera(glm::vec3 position, glm::vec3 lookAtPos, glm::vec3 upVector, float fov_x=PI/4, 
-		   float aspectRatio=16/9.f, float clippingRangeMin=.01f, float clippingRangeMax=100.f);
+	Camera(vec3 position, vec3 lookAtPos, vec3 upVector=vec3(0, 0, 1), float fov_x=PI/4,
+		   float aspectRatio=16/9.f, float clippingRangeMin=.001f, float clippingRangeMax=100.f);
 
-	Camera(const std::shared_ptr<SmoothParametricCurve> &trajectory, glm::vec3 lookAtPos, glm::vec3 upVector, float fov_x = PI / 4,
-	       float aspectRatio = 16 / 9.f, float clippingRangeMin=.01f, float clippingRangeMax=100.f);
+	Camera(float radius, float speed, float height, vec3 lookAtPos, vec3 upVector=vec3(0, 0, 1), float fov_x=PI/4,
+		   float aspectRatio=16/9.f, float clippingRangeMin=.001f, float clippingRangeMax=100.f);
 
-    Camera(const std::shared_ptr<SmoothParametricCurve> &trajectory, const std::shared_ptr<SmoothParametricCurve> &lookAtPos, glm::vec3 upVector, float fov_x = PI / 4,
+	Camera(const std::shared_ptr<SmoothParametricCurve> &trajectory, vec3 lookAtPos, vec3 upVector, float fov_x = PI / 4,
+	       float aspectRatio = 16 / 9.f, float clippingRangeMin=.001f, float clippingRangeMax=100.f);
+
+    Camera(const std::shared_ptr<SmoothParametricCurve> &trajectory, const std::shared_ptr<SmoothParametricCurve> &lookAtPos, vec3 upVector, float fov_x = PI / 4,
        float aspectRatio = 16 / 9.f, float clippingRangeMin=.01f, float clippingRangeMax=100.f);
 
-    Camera(const std::shared_ptr<SmoothParametricCurve> &trajectory, const std::shared_ptr<SmoothParametricCurve> &lookAtPos, const std::function<glm::vec3(float)> &upVector, float fov_x = PI / 4,
+    Camera(const std::shared_ptr<SmoothParametricCurve> &trajectory, const std::shared_ptr<SmoothParametricCurve> &lookAtPos, const std::function<vec3(float)> &upVector, float fov_x = PI / 4,
    float aspectRatio = 16 / 9.f, float clippingRangeMin=.01f, float clippingRangeMax=100.f);
 
-	glm::vec3 position(float t) { return trajectory->operator()(t); }
-    glm::vec3 lookAtPoint(float t) { return lookAtFunc->operator()(t); }
-    glm::vec3 upVector(float t) { return up(t); }
-	glm::mat4 mvp(float t, const glm::mat4 &modelTransform);
-	glm::mat4 viewMatrix(float t);
-	glm::mat4 vp(float t);
+	vec3 position(float t) { return trajectory->operator()(t); }
+    vec3 lookAtPoint(float t) { return lookAtFunc->operator()(t); }
+    vec3 upVector(float t) { return up(t); }
+	mat4 mvp(float t, const mat4 &modelTransform);
+	mat4 viewMatrix(float t);
+	mat4 vp(float t);
 };
 
 class Attribute {
@@ -188,7 +191,7 @@ public:
 	void initMaterialAttributes();
     void initElementBuffer();
 	void resetAttributeBuffers();
-	void initUnusualAttributes(std::vector<std::shared_ptr<Attribute>> attributes);
+	void initUnusualAttributes(const std::vector<std::shared_ptr<Attribute>>& attributes);
 	void loadStandardAttributes(); // 0:position, 1:normal, 2:color, 3:uv
     void loadElementBuffer();
 	void enableAttributes();
@@ -196,21 +199,20 @@ public:
 	void addCustomAction(const std::function<void(float)> &action);
 	bool superLoaded() const { return super != nullptr; }
     bool weakSuperLoaded() const { return weak_super != nullptr; }
-    void init(const std::shared_ptr<Camera> &cam, const std::vector<std::shared_ptr<PointLight>> &lights);
+    void init(const std::shared_ptr<Camera> &cam, const std::vector<Light> &lights);
     void initTextures();
     void bindTextures();
 
 	void addUniforms(const std::map<std::string, GLSLType> &uniforms, std::map<std::string, std::shared_ptr<std::function<void(float, std::shared_ptr<Shader>)>>> setters);
 	void addUniform(std::string uniformName, GLSLType uniformType, std::shared_ptr<std::function<void(float, std::shared_ptr<Shader>)>> setter);
 	void addConstFloats(const std::map<std::string, float>& uniforms);
-	void addConstVec4(const std::string& name, glm::vec4 value);
-	void addConstColor(std::string name, glm::vec4 value) { addConstVec4(name, value); }
+	void addConstVec4(const std::string& name, vec4 value);
+	void addConstColor(const std::string &name, vec4 value) { addConstVec4(name, value); }
 	void setUniforms(float t);
 
     void addCameraUniforms(const std::shared_ptr<Camera>& camera);
-	void addLightUniform(const std::shared_ptr<PointLight>& pointLight, int lightIndex=1);
-	void addLightsUniforms(const std::vector<std::shared_ptr<PointLight>> &lights);
-	void addMaterialUniform();
+	void addLightUniform(const Light &pointLight, int lightIndex = 1);
+	void addLightsUniforms(const std::vector<Light> &lights);
     void addTexturedMaterialUniforms();
 
 	void renderStep(float t);
@@ -220,60 +222,59 @@ public:
 class Renderer {
 private:
 	float frameOlderTimeThanThePublicOne = 0;
+	float since_last_scr = 0;
 
 public:
 	std::unique_ptr<Window> window;
 	GLuint vao;
 	std::vector<std::shared_ptr<RenderingStep>> renderingSteps;
 	std::shared_ptr<Camera> camera;
-	std::vector<std::shared_ptr<PointLight>> lights;
+	std::vector<Light> lights;
 	float time = 0;
     float dt = 0;
 	Fooo animSpeed;
-	glm::vec4 bgColor;
+	vec4 bgColor;
 	std::unique_ptr<std::function<void(float, float)>> perFrameFunction;
-	
+	std::string screenshotDirectory;
+	float screenshotPeriod = 10;
+	bool takeScreenshots = false;
 
-	explicit Renderer(float animSpeed=1.f, glm::vec4 bgColor=BLACK);
-
-	Renderer(	int width, int height, 
-				const char* title,
-				const std::shared_ptr<Camera> &camera,
-				const std::vector<std::shared_ptr<PointLight>> &lights,
-				const std::vector<std::shared_ptr<RenderingStep>>& renderingSteps,
-				float animSpeed=1.f, 
-				glm::vec4 bgColor=BLACK);
-
-	Renderer(	Resolution resolution, 
-				const char* title,
-				const std::shared_ptr<Camera> &camera,
-				const std::vector<std::shared_ptr<PointLight>> &lights,
-				const std::vector<std::shared_ptr<RenderingStep>>& renderingSteps,
-				float animSpeed=1.f, 
-				glm::vec4 bgColor=BLACK);
+	explicit Renderer(float animSpeed=1.f, vec4 bgColor=BLACK, const std::string &screenshotDirectory="screenshots/", float screenshotFrequency=-1);
 
 	~Renderer();
 	
 	void initMainWindow(int width, int height, const char* title);
 	void initMainWindow(Resolution resolution, const char* title);
 
+
+
+
+
 	void setCamera(const std::shared_ptr<Camera> &camera);
-	void setLights(const std::vector<std::shared_ptr<PointLight>> &lights);
+	void setLights(const std::vector<Light> &lights);
+	void setLightWithMesh(const Light &light, const MaterialPhong& material, const Shader &shader, float radius);
+	void setLightsWithMesh(const std::vector<Light> &lights, const MaterialPhong& material, const Shader &shader, float radius);
+	void setLightWithMesh(const Light &light, float ambient, float diff, float spec, float shine, const Shader &shader, float radius);
+	void setLightsWithMesh(const std::vector<Light> &lights, float ambient, float diff, float spec, float shine, const Shader &shader, float radius);
 
 	void addRenderingStep(std::shared_ptr<RenderingStep> renderingStep);
-	
+	void addMeshStep(const Shader& shader, const std::shared_ptr<WeakSuperMesh> &model, const MaterialPhong& material);
+
 	float initFrame();
 	float lastDeltaTime() const;
 
-	void addPerFrameUniforms(std::map<std::string, GLSLType> uniforms, std::map<std::string, std::shared_ptr<std::function<void(float, std::shared_ptr<Shader>)>>> setters);
-	void addPerFrameUniform(std::string uniformName, GLSLType uniformType, std::shared_ptr<std::function<void(float, std::shared_ptr<Shader>)>> setter);
-	void addConstUniforms(std::map<std::string, GLSLType> uniforms, std::map<std::string, std::shared_ptr<std::function<void(std::shared_ptr<Shader>)>>> setters);
-	void addConstUniform(std::string uniformName, GLSLType uniformType, std::shared_ptr<std::function<void(std::shared_ptr<Shader>)>> setter);
+	void addPerFrameUniforms(const std::map<std::string, GLSLType> &uniforms, std::map<std::string, std::shared_ptr<std::function<void(float, std::shared_ptr<Shader>)>>> setters);
+	void addPerFrameUniform(const std::string &uniformName, GLSLType uniformType, std::shared_ptr<std::function<void(float, std::shared_ptr<Shader>)>> setter);
+	void addConstUniforms(const std::map<std::string, GLSLType>& uniforms, std::map<std::string, std::shared_ptr<std::function<void(std::shared_ptr<Shader>)>>> setters);
+	void addConstUniform(const std::string &uniformName, GLSLType uniformType, std::shared_ptr<std::function<void(std::shared_ptr<Shader>)>> setter);
 	void addTimeUniform();
-	void addConstFloats(std::map<std::string, float> uniforms);
+	void addConstFloats(const std::map<std::string, float> &uniforms);
 	void addCustomAction(std::function<void(float)> action);
     void addCustomAction(std::function<void(float, float)> action);
 	void nonlinearSpeed(const Fooo &speed) { animSpeed = speed; }
+	void screenshot(const std::string &filename) const;
+	void screenshot() const;
+	void addSurfaceFamilyDeformer(SurfaceParametricPencil &pencil, WeakSuperMesh &surface);
 
 	void initRendering();
 	void renderAllSteps();

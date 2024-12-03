@@ -1,18 +1,46 @@
 #include "func.hpp"
+
+#include <chrono>
 #include <functional>
-#include <glm/detail/_vectorize.hpp>
-#include <glm/gtx/transform.hpp>
 #include <iosfwd>
 #include <iostream>
 #include <memory>
+#include <random>
 #include <utility>
 #include <vector>
+#include <glm/gtx/transform.hpp>
 
 using namespace glm;
 using std::vector, std::shared_ptr, std::make_shared, std::max, std::min;
 
 
 Regularity operator+(Regularity a, int b);
+
+int randomInt() {
+	auto seed = std::chrono::system_clock::now().time_since_epoch().count();
+	auto generator = std::default_random_engine(seed);
+	auto distribution = std::uniform_int_distribution<int>(0, 1215752192);
+	return distribution(generator);
+}
+
+long randomLong() {
+	auto seed = std::chrono::system_clock::now().time_since_epoch().count();
+	auto generator = std::default_random_engine(seed);
+	auto distribution = std::uniform_int_distribution<long>(0, 1000000000000000);
+	return distribution(generator);
+}
+
+float randomFloat(float a, float b) {
+	auto seed = std::chrono::system_clock::now().time_since_epoch().count()*randomInt();
+	auto generator = std::default_random_engine(seed);
+	auto distribution = std::uniform_real_distribution<float>(a, b);
+	return distribution(generator);
+}
+
+std::string randomString() {
+	return std::to_string(randomLong());
+}
+
 Regularity operator-(Regularity a, int b) { // NOLINT(*-no-recursion)
     if (b < 0)
         return a + (-b);
@@ -41,13 +69,13 @@ Foo21 partialDerivativeOperator(Foo21 f, int i, float epsilon) {
 }
 
 Foo33 derivativeOperator(const Foo31 &f, float epsilon) {
-    return [f, epsilon](glm::vec3 v) { return
-        glm::vec3(partialDerivativeOperator(f, 0, epsilon)(v), partialDerivativeOperator(f, 1, epsilon)(v), partialDerivativeOperator(f, 2, epsilon)(v)); };
+    return [f, epsilon](vec3 v) { return
+        vec3(partialDerivativeOperator(f, 0, epsilon)(v), partialDerivativeOperator(f, 1, epsilon)(v), partialDerivativeOperator(f, 2, epsilon)(v)); };
 }
 
 Foo22 derivativeOperator(const Foo21 &f, float epsilon) {
-    return [f, epsilon](glm::vec2 v) { return
-        glm::vec2(partialDerivativeOperator(f, 0, epsilon)(v), partialDerivativeOperator(f, 1, epsilon)(v)); };
+    return [f, epsilon](vec2 v) { return
+        vec2(partialDerivativeOperator(f, 0, epsilon)(v), partialDerivativeOperator(f, 1, epsilon)(v)); };
 }
 
 Foo13 derivativeOperator(const Foo13  &f, float epsilon) {
@@ -164,11 +192,43 @@ RealFunctionR3 RealFunctionR3::constant(float a) {
 
 
 
+RealFunctionR1 RealFunctionR1::operator+(const RealFunctionR1 &g) const { return RealFunctionR1([f=_f, g](float x) { return f(x) + g(x); },
+																								[df=_df, dg=g._df](float x) { return df(x) + dg(x); },
+																								[ddf=_ddf, ddg=g._ddf](float x) { return ddf(x) + ddg(x); }); }
 
+RealFunctionR1 RealFunctionR1::operator*(float a) const { return RealFunctionR1([f=_f, a](float x) { return f(x) * a; },
+																				[df=_df, a](float x) { return df(x) * a; },
+																				[ddf=_ddf, a](float x) { return ddf(x) * a; }); }
 
+RealFunctionR1 RealFunctionR1::operator+(float a) const { return RealFunctionR1([this, a](float x) {return this->_f(x) + a; },
+																				[this](float x) {return this->_df(x); },
+																				[this](float x) {return this->_ddf(x); }); }
 
+RealFunctionR1 RealFunctionR1::operator*(const RealFunctionR1 &g_) const { return RealFunctionR1(
+		[f=_f, g=g_._f](float x) { return f(x)*g(x); },
+		[f=_f, g=g_._f, df=_df, dg=g_._df](float x) { return f(x)*dg(x) + g(x)*df(x); },
+		[f=_f, g=g_._f, df=_df, dg=g_._df, ddf=_ddf, ddg=g_._ddf](float x) { return f(x)*ddg(x) + 2*df(x)*dg(x) + g(x)*ddf(x); }, eps); }
 
+RealFunctionR1 RealFunctionR1::operator/(const RealFunctionR1 &g_) const { return RealFunctionR1(
+		[f=_f, g=g_._f](float x) { return f(x)/g(x); },
+		[f=_f, g=g_._f, df=_df, dg=g_._df](float x) { return (f(x)*dg(x) - g(x)*df(x)) / (g(x)*g(x)); },
+		[f=_f, g=g_._f, df=_df, dg=g_._df, ddf=_ddf, ddg=g_._ddf](float x) {
+			return (ddf(x)*g(x)*g(x) - 2*df(x)*dg(x)*g(x) + f(x)*ddg(x)*g(x)*g(x) - f(x)*g(x)*g(x)*g(x)*g(x))/(g(x)*g(x)*g(x)*g(x)); }, eps); }
 
+RealFunctionR1 RealFunctionR1::operator&(const RealFunctionR1 &g_) const {
+	return RealFunctionR1([f=_f, g=g_._f](float x) { return f(g(x)); },
+						  [df=_df, dg=g_._df, g=g_._f](float x) { return df(g(x)) * dg(x); },
+						  [ddf=_ddf, ddg=g_._ddf, dg=g_._df, g=g_._f, df=_df](float x) { return ddf(g(x)) * dg(x) * dg(x) + df(g(x)) * ddg(x); });
+}
+
+RealFunctionR1 RealFunctionR1::monomial(int n) { if (n == 0) return constant(1); return RealFunctionR1([n](float x) { return ::pow(x, n); }, [n](float x) { return n * ::pow(x, n - 1); }, [n](float x) { return n * (n - 1) * ::pow(x, n - 2); }); }
+
+RealFunctionR1 RealFunctionR1::polynomial(std::vector<float> coeffs) {
+	if (coeffs.size() == 1) return constant(coeffs[0]);
+	std::vector<float> c_lower = rangeFrom(coeffs, 1);
+	int degree                 = coeffs.size() - 1;
+	return monomial(degree) * coeffs[0] + polynomial(c_lower);
+}
 
 PlaneSmoothEndomorphism::PlaneSmoothEndomorphism() {
 	_f = make_shared<std::function<vec2(vec2)>>([](vec2 v) {return v; });
@@ -278,7 +338,7 @@ SpaceAutomorphism SpaceAutomorphism::rotation(vec3 axis, float angle) {
 VectorFieldR3::VectorFieldR3() {
     _X = [](vec3 v) { return vec3(0, 0, 0); };
 }
-VectorFieldR3::VectorFieldR3(Foo33 X, float eps) : _X(X), eps(eps) {
+VectorFieldR3::VectorFieldR3(Foo33 X, float eps) : _X(std::move(X)), eps(eps) {
     RealFunctionR3 Fx = RealFunctionR3([X=_X](vec3 x) { return X(x).x;}, eps);
     RealFunctionR3 Fy = RealFunctionR3([X=_X](vec3 x) { return X(x).y;}, eps);
     RealFunctionR3 Fz = RealFunctionR3([X=_X](vec3 x) { return X(x).z;}, eps);

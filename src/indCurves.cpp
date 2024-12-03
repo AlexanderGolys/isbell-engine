@@ -6,7 +6,7 @@
 
 
 using namespace glm;
-using std::vector, std::string, std::map, std::shared_ptr, std::unique_ptr, std::pair, std::make_unique, std::make_shared;
+using std::vector, std::string,  std::shared_ptr, std::unique_ptr, std::pair, std::make_unique, std::make_shared;
 
 #define spec_uni make_shared<std::function<void(float, shared_ptr<Shader>)>>
 #define setter_uni shared_ptr<std::function<void(float, shared_ptr<Shader>)>>
@@ -40,9 +40,9 @@ int main(void)
     float camSpeed = 1.5/4;
 	shared_ptr<SmoothParametricCurve> camCurve = make_shared<SmoothParametricCurve>([camSpeed](float t) { return vec3(sin(t*camSpeed)*sqrt(8), -cos(t*camSpeed)*2, -cos(t*camSpeed)*2); }, 0, TAU, .1, true, .01);
     shared_ptr<Camera> camera = make_shared<Camera>(camCurve, vec3(0.0, 0.0, 0), vec3(0, 0, 1), PI/4);
-    auto lights = vector({std::make_shared<PointLight>(vec3(-0.4, -3, 2), vec4(.0952795, .785579, .4197285861, 1), 15.0f),
-                          std::make_shared<PointLight>(vec3(0, -2, 2.1), vec4(.898769, .75369864, .03, 1), 15.0f),
-                          std::make_shared<PointLight>(vec3(2, -1, -2), vec4(.698, .292598, .39785938, 1), 15.0f)});
+    auto lights = vector({std::make_shared<PointLightQuadric>(vec3(-0.4, -3, 2), vec4(.0952795, .785579, .4197285861, 1), 15.0f),
+                          std::make_shared<PointLightQuadric>(vec3(0, -2, 2.1), vec4(.898769, .75369864, .03, 1), 15.0f),
+                          std::make_shared<PointLightQuadric>(vec3(2, -1, -2), vec4(.698, .292598, .39785938, 1), 15.0f)});
 
     auto tex1 = make_shared<Texture>("C:\\Users\\PC\\Desktop\\ogl-master\\src\\textures\\texture1.bmp", 0, "texture_ambient", true);
     auto tex2 = make_shared<Texture>("C:\\Users\\PC\\Desktop\\ogl-master\\src\\textures\\texture_red.bmp", 1, "texture_diffuse");

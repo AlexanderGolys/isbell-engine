@@ -75,7 +75,8 @@ SmoothParametricCurve::SmoothParametricCurve(Foo13 f,Foo13 df,  Foo13 ddf, PolyG
     this->id = id;
 }
 
-SmoothParametricCurve::SmoothParametricCurve(Foo13 f, Foo13 df, PolyGroupID id, float t0, float t1, bool periodic, float epsilon) : SmoothParametricCurve(f, df, derivativeOperator(df, epsilon), id, t0, t1, periodic, epsilon) {}
+SmoothParametricCurve::SmoothParametricCurve(Foo13 f, Foo13 df, PolyGroupID id, float t0, float t1, bool periodic, float epsilon)
+: SmoothParametricCurve(f, df, derivativeOperator(df, epsilon), id, t0, t1, periodic, epsilon) {}
 
 
 
@@ -85,7 +86,7 @@ SmoothParametricCurve::SmoothParametricCurve(const SmoothParametricCurve &other)
 
 SmoothParametricCurve::SmoothParametricCurve(SmoothParametricCurve &&other) noexcept :
     _f(std::move(other._f)), _df(std::move(other._df)), _ddf(std::move(other._ddf)), _der_higher(std::move(other._der_higher)),
-    eps(other.eps), t0(std::move(other.t0)), t1(std::move(other.t1)), periodic(other.periodic), id(other.id) {}
+    eps(other.eps), t0(other.t0), t1(std::move(other.t1)), periodic(other.periodic), id(other.id) {}
 
 SmoothParametricCurve &SmoothParametricCurve::operator=(const SmoothParametricCurve &other) {
     if (this == &other)
@@ -350,7 +351,7 @@ void TriangulatedImplicitSurface::removeDegeneratePolygons() {
 		}
 	}
 }
-ImplicitSurfacePoint TriangulatedImplicitSurface::findNearbyPoint(glm::vec3 p) const {
+ImplicitSurfacePoint TriangulatedImplicitSurface::findNearbyPoint(vec3 p) const {
 	for (int i = 0; i < max_iter; i++) {
 		vec3 next = p - F(p)*F.df(p)/norm2(F.df(p));
 		if (norm(next - p) < eps) {
