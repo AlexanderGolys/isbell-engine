@@ -39,7 +39,7 @@ class RK4 : public ODESolver<vec3> {
 	vec69 b = {0, 1.f/8, 3.f/8, 3.f/8, 1.f/8};
 	float h;
 public:
-	RK4(const BIHOM(float, vec3, vec3) &f, float t0, const vec3 &initial, float h) : ODESolver<vec3>(f, t0, initial), h(h) {}
+	RK4( BIHOM(float, vec3, vec3) &f, float t0, const vec3 &initial, float h) : ODESolver<vec3>(f, t0, initial), h(h) {}
 	float getStep() override { return h; }
 	void computeStep() override;
 	void solveUpTo(float t1);

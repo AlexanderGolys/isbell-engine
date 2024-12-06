@@ -657,6 +657,37 @@ vec3 randomUniform(vec3 a, vec3 b) {
 	return vec3(randomUniform(a.x, b.x), randomUniform(a.y, b.y), randomUniform(a.z, b.z));
 }
 
+float rotationAngle(const mat3 &M) {
+	return acos(rotationCosAngle(M));
+}
+
+float rotationCosAngle(mat3 M) {
+	return (M[0][0] + M[1][1] + M[2][2] - 1) / 2;
+}
+
+vec3 rotationAxis(mat3 M) {
+	float sinAngle = sqrt(1-pow(rotationCosAngle(M), 2));
+	return vec3(M[2][1] - M[1][2], M[0][2] - M[2][0], M[1][0] - M[0][1]) / (2 * sinAngle);
+}
+
+mat3 spinTensor(vec3 omega) {
+	return mat3(0, -omega.z, omega.y, omega.z, 0, -omega.x, -omega.y, omega.x, 0);
+}
+
+mat3 rotationMatrix(vec3 axis, float angle) {
+	vec3 n   = normalise(axis);
+	float nx = n.x;
+	float ny = n.y;
+	float nz = n.z;
+
+	return mat3(
+			cos(angle) + nx * nx * (1 - cos(angle)), nx * ny * (1 - cos(angle)) - nz * sin(angle), nx * nz * (1 - cos(angle)) + ny * sin(angle),
+			ny * nx * (1 - cos(angle)) + nz * sin(angle), cos(angle) + ny * ny * (1 - cos(angle)), ny * nz * (1 - cos(angle)) - nx * sin(angle),
+			nz * nx * (1 - cos(angle)) - ny * sin(angle), nz * ny * (1 - cos(angle)) + nx * sin(angle), cos(angle) + nz * nz * (1 - cos(angle)));
+}
+
+mat3 rotationMatrix(vec3 omega) { return rotationMatrix(normalise(omega), length(omega)); }
+
 
 vec3 projectVectorToPlane(vec3 v, vec3 n) {
 	return v - dot(v, n) * n;

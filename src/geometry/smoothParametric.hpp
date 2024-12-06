@@ -219,6 +219,8 @@ inline SmoothParametricSurface ruledSurfaceJoinU(const SmoothParametricCurve &c1
 SmoothParametricSurface bilinearSurface(const vec3 &p00, const vec3 &p01, const vec3 &p10, const vec3 &p11, vec2 t_range, vec2 u_range);
 SmoothParametricSurface CoonsPatch(const SmoothParametricCurve &cDown, const SmoothParametricCurve &cLeft, const SmoothParametricCurve &cUp, const SmoothParametricCurve &cRight);
 SmoothParametricSurface cone(const SmoothParametricCurve &c, float h, float r);
+SmoothParametricSurface polarCone(const SmoothParametricCurve &r, vec3 center);
+
 
 inline SmoothParametricSurface CoonsPatchDisjoint(const SmoothParametricCurve &c1, const SmoothParametricCurve &c2) {
 	SmoothParametricCurve c_bd=SmoothParametricCurve::span(c1(c1.bounds().x), c2(c2.bounds().x));

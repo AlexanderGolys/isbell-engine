@@ -60,6 +60,7 @@ SuperCurve circle(float r, std::function<float(float)> w, const std::function<Ma
 
 WeakSuperMesh singleTrig(vec3 v0, vec3 v1, vec3 v2, MaterialPhong &material, PolyGroupID id);
 WeakSuperMesh singleTrig(vec3 v0, vec3 v1, vec3 v2, MaterialPhong &material1, MaterialPhong &material2, MaterialPhong &material3, PolyGroupID id);
+WeakSuperMesh singleTrig(vec3 v0, vec3 v1, vec3 v2, PolyGroupID id);
 
 WeakSuperMesh singleQuadShadeSmooth(vec3 outer1, vec3 inner1, vec3 inner2, vec3 outer2, MaterialPhong &material, PolyGroupID id);
 WeakSuperMesh singleQuadShadeSmooth(vec3 outer1, vec3 inner1, vec3 inner2, vec3 outer2,
@@ -71,6 +72,9 @@ WeakSuperMesh singleQuad(vec3 outer1, vec3 inner1, vec3 inner2, vec3 outer2, Mat
 WeakSuperMesh icosahedron(float r, vec3 center, PolyGroupID id);
 WeakSuperMesh icosphere(float r, int n, vec3 center, PolyGroupID id, vec4 color=BLACK);
 WeakSuperMesh disk3d(float r, vec3 center, vec3 v1, vec3 v2, int radial_res, int vertical_res, const PolyGroupID &id);
+
+WeakSuperMesh singleQuadShadeFlat(vec3 outer1, vec3 inner1, vec3 inner2, vec3 outer2, PolyGroupID id);
+
 
 
 
@@ -147,3 +151,4 @@ SurfaceParametricPencil freeSurface(vector<float> a_m, vector<float> phi_m, vect
 
 
 WeakSuperMesh particles(int n, vec3 bound1, vec3 bound2, float radius);
+WeakSuperMesh box(vec3 size, vec3 center,PolyGroupID id);

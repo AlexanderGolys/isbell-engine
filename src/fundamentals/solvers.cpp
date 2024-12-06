@@ -2,7 +2,7 @@
 
 
 
-vector<vector<vec3>> developSolutionsAlongCurve(const BIHOM(float, vec3, vec3) &f, float t0,
+vector<vector<vec3>> developSolutionsAlongCurve( BIHOM(float, vec3, vec3) &f, float t0,
 													   const vector<vec3> &initials, int iters, float h) {
 	vector<vector<vec3>> solutions = {};
 
@@ -16,7 +16,7 @@ vector<vector<vec3>> developSolutionsAlongCurve(const BIHOM(float, vec3, vec3) &
 
 
 
-vector<vector<vec3>> developSolutionsAlongCurve(const BIHOM(float, vec3, vec3) &f, float t0, float t1,
+vector<vector<vec3>> developSolutionsAlongCurve( BIHOM(float, vec3, vec3) &f, float t0, float t1,
 													   const vector<vec3> &initials, int iters) {
 	vector<vector<vec3>> solutions = {};
 	float h = (t1 - t0) / iters;

@@ -222,6 +222,8 @@ public:
   void addUniformSurface(const SmoothParametricSurface &surf, int tRes, int uRes, const PolyGroupID &id);
 	void addUniformSurface(const SmoothParametricSurface &surf, int tRes, int uRes) {return addUniformSurface(surf, tRes, uRes, randomID());}
   void merge (const WeakSuperMesh &other);
+	void mergeAndKeepID(const WeakSuperMesh &other);
+
   void* bufferIndexLocation() const { return boss->firstElementAddress(INDEX); }
   size_t bufferIndexSize() const { return boss->bufferSize(INDEX); }
   int bufferIndexLength() const { return boss->bufferLength(INDEX); }
@@ -274,10 +276,18 @@ public:
   vec4 getIntencities() const { return material->compressIntencities(); }
   MaterialPhong getMaterial() const { return *material; }
 
+	vector<int> findNeighbours(int i, const PolyGroupID &id) const;
+	vector<int> findNeighboursSorted(int i, const PolyGroupID &id) const;
+	bool checkIfHasCompleteNeighbourhood(int i, const PolyGroupID &id) const;
+	float meanCurvature(int i, const PolyGroupID &id) const;
+	void meanCurvatureFlowDeform(float dt, const PolyGroupID &id);
+
     template<typename T>
     T integrateOverTriangles(const std::function<T(const IndexedTriangle &)> &f, PolyGroupID id) const;
 
     vec3 centerOfMass(PolyGroupID id) const;
+	vec3 centerOfMass() const;
+
 	mat3 inertiaTensorCM(PolyGroupID id) const;
 	mat3 inertiaTensor(PolyGroupID id, vec3 p) const;
 };

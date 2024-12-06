@@ -4,8 +4,8 @@
 
 
 class TriangulatedManifold : public WeakSuperMesh {
-	vector<glm::ivec2> edgesVert;
-	vector<glm::ivec3> facesEdg;
+	vector<ivec2> edgesVert;
+	vector<ivec3> facesEdg;
 	PolyGroupID id;
 
 public:

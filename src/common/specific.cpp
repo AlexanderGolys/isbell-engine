@@ -236,6 +236,15 @@ SmoothParametricPlaneCurve exoid(float r, float eps) { return hypocycloid(r, 6*r
 SmoothParametricCurve circle(float r, vec3 center, vec3 v1, vec3 v2, float eps) {
     return circle(r, PLANE_ORIGIN, eps).embedding(v1, v2, center);
 }
+
+WeakSuperMesh singleTrig(vec3 v0, vec3 v1, vec3 v2, std::variant<int, std::string> id) {
+	vec3 normal          = normalize(cross(v1 - v0, v2 - v0));
+	vector<Vertex> nodes = {Vertex(v0, vec2(0, 0), normal),
+							Vertex(v1, vec2(1, 0), normal),
+							Vertex(v2, vec2(0, 1), normal)};
+	return WeakSuperMesh(nodes, {{0, 1, 2}}, id);
+}
+
 SmoothParametricCurve VivaniCurve(float r, float eps) {
     return SmoothParametricCurve(
                 [r](float t) {return vec3(r*(1+cos(t)), r*sin(t), 2*r*sin(t/2)); },
@@ -420,6 +429,15 @@ WeakSuperMesh disk3d(float r, vec3 center, vec3 v1, vec3 v2, int radial_res, int
             inds.emplace_back(i + 1 + (h - 1) * radial_res, (i + 1) % radial_res + 1 + h * radial_res, (i + 1) % radial_res + 1 + (h - 1) * radial_res);
         }
     return WeakSuperMesh(vert, inds, id);
+}
+
+WeakSuperMesh singleQuadShadeFlat(vec3 outer1, vec3 inner1, vec3 inner2, vec3 outer2, std::variant<int, std::string> id) {
+	vec3 normal          = normalize(cross(outer1 - outer2, outer1 - inner1));
+	vector<Vertex> nodes = {Vertex(inner1, vec2(0, 0), normal),
+							Vertex(inner2, vec2(1, 0), normal),
+							Vertex(outer1, vec2(0, 1), normal),
+							Vertex(outer2, vec2(1, 1), normal)};
+	return WeakSuperMesh(nodes, {{0, 1, 2}, {3, 1, 2}}, id);
 }
 
 Disk3D::Disk3D(const std::vector<Vertex> &nodes, const std::vector<ivec3> &faceInds, vec3 center, vec3 forward, vec3 down, std::variant<int, std::string> id) :
@@ -643,6 +661,20 @@ WeakSuperMesh particles(int n, vec3 bound1, vec3 bound2, float radius) {
 		mesh.merge(part);
 	}
 	return mesh;
+}
+
+WeakSuperMesh box(vec3 size, vec3 center, std::variant<int, std::string> id) {
+	float dx        = size.x/2;
+	float dy        = size.y/2;
+	float dz        = size.z/2;
+	WeakSuperMesh b = singleQuadShadeFlat(center+vec3(dx, -dy, -dz), center+vec3(dx, -dy, dz), center+vec3(dx, dy, dz), center+vec3(dx, dy, -dz), id);
+	b.merge(singleQuadShadeFlat(center+vec3(-dx, -dy, -dz), center+vec3(-dx, -dy, dz), center+vec3(-dx, dy, dz), center+vec3(-dx, dy, -dz), id));
+	b.merge(singleQuadShadeFlat(center+vec3(-dx, dy, -dz), center+vec3(-dx, dy, dz), center+vec3(dx, dy, dz), center+vec3(dx, dy, -dz), id));
+	b.merge(singleQuadShadeFlat(center+vec3(-dx, -dy, -dz), center+vec3(-dx, -dy, dz), center+vec3(dx, -dy, dz), center+vec3(dx, -dy, -dz), id));
+	b.merge(singleQuadShadeFlat(center+vec3(-dx, -dy, dz), center+vec3(-dx, dy, dz), center+vec3(dx, dy, dz), center+vec3(dx, -dy, dz), id));
+	b.merge(singleQuadShadeFlat(center+vec3(-dx, -dy, -dz), center+vec3(-dx, dy, -dz), center+vec3(dx, dy, -dz), center+vec3(dx, -dy, -dz), id));
+
+	return b;
 }
 
 SmoothParametricCurve trefoil(float r, float R, float eps) {

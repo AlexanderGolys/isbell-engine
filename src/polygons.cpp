@@ -13,7 +13,7 @@
 
 
 using namespace glm;
-using std::vector, std::string, std::map;
+using std::vector, std::string;
 
 GLFWwindow* window;
 
@@ -234,4 +234,3 @@ int main(void)
 
 	return window.destroy();
 }
-

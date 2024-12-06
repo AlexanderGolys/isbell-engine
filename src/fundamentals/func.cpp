@@ -331,7 +331,11 @@ SpaceAutomorphism SpaceAutomorphism::rotation(float angle) {
 
 
 SpaceAutomorphism SpaceAutomorphism::rotation(vec3 axis, float angle) {
-    return linear(rotationMatrix3(axis, angle));
+	vec3 n = normalize(axis);
+	float nx = n.x;
+	float ny = n.y;
+	float nz = n.z;
+    return linear(rotationMatrix3(n, angle));
 }
 
 

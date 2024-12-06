@@ -10,7 +10,7 @@ protected:
 	BIHOM(BufferedVertex&, std::vector<float>&, void) updateBdWithCellIndex;
 public:
 	FluidSimulation(const std::vector<ivec6> &hexahedra, const std::vector<glm::ivec4> &faces,
-		const std::vector<Vertex> &vertices, const std::vector<glm::ivec2> &faceNbhd,
+		const std::vector<Vertex> &vertices, const std::vector<ivec2> &faceNbhd,
 		const std::vector<int>& bdFaces,
 		const MATR$X& initialAttributes, BIHOM(int, float, BigVector) cellAttributeChange,
 		BIHOM(BufferedVertex&, std::vector<float>&, void) updateBdWithCellIndex);
@@ -34,7 +34,7 @@ class FluidSimulationFVM : public FluidSimulation {
 	std::vector<BigMatrix> attributeMatrices;
 public:
 	FluidSimulationFVM(const std::vector<ivec6> &hexahedra, const std::vector<glm::ivec4> &faces,
-		const std::vector<Vertex> &vertices, const std::vector<glm::ivec2> &faceNbhd,
+		const std::vector<Vertex> &vertices, const std::vector<ivec2> &faceNbhd,
 		const std::vector<int>& bdFaces,
 		const MATR$X& initialAttributes, std::vector<BigMatrix> attributeMatrices,
 		BIHOM(BufferedVertex&, std::vector<float>&, void) updateBdWithCellIndex);
@@ -86,7 +86,7 @@ public:
 
 class IncompressibleNewtonianFluid2D {
 	vector<IncompressibleCell> cells;
-	glm::ivec2 gridSize;
+	ivec2 gridSize;
 	BigMatrix M;
 
 

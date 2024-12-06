@@ -1275,8 +1275,6 @@ float Renderer::initFrame()
 }
 
 float Renderer::lastDeltaTime() const {
-	if (this->frameOlderTimeThanThePublicOne == 0)
-		return 0.f;
     return this->dt;
 }
 
@@ -1330,6 +1328,7 @@ void Renderer::initRendering()
     glShadeModel(GL_SMOOTH);
 	glEnable(GL_DEPTH_TEST);
 //	glEnable(GL_FRAMEBUFFER_SRGB);
+//	glEnable(GL_CULL_FACE);
 	glEnable(GL_BLEND);
 	glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
  //    glEnable(GL_LIGHTING);
@@ -1384,7 +1383,8 @@ void Renderer::addCustomAction(std::function<void(float)> action)
 
 void Renderer::addCustomAction(std::function<void(float, float)> action)
 {
-    this->perFrameFunction = make_unique<std::function<void(float, float)>>([a=*this->perFrameFunction, n=std::move(action)](float t, float delta) {
+	auto a = *perFrameFunction;
+    this->perFrameFunction = make_unique<std::function<void(float, float)>>([a, n=action](float t, float delta) {
         a(t, delta);
         n(t, delta);
     });

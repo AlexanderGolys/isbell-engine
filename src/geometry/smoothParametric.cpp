@@ -451,3 +451,7 @@ SmoothParametricSurface bilinearSurface(const vec3 &p00, const vec3 &p01, const 
 SmoothParametricSurface CoonsPatch(const SmoothParametricCurve &cDown, const SmoothParametricCurve &cLeft, const SmoothParametricCurve &cUp, const SmoothParametricCurve &cRight) {
 	return ruledSurfaceJoinU(cDown, cUp, cLeft.bounds()) + ruledSurfaceJoinT(cLeft, cRight, cDown.bounds()) - bilinearSurface(cDown(cDown.bounds().x), cDown(cDown.bounds().y), cUp(cUp.bounds().x), cUp(cUp.bounds().y), cLeft.bounds(), cDown.bounds());
 }
+
+SmoothParametricSurface polarCone(const SmoothParametricCurve &r, vec3 center) {
+	return SmoothParametricSurface([r, center](float t, float s) { return (r(t)-center)*s+center; }, r.bounds(), vec2(0, 1), true, false, r.getEps());
+}

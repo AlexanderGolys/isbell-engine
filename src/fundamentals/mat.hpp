@@ -1097,6 +1097,11 @@ vector<T> smartRange(vector<T> v, int a, int b, int step=1) {
 }
 
 template <typename T>
+vector<T> range(vector<T> v, int a, int b, int step=1) {
+	return smartRange(v, a, b, step);
+}
+
+template <typename T>
 vector<T> rangeFrom(vector<T> v, int a) {
 	return smartRange(v, a, v.size());
 }
@@ -1114,3 +1119,15 @@ vector<T> rangeStep(vector<T> v, int s) {
 float randomUniform(float a, float b);
 vec2 randomUniform(vec2 a, vec2 b);
 vec3 randomUniform(vec3 a, vec3 b);
+
+inline float angle(vec3 v1, vec3 v2) {
+	return atan2(length(cross(v1, v2)), dot(v1, v2));
+}
+
+float rotationAngle(const mat3 &M);
+float rotationCosAngle(mat3 M);
+
+vec3 rotationAxis(mat3 M);
+mat3 spinTensor(vec3 omega);
+mat3 rotationMatrix(vec3 axis, float angle);
+mat3 rotationMatrix(vec3 omega);

@@ -360,6 +360,11 @@ void WeakSuperMesh::merge(const WeakSuperMesh &other) {
 	for (const auto& id: other.getPolyGroupIDs())
 		addNewPolygroup(other.getVertices(id), other.getIndices(id), make_unique_id(id));
 }
+void WeakSuperMesh::mergeAndKeepID(const WeakSuperMesh &other) {
+	for (const auto& id: other.getPolyGroupIDs())
+		addNewPolygroup(other.getVertices(id), other.getIndices(id), id);
+}
+
 
 std::vector<PolyGroupID> WeakSuperMesh::getPolyGroupIDs() const {
     vector<PolyGroupID> ids = {};
@@ -715,6 +720,18 @@ vec3 WeakSuperMesh::centerOfMass(std::variant<int, std::string> id) const {
 	}
 	return sum/totalArea;
 }
+
+vec3 WeakSuperMesh::centerOfMass() const {
+	vec3 sum        = vec3(0);
+	float totalArea = 0;
+	for (const auto &id: getPolyGroupIDs())
+		for (const IndexedTriangle &t: triangles.at(id)) {
+			sum += t.center()*t.area();
+			totalArea += t.area();
+		}
+	return sum/totalArea;
+}
+
 
 std::function<void(float, float)> deformationOperator(const std::function<void(BufferedVertex &, float, float)> &deformation, WeakSuperMesh &mesh, const std::variant<int, std::string> &id) {
     return [&deformation, &mesh, id](float t, float delta) {
