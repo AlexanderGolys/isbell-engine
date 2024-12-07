@@ -8,7 +8,7 @@
 #include <ranges>
 
 
-using std::vector, glm::vec2, glm::vec3, glm::vec4, glm::mat3, glm::mat4, glm::mat2, glm::mat2x3, glm::ivec2, glm::ivec3;
+using std::vector, glm::vec2, glm::vec3, glm::vec4, glm::mat3, glm::mat4, glm::mat2, glm::mat2x3, glm::ivec2, glm::ivec3, glm::ivec4;
 using std::variant, std::string, std::optional;
 
 #define PI 3.14159265359f
@@ -159,12 +159,13 @@ namespace glm{
 								// red red reddy
 #define PALETTE3 COLOR_PALETTE(glm::ivec3(144, 156, 194), glm::ivec3(244, 157, 55), glm::ivec3(232, 72, 85), glm::ivec3(1, 2, 2), glm::ivec3(34, 34, 34))
                                // light powder blue			light intense orange           aggressive redpink        calm darker gray      dark purple, calm
-
 #define INTENSE_DARKER_RED_PALLETTE COLOR_PALETTE(glm::ivec3(173, 40, 49), glm::ivec3(128, 14, 19), glm::ivec3(100, 13, 20), glm::ivec3(56, 4, 14), glm::ivec3(37, 9, 2))
 #define BLUE_PALLETTE COLOR_PALETTE10(glm::ivec3(226, 239, 246), glm::ivec3(183, 215, 234), glm::ivec3(141, 190, 220), glm::ivec3(100, 164, 206), glm::ivec3(72, 147, 198), glm::ivec3(45, 130, 189), glm::ivec3(36, 118, 177), glm::ivec3(25, 101, 160), glm::ivec3(15, 85, 143), glm::ivec3(0, 58, 112))
 #define GREEN_PALLETTE COLOR_PALETTE10(glm::ivec3(219, 234, 215), glm::ivec3(195, 220, 188), glm::ivec3(171, 206, 161), glm::ivec3(148, 193, 134), glm::ivec3(124, 179, 107), glm::ivec3(102, 162, 83), glm::ivec3(85, 135, 69), glm::ivec3(68, 108, 55), glm::ivec3(51, 81, 42), glm::ivec3(32, 51, 26))
-
 #define REDPINK_PALLETTE COLOR_PALETTE10(glm::ivec3(243, 219, 234), glm::ivec3(236, 197, 221), glm::ivec3(204, 154, 181), glm::ivec3(179, 116, 149), glm::ivec3(153, 77, 116), glm::ivec3(128, 39, 84), glm::ivec3(102, 0, 51), glm::ivec3(85, 6, 45), glm::ivec3(67, 12, 39), glm::ivec3(52, 9, 30))
+
+
+#define GRAY_PALLETTE COLOR_PALETTE10(glm::ivec3(248, 249, 250), glm::ivec3(233, 236, 239), glm::ivec3(222, 226, 230), glm::ivec3(206, 212, 218), glm::ivec3(173, 181, 189), glm::ivec3(108, 117, 125), glm::ivec3(73, 80, 87), glm::ivec3(52, 58, 64), glm::ivec3(33, 37, 41), glm::ivec3(22, 26, 29))
 
 #define R3 glm::vec3
 #define R2 glm::vec2

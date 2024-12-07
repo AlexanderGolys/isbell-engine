@@ -116,6 +116,32 @@ SmoothParametricSurface sphere(float r, vec3 center=ORIGIN, float cutdown=0, flo
 SmoothParametricSurface DupinCyclide(float a, float b, float d, float eps=.01);
 SmoothParametricSurface disk(float r, vec3 center, vec3 v1, vec3 v2, float eps);
 SmoothParametricSurface cylinder(float r, vec3 c1, vec3 c2, vec3 v1, vec3 v2, float eps);
+SmoothParametricSurface hyperbolic_helicoid(float a, float eps=.01); // todo check out
+
+SmoothParametricSurface LawsonTwist(float alpha, Quaternion q, vec2 range_u, float eps=.01);
+SmoothParametricSurface coolLawson(float eps=0.01);
+
+SmoothParametricSurface sudaneseMobius(float eps=0.01);
+
+SmoothParametricSurface LawsonKleinBottle(float eps=0.01);
+SmoothParametricSurface catenoid(float a, float eps=.01);
+SmoothParametricSurface helicoid(float a, float eps=.01);
+SmoothParametricSurface enneper(float k, float l, float eps=.01);
+SmoothParametricSurface twistedTorus(float a, float m, float n, int dommul1, int dommul2, float eps=.01);
+
+SmoothParametricSurface polyTorus(float r, float n, float alpha, float eps=.01);
+SmoothParametricSurface ellipticTorus(float c, float eps=.01);
+SmoothParametricSurface limpetTorus(float eps=.01);
+SmoothParametricSurface fig8(float c, float eps=.01);
+SmoothParametricSurface doubleTorus(float eps=.01);
+SmoothParametricSurface saddleTorus(float eps=.01);
+SmoothParametricSurface kinkyTorus(float eps=.01);
+SmoothParametricSurface GraysKlein(float a, float n, float m, float eps=.01);
+SmoothParametricSurface bowTie(float eps=.01);
+SmoothParametricSurface bohemianDome(float a, float b, float c, float eps=.01);
+SmoothParametricSurface horn(float eps=.01);
+SmoothParametricSurface crescent(float eps=.01);
+SmoothParametricSurface seaShell(int n, float a, float b, float c, float eps=.01);
 
 SmoothParametricSurface cone(const SmoothParametricCurve &base, vec3 apex, float eps);
 SmoothParametricSurface coneSide(float r, float h, vec3 center, vec3 v1, vec3 v2, float eps);

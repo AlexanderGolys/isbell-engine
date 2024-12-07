@@ -514,6 +514,49 @@ const Complex I = Complex(0, 1);
 
 Complex intersectLines(Complex p1, Complex p2, Complex q1, Complex q2);
 
+class Quaternion {
+	vec4 q;
+public:
+	explicit Quaternion(vec4 q) : q(q) {}
+	Quaternion(float x, float y, float z, float w) : q(vec4(x, y, z, w)) {}
+	explicit Quaternion(float x) : q(vec4(x, 0, 0, 0)) {}
+	explicit Quaternion(vec3 im) : q(vec4(0, im)) {}
+
+	Quaternion operator*(Quaternion r) const;
+	Quaternion operator*(float f) const { return Quaternion(q*f); }
+	Quaternion operator/(float f) const { return *this * (1.f / f); }
+	Quaternion operator+(Quaternion r) const { return Quaternion(q + r.q); }
+	Quaternion operator-(Quaternion r) const { return *this + r * -1; }
+	Quaternion operator-() const { return *this * -1; }
+	float norm2() const { return dot(q, q); }
+	float norm() const { return std::sqrt(norm2()); }
+	Quaternion inv() const { return conj() / norm2(); }
+	Quaternion operator~() const { return inv(); }
+	Quaternion pow(int p) const;
+	Quaternion operator+(float f) const { return *this + Quaternion(f); }
+	Quaternion operator-(float f) const { return *this - Quaternion(f); }
+	Quaternion operator/(Quaternion r) const { return *this * r.inv(); }
+	friend Quaternion operator*(float f, Quaternion q) { return q * f; }
+	friend Quaternion operator/(float f, Quaternion q) { return Quaternion(f) * q.inv(); }
+	friend Quaternion operator+(float f, Quaternion q) { return q + f; }
+	friend Quaternion operator-(float f, Quaternion q) { return Quaternion(f) - q; }
+	explicit operator vec4() const { return q; }
+	explicit operator std::string() const { return std::format("({0}, {1}, {2}, {3})", q.x, q.y, q.z, q.w); }
+	float re() const { return q.w; }
+	vec3 im() const { return vec3(q.x, q.y, q.z); }
+
+	Quaternion conj() const { return Quaternion(q.w, -q.x, -q.y, -q.z); }
+	Quaternion normalise() const { return *this / norm(); }
+	Quaternion rotate(Quaternion r) const { return r * *this * ~r; }
+	vec4 rotateS3(vec4 r) const { return vec4(rotate(Quaternion(r))); }
+
+	static Quaternion one() { return Quaternion(1, 0, 0, 0); }
+	static Quaternion zero() { return Quaternion(0, 0, 0, 0); }
+	static Quaternion i() { return Quaternion(0, 1, 0, 0); }
+	static Quaternion j() { return Quaternion(0, 0, 1, 0); }
+	static Quaternion k() { return Quaternion(0, 0, 0, 1); }
+};
+
 
 class CP1 {
 public:
@@ -579,6 +622,8 @@ bool nearlyEqual(T a) { return norm(a) < 1e-6; }
 
 template <VectorSpaceConcept<float> vec>
 vec barycenter(vec a, vec b, vec c) { return (a + b + c) / 3.f; };
+
+
 
 vec2 intersectLines(vec2 p1, vec2 p2, vec2 q1, vec2 q2);
 inline vec2 projectVectorToVector(vec2 v, vec2 n) { return v - dot(v, n) * n; }
@@ -694,12 +739,18 @@ V mean(std::vector<V> points) {
 
 
 template<VectorSpaceConcept<float> V>
-vector<V> linspace(V a, V b, int n) {
+vector<V> linspace(V a, V b, int n, bool includeEnd=true) {
 	vector<V> res;
-	res.reserve(n+1);
-	for (int i = 0; i <= n; i++)
-		res.push_back(lerp(a, b, i*1.f / (n - 1.f)));
+	res.reserve(n);
+	if (includeEnd)
+		for (int i = 0; i < n; i++)
+			res.push_back(lerp(a, b, i*1.f / (n - 1.f)));
+	else
+		for (int i = 0; i < n; i++)
+			res.push_back(lerp(a, b, i*1.f / n));
 	return res; }
+
+
 
 vector<int> range(int a, int b, int step=1);
 inline vector<int> range(int n) { return range(0, n); }
@@ -1131,3 +1182,9 @@ vec3 rotationAxis(mat3 M);
 mat3 spinTensor(vec3 omega);
 mat3 rotationMatrix(vec3 axis, float angle);
 mat3 rotationMatrix(vec3 omega);
+
+float polarAngle(vec3 v, vec3 t1, vec3 t2);
+float polarAngle(vec3 v, vec3 n);
+
+float cot(float x);
+Complex cot(Complex c);

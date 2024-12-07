@@ -34,7 +34,25 @@ SmoothParametricSurface SmoothParametricSurface::precompose(const PlaneAutomorph
 }
 
 SmoothParametricCurve SmoothParametricSurface::restrictToInterval(vec2 p0, vec2 p1, PolyGroupID id) const {
-    return SmoothParametricCurve([f=*this, p0, p1](float t) {return f(p1*t + p0*(1-t)); }, id, 0, 1, false, epsilon);
+    return SmoothParametricCurve([f=*this, p0, p1](float t) {return f(p1*t + p0*(1-t)); }, id, 0, 1,
+    	nearlyEqual((*this)(p0), (*this)(p1)), epsilon);
+}
+
+SmoothParametricCurve SmoothParametricSurface::restrictToInterval(vec2 p0, vec2 p1, bool periodic,  PolyGroupID id) const {
+	return SmoothParametricCurve([f=*this, p0, p1](float t) {return f(p1*t + p0*(1-t)); }, id, 0, 1,
+		periodic, epsilon);
+}
+
+SmoothParametricCurve SmoothParametricSurface::constT(float ti) const {
+	return SmoothParametricCurve([f=_f, ti](float u) {return f(ti, u); },
+								[df=_df_u, ti](float u) {return df(ti, u); },
+								randomID(), u0, u1, u_periodic, epsilon);
+
+}
+SmoothParametricCurve SmoothParametricSurface::constU(float ui) const {
+	return SmoothParametricCurve([f=_f, ui](float t) {return f(t, ui); },
+								[df=_df_t, ui](float t) {return df(t, ui); },
+								randomID(), t0, t1, t_periodic, epsilon);
 }
 
 
@@ -70,6 +88,15 @@ mat2x3 SmoothParametricSurface::tangentSpacePrincipalBasis(float t, float s) con
 float SmoothParametricSurface::globalAreaIntegral(const RealFunctionPS &f) const { throw std::logic_error("Not implemented"); }
 float SmoothParametricSurface::DirichletFunctional() const { throw std::logic_error("Not implemented"); }
 float SmoothParametricSurface::biharmonicFunctional() const { throw std::logic_error("Not implemented"); }
+
+void SmoothParametricSurface::changeDomain(vec2 t_range, vec2 u_range, bool t_periodic, bool u_periodic) {
+	t0               = t_range.x;
+	t1               = t_range.y;
+	u0               = u_range.x;
+	u1               = u_range.y;
+	this->t_periodic = t_periodic;
+	this->u_periodic = u_periodic;
+}
 
 mat2 SmoothParametricSurface::metricTensor(float t, float s) const {
 	vec3 p = _df_t(t, s);

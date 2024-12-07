@@ -92,6 +92,8 @@ public:
     void setColor(int index, vec4 value) { stds->colors[index] = value; }
     void setColor(int index, float value, int component) { stds->colors[index][component] = value; }
     void setMaterial(int index, mat4 value);
+	void setFaceIndices(int index, const ivec3 &in) { indices->at(index) = in; }
+
 
     void setExtra(int index, vec4 value, int slot = 1);
     void setExtra(int index, vec3 value, int slot = 1);
@@ -118,6 +120,7 @@ public:
   vec4 getColor() const { return bufferBoss.getColor(index); }
   vec4 getExtra(int slot = 1) const { return bufferBoss.getExtra(index, slot); }
   Vertex getVertex() const { return Vertex(getPosition(), getUV(), getNormal(), getColor()); }
+	vec2 getSurfaceParams() const {return vec2(getColor());}
 
   void setPosition(vec3 value) { bufferBoss.setPosition(index, value); }
   void setNormal(vec3 value) { bufferBoss.setNormal(index, value); }
@@ -130,7 +133,6 @@ public:
   void setExtra(float value, int slot = 1, int component = 3) { bufferBoss.setExtra(index, value, slot, component); }
   void applyFunction(const SpaceEndomorphism &f);
   void setVertex(const Vertex &v) { setPosition(v.getPosition()); setUV(v.getUV()); setNormal(v.getNormal()); setColor(v.getColor()); }
-
 
 };
 
@@ -175,7 +177,7 @@ public:
     IndexedTriangle(IndexedTriangle &&other) noexcept : index(other.index), bufferBoss(other.bufferBoss) {}
     IndexedTriangle(BufferManager &bufferBoss, glm::ivec3 index, int shift) : index(bufferBoss.addTriangleVertexIndices(index, shift)), bufferBoss(bufferBoss) {}
 
-    glm::ivec3 getVertexIndices() const { return bufferBoss.getFaceIndices(index); }
+    ivec3 getVertexIndices() const { return bufferBoss.getFaceIndices(index); }
     Vertex getVertex(int i) const { return bufferBoss.getVertex(getVertexIndices()[i]); }
     mat2 barMatrix() const;
     mat3 orthonormalFrame() const;
@@ -187,6 +189,11 @@ public:
     vec3 faceNormal() const { return normalize(cross(getVertex(1).getPosition() - getVertex(0).getPosition(), getVertex(2).getPosition() - getVertex(0).getPosition())); }
     vec3 center() const { return (getVertex(0).getPosition() + getVertex(1).getPosition() + getVertex(2).getPosition()) / 3.f; }
     float area() const { return 0.5f * length(cross(getVertex(1).getPosition() - getVertex(0).getPosition(), getVertex(2).getPosition() - getVertex(0).getPosition())); }
+
+	bool containsEdge(int i, int j) const;
+	bool containsEdge(ivec2 edge) const { return containsEdge(edge.x, edge.y); }
+	void setVertexIndices(const ivec3 &in) { bufferBoss.setFaceIndices(index, in); }
+	void changeOrientation() { bufferBoss.setFaceIndices(index, ivec3(getVertexIndices().z, getVertexIndices().y, getVertexIndices().x)); }
 };
 
 
@@ -276,21 +283,38 @@ public:
   vec4 getIntencities() const { return material->compressIntencities(); }
   MaterialPhong getMaterial() const { return *material; }
 
-	vector<int> findNeighbours(int i, const PolyGroupID &id) const;
-	vector<int> findNeighboursSorted(int i, const PolyGroupID &id) const;
+	vector<int> findVertexNeighbours(int i, const PolyGroupID &id) const;
+	vector<int> findVertexParentTriangles(int i, const PolyGroupID &id) const;
+	void recalculateNormal(int i, const PolyGroupID &id);
+	void recalculateNormalsNearby(int i, const PolyGroupID &id);
+	void recalculateNormals(const PolyGroupID &id);
+	void recalculateNormals();
+	void orientFaces(const PolyGroupID &id);
+	void orientFaces();
+
+
+  vector<int> findNeighboursSorted(int i, const PolyGroupID &id) const;
 	bool checkIfHasCompleteNeighbourhood(int i, const PolyGroupID &id) const;
 	float meanCurvature(int i, const PolyGroupID &id) const;
+	vec3 meanCurvatureVector(int i, const PolyGroupID &id) const;
 	void meanCurvatureFlowDeform(float dt, const PolyGroupID &id);
+	float GaussCurvature(int i, const PolyGroupID &id) const;
+	void paintMeanCurvature(const PolyGroupID &id);
+	void paintMeanCurvature();
 
-    template<typename T>
+  template<typename T>
     T integrateOverTriangles(const std::function<T(const IndexedTriangle &)> &f, PolyGroupID id) const;
 
     vec3 centerOfMass(PolyGroupID id) const;
 	vec3 centerOfMass() const;
 
-	mat3 inertiaTensorCM(PolyGroupID id) const;
-	mat3 inertiaTensor(PolyGroupID id, vec3 p) const;
+	mat3 inertiaTensorCMAppBd(PolyGroupID id) const;
+	mat3 inertiaTensorAppBd(PolyGroupID id, vec3 p) const;
 };
+
+
+WeakSuperMesh _wireframe(const SmoothParametricSurface &s, float width, int n, int m, int curve_res_rad, int curve_res_hor);
+
 
 
 
@@ -305,3 +329,15 @@ T WeakSuperMesh::integrateOverTriangles(const std::function<T(const IndexedTrian
         sum += f(t)*t.area();
     return sum;
 }
+
+
+class Wireframe : public WeakSuperMesh {
+	SmoothParametricSurface surf;
+	float width;
+	int n, m, curve_res_rad, curve_res_hor;
+public:
+	Wireframe(const SmoothParametricSurface &surf, float width, int n, int m, int curve_res_rad, int curve_res_hor);
+
+	void changeBaseSurface(const SmoothParametricSurface &newsurf);
+	vec2 getSurfaceParameters(const BufferedVertex &v) const;
+};

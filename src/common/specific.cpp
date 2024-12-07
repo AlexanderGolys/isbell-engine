@@ -353,6 +353,42 @@ SmoothParametricSurface cylinder(float r, vec3 c1, vec3 c2, vec3 v1, vec3 v2, fl
 	return  SmoothParametricSurface([r, c1, c2, v1, v2](float u, float v) { return c1 + (cos(u)*v1 + sin(u)*v2)*r + v*(c2 - c1); }, vec2(0, TAU), vec2(0, 1), true, false, eps);
 }
 
+SmoothParametricSurface hyperbolic_helicoid(float a, float eps) {
+	return SmoothParametricSurface([a](float t, float u) {
+		return vec3(std::sin(a*t)* std::sin(u)* std::exp(t),
+					std::cos(a*t)* std::sin(u)* std::exp(t),
+					std::cos(u)* std::exp(t));
+
+	}, vec2(0, TAU), vec2(0, TAU), false, true, eps);
+}
+
+SmoothParametricSurface LawsonTwist(float alpha, Quaternion q, vec2 range_u, float eps) {
+	auto L = [alpha](float t, float u) {
+		return vec4(::cos(u)*cos(t),
+					cos(t)*sin(u),
+					sin(t)*cos(alpha*u),
+					sin(t)*sin(alpha*u)); };
+	return SmoothParametricSurface([L, q](float t, float u) {
+									   return stereoProjection(q.normalise().rotateS3(L(t, u))); },
+								   vec2(0, TAU), range_u, false, false, eps);
+}
+
+SmoothParametricSurface coolLawson(float eps) {
+	return LawsonTwist(2, Quaternion(.5, .5, .5, .5), vec2(-PI/4, PI/4), eps);
+}
+
+SmoothParametricSurface sudaneseMobius(float eps) {
+	return LawsonTwist(.5, Quaternion(.5, .5, .5, .5), vec2(-PI/2, PI/2), eps);
+}
+
+SmoothParametricSurface twistedTorus(float a, float m, float n, int dommul1, int dommul2, float eps) {
+	return SmoothParametricSurface([a, m, n](float u, float v) {
+		return vec3(((a + ::cos(n * u / 2) * ::sin(v) - ::sin(n * u / 2) * ::sin(2 * v)) * ::cos(m * u / 2),
+			(a + ::cos(n * u / 2) * ::sin(v) - ::sin(n * u / 2) * ::sin(2 * v)) * ::sin(m * u / 2),
+			::sin(n * u / 2) * ::sin(v) + ::cos(n * u / 2) * ::sin(2 * v)));
+	}, vec2(0, TAU*dommul1), vec2(0, TAU*dommul2), true, true, eps);
+}
+
 inline WeakSuperMesh icosahedron(float r, vec3 center, std::variant<int, std::string> id) {
     float phi = (1.f + sqrt(5)) / 2;
     vector verts = {

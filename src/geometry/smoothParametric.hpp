@@ -42,6 +42,8 @@ public:
     SmoothParametricCurve &operator=(const SmoothParametricCurve &other);
     SmoothParametricCurve &operator=(SmoothParametricCurve &&other) noexcept;
 
+
+
     PolyGroupID getID() const { return id; }
     void setID(PolyGroupID id) { this->id = id; }
     void copyID (const SmoothParametricCurve &other) { this->id = other.id; }
@@ -151,8 +153,13 @@ public:
 	SmoothParametricSurface scale(float a, vec3 center=ORIGIN) const;
 
 	SmoothParametricCurve restrictToInterval(vec2 p0, vec2 p1, PolyGroupID id=420) const;
+	SmoothParametricCurve restrictToInterval(vec2 p0, vec2 p1, bool periodic, PolyGroupID id=420) const;
 
-    vec2 boundsT() const { return vec2(t0, t1); }
+	SmoothParametricCurve constT(float t0) const;
+	SmoothParametricCurve constU(float u0) const;
+
+
+  vec2 boundsT() const { return vec2(t0, t1); }
     vec2 boundsU() const { return vec2(u0, u1); }
     float tMin() const { return t0; }
     float tMax() const { return t1; }
@@ -166,9 +173,11 @@ public:
     vec3 normal(float t, float s) const;
     vec3 normal(vec2 tu) const { return normal(tu.x, tu.y); }
 
+	void changeDomain(vec2 t_range, vec2 u_range, bool t_periodic, bool u_periodic);
 
 
-	mat2 metricTensor(float t, float s) const;
+
+  mat2 metricTensor(float t, float s) const;
 	EuclideanSpace<vec2, mat2> toTangentStdBasis(float t, float s, vec3 v) const;
 	vec3 embeddTangentVector(float t, float s, EuclideanSpace<vec2, mat2> v) const;
 
@@ -202,6 +211,9 @@ public:
 	std::pair<float, float> principalCurvatures(float t, float s) const;
 	void normaliseDomainToI2();
 	vec3 Laplacian(float t, float s) const;
+
+	float meanCurvature(vec2 tu) const { return meanCurvature(tu.x, tu.y); }
+
 
 	float globalAreaIntegral(const RealFunctionPS &f) const;
 

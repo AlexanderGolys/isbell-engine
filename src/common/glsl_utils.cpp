@@ -1375,7 +1375,7 @@ void Renderer::addConstFloats(const std::map<std::string, float> &uniforms)
 
 void Renderer::addCustomAction(std::function<void(float)> action)
 {
-	perFrameFunction = make_unique<std::function<void(float, float)>>([a=*this->perFrameFunction, n=std::move(action)](float t, float delta) {
+	perFrameFunction = make_unique<std::function<void(float, float)>>([a=*this->perFrameFunction, n=action](float t, float delta) {
 		a(t, delta);
 		n(t);
 	});
@@ -1405,8 +1405,8 @@ void Renderer::renderAllSteps()
 int Renderer::mainLoop() {
     initRendering();
     while (window->isOpen()) {
+    	initFrame();
     	(*perFrameFunction)(time, dt);
-        initFrame();
         renderAllSteps();
 //    	if (takeScreenshots && since_last_scr > screenshotPeriod) {
 //    		screenshot();

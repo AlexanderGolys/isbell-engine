@@ -122,13 +122,13 @@ public:
 	Camera();
 
 	Camera(vec3 position, vec3 lookAtPos, vec3 upVector=vec3(0, 0, 1), float fov_x=PI/4,
-		   float aspectRatio=16/9.f, float clippingRangeMin=.001f, float clippingRangeMax=100.f);
+		   float aspectRatio=16/9.f, float clippingRangeMin=.01f, float clippingRangeMax=100.f);
 
-	Camera(float radius, float speed, float height, vec3 lookAtPos, vec3 upVector=vec3(0, 0, 1), float fov_x=PI/4,
-		   float aspectRatio=16/9.f, float clippingRangeMin=.001f, float clippingRangeMax=100.f);
+	Camera(float radius, float speed, float height, vec3 lookAtPos=vec3(0), vec3 upVector=vec3(0, 0, 1), float fov_x=PI/4,
+		   float aspectRatio=16/9.f, float clippingRangeMin=.01f, float clippingRangeMax=100.f);
 
 	Camera(const std::shared_ptr<SmoothParametricCurve> &trajectory, vec3 lookAtPos, vec3 upVector, float fov_x = PI / 4,
-	       float aspectRatio = 16 / 9.f, float clippingRangeMin=.001f, float clippingRangeMax=100.f);
+	       float aspectRatio = 16 / 9.f, float clippingRangeMin=.01f, float clippingRangeMax=100.f);
 
     Camera(const std::shared_ptr<SmoothParametricCurve> &trajectory, const std::shared_ptr<SmoothParametricCurve> &lookAtPos, vec3 upVector, float fov_x = PI / 4,
        float aspectRatio = 16 / 9.f, float clippingRangeMin=.01f, float clippingRangeMax=100.f);

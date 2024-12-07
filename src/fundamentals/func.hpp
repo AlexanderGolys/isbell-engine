@@ -489,3 +489,7 @@ vector<A> vectorComprehension(const homspace &f, int n) {
 	for (int i = 1; i < n; i++) res[i] = f(i);
 	return res;
 }
+
+inline vec3 stereoProjection(vec4 v) {
+	return vec3(v.x / (1-v.w), v.y / (1-v.w), v.z / (1-v.w));
+}

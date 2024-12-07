@@ -73,7 +73,19 @@ void main()
 	color = colorFromPointlight(light1, camPosition, v_position, normal, v_uv) +
 			        colorFromPointlight(light2, camPosition, v_position, normal, v_uv) +
 			        colorFromPointlight(light3, camPosition, v_position, normal, v_uv);
-	color.a = 1.;
 
+	float curvDiscretePlus = smoothstep(0, 25, v_color.z);
+	float curvSmoothPlus = smoothstep(0,.3, v_color.w);
+
+	vec4 color1 = mix(color, vec4(.8, .4, .2, 1), curvDiscretePlus);
+
+	vec4 color2 = mix(color, vec4(.7, .2, .5, 1), curvSmoothPlus);
+
+    float t = time*1.;
+
+	color = color1 * sin(t)*sin(t) + color2 * cos(t)*cos(t);
+
+	// color = color1;
+	color.a = 1.;
 
 }

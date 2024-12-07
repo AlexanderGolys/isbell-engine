@@ -7,6 +7,26 @@
 #include "macros.hpp"
 #include <glm/glm.hpp>
 
+
+inline std::string vecToString(glm::vec2 v) {
+	return "(" + std::to_string(v.x) + ", " + std::to_string(v.y) + ")"; }
+
+inline std::string vecToString(glm::vec3 v) {
+	return "(" + std::to_string(v.x) + ", " + std::to_string(v.y) + ", " + std::to_string(v.z) + ")"; }
+
+inline std::string vecToString(glm::vec4 v) {
+	return  "(" + std::to_string(v.x) + ", " + std::to_string(v.y) + ", " + std::to_string(v.z) + ", " + std::to_string(v.w) + ")"; }
+
+inline std::string vecToString(glm::ivec2 v) {
+	return "(" + std::to_string(v.x) + ", " + std::to_string(v.y) + ")"; }
+
+inline std::string vecToString(glm::ivec3 v) {
+	return "(" + std::to_string(v.x) + ", " + std::to_string(v.y) + ", " + std::to_string(v.z) + ")"; }
+
+inline std::string vecToString(glm::ivec4 v) {
+	return  "(" + std::to_string(v.x) + ", " + std::to_string(v.y) + ", " + std::to_string(v.z) + ", " + std::to_string(v.w) + ")"; }
+
+
 inline std::string plural (std::string word) {
     if (word.size() == 0)
       return word;
@@ -39,6 +59,25 @@ public:
     const char* what() const noexcept override {
         return msg_.c_str();
     }
+};
+
+class IndexOutOfBounds : public std::exception {
+	std::string msg_;
+public:
+	IndexOutOfBounds(int index, int size, const std::string &indexName="i")
+		: msg_("Index " + indexName + " is out of bounds [" + std::to_string(index) + "/" + std::to_string(size) + "].") {}
+	IndexOutOfBounds(const std::string &index, const std::string &size, const std::string &indexName="i")
+		: msg_("Index " + indexName + " is out of bounds [" + index + "/" + size + "].") {}
+	IndexOutOfBounds(const ivec2 &index, const ivec2 &size, const std::string &indexName="i")
+		: msg_("Index " + indexName + " is out of bounds [" + vecToString(index) + "/" + vecToString(size) + "].") {}
+	IndexOutOfBounds(const ivec3 &index, const ivec3 &size, const std::string &indexName="i")
+	: msg_("Index " + indexName + " is out of bounds [" + vecToString(index) + "/" + vecToString(size) + "].") {}
+	IndexOutOfBounds(const ivec4 &index, const ivec4 &size, const std::string &indexName="i")
+	: msg_("Index " + indexName + " is out of bounds [" + vecToString(index) + "/" + vecToString(size) + "].") {}
+
+	const char* what() const noexcept override {
+		return msg_.c_str();
+	}
 };
 
 class NotImplementedMethodError : public NotImplementedError {
@@ -264,6 +303,10 @@ std::vector<T> flattened2DVector(std::vector<std::vector<T>> v)
 
 
 inline int flattened2DVectorIndex(int i, int j, glm::ivec2 size) {
+	if (i < 0) return flattened2DVectorIndex(size.x + i, j, size);
+	if (j < 0) return flattened2DVectorIndex(i, size.y + j, size);
+	if (i >= size.x) throw IndexOutOfBounds(ivec2(i, j), size, "i");
+	if (j >= size.y) throw IndexOutOfBounds(ivec2(i, j), size, "j");
 	return i * size.y + j;
 }
 
@@ -287,6 +330,12 @@ std::vector<T> flattened3DVector(std::vector<std::vector<std::vector<T>>> v)
 
 
 inline int flattened3DVectorIndex(int i, int j, int k,  glm::ivec3 size) {
+	if (i < 0) return flattened3DVectorIndex(size.x + i, j, k, size);
+	if (j < 0) return flattened3DVectorIndex(i, size.y + j, k, size);
+	if (k < 0) return flattened3DVectorIndex(i, j, size.z + k, size);
+	if (i >= size.x) throw IndexOutOfBounds(ivec3(i, j, k), size, "i");
+	if (j >= size.y) throw IndexOutOfBounds(ivec3(i, j, k), size, "j");
+	if (k >= size.z) throw IndexOutOfBounds(ivec3(i, j, k), size, "k");
 	return i * size.y * size.z + j * size.z + k;
 }
 
@@ -297,6 +346,14 @@ T flattened3DVectorSample(std::vector<T> flattened, int i, int j, int k, glm::iv
 }
 
 inline int flattened4DVectorIndex(int i, int j, int k, int m,  glm::ivec4 size) {
+	if (i < 0) return flattened4DVectorIndex(size.x + i, j, k,m, size);
+	if (j < 0) return flattened4DVectorIndex(i, size.y + j, k,m, size);
+	if (k < 0) return flattened4DVectorIndex(i, j, size.z + k,m, size);
+	if (m < 0) return flattened4DVectorIndex(i, j, k, size.w + m, size);
+	if (i >= size.x) throw IndexOutOfBounds(ivec4(i, j, k, m), size, "i");
+	if (j >= size.y) throw IndexOutOfBounds(ivec4(i, j, k, m), size, "j");
+	if (k >= size.z) throw IndexOutOfBounds(ivec4(i, j, k, m), size, "k");
+	if (m >= size.w) throw IndexOutOfBounds(ivec4(i, j, k, m), size, "m");
 	return i * size.y * size.z * size.w + j * size.z * size.w + k * size.w + m;
 }
 
@@ -309,6 +366,14 @@ T flattened4DVectorSample(std::vector<T> flattened, int i, int j, int k, int m, 
 template<typename T>
 bool contains(const std::vector<T> &v, T x) {
 	return std::find(v.begin(), v.end(), x) != v.end();
+}
+
+template<typename T>
+bool containsAll(const std::vector<T> &big, const std::vector<T> &subset) {
+	for (auto& x : subset)
+		if (!contains(big, x))
+			return false;
+	return true;
 }
 
 template<typename T, typename U>
@@ -432,4 +497,47 @@ vector<vector<vector<T>>> grid (T x0, T d1, T d2, T d3, int n1, int n2, int n3) 
 		res.push_back(row);
 	}
 	return res;
+}
+
+inline bool contains(int i, ivec3 x) { return i == x.x || i == x.y || i == x.z; }
+inline bool contains(int i, ivec2 x) { return i == x.x || i == x.y; }
+inline bool contains(int i, ivec4 x) { return i == x.x || i == x.y || i == x.z || i == x.w; }
+inline bool contains(ivec3 x, int i) { return contains(i, x);}
+inline bool contains(ivec2 x, int i) { return contains(i, x);}
+inline bool contains(ivec4 x, int i) { return contains(i, x);}
+
+inline int setMinus(ivec3 x, ivec2 y) {
+	if (x.x == y.x) return x.y == y.y ? x.z : x.y;
+	if (x.x == y.y) return x.z;
+	return x.x;
+}
+
+inline int setMinus(ivec4 x, ivec3 y) {
+	if (x.x == y.x) return x.y == y.y ? x.z == y.z ? x.w : x.z : x.y;
+	if (x.x == y.y) return x.z == y.z ? x.w : x.z;
+	if (x.x == y.z) return x.w;
+	return x.x;
+}
+
+inline int setMinus(ivec2 x, int y) {
+	return x.x == y ? x.y : x.x;
+}
+
+inline ivec2 setMinus(ivec3 x, int y) {
+	if (x.x == y) return ivec2(x.y, x.z);
+	if (x.y == y) return ivec2(x.x, x.z);
+	return ivec2(x.x, x.y);
+}
+
+inline ivec3 setMinus(ivec4 x, int y) {
+	if (x.x == y) return ivec3(x.y, x.z, x.w);
+	if (x.y == y) return ivec3(x.x, x.z, x.w);
+	if (x.z == y) return ivec3(x.x, x.y, x.w);
+	return ivec3(x.x, x.y, x.z);
+}
+
+inline ivec2 setMinus(ivec4 x, ivec2 y) {
+	if (x.x == y.x) return x.y == y.y ? ivec2(x.z, x.w) : ivec2(x.y, x.z);
+	if (x.x == y.y) return ivec2(x.y, x.w);
+	return ivec2(x.x, x.y);
 }

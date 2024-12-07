@@ -326,6 +326,18 @@ Complex atanh(Complex c)
 	return (log(ONE + c) - log(ONE - c))/2;
 }
 
+Quaternion Quaternion::operator*(Quaternion r) const { return Quaternion(q.w*r.q.x + q.x*r.q.w + q.y*r.q.z - q.z*r.q.y,
+																		 q.w*r.q.y - q.x*r.q.z + q.y*r.q.w + q.z*r.q.x,
+																		 q.w*r.q.z + q.x*r.q.y - q.y*r.q.x + q.z*r.q.w,
+																		 q.w*r.q.w - q.x*r.q.x - q.y*r.q.y - q.z*r.q.z); }
+
+Quaternion Quaternion::pow(int p) const {
+	if (p < 0) return ~(*this).pow(-p);
+	if (p == 0) return Quaternion(1);
+	if (p == 1) return *this;
+	if (p % 2 == 0) return this->pow(p / 2) * this->pow(p / 2);
+	return (*this) * this->pow(p / 2) * this->pow(p / 2); }
+
 CP1::CP1()
 {
 	z = Complex(0, 0);
@@ -968,3 +980,14 @@ std::pair<vec2, mat2> eigendecomposition(mat2 m) {
 	vec2 v2 = vec2(m[1][0], lambda.y - m[0][0]);
 	return std::make_pair(lambda, mat2(v1, v2));
 }
+
+float polarAngle(vec3 v, vec3 t1, vec3 t2) {
+	return atan2(dot(v, t2), dot(v, t1));
+}
+
+float polarAngle(vec3 v, vec3 n) {
+	return polarAngle(v, orthogonalComplementBasis(n).first, orthogonalComplementBasis(n).second);
+}
+
+float cot(float x) { return 1.f / ::tan(x); }
+Complex cot(Complex c) { return 1.f / tan(c); }
