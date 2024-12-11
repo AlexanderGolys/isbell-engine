@@ -30,6 +30,7 @@ using std::variant, std::string, std::optional;
 namespace std {
 #define HOM(B,A) std::function<A(B)>
 #define BIHOM(A, B, C) std::function<C(A,B)>
+#define TRIHOM(A, B, C, D) std::function<D(A,B,C)>
 
 #define FUNC(B, ...) std::function<B(...)>
 #define END(A) HOM(A, A)
@@ -50,6 +51,11 @@ namespace std {
 #define Foo113 std::function<vec3(float, float)>
 #define Foo112 std::function<vec2(float, float)>
 #define Foo111 std::function<float(float, float)>
+
+#define Foo1111 std::function<float(float, float, float)>
+#define Foo1113 std::function<vec3(float, float, float)>
+
+
 #define betterInFamily(A) HOM(float, A)
 #define procrastinateIn(A) HOM(A, void)
 #define alboLeniwyAlboCwaniak HOM(void, void)

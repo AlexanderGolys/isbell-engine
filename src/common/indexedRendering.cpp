@@ -18,6 +18,9 @@ BufferManager::BufferManager(const std::set<CommonBufferType> &activeBuffers) {
     indices = activeBuffers.contains(INDEX) ? make_unique<IBUFF3>() : nullptr;
     this->activeBuffers = activeBuffers;
 }
+
+
+
 BufferManager::BufferManager(bool materials, const std::set<CommonBufferType> &extras) : BufferManager({POSITION, NORMAL, UV, COLOR, INDEX}) {
     if (materials) {
         this->activeBuffers = {POSITION, NORMAL, UV, COLOR, MATERIAL1, MATERIAL2, MATERIAL3, MATERIAL4, INDEX};
@@ -93,16 +96,51 @@ int BufferManager::addStdAttributesFromVertex(vec3 pos, vec3 norm, vec2 uv, vec4
     stds->normals.push_back(norm);
     stds->uvs.push_back(uv);
     stds->colors.push_back(col);
+	if (activeBuffers.contains(EXTRA0))
+		extra0->push_back(vec4(0));
+	if (activeBuffers.contains(EXTRA1))
+		extra->a.push_back(vec4(0));
+	if (activeBuffers.contains(EXTRA2))
+		extra->b.push_back(vec4(0));
+	if (activeBuffers.contains(EXTRA3))
+		extra->c.push_back(vec4(0));
+	if (activeBuffers.contains(EXTRA4))
+		extra->d.push_back(vec4(0));
     return stds->positions.size() - 1;
+}
+
+int BufferManager::addAttributesFromVertex(vec3 pos, vec3 norm, vec2 uv, vec4 col, vec4 extra0Data) {
+	stds->positions.push_back(pos);
+	stds->normals.push_back(norm);
+	stds->uvs.push_back(uv);
+	stds->colors.push_back(col);
+	extra0->push_back(extra0Data);
+	if (activeBuffers.contains(EXTRA1))
+		extra->a.push_back(vec4(0));
+	if (activeBuffers.contains(EXTRA2))
+		extra->b.push_back(vec4(0));
+	if (activeBuffers.contains(EXTRA3))
+		extra->c.push_back(vec4(0));
+	if (activeBuffers.contains(EXTRA4))
+		extra->d.push_back(vec4(0));
+	return stds->positions.size() - 1;
 }
 
 int BufferManager::addFullVertexData(vec3 pos, vec3 norm, vec2 uv, vec4 col) {
     return addStdAttributesFromVertex(pos, norm, uv, col);
 }
+
+int BufferManager::addFullVertexData(vec3 pos, vec3 norm, vec2 uv, vec4 col, vec4 extra0Data) {
+	return addAttributesFromVertex(pos, norm, uv, col, extra0Data);
+}
+
 int BufferManager::addFullVertexData(const Vertex &v) {
     return addStdAttributesFromVertex(v.getPosition(), v.getNormal(), v.getUV(), v.getColor());
 }
 
+int BufferManager::addFullVertexData(const Vertex &v, vec4 extra0Data) {
+	return addAttributesFromVertex(v.getPosition(), v.getNormal(), v.getUV(), v.getColor(), extra0Data);
+}
 
 BufferedVertex::BufferedVertex(BufferManager &bufferBoss, const Vertex &v) : bufferBoss(bufferBoss) {
     index = this->bufferBoss.addFullVertexData(v);
@@ -325,10 +363,16 @@ void WeakSuperMesh::addNewPolygroup(const vector<Vertex> &hardVertices, const ve
         triangles[id].emplace_back(*boss, ind, shift);
 }
 
+void WeakSuperMesh::addNewPolygroup(const std::vector<Vertex> &hardVertices, const std::vector<glm::ivec3> &faceIndices, const std::variant<int, std::string> &id, const std::vector<vec4> &extra0) {
+	addNewPolygroup(hardVertices, faceIndices, id);
+	for (int i = 0; i < vertices[id].size(); i++)
+		boss->setExtra(vertices[id][i].getIndex(), extra0[i], 0);
+}
+
 WeakSuperMesh::WeakSuperMesh(const WeakSuperMesh &other): boss(&*other.boss),
-                                                          vertices(other.vertices),
-                                                          triangles(other.triangles),
-                                                          material(other.material) {}
+														  vertices(other.vertices),
+														  triangles(other.triangles),
+														  material(other.material) {}
 
 
 void WeakSuperMesh::addUniformSurface(const SmoothParametricSurface &surf, int tRes, int uRes, const PolyGroupID &id) {
@@ -408,6 +452,8 @@ void WeakSuperMesh::mergeAndKeepID(const WeakSuperMesh &other) {
 	for (const auto& id: other.getPolyGroupIDs())
 		addNewPolygroup(other.getVertices(id), other.getIndices(id), id);
 }
+
+bool WeakSuperMesh::hasExtra(int slot) const {if (slot == 0) return hasExtra0(); if (slot == 1) return hasExtra1(); if (slot == 2) return hasExtra2(); if (slot == 3) return hasExtra3(); if (slot == 4) return hasExtra4(); throw std::invalid_argument("slot must be between 0 and 4");}
 
 
 std::vector<PolyGroupID> WeakSuperMesh::getPolyGroupIDs() const {
@@ -817,7 +863,82 @@ void Wireframe::changeBaseSurface(const SmoothParametricSurface &newsurf) {
 		}
 	surf = newsurf;
 }
-vec2 Wireframe::getSurfaceParameters(const BufferedVertex &v) const { return vec2(v.getColor().z, v.getColor().w); }
+vec2 Wireframe::getSurfaceParameters(const BufferedVertex &v) const {
+	return vec2(v.getColor().z, v.getColor().w);
+}
+
+PlanarFlowLines::PlanarFlowLines(const VectorFieldR2 &X, float dt, int steps, const std::function<float(float, float, float, vec2, vec2)> &width, const std::function<vec4(float, float, float, vec2, vec2)> &color)
+	: WeakSuperMesh(), X(X), dt(dt), steps(steps), width(width), color(color) {
+	boss = make_unique<BufferManager>(std::set({POSITION, NORMAL, UV, COLOR, INDEX, EXTRA0}));
+}
+
+
+void PlanarFlowLines::generateGrid(vec2 v_min, vec2 v_max, ivec2 res) {
+	startPoints = flatten(linspace2D(v_min, vec2((v_max-v_min).x/res.x, 0), vec2(0, (v_max-v_min).y/res.y), res.x, res.y));
+	ids = {};
+	ids.reserve(startPoints.size());
+	for (int i = 0; i < startPoints.size(); i++)
+		ids.push_back(randomID());
+}
+
+
+void PlanarFlowLines::generateRandomUniform(vec2 v_min, vec2 v_max, int n) {
+	startPoints = {};
+	startPoints.reserve(n);
+	ids = {};
+	ids.reserve(n);
+	for (int i = 0; i < n; i++) {
+		startPoints.emplace_back(randomFloat(v_min.x, v_max.x), randomFloat(v_min.y, v_max.y));
+		ids.push_back(randomID());
+	}
+}
+
+void PlanarFlowLines::generateStartTimesUniform(float t_max) {
+	for (int i = 0; i < startPoints.size(); i++)
+		startTimes.push_back(randomFloat(0, t_max));
+}
+
+void PlanarFlowLines::generateLine(int i) {
+
+	float t0 = startTimes[i];
+	vec2 p0 = startPoints[i];
+	vec2 p = startPoints[i];
+	vector<Vertex> verts = {};
+	vector<ivec3> trs = {};
+	vector<vec4> extra0 = {};
+	float len = 0;
+
+	for (int j = 1; j <= steps; j++) {
+		len += norm(X(p)*dt);
+		p += X(p)*dt;
+		vec2 n = X.normal(p);
+		float t = t0 + j*dt;
+		float speed = X.speed(p);
+		float w = width(t, t0, speed, p, p0);
+		vec2 q0 = p - n*w;
+		vec2 q1 = p + n*w;
+		vec4 c = color(t, t0, speed, p, p0);
+		c.w = speed;
+		verts.push_back(Vertex(vec3(q0, t/(steps*dt*20)), vec2(t, w), e3, c));
+		verts.push_back(Vertex(vec3(p, t/(steps*dt*20)), vec2(t, 0), e3, c));
+		verts.push_back(Vertex(vec3(q1, t/(steps*dt*20)), vec2(t, -w), e3, c));
+
+		extra0.push_back(vec4(t0, p0.x, p0.y, len));
+		extra0.push_back(vec4(t0, p0.x, p0.y, len));
+		extra0.push_back(vec4(t0, p0.x, p0.y, len));
+
+
+		if (j > 1) {
+			int last_ind = verts.size() - 1;
+			trs.push_back(ivec3(last_ind, last_ind-3, last_ind-4));
+			trs.push_back(ivec3(last_ind, last_ind-1, last_ind-4));
+			trs.push_back(ivec3(last_ind-1, last_ind-5, last_ind-4));
+			trs.push_back(ivec3(last_ind-1, last_ind-2, last_ind-5));
+		}
+	}
+
+	addNewPolygroup(verts, trs, ids[i], extra0);
+}
 
 std::function<void(float, float)> deformationOperator(const std::function<void(BufferedVertex &, float, float)> &deformation, WeakSuperMesh &mesh, const std::variant<int, std::string> &id) {
     return [&deformation, &mesh, id](float t, float delta) {

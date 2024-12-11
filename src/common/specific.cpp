@@ -383,9 +383,9 @@ SmoothParametricSurface sudaneseMobius(float eps) {
 
 SmoothParametricSurface twistedTorus(float a, float m, float n, int dommul1, int dommul2, float eps) {
 	return SmoothParametricSurface([a, m, n](float u, float v) {
-		return vec3(((a + ::cos(n * u / 2) * ::sin(v) - ::sin(n * u / 2) * ::sin(2 * v)) * ::cos(m * u / 2),
-			(a + ::cos(n * u / 2) * ::sin(v) - ::sin(n * u / 2) * ::sin(2 * v)) * ::sin(m * u / 2),
-			::sin(n * u / 2) * ::sin(v) + ::cos(n * u / 2) * ::sin(2 * v)));
+		return vec3((a + std::cos(n * u / 2) * std::sin(v) - std::sin(n * u / 2) * std::sin(2 * v)) * std::cos(m * u / 2),
+			(a + std::cos(n * u / 2) * std::sin(v) - std::sin(n * u / 2) * std::sin(2 * v)) * std::sin(m * u / 2),
+			std::sin(n * u / 2) * std::sin(v) + std::cos(n * u / 2) * std::sin(2 * v));
 	}, vec2(0, TAU*dommul1), vec2(0, TAU*dommul2), true, true, eps);
 }
 
@@ -568,8 +568,127 @@ SmoothParametricSurface cone(const SmoothParametricCurve &base, vec3 apex, float
 	return SmoothParametricSurface([base, apex](float u, float v) {return base(u) + v*(apex - base(u)); }, [base, apex](float u, float v) {return cross(base.tangent(u), apex - base(u)); }, [base, apex](float u, float v) {return cross(base.tangent(u), apex - base(u)); }, base.bounds(), vec2(0, 1), base.isPeriodic(), false, eps);
 }
 
+
+
 SmoothParametricSurface coneSide(float r, float h, vec3 center, vec3 v1, vec3 v2, vec3 dir, float eps) {
 	return cone(circle(r, center, v1, v2, eps), center + normalise(dir)*h, eps);
+}
+
+
+
+
+
+
+
+SmoothImplicitSurface sphereImplicit(float r, vec3 center, float eps) {
+	return SmoothImplicitSurface([r, center](vec3 p) { return norm2(p - center) - r*r; }, eps);
+}
+
+SmoothImplicitSurface torusImplicit(float r, float R, vec3 center, float eps) {
+	return SmoothImplicitSurface([r, R, center](vec3 p) {
+		vec3 q = p - center;
+		return ::pow(norm2(q) + R*R - r*r, 2) - 4*R*R*(q.x*q.x + q.y*q.y);
+	}, eps);
+}
+
+SmoothImplicitSurface genus2Implicit(float eps) {
+	return SmoothImplicitSurface([](vec3 p) {
+		float x = p.x, y = p.y, z = p.z;
+		return 2.f*y*(y*y - 3.f*x*x)*(1.f - z*z) + ::pow((x*x + y*y),2) - (9.f*z*z - 1.f)*(1.f - z*z);
+	}, eps);
+}
+
+SmoothImplicitSurface wineGlass(float eps) {
+	return SmoothImplicitSurface([](vec3 p) {
+		return p.x*p.x + p.y*p.y - ::pow(log(p.z +3.2), 2) - .02;
+	}, eps);
+}
+
+SmoothImplicitSurface equipotentialSurface(vector<vec3> points, vector<float> charges, float potential, float eps) {
+	return SmoothImplicitSurface([points, charges, potential](vec3 p) {
+		float res = 0;
+		for (int i = 0; i < points.size(); i++)
+			res += charges[i]/norm(p - points[i]);
+		return res - potential;
+	}, eps);
+}
+
+SmoothImplicitSurface chair(float k, float a, float b, float eps) {
+	return SmoothImplicitSurface([k, a, b](vec3 p) {
+		return square(norm2(p) - a*k*k) - b*(square(p.z - k) - 2.f*p.x*p.x)*(square(p.z + k) - 2.f*square(p.y));
+	}, eps);
+}
+
+SmoothImplicitSurface tangleCube(float eps) {
+	return SmoothImplicitSurface(
+		[](float x, float y, float z) { return pow4(x) - square(x)*5 + pow4(y) - square(y)*5 + pow4(z) - square(z)*5 + 10; },
+		[](float x, float y, float z) { return vec3(cube(x)*4 - x*10,  cube(y)*4 - y*10, cube(z)*4 - z*10); },
+		eps);
+}
+SmoothImplicitSurface wineImplicit(float eps) {
+	return SmoothImplicitSurface(
+		[](float x, float y, float z) { return -.4*sin(x*5) -.4*sin(y*5) -.4*sin(z*5) + .1*square(x) + .3*square(y) + .2*square(z) - .5; },
+		[](float x, float y, float z) { return vec3( -2*cos(x*5)+ .2*x, -2*cos(y*5)+ .6*y, -2*cos(z*5)+ .4*z ); },
+		eps);
+}
+
+SmoothImplicitSurface gumdrop(float eps) {
+	//return 4*(x**4 + (y**2 + z**2)**2) + 17*x**2*(y**2 + z**2) - 20*(x**2 + y**2 + z**2) + 17
+	return SmoothImplicitSurface([](float x, float y, float z) {
+									 return 4*pow4(x) + 4*pow4(y) + 4*pow4(z) + 8*sq(y)*sq(z) + 17*sq(x)*sq(y) + 17*sq(x)*sq(z) - 20*sq(x) - 20*sq(y) - 20*sq(z) + 17;
+								 },
+								 [](float x, float y, float z) { return vec3(
+										 16*cube(x) + 34*x*sq(z) + 34*x*sq(y) - 40*x,
+										 16*cube(y) + 16*y*sq(z) + 34*y*sq(x) - 40*y,
+										 16*cube(z) + 16*z*sq(y) + 34*z*sq(x) - 40*z); }, eps);
+}
+
+SmoothImplicitSurface genus2Implicit2(float eps) {
+	return SmoothImplicitSurface([](float x, float y, float z) {
+									 return .04 - pow4(x) + 2*pow6(x) - pow8(x) + 2*sq(x)*sq(y) - 2*pow4(x)*sq(y) - pow4(y) - sq(z);
+								 },
+								 [](float x, float y, float z) { return vec3(
+										 -4*pow3(x) + 12*pow5(x) - 8*pow7(x) + 8*x*sq(y) - 8*pow3(x)*sq(y),
+										 4*y*sq(x) - 4*y*pow4(x) - 4*pow3(y),
+										 -2*z); }, eps);
+
+}
+
+
+
+SmoothImplicitSurface genus2Implicit3(float c, float d, float eps) {
+	return SmoothImplicitSurface([c, d](float x, float y, float z) {
+		return sq(sq(x-1) + sq(y) - sq(c))*sq(sq(x+1) + sq(y) - sq(c)) + sq(z) - d;
+	}, eps);
+
+}
+
+SmoothImplicitSurface genus2Implicit4(float d, float eps) {
+	return SmoothImplicitSurface([d](float x, float y, float z) {
+		return sq(sq(x) - pow4(x) - sq(y)) + sq(z) - d;
+	}, eps);
+
+}
+
+SmoothImplicitSurface superellipsoid(float alpha1, float alpha2, float a, float b, float c, float r, float eps) {
+	return SmoothImplicitSurface([alpha1, alpha2, a, b, c, r](float x, float y, float z) {
+		return ::pow(::pow(abs(x/a), 2/alpha2) + ::pow(abs(y/b), 2/alpha2), alpha2/alpha1) + ::pow(abs(z/c), 2/alpha1) - r;
+	}, eps);
+
+}
+
+SmoothImplicitSurface superQuadric(float alpha, float beta, float gamma, float a, float b, float c, float r, float eps) {
+	return SmoothImplicitSurface([alpha, beta, gamma, a, b, c, r](float x, float y, float z) {
+		return ::pow(abs(x/a), alpha) + ::pow(abs(y/b), beta) + ::pow(abs(z/c), gamma) - r;
+	}, eps);
+
+}
+
+SmoothImplicitSurface K3Surface222(float eps) {
+	return SmoothImplicitSurface([](float x, float y, float z) {
+		return (sq(x) + 1)*(sq(y) + 1)*(sq(z) + 1) + 8*x*y*z - 2;
+	}, eps);
+
 }
 
 WeakSuperMesh arrow(vec3 start, vec3 head, float radius, float head_len, float head_radius, int radial, int straight, float eps, std::variant<int, std::string> id) {

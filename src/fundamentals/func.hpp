@@ -123,12 +123,19 @@ Foo22 derivativeOperator(const Foo21 &f, float epsilon);
 Foo13 derivativeOperator(const Foo13 &f, float epsilon);
 Foo12 derivativeOperator(const Foo12 &f, float epsilon);
 
+template<typename Y>
+HOM(vec3, Y) wrap(const TRIHOM(float, float, float, Y) &f_) { return [f=f_](vec3 v) { return f(v.x, v.y, v.z); }; }
+template<typename Y>
+TRIHOM(float, float, float, Y) unwrap(const HOM(vec3, Y) &f_) { return [f=f_](float x, float y, float z) { return f(vec3(x, y, z)); }; }
+
 class VectorFieldR2 {
 public:
 	Foo22 field;
 	VectorFieldR2() : field([](vec2 v) { return vec2(0, 0); }) {}
 	explicit VectorFieldR2(const Foo22 &field) : field(field) {}
 	vec2 operator()(vec2 v) const { return field(v); }
+	vec2 normal(vec2 x) const { return normalise(vec2(-field(x).y, field(x).x)); }
+	float speed(vec2 x) const { return length(field(x)); }
 };
 
 
@@ -145,13 +152,21 @@ public:
     RealFunctionR3 & operator=(RealFunctionR3 &&other) noexcept;
 
     RealFunctionR3(Foo31 f,Foo33 df, float eps=.01, Regularity regularity = Regularity::SMOOTH)
-    : _f(std::move(f)), _df(std::move(df)), eps(eps), regularity(regularity){};
+    : _f(f), _df(df), eps(eps), regularity(regularity){};
 
 	explicit RealFunctionR3(Foo31 f, float epsilon=0.01, Regularity regularity = Regularity::SMOOTH)
-    :  _f(std::move(f)), _df(derivativeOperator(f, eps)), eps(eps), regularity(regularity){};
+    :  _f(f), _df(derivativeOperator(f, epsilon)), eps(epsilon), regularity(regularity){};
+
+	RealFunctionR3(Foo1111 f,Foo1113 df, float eps=.01, Regularity regularity = Regularity::SMOOTH)
+	: _f(wrap(f)), _df(wrap(df)), eps(eps), regularity(regularity){};
+
+	explicit RealFunctionR3(Foo1111 f, float epsilon=0.01, Regularity regularity = Regularity::SMOOTH)
+	:  _f(wrap(f)), _df(derivativeOperator(wrap(f), epsilon)), eps(epsilon), regularity(regularity){};
 
 	float operator()(vec3 v) const;
 	vec3 df(vec3 v) const;
+	float operator()(float x, float y, float z) const { return _f(vec3(x, y, z)); }
+	vec3 df(float x, float y, float z) const { return _df(vec3(x, y, z)); }
 
     RealFunctionR3 operator*(float a) const;
     RealFunctionR3 operator+(float a) const;
@@ -167,6 +182,7 @@ public:
     friend RealFunctionR3 operator-(float a, const RealFunctionR3 &f) { return -f + a; }
     friend RealFunctionR3 operator/(float a, const RealFunctionR3 &f) { return constant(a)/f; }
     RealFunctionR3 operator~() const { return 1/(*this); }
+	float getEps() const { return eps; }
 
     VectorFieldR3 gradient() const;
     RealFunctionR3 Laplacian() const;
@@ -206,6 +222,8 @@ public:
 	mat3 df(vec3 x) const { return _df(x); }
 	vec3 operator()(vec3 x) const { return _f(x); }
     virtual SpaceEndomorphism operator&(const SpaceEndomorphism &g) const { return compose(g); }
+
+	float getEps() const { return eps; }
 
 	static SpaceEndomorphism linear(const mat3 &A) { return SpaceEndomorphism(A); }
 	static SpaceEndomorphism translation(vec3 v);
@@ -344,9 +362,15 @@ public:
 	RealFunctionR1(Fooo f, Fooo df, float epsilon=0.01) :  RealFunctionR1(f, df, derivativeOperator(df, epsilon), epsilon) {}
 	explicit RealFunctionR1(Fooo f, float epsilon=0.01) : RealFunctionR1(f, derivativeOperator(f, epsilon), epsilon) {}
 
+	RealFunctionR1(const RealFunctionR1 &other);
+	RealFunctionR1(RealFunctionR1 &&other) noexcept;
+	RealFunctionR1 & operator=(const RealFunctionR1 &other);
+	RealFunctionR1 & operator=(RealFunctionR1 &&other) noexcept;
+
 	float operator()(float x) const { return _f(x); }
 	float df(float x) const { return _df(x); }
 	float ddf(float x) const { return _ddf(x); }
+	RealFunctionR1 df() const {return RealFunctionR1(_df, _ddf, eps);}
 
 	RealFunctionR1 operator+(const RealFunctionR1 &g) const;
 	RealFunctionR1 operator*(float a) const;
@@ -379,10 +403,36 @@ public:
 	static RealFunctionR1 sqrt() { return RealFunctionR1([](float x) { return std::sqrt(x); }, [](float x) { return 1/(2*std::sqrt(x)); }, [](float x) { return -1/(4*x*std::sqrt(x)); }); }
 	static RealFunctionR1 pow(float a) { return RealFunctionR1([a](float x) { return std::pow(x, a); }, [a](float x) { return a * std::pow(x, a - 1); }, [a](float x) { return a * (a - 1) * std::pow(x, a - 2); }); }
 	static RealFunctionR1 pow(int a) { return RealFunctionR1([a](float x) { return std::pow(x, a); }, [a](float x) { return a * std::pow(x, a - 1); }, [a](float x) { return a * (a - 1) * std::pow(x, a - 2); }); }
-
-
-
 };
+
+class RealLineAutomorphism : public RealFunctionR1 {
+	RealFunctionR1 inverse;
+public:
+	RealLineAutomorphism(RealFunctionR1 f, RealFunctionR1 inv) : RealFunctionR1(f), inverse(inv) {}
+	RealLineAutomorphism(Fooo f, Fooo f_inv, float epsilon=0.01) : RealFunctionR1(f, epsilon), inverse(f_inv, epsilon) {}
+	RealLineAutomorphism(Fooo f, Fooo df, Fooo f_inv, float epsilon=0.01) : RealFunctionR1(f, df, epsilon), inverse(f_inv, epsilon) {}
+	RealLineAutomorphism(Fooo f, Fooo df, Fooo f_inv, Fooo df_inv, float epsilon=0.01) : RealFunctionR1(f, df, epsilon), inverse(f_inv, df_inv, epsilon) {}
+	RealLineAutomorphism(Fooo f, Fooo df, Fooo ddf, Fooo f_inv, Fooo df_inv, Fooo ddf_inv, float epsilon=0.01) : RealFunctionR1(f, df, ddf, epsilon), inverse(f_inv, df_inv, ddf_inv, epsilon) {}
+
+	float inv(float x) const {return inverse(x);}
+	RealLineAutomorphism inv() const {return RealLineAutomorphism(inverse, *this);}
+	RealLineAutomorphism operator~() const {return inv();}
+
+	RealLineAutomorphism operator& (const RealLineAutomorphism &g) const;
+	RealLineAutomorphism operator*(float c) const {return RealLineAutomorphism(static_cast<RealFunctionR1>(*this)*c, inverse/c);}
+	RealLineAutomorphism operator+(float c) const {return RealLineAutomorphism(static_cast<RealFunctionR1>(*this)+c, inverse-c);}
+	RealLineAutomorphism operator/(float c) const {return (*this)*(1/c);}
+	RealLineAutomorphism operator-(float c) const {return (*this)+(-c);}
+	RealLineAutomorphism operator-() const {return RealLineAutomorphism(-static_cast<RealFunctionR1>(*this), -inverse);}
+	friend RealLineAutomorphism operator*(float c, const RealLineAutomorphism &f) {return f*c;}
+	friend RealLineAutomorphism operator+(float c, const RealLineAutomorphism &f) {return f+c;}
+	friend RealLineAutomorphism operator-(float c, const RealLineAutomorphism &f) {return -f+c;}
+
+	static RealLineAutomorphism Id() {return RealLineAutomorphism(RealFunctionR1::x(), RealFunctionR1::x());}
+	static RealLineAutomorphism x() {return Id();}
+	static RealLineAutomorphism pow(int n);
+};
+
 
 
 
@@ -493,3 +543,11 @@ vector<A> vectorComprehension(const homspace &f, int n) {
 inline vec3 stereoProjection(vec4 v) {
 	return vec3(v.x / (1-v.w), v.y / (1-v.w), v.z / (1-v.w));
 }
+
+
+RealFunctionR1 smoothenReLu(float c0, float x_change_to_id);
+RealFunctionR1 expImpulse(float peak);
+RealFunctionR1 cubicShroom(float center, float margin);
+RealFunctionR1 rationalInfiniteShroom(float steepFactor, float center);
+RealFunctionR1 powerShroom(float begin, float end, float zeroExponent, float oneExponent);
+RealFunctionR1 toneMap(float k);

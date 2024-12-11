@@ -192,6 +192,36 @@ RealFunctionR3 RealFunctionR3::constant(float a) {
 
 
 
+RealFunctionR1::RealFunctionR1(const RealFunctionR1 &other): _f(other._f),
+															 _df(other._df),
+															 _ddf(other._ddf),
+															 eps(other.eps) {}
+
+RealFunctionR1::RealFunctionR1(RealFunctionR1 &&other) noexcept: _f(std::move(other._f)),
+																 _df(std::move(other._df)),
+																 _ddf(std::move(other._ddf)),
+																 eps(other.eps) {}
+
+RealFunctionR1 & RealFunctionR1::operator=(const RealFunctionR1 &other) {
+	if (this == &other)
+		return *this;
+	_f   = other._f;
+	_df  = other._df;
+	_ddf = other._ddf;
+	eps  = other.eps;
+	return *this;
+}
+
+RealFunctionR1 & RealFunctionR1::operator=(RealFunctionR1 &&other) noexcept {
+	if (this == &other)
+		return *this;
+	_f   = std::move(other._f);
+	_df  = std::move(other._df);
+	_ddf = std::move(other._ddf);
+	eps  = other.eps;
+	return *this;
+}
+
 RealFunctionR1 RealFunctionR1::operator+(const RealFunctionR1 &g) const { return RealFunctionR1([f=_f, g](float x) { return f(x) + g(x); },
 																								[df=_df, dg=g._df](float x) { return df(x) + dg(x); },
 																								[ddf=_ddf, ddg=g._ddf](float x) { return ddf(x) + ddg(x); }); }
@@ -229,6 +259,14 @@ RealFunctionR1 RealFunctionR1::polynomial(std::vector<float> coeffs) {
 	int degree                 = coeffs.size() - 1;
 	return monomial(degree) * coeffs[0] + polynomial(c_lower);
 }
+
+RealLineAutomorphism RealLineAutomorphism::operator&(const RealLineAutomorphism &g) const {
+	return RealLineAutomorphism(static_cast<RealFunctionR1>(*this) & static_cast<RealFunctionR1>(g), g.inverse & inverse);
+}
+
+RealLineAutomorphism RealLineAutomorphism::pow(int n) {
+	if (n % 2 == 0) throw IllegalArgumentError("Only odd degree monomials are invertible");
+	return RealLineAutomorphism(RealFunctionR1::pow(n), RealFunctionR1::pow(1.f/n));}
 
 PlaneSmoothEndomorphism::PlaneSmoothEndomorphism() {
 	_f = make_shared<std::function<vec2(vec2)>>([](vec2 v) {return v; });
@@ -269,6 +307,74 @@ PlaneAutomorphism PlaneAutomorphism::operator~() const {
 	return PlaneAutomorphism( f_inv_cpy, make_shared<std::function<mat2(vec2)>>(df_inv), _f);
 }
 
+RealFunctionR1 smoothenReLu(float c0, float x_change_to_id) {
+	return RealFunctionR1([c0, x_change_to_id](float t) {
+		if (t>=x_change_to_id) return t;
+		float a = 2.0*c0 - x_change_to_id;
+		float b = 2.0*x_change_to_id - 3.0*c0;
+		float x = t/x_change_to_id;
+		return (a*x + b)*x*x + c0;
+	});
+}
+
+RealFunctionR1 expImpulse(float peak) {
+	return RealFunctionR1([peak](float t) {
+		return t/peak*std::exp(1-t/peak);
+	});
+}
+
+RealFunctionR1 cubicShroom(float center, float margin) {
+	return RealFunctionR1([center, margin](float t) {
+			if (abs(t-center) > margin) return 0.f;
+			return 1.f - sq(t-center)*(3-2*abs(t-center)/margin)/sq(margin);
+		});
+}
+
+RealFunctionR1 powerShroom(float begin, float end, float zeroExponent, float oneExponent) {
+	if (zeroExponent <= 0) throw IllegalArgumentError("zeroExponent must be positive.");
+	if (oneExponent <= 0) throw IllegalArgumentError("oneExponent must be positive.");
+	return RealFunctionR1([begin, end, zeroExponent, oneExponent](float t) {
+		float x = (t-begin)/(end-begin);
+		if (x < 0) return 0.f;
+		if (x > 1) return 0.f;
+		float c = pow(zeroExponent+oneExponent, zeroExponent+oneExponent)/(pow(zeroExponent, zeroExponent) * pow(oneExponent, oneExponent));
+		return c * pow(x, zeroExponent) * pow(1.f-x, oneExponent);
+	});
+}
+
+RealFunctionR1 toneMap(float k) {
+	return RealFunctionR1([k](float t) {
+		return (k*t)/(1+k*t);
+	});
+}
+
+RealFunctionR1 rationalInfiniteShroom(float steepFactor, float center) {
+	if (steepFactor <= 0) throw IllegalArgumentError("steepFactor must be positive.");
+	return RealFunctionR1([steepFactor, center](float t) {
+			return 1.f/(steepFactor*sq(t-center) + 1);
+		});
+}
+
+RealFunctionR1 expStep(int exponentDegree, float center) {
+	if (exponentDegree < 1) throw IllegalArgumentError("Exponent should be positive (and at least 2).");
+	if (exponentDegree < 2) throw IllegalArgumentError("Step with exponent 1 is not differentiable at zero.");
+	return RealFunctionR1([exponentDegree, center](float t) {
+			if (t < center) return 1.f;
+			return (float)exp(-1.f*exp(exponentDegree)*pow(t, exponentDegree));
+		});
+}
+
+RealFunctionR1 flatFunctionStep(float center) {
+	return RealFunctionR1([ center](float t) {
+			return t > center ? exp(-1/(t-center)) : 0;
+		});
+}
+
+RealFunctionR1 flatAtRoofShroom(float center) {
+	return RealFunctionR1([ center](float t) {
+			return 1- exp(-1/sq(t-center));
+		});
+}
 
 
 
@@ -283,7 +389,6 @@ SpaceEndomorphism::SpaceEndomorphism(std::function<vec3(vec3)> f, float epsilon)
         );
     };
 }
-
 
 
 SpaceEndomorphism SpaceEndomorphism::compose(const SpaceEndomorphism &g) const {

@@ -1,7 +1,7 @@
 #pragma once
 
 #include "renderingUtils.hpp"
-// #include "src/geometry/smoothParametric.hpp"
+//#include "src/geometry/smoothParametric.hpp"
 
 #include <set>
 
@@ -70,6 +70,9 @@ public:
     int addMaterialBufferData(const MaterialPhong &mat);
     int addFullVertexData(vec3 pos, vec3 norm, vec2 uv, vec4 col);
     int addFullVertexData(const Vertex &v);
+	int addFullVertexData(vec3 pos, vec3 norm, vec2 uv, vec4 col, vec4 extra0Data);
+	int addAttributesFromVertex(vec3 pos, vec3 norm, vec2 uv, vec4 col, vec4 extra0Data);
+	int addFullVertexData(const Vertex &v, vec4 extra0Data);
 
     void reserveSpace(int targetSize);
     void reserveSpaceForIndex(int targetSize) { indices->reserve(targetSize); }
@@ -98,6 +101,11 @@ public:
     void setExtra(int index, vec4 value, int slot = 1);
     void setExtra(int index, vec3 value, int slot = 1);
     void setExtra(int index, float value, int slot = 1, int component = 3);
+	bool hasExtra0() const {return activeBuffers.contains(EXTRA0); }
+	bool hasExtra1() const {return activeBuffers.contains(EXTRA1); }
+	bool hasExtra2() const {return activeBuffers.contains(EXTRA2); }
+	bool hasExtra3() const {return activeBuffers.contains(EXTRA3); }
+	bool hasExtra4() const {return activeBuffers.contains(EXTRA4); }
 };
 
 
@@ -214,6 +222,10 @@ public:
   WeakSuperMesh(const char* filename, const PolyGroupID &id);
 
   void addNewPolygroup(const std::vector<Vertex> &hardVertices, const std::vector<glm::ivec3> &faceIndices, const PolyGroupID &id);
+  void addNewPolygroup(const std::vector<Vertex> &hardVertices, const std::vector<glm::ivec3> &faceIndices, const PolyGroupID &id, const std::vector<vec4> &extra0);
+  void addNewPolygroup(const std::vector<Vertex> &hardVertices, const std::vector<glm::ivec3> &faceIndices, const PolyGroupID &id, const std::vector<vec4> &extra0, const std::vector<mat4> &extra);
+
+
   void addNewPolygroup(const char* filename, const PolyGroupID &id);
 
 
@@ -230,6 +242,13 @@ public:
 	void addUniformSurface(const SmoothParametricSurface &surf, int tRes, int uRes) {return addUniformSurface(surf, tRes, uRes, randomID());}
   void merge (const WeakSuperMesh &other);
 	void mergeAndKeepID(const WeakSuperMesh &other);
+
+	bool hasExtra0() const {return boss->hasExtra0();}
+	bool hasExtra1() const {return boss->hasExtra1();}
+	bool hasExtra2() const {return boss->hasExtra2();}
+	bool hasExtra3() const {return boss->hasExtra3();}
+	bool hasExtra4() const {return boss->hasExtra4();}
+	bool hasExtra(int slot) const;
 
   void* bufferIndexLocation() const { return boss->firstElementAddress(INDEX); }
   size_t bufferIndexSize() const { return boss->bufferSize(INDEX); }
@@ -302,7 +321,7 @@ public:
 	void paintMeanCurvature(const PolyGroupID &id);
 	void paintMeanCurvature();
 
-  template<typename T>
+	template<typename T>
     T integrateOverTriangles(const std::function<T(const IndexedTriangle &)> &f, PolyGroupID id) const;
 
     vec3 centerOfMass(PolyGroupID id) const;
@@ -340,4 +359,43 @@ public:
 
 	void changeBaseSurface(const SmoothParametricSurface &newsurf);
 	vec2 getSurfaceParameters(const BufferedVertex &v) const;
+};
+
+
+
+class PlanarFlowLines : public WeakSuperMesh {
+	VectorFieldR2 X;
+	float dt;
+	int steps;
+	std::function<float(float, float, float, vec2, vec2)> width; //w(t, t0, speed, x, x0)
+	std::function<vec4(float, float, float, vec2, vec2)> color;;
+	vector<vec2> startPoints;
+	vector<float> startTimes;
+	vector<PolyGroupID> ids;
+
+	// uv = (t, w)
+	// pos = (x, y, 0)
+	// n = (0, 0, 1)
+	// col = (color, speed)
+	// extra1 = (t0, x0, y0, len)
+
+public:
+	PlanarFlowLines(const VectorFieldR2 &X, float dt, int steps, const std::function<float(float, float, float, vec2, vec2)> &width, const std::function<vec4(float, float, float, vec2, vec2)> &color);
+	void generateGrid(vec2 v_min, vec2 v_max, ivec2 res);
+	void generateRandomUniform(vec2 v_min, vec2 v_max, int n);
+	void generateStartTimesAll0() { startTimes = vector<float>(startPoints.size(), 0); }
+	void generateStartTimesUniform(float t_max);
+	void generateLine(int i);
+	void generateLines() { for (int i = 0; i < startPoints.size(); i++) generateLine(i); }
+
+	static float getTimeRelative(const BufferedVertex &v) { return v.getUV().x; }
+	static float getT0(const BufferedVertex &v) { return v.getExtra(0).x; }
+	static float getTimeAbsolute(const BufferedVertex &v) { return getT0(v) + getTimeRelative(v); }
+	static vec2 getPos(const BufferedVertex &v) { return vec2(v.getPosition()); }
+	static vec2 getStartPoint(const BufferedVertex &v) { return vec2(v.getExtra(0).y, v.getExtra(0).z); }
+	static float getSpeed(const BufferedVertex &v) { return v.getColor().w; }
+	static float getLength(const BufferedVertex &v) { return v.getExtra(0).w; }
+	static vec4 getColor(const BufferedVertex &v) { return vec4(vec3(v.getColor()), 1); }
+	static float getWidth(const BufferedVertex &v) { return v.getUV().y; }
+
 };

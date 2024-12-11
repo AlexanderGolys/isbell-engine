@@ -6,13 +6,53 @@ using std::vector, std::string, std::shared_ptr, std::unique_ptr, std::pair, std
 
 using namespace glm;
 
-SmoothImplicitSurface::SmoothImplicitSurface(const RealFunctionR3 &F) {
-    _F = F;
+
+vec3 SmoothImplicitSurface::newtonStepProject(vec3 p, float tolerance, int maxIter) const {
+	vec3 last_q = p;
+	for (int i = 0; i < maxIter; i++) {
+		vec3 q = last_q - _F.df(last_q)*_F(last_q)/norm2(_F.df(last_q));
+		if (norm2(q - last_q) < tolerance*tolerance)
+			return q;
+		last_q = q;
+	}
+	return last_q;
 }
 
-float SmoothImplicitSurface::operator()(vec3 p) const {
-    return _F(p);
+void SmoothImplicitSurface::projectPoints(WeakSuperMesh &mesh, float tolerance, int maxIter) {
+	mesh.deformPerVertex([this, tolerance, maxIter](BufferedVertex &v) {
+		v.setPosition(newtonStepProject(v.getPosition(), tolerance, maxIter));
+		v.setNormal(normal(v.getPosition()));
+	});
 }
+
+SmoothImplicitSurface SmoothImplicitSurface::operator&(const SpaceEndomorphism &g) const {
+	return SmoothImplicitSurface([F=_F, g](vec3 x) { return F(g(x)); },
+								 [F=_F, g](vec3 x) { return F.df(g(x))*g.df(x); },
+								 min(_F.getEps(), g.getEps())	);
+}
+
+SmoothImplicitSurface SmoothImplicitSurface::isoSurface(float level) const {
+	return SmoothImplicitSurface(_F - level);
+}
+
+void SmoothImplicitSurfacePencil::deformMesh(float t, WeakSuperMesh &mesh, float tolerance, int maxIter) {
+	(*this)(t).projectPoints(mesh, tolerance, maxIter);
+}
+
+SmoothImplicitSurfacePencil interpolate(const SmoothImplicitSurface &s1, const SmoothImplicitSurface &s2) {
+	return SmoothImplicitSurfacePencil([F=s1.getF(), G=s2.getF()](float t) {
+		float s = glm::smoothstep(0.f, 1.f, t);
+		return (1-s)*F + s*G;
+	});
+}
+
+SmoothImplicitSurfacePencil productMerge(const SmoothImplicitSurface &s1, const SmoothImplicitSurface &s2, float Rmax) {
+	return SmoothImplicitSurfacePencil([F=s1.getF(), G=s2.getF(), Rmax](float t) {
+	float s = glm::smoothstep(0.f, 1.f, t);
+	return F*G - s*Rmax;
+	});
+}
+
 
 AffinePlane::AffinePlane(vec3 n, float d) :
 SmoothImplicitSurface(RealFunctionR3([n, d](vec3 p) {return dot(p, n) - d; }, [n](vec3 p) {return n; })) {
@@ -60,6 +100,8 @@ mat3 AffinePlane::pivotAndBasis() const {
 vec2 AffinePlane::localCoordinates(vec3 p) const {
     return vec2(dot(p - pivot, v1), dot(p - pivot, v2));
 }
+
+
 
 
 
@@ -310,12 +352,596 @@ int TriangulatedImplicitSurface::minAngleIndex() {
 }
 
 
+std::array<CubeCorner, 3> CubeCorner::adjacentCorners() const {
+	return {CubeCorner(!up, right, front),
+			CubeCorner(up, !right, front),
+			CubeCorner(up, right, !front)};
+}
 
-void TriangulatedImplicitSurface::checkFrontPolygonSelfIntersections() { throw std::logic_error("Not implemented"); }
-void TriangulatedImplicitSurface::checkFrontPolygonIntersectionWithPolygon(int i) { throw std::logic_error("Not implemented"); }
+vector<CubeCorner> CubeCorner::adjacentCornersVec() const {
+	return {CubeCorner(!up, right, front),
+			CubeCorner(up, !right, front),
+			CubeCorner(up, right, !front)};
+}
+
+bool nbhd(CubeCorner a, CubeCorner b) {
+	int diff = 0;
+	if (a.up != b.up) diff++;
+	if (a.right != b.right) diff++;
+	if (a.front != b.front) diff++;
+	return diff == 1;
+}
+
+bool opposite(CubeCorner a, CubeCorner b) {
+	return a.up == !b.up && a.right == !b.right && a.front == !b.front;
+}
+
+bool coplanar(CubeCorner a, CubeCorner b, CubeCorner c) {
+	return a.front == b.front && a.front == c.front ||
+			a.right == b.right && a.right == c.right ||
+			a.up == b.up && a.up == c.up;
+}
+
+bool coplanar(CubeCorner a, CubeCorner b, CubeCorner c, CubeCorner d) {
+	return a.front == b.front && a.front == c.front && a.front == d.front ||
+			a.right == b.right && a.right == c.right && a.right == d.right ||
+			a.up == b.up && a.up == c.up && a.up == d.up;
+}
+
+ivec3 TetrahedronMarching::edgeCenter(int i, int j) const {
+	return (vertex(i) + vertex(j)) / 2;
+}
+
+vector<ivec3> TetrahedronMarching::edgeCentersFromVertex(int i) const {
+	vector<ivec3> result = {};
+	for (int j = 0; j < 4; j++)
+		if (j != i)
+			result.push_back(edgeCenter(i, j));
+	return result;
+}
+
+vector<vector<ivec3>> TetrahedronMarching::trianglesBetween(int i, int j) const
+{
+	vector<vector<ivec3>> result = {};
+	vector<int> comp = setMinus<int>({0, 1, 2, 3}, {i, j});
+	ivec3 p11 = edgeCenter(i, comp[0]);
+	ivec3 p12 = edgeCenter(i, comp[1]);
+	ivec3 p21 = edgeCenter(j, comp[0]);
+	ivec3 p22 = edgeCenter(j, comp[1]);
+	result.push_back({p11, p12, p21});
+	result.push_back({p12, p21, p22});
+	return result;
+}
+
+vector<ivec3> TetrahedronMarching::edgeCentersFromVertex(ivec3 v) const {
+	for (int i = 0; i < 4; i++)
+		if (vertex(i) == v)
+			return edgeCentersFromVertex(i);
+	throw std::logic_error("vertex not found");
+}
+
+vector<vector<ivec3>> TetrahedronMarching::trianglesBetween(ivec3 v1, ivec3 v2) const {
+	for (int i = 0; i < 4; i++)
+		if (vertex(i) == v1)
+			for (int j = 0; j < 4; j++)
+				if (vertex(j) == v2)
+					return trianglesBetween(i, j);
+	throw std::logic_error("vertices incompatible");
+}
 
 
-void TriangulatedImplicitSurface::expandFrontPolygon(int i) { throw std::logic_error("Not implemented"); }
+ivec3 TetrahedronMarching::vertex(int i) const {
+	vector<ivec3> vertices = {p1, p2, p3, p4};
+	return vertices[i];
+}
+
+vector<ivec3> TetrahedronMarching::complement(const vector<ivec3> &arr) const {
+return setMinus<ivec3>({p1, p2, p3, p4}, arr);
+}
+
+std::array<std::array<CubeCorner, 2>, 3> CubeCorner::adjacentEdges() const {
+	std::array<CubeCorner, 3> corners = adjacentCorners();
+	return {std::array<CubeCorner, 2>{*this, corners[0]},
+			std::array<CubeCorner, 2>{*this, corners[1]},
+			std::array<CubeCorner, 2>{*this, corners[2]}};
+}
+
+MarchingCubeChunk::MarchingCubeChunk(const vec3 &corner0, const vec3 &corner1, const ivec3 &res, const std::shared_ptr<SmoothImplicitSurface> &surface)
+	: id(randomID()), cornerLow(corner0), cornerHigh(corner1), res(res), surface(surface) {
+	vertexStep = (corner1 - corner0) / (vec3(res)*4.0f);
+}
+
+vec3 MarchingCubeChunk::vertexPosition(ivec3 i) const {
+	return vec3(cornerLow.x + i.x*vertexStep.x,
+				cornerLow.y + i.y*vertexStep.y,
+				cornerLow.z + i.z*vertexStep.z);
+}
+
+vec3 MarchingCubeChunk::cornerPosition(ivec3 cube, CubeCorner corner) const {
+	return vertexPosition(cornerVertex(cube, corner));
+}
+
+vec3 MarchingCubeChunk::edgeCenter(ivec3 cube, CubeCorner corner1, CubeCorner corner2) const {
+	return (cornerPosition(cube, corner1) + cornerPosition(cube, corner2)) / 2.0f;
+}
+
+ivec3 MarchingCubeChunk::cornerVertex(ivec3 cube, CubeCorner corner) {
+	return (cube + ivec3(corner.up, corner.right, corner.front))*4;
+}
+
+ivec3 MarchingCubeChunk::edgeCenterVertex(ivec3 cube, CubeCorner corner1, CubeCorner corner2) {
+	if (corner1.up != corner2.up && corner1.right != corner2.right)
+		throw std::logic_error("not neighbours");
+	if (corner1.up != corner2.up && corner1.front != corner2.front)
+		throw std::logic_error("not neighbours");
+	if (corner1.right != corner2.right && corner1.front != corner2.front)
+		throw std::logic_error("not neighbours");
+
+	if (corner1.front != corner2.front)
+		return cube*4 + ivec3(corner1.up, corner1.right, 0)*4 + ivec3(0, 0, 2);
+	if (corner1.right != corner2.right)
+		return cube*4 + ivec3(corner1.up, 0, corner1.front)*4 + ivec3(0, 2, 0);
+	return cube*4 + ivec3(0, corner1.right, corner1.front)*4 + ivec3(2, 0, 0);
+}
+
+void MarchingCubeChunk::generate() {
+	if (!triangles.empty())
+		return;
+	for (int i = 0; i < res.x; i++)
+		for (int j = 0; j < res.y; j++)
+			for (int k = 0; k < res.z; k++)
+				generateCube(ivec3(i, j, k));
+}
+
+
+bool MarchingCubeChunk::vertexAlreadyAdded(ivec3 vertex) const {
+	return addedVertices.contains(hash_ivec3(vertex));
+}
+
+int MarchingCubeChunk::addVertex(ivec3 vertex) {
+	if (vertexAlreadyAdded(vertex))
+		return addedVertices[hash_ivec3(vertex)];
+	addedVertices[hash_ivec3(vertex)] = vertices.size();
+	vertices.push_back(vertex);
+	return vertices.size() - 1;
+}
+
+bool MarchingCubeChunk::cornerAlreadyAdded(ivec3 box, CubeCorner corner) const {
+	return vertexAlreadyAdded(cornerVertex(box, corner));
+}
+
+int MarchingCubeChunk::addCorner(ivec3 box, CubeCorner corner) {
+	return addVertex(cornerVertex(box, corner));
+}
+
+bool MarchingCubeChunk::edgeCenterAlreadyAdded(ivec3 box, CubeCorner corner1, CubeCorner corner2) const {
+	return vertexAlreadyAdded(edgeCenterVertex(box, corner1, corner2));
+}
+int MarchingCubeChunk::addEdgeCenter(ivec3 box, CubeCorner corner1, CubeCorner corner2) {
+	return addVertex(edgeCenterVertex(box, corner1, corner2));
+}
+
+void MarchingCubeChunk::addTriangle(ivec3 a, ivec3 b, ivec3 c) {
+	int ia = addVertex(a);
+	int ib = addVertex(b);
+	int ic = addVertex(c);
+	triangles.push_back(ivec3(ia, ib, ic));
+}
+
+void MarchingCubeChunk::generateTetra() {
+	for (int i = 0; i < res.x; i++)
+		for (int j = 0; j < res.y; j++)
+			for (int k = 0; k < res.z; k++)
+				generateCubeTetra(ivec3(i, j, k));
+}
+
+void MarchingCubeChunk::generateCubeTetra(ivec3 ind) {
+	for (auto tetra: subdivideCube(ind))
+		generateTetrahedron(tetra);
+}
+
+void MarchingCubeChunk::generateTetrahedron(const TetrahedronMarching &tetra) {
+	vector<ivec3> positive = {};
+	for (ivec3 vertex: tetra.vertices())
+		if (surface->operator()(vertexPosition(vertex)) > 0)
+			positive.push_back(vertex);
+	if (positive.size() > 2)
+		positive = tetra.complement(positive);
+
+	if (positive.empty())
+		return;
+
+	if (positive.size() == 1) {
+		vector<ivec3> trVertices = tetra.edgeCentersFromVertex(positive[0]);
+		addTriangle(trVertices[0], trVertices[1], trVertices[2]);
+		return;
+	}
+
+	vector<vector<ivec3>> triangles = tetra.trianglesBetween(positive[0], positive[1]);
+	addTriangle(triangles[0][0], triangles[0][1], triangles[0][2]);
+	addTriangle(triangles[1][0], triangles[1][1], triangles[1][2]);
+
+}
+
+
+vector<TetrahedronMarching> MarchingCubeChunk::subdivideCubeFace(ivec3 center, ivec3 corner11, ivec3 corner12, ivec3 corner21, ivec3 corner22) const {
+	ivec3 e1 = (corner11 + corner12) / 2;
+	ivec3 e2 = (corner12 + corner22) / 2;
+	ivec3 e3 = (corner22 + corner21) / 2;
+	ivec3 e4 = (corner21 + corner11) / 2;
+	ivec3 m = (corner11 + corner22) / 2;
+	return {TetrahedronMarching(center, corner11, e1, e4),
+			TetrahedronMarching(center, m, e1, e4),
+			TetrahedronMarching(center, corner12, e1, e2),
+			TetrahedronMarching(center, m, e1, e2),
+			TetrahedronMarching(center, corner22, e2, e3),
+			TetrahedronMarching(center, m, e2, e3),
+			TetrahedronMarching(center, corner21, e3, e4),
+			TetrahedronMarching(center, m, e3, e4)};
+}
+
+vector<TetrahedronMarching> MarchingCubeChunk::subdivideCube(ivec3 cube) const {
+	ivec3 center = cube*4 + ivec3(2, 2, 2);
+	ivec3 p0 = cube*4;
+	vector<TetrahedronMarching> s1 = subdivideCubeFace(center, p0, p0 + ivec3(4, 0, 0), p0 + ivec3(0, 4, 0), p0 + ivec3(4, 4, 0));
+	vector<TetrahedronMarching> s2 = subdivideCubeFace(center, p0, p0 + ivec3(0, 4, 0), p0 + ivec3(0, 0, 4), p0 + ivec3(0, 4, 4));
+	vector<TetrahedronMarching> s3 = subdivideCubeFace(center, p0, p0 + ivec3(0, 0, 4), p0 + ivec3(4, 0, 0), p0 + ivec3(4, 0, 4));
+	vector<TetrahedronMarching> s4 = subdivideCubeFace(center, p0 + ivec3(4, 0, 0), p0 + ivec3(4, 0, 4), p0 + ivec3(4, 4, 0), p0 + ivec3(4, 4, 4));
+	vector<TetrahedronMarching> s5 = subdivideCubeFace(center, p0 + ivec3(0, 4, 0), p0 + ivec3(0, 4, 4), p0 + ivec3(4, 4, 0), p0 + ivec3(4, 4, 4));
+	vector<TetrahedronMarching> s6 = subdivideCubeFace(center, p0 + ivec3(0, 0, 4), p0 + ivec3(0, 4, 4), p0 + ivec3(4, 0, 4), p0 + ivec3(4, 4, 4));
+	s1.insert(s1.end(), s2.begin(), s2.end());
+	s1.insert(s1.end(), s3.begin(), s3.end());
+	s1.insert(s1.end(), s4.begin(), s4.end());
+	s1.insert(s1.end(), s5.begin(), s5.end());
+	s1.insert(s1.end(), s6.begin(), s6.end());
+	return s1;
+}
+
+
+vector<PrimitiveCubeConfiguration> MarchingCubeChunk::configurations(ivec3 cube) const {
+	auto diff = differingCorners(cube);
+	int noDiff = diff.size();
+
+	if (noDiff == 0)
+		return {};
+	if (noDiff == 1)
+		return {PrimitiveCubeConfiguration{CORNER, differingCorners(cube)}};
+	if (noDiff == 2) {
+		if (nbhd(diff[0], diff[1]))
+			return {PrimitiveCubeConfiguration{EDGE, diff}};
+		return {PrimitiveCubeConfiguration{CORNER, {diff[0]}},
+					PrimitiveCubeConfiguration{CORNER, {diff[1]}}};
+	}
+	if (noDiff == 3) {
+		auto c1 = diff[0];
+		auto c2 = diff[1];
+		auto c3 = diff[2];
+		if (faceDiag(c1, c2) && faceDiag(c2, c3) && faceDiag(c3, c1))
+			return {PrimitiveCubeConfiguration{CORNER, {diff[0]}},
+					PrimitiveCubeConfiguration{CORNER, {diff[1]}},
+					PrimitiveCubeConfiguration{CORNER, {diff[2]}}};
+		if (coplanar(c1, c2, c3))
+			return {PrimitiveCubeConfiguration{TRIPLE, diff}};
+		if (nbhd(c1, c2))
+			return {PrimitiveCubeConfiguration{EDGE, {c1, c2}},
+					PrimitiveCubeConfiguration{CORNER, {c3}}};
+		if (nbhd(c2, c3))
+			return {PrimitiveCubeConfiguration{EDGE, {c2, c3}},
+					PrimitiveCubeConfiguration{CORNER, {c1}}};
+		return {PrimitiveCubeConfiguration{EDGE, {c1, c3}},
+				PrimitiveCubeConfiguration{CORNER, {c2}}};
+	}
+
+	auto c1 = diff[0];
+	auto c2 = diff[1];
+	auto c3 = diff[2];
+	auto c4 = diff[3];
+
+	if (faceDiag(c1, c2) && faceDiag(c2, c3) && faceDiag(c3, c4) && faceDiag(c4, c1))
+		return {PrimitiveCubeConfiguration{CORNER, {diff[0]}},
+				PrimitiveCubeConfiguration{CORNER, {diff[1]}},
+				PrimitiveCubeConfiguration{CORNER, {diff[2]}},
+				PrimitiveCubeConfiguration{CORNER, {diff[3]}},};
+
+	if (coplanar(c1, c2, c3, c4)) {
+		if (c1.front == c2.front && c1.front == c3.front && c1.front == c4.front)
+			return {PrimitiveCubeConfiguration(CUBEFACE, {
+			CubeCorner(false, false, c1.front),
+			CubeCorner(false, true, c1.front),
+			CubeCorner(true, true, c1.front),
+			CubeCorner(true, false, c1.front)})};
+		if (c1.right == c2.right && c1.right == c3.right && c1.right == c4.right)
+			return {PrimitiveCubeConfiguration(CUBEFACE, {
+			CubeCorner( false,c1.right,  false),
+			CubeCorner( false,c1.right,  true),
+			CubeCorner( true, c1.right, true),
+			CubeCorner( true, c1.right, false)})};
+		return {PrimitiveCubeConfiguration(CUBEFACE, {
+			CubeCorner( c1.up, false, false),
+			CubeCorner( c1.up, false, true),
+			CubeCorner(c1.up,  true, true),
+			CubeCorner(c1.up,  true, false)})};
+	}
+
+	for (auto c: diff) {
+		auto comp = setMinus(diff, c);
+		if (nbhd(c, comp[0]) && nbhd(c, comp[1]) && nbhd(c, comp[2]))
+			return {PrimitiveCubeConfiguration{TETRA, {c, comp[0], comp[1], comp[2]}}};
+		for (auto d: comp) {
+			auto compcomp = setMinus(comp, d);
+			if (nbhd(c, d) && nbhd(compcomp[1], compcomp[0])
+				&& !nbhd(c, compcomp[0]) && !nbhd(c, compcomp[1])
+				&& !nbhd(d, compcomp[0]) && !nbhd(d, compcomp[1]))
+				return {PrimitiveCubeConfiguration{EDGE, {c, d}},
+						PrimitiveCubeConfiguration{EDGE, {compcomp[0], compcomp[1]}}};
+		}
+	}
+	for (auto c: diff) {
+		auto comp = setMinus(diff, c);
+		if (!nbhd(c, comp[0]) && !nbhd(c, comp[1]) && !nbhd(c, comp[2]))
+			return {PrimitiveCubeConfiguration{CORNER, {c}},
+					PrimitiveCubeConfiguration{TRIPLE, comp}};
+	}
+	for (auto c: diff) {
+		auto comp = setMinus(diff, c);
+		for (auto d: comp) {
+			auto compcomp = setMinus(comp, d);
+			if (nbhd(c, d) && nbhd(d, compcomp[0]) && nbhd(compcomp[0], compcomp[1]))
+				return {PrimitiveCubeConfiguration{LONG, {c, d, compcomp[0], compcomp[1]}}};
+			if (nbhd(c, d) && nbhd(d, compcomp[1]) && nbhd(compcomp[1], compcomp[0]))
+				return {PrimitiveCubeConfiguration{LONG, {c, d, compcomp[1], compcomp[0]}}};
+		}
+	}
+	return {};
+}
+
+void MarchingCubeChunk::generatePrimitiveConfiguration(const PrimitiveCubeConfiguration &config, ivec3 cube) {
+	if (config.type == CORNER) {
+//		return;
+		auto v = config.corners[0];
+		auto adjacents = v.adjacentCornersVec();
+		int a = addEdgeCenter(cube, v, adjacents[0]);
+		int b = addEdgeCenter(cube, v, adjacents[1]);
+		int c = addEdgeCenter(cube, v, adjacents[2]);
+		triangles.push_back(ivec3(a, b, c));
+	}
+	if (config.type == EDGE) {
+//		return;
+		auto c1 = config.corners[0];
+		auto c2 = config.corners[1];
+
+		CubeCorner a1 = CubeCorner(0);
+		CubeCorner a2 = CubeCorner(0);
+		CubeCorner b1 = CubeCorner(0);
+		CubeCorner b2 = CubeCorner(0);
+
+		if (c1.up != c2.up) {
+			a1 = CubeCorner(c1.up, c1.right, !c1.front);
+			b1 = CubeCorner(c1.up, !c1.right, c1.front);
+			a2 = CubeCorner(c2.up, c1.right, !c1.front);
+			b2 = CubeCorner(c2.up, !c1.right, c1.front);
+		}
+		else if (c1.right != c2.right) {
+			a1 = CubeCorner(c1.up, c1.right, !c1.front);
+			b1 = CubeCorner(!c1.up, c1.right, c1.front);
+			a2 = CubeCorner(c1.up, c2.right, !c1.front);
+			b2 = CubeCorner(!c1.up, c2.right, c1.front);
+		}
+		else {
+			a1 = CubeCorner(c1.up, !c1.right, c1.front);
+			b1 = CubeCorner(!c1.up, c1.right, c1.front);
+			a2 = CubeCorner(c1.up, !c1.right, c2.front);
+			b2 = CubeCorner(!c1.up, c1.right, c2.front);
+		}
+
+
+		int a = addEdgeCenter(cube, c1, a1);
+		int b = addEdgeCenter(cube, c1, b1);
+		int c = addEdgeCenter(cube, c2, b2);
+		int d = addEdgeCenter(cube, c2, a2);
+		triangles.push_back(ivec3(a, b, c));
+		triangles.push_back(ivec3(a, c, d));
+	}
+	if (config.type == TRIPLE) {
+//		return;
+		auto c1 = config.corners[0];
+		auto c2 = config.corners[1];
+		auto c3 = config.corners[2];
+
+		if (nbhd(c2, c1) && nbhd(c2, c3)) {
+			c1 = config.corners[1];
+			c2 = config.corners[0];
+			c3 = config.corners[2];
+		}
+
+		if (nbhd(c3, c1) && nbhd(c2, c3)) {
+			c1 = config.corners[2];
+			c2 = config.corners[0];
+			c3 = config.corners[1];
+		}
+
+		CubeCorner d1 = CubeCorner(0);
+		for (auto c: complementaryCorners({c1, c2, c3}))
+			if (coplanar(c1, c2, c3, c))
+				d1 = c;
+
+		auto d2 = setMinus(c2.adjacentCornersVec(), {d1, c1})[0];
+		auto d3 = setMinus(c3.adjacentCornersVec(), {d1, c1})[0];
+		auto d4 = setMinus(c1.adjacentCornersVec(), {c2, c3})[0];
+
+		int a2 = addEdgeCenter(cube, d1, c2);
+		int a3 = addEdgeCenter(cube, d1, c3);
+		int b2 = addEdgeCenter(cube, c2, d2);
+		int b3 = addEdgeCenter(cube, c3, d3);
+		int c = addEdgeCenter(cube, c1, d4);
+		triangles.push_back(ivec3(a2, a3, b3));
+		triangles.push_back(ivec3(a2, b3, b2));
+		triangles.push_back(ivec3(b2, b3, c));
+	}
+	if (config.type == CUBEFACE) {
+		auto c1 = config.corners[0];
+		auto c2 = config.corners[1];
+		auto c3 = config.corners[2];
+		auto c4 = config.corners[3];
+
+		auto d1 = setMinus(c1.adjacentCornersVec(), config.corners)[0];
+		auto d2 = setMinus(c2.adjacentCornersVec(), config.corners)[0];
+		auto d3 = setMinus(c3.adjacentCornersVec(), config.corners)[0];
+		auto d4 = setMinus(c4.adjacentCornersVec(), config.corners)[0];
+
+		int a = addEdgeCenter(cube, c1, d1);
+		int b = addEdgeCenter(cube, c2, d2);
+		int c = addEdgeCenter(cube, c3, d3);
+		int d = addEdgeCenter(cube, c4, d4);
+
+		triangles.push_back(ivec3(a, b, c));
+		triangles.push_back(ivec3(a, c, d));
+	}
+	if (config.type == TETRA) {
+//		return;
+		auto c = config.corners[0];
+		auto c1 = config.corners[1];
+		auto c2 = config.corners[2];
+		auto c3 = config.corners[3];
+
+		CubeCorner d12 = CubeCorner(0);
+		CubeCorner d13 = CubeCorner(0);
+		CubeCorner d23 = CubeCorner(0);
+
+		for (auto d: complementaryCorners(config.corners)) {
+			if (coplanar(c, c1, c2, d))
+				d12 = d;
+			if (coplanar(c, c1, c3, d))
+				d13 = d;
+			if (coplanar(c, c2, c3, d))
+				d23 = d;
+		}
+
+		int a1 = addEdgeCenter(cube, c1, d13);
+		int a2 = addEdgeCenter(cube, c1, d12);
+		int a3 = addEdgeCenter(cube, c2, d12);
+		int a4 = addEdgeCenter(cube, c2, d23);
+		int a5 = addEdgeCenter(cube, c3, d23);
+		int a6 = addEdgeCenter(cube, c3, d13);
+
+		triangles.push_back(ivec3(a1, a2, a3));
+		triangles.push_back(ivec3(a1, a3, a4));
+		triangles.push_back(ivec3(a1, a4, a6));
+		triangles.push_back(ivec3(a4, a5, a6));
+	}
+
+	if (config.type == LONG) {
+//		return;
+		auto c1 = config.corners[0];
+		auto c2 = config.corners[1];
+		auto c3 = config.corners[2];
+		auto c4 = config.corners[3];
+
+		CubeCorner f1 = CubeCorner(0);
+		CubeCorner f2 = CubeCorner(0);
+
+		for (auto c: complementaryCorners(config.corners)) {
+			if (coplanar(c1, c2, c3, c))
+				f1 = c;
+			if (coplanar(c2, c3, c4, c))
+				f2 = c;
+		}
+
+		CubeCorner u1 = setMinus(c1.adjacentCornersVec(), {c2, f1})[0];
+		CubeCorner u2 = setMinus(c4.adjacentCornersVec(), {c3, f2})[0];
+
+		int a1 = addEdgeCenter(cube, c1, f1);
+		int a2 = addEdgeCenter(cube, c1, u1);
+		int a3 = addEdgeCenter(cube, c4, f2);
+		int a4 = addEdgeCenter(cube, c4, u2);
+		int a5 = addEdgeCenter(cube, c3, f1);
+
+		triangles.push_back(ivec3(a1, a2, a5));
+		triangles.push_back(ivec3(a1, a3, a5));
+		triangles.push_back(ivec3(a3, a4, a5));
+	}
+}
+
+
+void MarchingCubeChunk::generateCube(ivec3 ind) {
+	for (PrimitiveCubeConfiguration config: configurations(ind))
+		generatePrimitiveConfiguration(config, ind);
+}
+
+vector<CubeCorner> MarchingCubeChunk::differingCorners(ivec3 cube) const {
+	vector<CubeCorner> positiveCorners = {};
+	for (int i = 0; i < 8; i++) {
+		CubeCorner c = CubeCorner(i);
+		if (cornerSign(cube, c))
+			positiveCorners.push_back(c);
+	}
+	if (positiveCorners.size() > 4)
+		return complementaryCorners(positiveCorners);
+	return positiveCorners;
+}
+
+bool MarchingCubeChunk::cornerSign(ivec3 cube, CubeCorner corner) const {
+	return surface->operator()(cornerPosition(cube, corner)) > 0;
+}
+
+int MarchingCubeChunk::noDifferentCorners(ivec3 cube) const {
+	return differingCorners(cube).size();
+}
+vector<CubeCorner> MarchingCubeChunk::allCorners() {
+	return {CubeCorner(0), CubeCorner(1), CubeCorner(2), CubeCorner(3), CubeCorner(4), CubeCorner(5), CubeCorner(6), CubeCorner(7)};
+}
+
+vector<CubeCorner> MarchingCubeChunk::complementaryCorners(const vector<CubeCorner> &corners) {
+	return setMinus(allCorners(), corners);
+}
+
+
+WeakSuperMesh MarchingCubeChunk::generateMesh(bool tetra) {
+	vertices = {};
+	triangles = {};
+	addedVertices = {};
+
+	WeakSuperMesh mesh = WeakSuperMesh();
+	if (tetra)
+		generateTetra();
+	else
+		generate();
+
+	addToMesh(mesh);
+	return mesh;
+}
+
+WeakSuperMesh MarchingCubeChunk::generateMesh(bool tetra, float tolerance, int maxIter) {
+	vertices = {};
+	triangles = {};
+	addedVertices = {};
+
+	WeakSuperMesh mesh = WeakSuperMesh();
+	if (tetra)
+		generateTetra();
+	else
+		generate();
+
+	addToMesh(mesh, tolerance, maxIter);
+	return mesh;
+}
+
+
+void MarchingCubeChunk::addToMesh(WeakSuperMesh &mesh) {
+	vector<Vertex> vertices_hard = {};
+	for (ivec3 v: this->vertices)
+		vertices_hard.emplace_back(vertexPosition(v), vec2(1.f*v.x/res.x, 1.f*v.y/res.y), surface->normal(vertexPosition(v)));
+	mesh.addNewPolygroup(vertices_hard, triangles, id);
+}
+
+void MarchingCubeChunk::addToMesh(WeakSuperMesh &mesh,  float tolerance, int maxIter){
+	vector<Vertex> vertices_hard = {};
+	for (ivec3 v: this->vertices) {
+		vec3 p = surface->newtonStepProject(vertexPosition(v), tolerance, maxIter);
+		vertices_hard.emplace_back(p, vec2(1.f*v.x/res.x, 1.f*v.y/res.y), surface->normal(p));
+	}
+		mesh.addNewPolygroup(vertices_hard, triangles, id);
+}
 
 
 AffinePlane SmoothParametricCurve::osculatingPlane(float t) const {

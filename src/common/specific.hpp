@@ -142,9 +142,25 @@ SmoothParametricSurface bohemianDome(float a, float b, float c, float eps=.01);
 SmoothParametricSurface horn(float eps=.01);
 SmoothParametricSurface crescent(float eps=.01);
 SmoothParametricSurface seaShell(int n, float a, float b, float c, float eps=.01);
-
 SmoothParametricSurface cone(const SmoothParametricCurve &base, vec3 apex, float eps);
 SmoothParametricSurface coneSide(float r, float h, vec3 center, vec3 v1, vec3 v2, float eps);
+
+SmoothImplicitSurface sphereImplicit(float r, vec3 center, float eps=.01);
+SmoothImplicitSurface torusImplicit(float r, float R, vec3 center, float eps=.01);
+SmoothImplicitSurface genus2Implicit(float eps=.01);
+SmoothImplicitSurface wineGlass(float eps=.01);
+SmoothImplicitSurface equipotentialSurface(vector<vec3> points, vector<float> charges, float potential, float eps=.01);
+SmoothImplicitSurface chair(float k=5, float a=.95, float b=.82, float eps=.01);
+SmoothImplicitSurface tangleCube(float eps=.01);
+SmoothImplicitSurface wineImplicit(float eps=.01);
+SmoothImplicitSurface gumdrop(float eps=.01);
+SmoothImplicitSurface genus2Implicit2(float eps=.01);
+SmoothImplicitSurface genus2Implicit3(float c, float d, float eps=.01);
+SmoothImplicitSurface genus2Implicit4(float d=.01, float eps=.01);
+SmoothImplicitSurface superellipsoid(float alpha1, float alpha2, float a, float b, float c, float r=1, float eps=.01);
+SmoothImplicitSurface superQuadric(float alpha, float beta, float gamma, float a, float b, float c, float r=1, float eps=.01);
+SmoothImplicitSurface K3Surface222(float eps=.01);
+
 
 WeakSuperMesh arrow(vec3 start, vec3 head, float radius, float head_len, float head_radius, int radial, int straight, float eps, std::variant<int, std::string> id);
 WeakSuperMesh drawArrows(const vector<vec3> &points, const vector<vec3> &directions, float radius, float head_len, float head_radius, int radial, int straight, float eps, const std::variant<int, std::string> &id);

@@ -9,6 +9,7 @@
 #include <format>
 #include <memory>
 
+
 #include "metaUtils.hpp"
 
 
@@ -507,6 +508,8 @@ Complex atan(Complex c);
 Complex asinh(Complex c);
 Complex acosh(Complex c);
 Complex atanh(Complex c);
+Complex cot(Complex c);
+
 
 const Complex ONE = Complex(1, 0);
 const Complex ZERO = Complex(0, 0);
@@ -557,50 +560,44 @@ public:
 	static Quaternion k() { return Quaternion(0, 0, 0, 1); }
 };
 
-
-class CP1 {
+template<DivisionRing F>
+class P1 {
 public:
-	Complex z;
+	F z;
 	bool inf;
-	CP1();
-	explicit CP1(Complex z);
-	CP1(Complex z, bool inf);
-	CP1(Complex z1, Complex z2);
-	explicit CP1(float x);
-	CP1(float x, bool inf);
+	P1() : F(0), inf(false) {}
+	explicit P1(F z) : F(z), inf(false) {}
+	P1(F z, bool inf) : F(z), inf(inf) {}
+	P1(F z1, F z2);
 
-	CP1 operator+(CP1 c) const;
-	CP1 operator-(CP1 c) const;
-	CP1 operator*(CP1 c) const;
-	CP1 operator/(CP1 c) const;
-	CP1 operator+(Complex c) const;
-	CP1 operator-(Complex c) const;
-	CP1 operator*(Complex c);
-	CP1 operator/(Complex c);
-	CP1 operator+(float f);
-	CP1 operator-(float f);
-	CP1 operator*(float f);
-	CP1 operator/(float f);
-	CP1 operator-();
-	CP1 inv();
-	CP1 square();
-	CP1 sqrt();
-	CP1 pow(float f);
-	CP1 conj();
+	explicit P1(float x) : F(x), inf(false) {}
+	P1(float x, bool inf) : F(x), inf(inf) {}
 
-	explicit operator Complex(); // NOLINT(*-explicit-constructor)
+	bool operator==(P1 c) const {return inf && c.inf || z == c.z && !inf && !c.inf;}
+	bool operator==(F c) const {return !inf && z == c;}
+
+	P1 operator+(P1 c) const {return P1(z + c.z, inf || c.inf);}
+	P1 operator-() {return P1(-z, inf);}
+	P1 operator-(P1 c) const {return (*this) + -c;}
+	P1 operator*(P1 c) const;
+	P1 operator~() const;
+	P1 inv() const {return ~(*this);}
+	P1 operator/(P1 c) const {return (*this) * ~c;}
+	P1 operator+(F c) const {return (*this) + P1(c);}
+	P1 operator-(F c) const {return (*this) - P1(c);}
+	P1 operator*(F c) const {return (*this) * P1(c);}
+	P1 operator/(F c) const {return (*this) / P1(c);}
+	P1 square() const {return *this * *this;}
+	P1 pow(int n) const;
+	explicit operator F() const;
 };
-
-CP1 oneCP1();
-CP1 zeroCP1();
-CP1 infCP1();
-CP1 iCP1();
 
 inline float frac(float x) { return x - std::floor(x); }
 inline int sgn(float x) { return x < 0 ? -1 : 1; }
 inline int sign(float x) { return sgn(x); }
 
 float pseudorandomizer(float x, float seed=0.f);
+
 int binomial(int n, int k);
 
 
@@ -749,6 +746,19 @@ vector<V> linspace(V a, V b, int n, bool includeEnd=true) {
 		for (int i = 0; i < n; i++)
 			res.push_back(lerp(a, b, i*1.f / n));
 	return res; }
+
+template<AbelianSemigroup V>
+vector<vector<V>> linspace2D(V p0, V v0, V v1, int n, int m) {
+	vector<vector<V>> res;
+	res.reserve(n);
+	for (int i = 0; i < n; i++) {
+		res.push_back(vector<V>());
+		res[i].reserve(m);
+		for (int j = 0; j < m; j++)
+			res[i].push_back(p0 + v0 * i + v1 * j);
+	}
+	return res;
+}
 
 
 
@@ -950,7 +960,11 @@ T Matrix<T, n>::det() const
 	}
 	return sum;
 }
-
+template<DivisionRing F>
+P1<F>::operator F() const {
+	if (inf) throw ValueError("cannot convert infinity to field element");
+	return z;
+}
 
 
 template<RingConcept T, int n>
@@ -1091,6 +1105,35 @@ inline bool nearlyEqual(mat3 a, mat3 b) {
 }
 
 
+template<DivisionRing F>
+P1<F>::P1(F z1, F z2) {
+	if (z2 == F(0)) {
+		if (z1 == F(0)) throw ValueError("0/0 not well defined");
+		z   = z1;
+		inf = true;
+	}
+	else {
+		z   = z1/z2;
+		inf = false;
+	}
+}
+
+template<DivisionRing F>
+P1<F> P1<F>::operator*(P1 c) const {
+	if (inf && c==F(0)) throw ValueError("0*inf is undefined");
+	if (z == F(0) && c.inf) throw ValueError("0*inf is undefined");
+	return P1(z * c.z, inf || c.inf);
+}
+
+template<DivisionRing F>
+P1<F> P1<F>::operator~() const {
+	if (inf) return P1(0);
+	if (z == 0) return P1(0, true);
+	return P1(1/z);}
+
+template<DivisionRing F>
+P1<F> P1<F>::pow(int n) const {return n == 0 ? P1(1) : n == 1 ? *this : n == -1 ? inv() : square().pow(n/2);}
+
 template<VectorSpaceConcept<float> V, VectorSpaceConcept<float> M>
 M EuclideanSpace<V, M>::GSProcess(const M &basis) {
 	M result = basis;
@@ -1187,4 +1230,13 @@ float polarAngle(vec3 v, vec3 t1, vec3 t2);
 float polarAngle(vec3 v, vec3 n);
 
 float cot(float x);
-Complex cot(Complex c);
+inline float square(float x) { return x * x; }
+inline float cube(float x) { return x * x * x; }
+inline float pow4(float x) { return x * x * x * x; }
+inline float pow5(float x) { return x * x * x * x * x; }
+inline float pow6(float x) { return x * x * x * x * x * x; }
+inline float pow7(float x) { return x * x * x * x * x * x * x; }
+inline float pow8(float x) { return x * x * x * x * x * x * x * x; }
+inline float pow3(float x) { return x * x * x; }
+inline float pow2(float x) { return x * x; }
+inline float sq(float x) { return x * x; }

@@ -905,6 +905,13 @@ void RenderingStep::setWeakSuperMesh(const std::shared_ptr<WeakSuperMesh> &super
     this-> weak_super = super;
 }
 
+int RenderingStep::findAttributeByName(const std::string &name) {
+	for (int i = 0; i < attributes.size(); i++)
+		if (attributes[i]->name == name)
+			return i;
+	throw std::invalid_argument("Attribute not found");
+}
+
 void RenderingStep::initMaterialAttributes() {
     auto ambient = std::make_shared<Attribute>("ambientColor", VEC4, 4);
     auto diffuse = std::make_shared<Attribute>("diffuseColor", VEC4, 5);
@@ -946,35 +953,48 @@ void RenderingStep::initStdAttributes()
 	this->attributes.push_back(colorAttribute);
 
 	for (const auto& attribute : attributes)
-	{
 		attribute->initBuffer();
-	}
+
 
 }
 
 void RenderingStep::resetAttributeBuffers()
 {
 	for (const auto& attribute : attributes)
-	{
 		attribute->freeBuffer();
-	}
 }
 
 void RenderingStep::initUnusualAttributes(const std::vector<std::shared_ptr<Attribute>>& attributes) {
-    this->attributes = attributes;
-    for (const auto &attribute: attributes) {
-        attribute->initBuffer();
-    }
+    this->attributes.insert(this->attributes.end(), attributes.begin(), attributes.end());
+    for (const auto &attribute: attributes)
+		attribute->initBuffer();
+}
+
+
+void RenderingStep::initExtraAttribute(int i) {
+	attributes.push_back(std::make_shared<Attribute>("extra" + std::to_string(i), VEC4, 4 + i));
+	attributes.back()->initBuffer();
 }
 
 
 
-void RenderingStep::loadStandardAttributes() {
+
+void RenderingStep::loadMeshAttributes() {
     if (weakSuperLoaded())
     {
         for (auto i = 0; i < 4; i++)
             attributes[i]->load(weak_super->getBufferLocation(static_cast<CommonBufferType>(i)), weak_super->getBufferLength(CommonBufferType(i)));
-        return;
+    	if (weak_super->hasExtra0())
+    		attributes[findAttributeByName("extra0")]->load(weak_super->getBufferLocation(EXTRA0), weak_super->getBufferLength(EXTRA0));
+    	if (weak_super->hasExtra1())
+			attributes[findAttributeByName("extra1")]->load(weak_super->getBufferLocation(EXTRA1), weak_super->getBufferLength(EXTRA1));
+    	if (weak_super->hasExtra2())
+    		attributes[findAttributeByName("extra2")]->load(weak_super->getBufferLocation(EXTRA2), weak_super->getBufferLength(EXTRA2));
+    	if (weak_super->hasExtra3())
+			attributes[findAttributeByName("extra3")]->load(weak_super->getBufferLocation(EXTRA3), weak_super->getBufferLength(EXTRA3));
+    	if (weak_super->hasExtra4())
+    		attributes[findAttributeByName("extra4")]->load(weak_super->getBufferLocation(EXTRA4), weak_super->getBufferLength(EXTRA4));
+    	return;
     }
 
 	if (superLoaded())
@@ -986,6 +1006,13 @@ void RenderingStep::loadStandardAttributes() {
 
 	for (int i = 0; i < 4; i++)
 		attributes[i]->load(model->mesh->bufferLocations[i], model->mesh->bufferSizes[i]);
+}
+
+void RenderingStep::initWeakMeshAttributes() {
+	initStdAttributes();
+	for (int i = 0; i < 5; i++)
+		if (weak_super->hasExtra(i))
+			initExtraAttribute(i);
 }
 
 void RenderingStep::enableAttributes()
@@ -1109,12 +1136,12 @@ void RenderingStep::init(const shared_ptr<Camera> &cam, const std::vector<Light>
     if (weakSuperLoaded()) {
         shader->use();
         initElementBuffer();
-        initStdAttributes();
+        initWeakMeshAttributes();
         addCameraUniforms(cam);
         addLightsUniforms(lights);
         initTextures();
         addTexturedMaterialUniforms();
-        loadStandardAttributes();
+        loadMeshAttributes();
         loadElementBuffer();
     }
 }
@@ -1140,7 +1167,7 @@ void RenderingStep::addCustomAction(const std::function<void(float)> &action)
 
 void RenderingStep::weakMeshRenderStep(float t) {
     bindTextures();
-    loadStandardAttributes();
+    loadMeshAttributes();
     customStep(t);
     setUniforms(t);
     loadElementBuffer();
@@ -1152,7 +1179,7 @@ void RenderingStep::weakMeshRenderStep(float t) {
 
 void RenderingStep::superMeshRenderStep(float t) {
 
-    loadStandardAttributes();
+    loadMeshAttributes();
     enableAttributes();
     customStep(t);
     setUniforms(t);
@@ -1160,7 +1187,7 @@ void RenderingStep::superMeshRenderStep(float t) {
     disableAttributes();
 }
 void RenderingStep::modelRenderStep(float t) {
-    loadStandardAttributes();
+    loadMeshAttributes();
     enableAttributes();
     customStep(t);
     setUniforms(t);
@@ -1408,12 +1435,7 @@ int Renderer::mainLoop() {
     	initFrame();
     	(*perFrameFunction)(time, dt);
         renderAllSteps();
-//    	if (takeScreenshots && since_last_scr > screenshotPeriod) {
-//    		screenshot();
-//    		since_last_scr = 0;
-//    	}
     	window->renderFramebufferToScreen();
-
     }
     return window->destroy();
 }

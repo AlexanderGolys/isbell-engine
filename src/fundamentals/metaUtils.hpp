@@ -125,6 +125,25 @@ public:
   }
 };
 
+class IllegalArgumentError : public std::exception {
+	std::string msg_;
+public:
+	explicit IllegalArgumentError(const std::string& msg) : msg_(msg) {}
+	const char* what() const noexcept override {
+		return msg_.c_str();
+	}
+};
+
+class ValueError : public std::exception {
+	std::string msg_;
+public:
+	explicit ValueError(const std::string& msg) : msg_(msg) {}
+	const char* what() const noexcept override {
+		return msg_.c_str();
+	}
+};
+
+
 class COLOR_PALETTE {
 public:
     glm::vec4 mainColor;
@@ -512,6 +531,25 @@ inline int setMinus(ivec3 x, ivec2 y) {
 	return x.x;
 }
 
+template<typename T>
+std::vector<T> setMinus(std::vector<T> x, T y) {
+	std::vector<T> res;
+	res.reserve(x.size()-1);
+	for (auto& z : x)
+		if (z != y)
+			res.push_back(z);
+	return res;
+}
+
+template<typename T>
+std::vector<T> setMinus(std::vector<T> x, std::vector<T> y) {
+	std::vector<T> res;
+	for (auto& z : x)
+		if (!contains<T>(y, z))
+			res.push_back(z);
+	return res;
+}
+
 inline int setMinus(ivec4 x, ivec3 y) {
 	if (x.x == y.x) return x.y == y.y ? x.z == y.z ? x.w : x.z : x.y;
 	if (x.x == y.y) return x.z == y.z ? x.w : x.z;
@@ -540,4 +578,8 @@ inline ivec2 setMinus(ivec4 x, ivec2 y) {
 	if (x.x == y.x) return x.y == y.y ? ivec2(x.z, x.w) : ivec2(x.y, x.z);
 	if (x.x == y.y) return ivec2(x.y, x.w);
 	return ivec2(x.x, x.y);
+}
+
+inline std::string hash_ivec3(ivec3 v) {
+	return std::to_string(v.x) + "--" + std::to_string(v.y) + "--" + std::to_string(v.z);
 }

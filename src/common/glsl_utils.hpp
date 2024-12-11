@@ -187,15 +187,20 @@ public:
 	void setModel(const std::shared_ptr<Model3D> &model);
 	void setSuperMesh(const std::shared_ptr<SuperMesh> &super);
     void setWeakSuperMesh(const std::shared_ptr<WeakSuperMesh> &super);
+
+	int findAttributeByName(const std::string &name);
 	void initStdAttributes();
 	void initMaterialAttributes();
     void initElementBuffer();
 	void resetAttributeBuffers();
 	void initUnusualAttributes(const std::vector<std::shared_ptr<Attribute>>& attributes);
-	void loadStandardAttributes(); // 0:position, 1:normal, 2:color, 3:uv
+	void initExtraAttribute(int i);
+	void loadMeshAttributes(); // 0:position, 1:normal, 2:color, 3:uv
+	void initWeakMeshAttributes();
     void loadElementBuffer();
 	void enableAttributes();
 	void disableAttributes();
+
 	void addCustomAction(const std::function<void(float)> &action);
 	bool superLoaded() const { return super != nullptr; }
     bool weakSuperLoaded() const { return weak_super != nullptr; }
@@ -218,6 +223,13 @@ public:
 	void renderStep(float t);
 
 };
+
+
+
+
+
+
+
 
 class Renderer {
 private:

@@ -33,12 +33,13 @@ int main() {
 //										SpaceAutomorphism::rotation(vec3(0, 0, 1), PI/2, vec3(0)) &
 //										hyperbolic_helicoid(TAU);
 
-	auto heli =		SpaceAutomorphism::affine(mat3(1), vec3(-2, 0, 0)) &
-									twistedTorus(4, 2, 4, 1, 1);
+	auto heli =		SpaceAutomorphism::affine(mat3(1), vec3(2
+		, 0, 0)) &
+									twistedTorus(2, 1, 2, 1, 1);
 
 
 	surf.changeDomain(vec2(0, TAU), vec2(3*PI/8, PI + 7*PI/8), true, false);
-	heli.changeDomain(vec2(0, PI/3), vec2(0, PI), true, false);
+//	heli.changeDomain(vec2(0, PI/3), vec2(0, PI), true, false);
 
 	auto surfmesh = make_shared<WeakSuperMesh>(surf, 50, 60, 222) ;
 	auto helimesh = make_shared<WeakSuperMesh>(heli, 50, 60, 223) ;
@@ -54,7 +55,7 @@ int main() {
 	surfmesh->deformPerVertex([&surf](BufferedVertex &v) {
 		v.setColor(surf.meanCurvature(v.getSurfaceParams()), 3); });
 	helimesh->deformPerVertex([&heli](BufferedVertex &v) {
-		v.setColor(heli.meanCurvature(v.getSurfaceParams()), 3); });
+		v.setColor(heli.meanCurvature(-v.getSurfaceParams()), 3); });
 
 
 	auto shader = Shader( R"(C:\Users\PC\Desktop\ogl-master\src\shaders2\shadingDemo.vert)",
@@ -65,11 +66,11 @@ R"(C:\Users\PC\Desktop\ogl-master\src\shaders2\shadingDemo.frag)");
 
 
 	renderer.setLights(lights);
-	renderer.addMeshStep(shader, surfmesh, bdmat);
-	renderer.addMeshStep(shader, helimesh, floormat);
+//	renderer.addMeshStep(shader, surfmesh, bdmat);
+	renderer.addMeshStep(shader, helimesh, bdmat);
 
 	renderer.addMeshStep(shaderWire, wire, floormat);
-	renderer.addMeshStep(shaderWire, wire2, bdmat);
+	renderer.addMeshStep(shaderWire, wire2, floormat);
 
 
 
