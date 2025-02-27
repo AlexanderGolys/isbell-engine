@@ -6,9 +6,9 @@ class RigidBody;
 class Force {
     R3 force;
     betterInFamily(void) updateOnSource;
-    alboLeniwyAlboCwaniak noLongerValidInterface; 
+    END(void) noLongerValidInterface; 
 public:
-    Force(R3 force, const procrastinateIn(float) &updateOnSource, const alboLeniwyAlboCwaniak &noLongerValidInterface) : force(force), updateOnSource(updateOnSource), noLongerValidInterface(noLongerValidInterface) {}
+    Force(R3 force, const procrastinateIn(float) &updateOnSource, const END(void) &noLongerValidInterface) : force(force), updateOnSource(updateOnSource), noLongerValidInterface(noLongerValidInterface) {}
     virtual ~Force() {noLongerValidInterface();}
     Force(R3 force, const procrastinateIn(float) &updateOnSource) : force(force), updateOnSource(updateOnSource), noLongerValidInterface([] {}) {}
     explicit Force(R3 force) : force(force), updateOnSource([](float) {}), noLongerValidInterface([] {}) {}
@@ -16,9 +16,9 @@ public:
     virtual void apply(float t) {updateOnSource(t);}
     virtual void noLongerValid() {noLongerValidInterface();}
     virtual void setForce(R3 force) {this->force = force;}
-    virtual void setUpdateCallback (const procrastinateIn(float) &updateOnSource) {this->updateOnSource = updateOnSource;}
-    virtual void setDestructionCallback (const alboLeniwyAlboCwaniak &noLongerValidInterface) {this->noLongerValidInterface = noLongerValidInterface;}
-    virtual R3 getForceVector() {return force;}
+    virtual void setUpdateCallback (const procrastinateIn(float) &updateOnSource);
+	virtual void setDestructionCallback (const END(void) &noLongerValidInterface);
+	virtual R3 getForceVector() {return force;}
 };
 
 enum class ForceType {
@@ -30,10 +30,10 @@ class RigidForce : public Force {
     R3* pointOfAction = nullptr;
     int* indexOfClosestPointInBody = nullptr;
     ForceType type;
-    std::vector<alboLeniwyAlboCwaniak> destroyCallbacksRegistered;
+    vector<END(void)> destroyCallbacksRegistered;
 public:
     explicit RigidForce(ForceType type) : Force(R3(0)), type(type) {}
-    virtual void addForceToBody(RigidBody &body, const alboLeniwyAlboCwaniak &bodyChangeCallback, const alboLeniwyAlboCwaniak &forceChangeCallback);
+    virtual void addForceToBody(RigidBody &body, const END(void) &bodyChangeCallback, const END(void) &forceChangeCallback);
 };
 
 
@@ -41,7 +41,7 @@ class RigidCollisionForce : public RigidForce {
     R3 normal;
     float magnitude;
     std::weak_ptr<RigidBody> body1, body2;
-    std::weak_ptr<alboLeniwyAlboCwaniak> notifierBody1, notifierBody2;
+    std::weak_ptr<END(void)> notifierBody1, notifierBody2;
 public:
     RigidCollisionForce(const R3 &normal, float magnitude, const std::weak_ptr<RigidBody> &body1, const std::weak_ptr<RigidBody> &body2);
     virtual void movementEvent(int notifierBodyIndex);
@@ -61,33 +61,22 @@ public:
 BigMatrix_t dMdt (const BigMatrix_t &M, float delta);
 
 inline BigMatrix_t operator* (const BigMatrix_t &M, float f) { return [M, f](float t) {return M(t)*f;}; };
-// operator* BigMatrix_t(const BigMatrix_t &M, const BigMatrix_t &M2) { return [M, M2](float t) {return M(t)*M2(t);}; };
 inline BigMatrix_t operator+ (const BigMatrix_t & M, const BigMatrix_t & M2) { return [M, M2](float t) {return M(t)+M2(t);}; };
-// BigMatrix_t operator- BigMatrix_t(const BigMatrix_t & M, const BigMatrix_t & M2) { return [M, M2](float t) {return M(t)-M2(t);}; };
-
-//Fooo dot(const vec69_t &v1, const vec69_t &v2) {
-//    return [v1, v2](float t) {
-//        float result = 0;
-//        for (int i = 0; i < v1(t).size(); i++)
-//            result += v1(t)[i] * v2(t)[i];
-//        return result;
-//    };
-//};
 
 inline vec3 cast_vec3(const vector<float> &v) {return vec3(v[0], v[1], v[2]);};
 
 
 class RigidBody {
     vector<RigidForce> activeForces;
-    BigMatrix _positions; // positions of the points relative to the center of world
-    BigMatrix_hm _dPos; // first derivative of positions
-    BigMatrix_hm _ddPos; // second derivative of positions
-    BigMatrix_hm _V; // linear velocities
+    FloatMatrix _positions; // positions of the points relative to the center of world
+    OPT(FloatMatrix) _dPos; // first derivative of positions
+    OPT(FloatMatrix) _ddPos; // second derivative of positions
+    OPT(FloatMatrix) _V; // linear velocities
     vec69 _masses; // linear accelerations
-    BigMatrix_hm _P; // linear momenta
-    vec69_hm _L;
-    mat3_hm _I; // innertia tensor
-    R3_hm _angularVelocity;
+    OPT(FloatMatrix) _P; // linear momenta
+    OPT(vec69) _L;
+    OPT(mat3) _I; // innertia tensor
+    OPT(R3) _angularVelocity;
     R3 _centerOfWorld;
     R3 _centerOfMass;
     float_hm _potentialEnergy;
@@ -97,10 +86,10 @@ class RigidBody {
     float eps=.01;
 
 public:
-    RigidBody(const BigMatrix& positions, const vec69& masses, const BigMatrix& linearVelocities, R3 centerOfWorld, R3 angularVelocity, float time=0);;
-	RigidBody(const BigMatrix& positions, const vec69& masses, const BigMatrix& linearVelocities, R3 angularVelocity, float time=0);;
+    RigidBody(const FloatMatrix& positions, const vec69& masses, const FloatMatrix& linearVelocities, R3 centerOfWorld, R3 angularVelocity, float time=0);;
+	RigidBody(const FloatMatrix& positions, const vec69& masses, const FloatMatrix& linearVelocities, R3 angularVelocity, float time=0);;
 
-    alboLeniwyAlboCwaniak addForceField(const RigidForce &field);
+    END(void) addForceField(const RigidForce &field);
     R3 accumulateForces(R3 pos);
     R3 calculateCenterOfMass();
     float  calculateKineticEnergy();
@@ -108,7 +97,7 @@ public:
     void setTotalEnergy(float totalEnergy);
     vec3 position(float t, int i);
     vec3 positionRelCm(float t, int i);
-    void changeFrame(HOM(float, HOM(TRG, glm::mat3)) M_t);
+    void changeFrame(HOM(float, HOM(TRG, mat3)) M_t);
     R3 linearVelocity(float t, int i);
     R3 linearMomentum(float t, int i);
     R3 totalLinearMomentum(float t);
@@ -141,69 +130,49 @@ public:
 
 	void update(float dt);
 
-	void setAngularVelocity(const vec3 &omega) {angularVelocity = omega;}
-	void setLinearVelocity(const vec3 &v) {linearVelocityCM = v;}
-	void setAngularAcceleration(const vec3 &alpha) {angularAcceleration = alpha;}
-	void setLinearAcceleration(const vec3 &a) {linearAccelerationCM = a;}
-	void addAngularVelocity(const vec3 &omega) {angularVelocity += omega;}
-	void addLinearVelocity(const vec3 &v) {linearVelocityCM += v;}
-	void addAngularAcceleration(const vec3 &alpha) {angularAcceleration += alpha;}
-	void addLinearAcceleration(const vec3 &a) {linearAccelerationCM += a;}
+	void setAngularVelocity(const vec3 &omega);
+	void setLinearVelocity(const vec3 &v);
+	void setAngularAcceleration(const vec3 &alpha);
+	void setLinearAcceleration(const vec3 &a);
+	void addAngularVelocity(const vec3 &omega);
+	void addLinearVelocity(const vec3 &v);
+	void addAngularAcceleration(const vec3 &alpha);
+	void addLinearAcceleration(const vec3 &a);
 
 	void approximateInertiaTensor(vec3 p);
-	void approximateInertiaTensorCM() {approximateInertiaTensor(centerOfMass);}
+	void approximateInertiaTensorCM();
 	void calculateCenterOfMass();
 
 	vec3 getCm() const {return centerOfMass;}
 	mat3 getI() const {return I;}
 };
 
-class RollingBody {
-	SmoothParametricCurve boundary; // polar b(phi)
-	SmoothParametricCurve floor; // arclen f(s)
-	vec3 gravity;
-	vec3 centerOfMass;
-	float angularVelocity = 0;
-	float distanceTravelled=0;
-	float polarParam=0;
-	float I_center;
+class RollingCircularBody {
+	float radius;
+	float mass;
+	float momentOfInertia;
+	SmoothParametricCurve floorArclen;
+	float s;
+	vec3 gravityForce;
 
-	PolyGroupID boundaryID;
-	PolyGroupID floorID;
-	PolyGroupID centerID;
 
 public:
-	std::shared_ptr<WeakSuperMesh> mesh;
-	std::shared_ptr<WeakSuperMesh> floormesh;
-	std::shared_ptr<WeakSuperMesh> centermesh;
+	vec3 center() {return contactPoint() + normal()*radius;}
+//	float dAngle() {return omega()/(radius + floorArclen.curvature_radius(s));}
+	vec3 contactPoint() {return floorArclen(s);}
+//	float omega() {return centerSpeed/radius;}
+	float angle() {return ::angle(floorArclen.tangent(0), tangent()) + s/radius;}
+//	float dsdt() {return radius*dAngle();}
+//	vec3 centerVelocity() {return dsdt()*tangent();}
+	vec3 normal() {return floorArclen.normal(s);}
+	vec3 tangent() {return floorArclen.tangent(s);}
+	vec3 centerShift() {return center() - floorArclen(0)+floorArclen.normal(0)*radius;}
+	mat3 rotationMatrix() {return rotationMatrix3(cross(normal(), tangent()), angle());}
 
-	RollingBody(std::shared_ptr<WeakSuperMesh> mesh, SmoothParametricCurve boundary, SmoothParametricCurve floor, vec3 gravity);
-	RollingBody(SmoothParametricCurve boundary, SmoothParametricCurve floor, vec3 polarConeCenter, vec3 gravity, int n, int m, float pipe_r);
-
-	float rollingPathLen(float phi);
-	void roll(float dt);
-	float calculate_angularAcc();
-	void update_omega(float dt);
-	float I_zz(vec3 p);
-	float I_0();
-	vec3 contactPoint() {return floor(distanceTravelled);}
-	vec3 r_contact() {return centerOfMass-contactPoint();}
-	void shift(vec3 v);
-	void rotate(float angle);
-	void step(float dt);
-	float rotationAngle(float d1, float d2);
-
-	void shift(vec3 v, WeakSuperMesh &mesh, WeakSuperMesh &centermesh);
-	void rotate(float angle, WeakSuperMesh &mesh, WeakSuperMesh &centermesh);
-	void step(float dt, WeakSuperMesh &mesh, WeakSuperMesh &centermesh);
-	void roll(float dt, WeakSuperMesh &mesh, WeakSuperMesh &centermesh);
+	void moveByAngle(float dAngle);
+	void moveByDistance(float dDistance) {s += dDistance;}
 
 
-	vec3 getCM() {return centerOfMass;}
-	float getAngularVelocity() {return angularVelocity;}
-	std::shared_ptr<WeakSuperMesh> getMesh() {return std::make_shared<WeakSuperMesh>(*mesh);}
-	std::shared_ptr<WeakSuperMesh> getCenterMesh() {return std::make_shared<WeakSuperMesh>(*centermesh);}
-	std::shared_ptr<WeakSuperMesh> getFloorMesh() {return std::make_shared<WeakSuperMesh>(*floormesh);}
 
 };
 
@@ -238,4 +207,4 @@ public:
 	vec3 getCM() const {return centerOfMass;}
 };
 
-std::pair<RigidBody3D, WeakSuperMesh> boxRigid(vec3 size, vec3 center, float mass, vec3 velocity, vec3 angularVelocity, vec3 angularAcceleration, vec3 linearAcceleration, const mat3 &R);
+//std::pair<RigidBody3D, WeakSuperMesh> boxRigid(vec3 size, vec3 center, float mass, vec3 velocity, vec3 angularVelocity, vec3 angularAcceleration, vec3 linearAcceleration, const mat3 &R);

@@ -9,9 +9,7 @@ int main() {
 	Renderer renderer = Renderer(2.0f, vec4(.69, .69, 0.69, 1.0f), R"(C:\Users\PC\Desktop\ogl-master\screenshots\)", 5.0f);
 	renderer.initMainWindow(UHD, "flows");
 
-
 	float camSpeed = .00;
-
 
 	PointLight light1 = PointLight(vec3(-1,3, 1), .01, .0032);
 	PointLight light2 = PointLight(vec3(3, 26, 20), vec4(1, 1, .8, 1), .0009, .000132);
@@ -36,17 +34,17 @@ int main() {
 
 	auto floor = make_shared<WeakSuperMesh>(disk3d(30, vec3(0, 0, -1), e1, e2, 50, 5, "v"));
 
-
-
-
 	auto shader = Shader( R"(C:\Users\PC\Desktop\ogl-master\src\shaders2\shadingDemo.vert)",
-R"(C:\Users\PC\Desktop\ogl-master\src\shaders2\shadingDemo.frag)");
+						  R"(C:\Users\PC\Desktop\ogl-master\src\shaders2\shadingDemo.frag)");
+
 	auto lightShd = Shader( R"(C:\Users\PC\Desktop\ogl-master\src\shaders2\shadingDemo.vert)",
-R"(C:\Users\PC\Desktop\ogl-master\src\shaders2\lightShader.frag)");
+							R"(C:\Users\PC\Desktop\ogl-master\src\shaders2\lightShader.frag)");
+
 	auto shdDevelop = Shader( R"(C:\Users\PC\Desktop\ogl-master\src\shaders2\shadingDemo.vert)",
-R"(C:\Users\PC\Desktop\ogl-master\src\shaders2\shadingDemoDevelop.frag)");
+							  R"(C:\Users\PC\Desktop\ogl-master\src\shaders2\shadingDemoDevelop.frag)");
+
 	auto shdDevelop2 = Shader( R"(C:\Users\PC\Desktop\ogl-master\src\shaders2\shadingDemo.vert)",
-	R"(C:\Users\PC\Desktop\ogl-master\src\shaders2\shadingDemoDevelop2.frag)");
+							   R"(C:\Users\PC\Desktop\ogl-master\src\shaders2\shadingDemoDevelop2.frag)");
 
 	renderer.addMeshStep(shader, floor, floormat);
 

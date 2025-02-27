@@ -1,18 +1,6 @@
 
 #include "buffer_utils.hpp"
-#include <stdio.h>
-#include <string>
-#include <map>
-#include <vector>
-#include <iostream>
-#include <fstream>
-#include <algorithm>
-#include <sstream>
 
-#include <stdlib.h>
-#include <string.h>
-
-#include <GL/glew.h>
 
 using namespace glm;
 using std::vector, std::string, std::map, std::shared_ptr, std::unique_ptr, std::make_shared, std::make_unique;
@@ -283,4 +271,3 @@ int VAORenderer::mainLoop() {
 
     return window.destroy();
 }
-

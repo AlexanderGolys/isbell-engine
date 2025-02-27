@@ -3,9 +3,9 @@
 #include "planarGeometry.hpp"
 
 
-const Mob CayleyTransform = Mob(ONE, -I, ONE, I);
-const Mob CayleyTransformInv = ~Mob(ONE, -I, ONE, I);
-const Mob Imob = Mob(1, ZERO, ZERO, 1);
+const Mob CayleyTransform = Mob(1, -1.0i, 1, 1.0i);
+const Mob CayleyTransformInv = ~Mob(1, -1.0i, 1, -1.0i);
+const Mob Imob = Mob(1, 0, 0, 1);
 
 class ComplexCurve // TODO: make this shit modern
 {
@@ -85,15 +85,15 @@ inline Biholomorphism Biholomorphism::operator*(Complex a) const {
 }
 
 inline Biholomorphism Biholomorphism::operator+(Complex a) const {
-	return Biholomorphism::linear(ONE, a).compose(*this);
+	return Biholomorphism::linear(1, a).compose(*this);
 }
 
 inline Biholomorphism Biholomorphism::operator-(Complex a) const {
-	return Biholomorphism::linear(ONE, -a).compose(*this);
+	return Biholomorphism::linear(1, -a).compose(*this);
 }
 
 inline Biholomorphism Biholomorphism::operator/(Complex a) const {
-	return Biholomorphism::linear(ONE/a, 0).compose(*this);
+	return Biholomorphism::linear(1/a, 0).compose(*this);
 }
 
 inline Complex Biholomorphism::operator()(Complex z) const {

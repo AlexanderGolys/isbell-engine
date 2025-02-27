@@ -1,5 +1,4 @@
 #pragma once
-
 #include "indexedRendering.hpp"
 
 #include <cstdio>
@@ -13,9 +12,12 @@
 
 // #include "renderingUtils.hpp"
 
+#include <fstream>
+#include <io.h>
 #include <map>
 #include <string>
 #include <memory>
+#include <sstream>
 
 class Texture;
 
@@ -74,20 +76,59 @@ enum ShaderType {
 };
 
 
-class Shader {
-public:
-	GLuint programID;
-	const char* vertex_file_path;
-	const char* fragment_file_path;
-	const char* geometry_file_path = nullptr;
-	ShaderType shaderType;
-	std::map<std::string, GLuint> uniformLocations;
-	std::map<std::string, GLSLType> uniformTypes;
 
-	Shader(const char* vertex_file_path, const char* fragment_file_path);
-	Shader(const char* vertex_file_path, const char* fragment_file_path, const char* geometry_file_path);
-	explicit Shader(const std::string &standard_file_path);
-	~Shader();
+class Shader {
+protected:
+	GLenum shaderType;
+	GLuint shaderID;
+	string code = "";
+public:
+	explicit Shader(CodeFileDescriptor &file);
+	explicit Shader(CodeFileDescriptor &&file);
+	explicit Shader(const Path &file) : Shader(CodeFileDescriptor(file)) {}
+	explicit Shader(const TemplateCodeFile &file) : Shader(file.generatedCodeFile()) {}
+
+	Shader(const string &code, GLenum shaderType);
+
+	Shader(const Shader &other);
+	Shader(Shader &&other) noexcept;
+	Shader & operator=(const Shader &other);
+	Shader & operator=(Shader &&other) noexcept;
+	virtual ~Shader() = default;
+
+
+	GLuint getID() const;
+	void compile();
+	string getCode() const;
+
+	static GLenum getTypeFromExtension(const string &extension);
+};
+
+
+class ShaderProgram {
+protected:
+	Shader vertexShader;
+	Shader fragmentShader;
+	std::optional<Shader> geometryShader;
+
+	ShaderType shaderType;
+
+public:
+	std::map<string, GLuint> uniformLocations;
+	std::map<string, GLSLType> uniformTypes;
+
+	GLuint programID;
+
+	ShaderProgram(const Shader &vertexShader, const Shader &fragmentShader);
+	ShaderProgram(const Shader &vertexShader, const Shader &fragmentShader, const Shader &geometryShader);
+	ShaderProgram(const string &vertexPath, const string &fragPath);
+
+
+	void linkShaders();
+
+//	ShaderProgram(const string &vertexShaderCode, const string &fragmentShaderCode, const string &geometryShaderCode="");
+	explicit ShaderProgram(const std::string &standard_file_path);
+	~ShaderProgram();
 	void use();
 	void initUniforms(const std::map<std::string, GLSLType> &uniforms);
 
@@ -164,12 +205,22 @@ public:
 	virtual void freeBuffer();
 };
 
+
+
+
+
+
 class RenderingStep {
     void weakMeshRenderStep(float t);
     void superMeshRenderStep(float t);
     void modelRenderStep(float t);
+
 public:
-	std::shared_ptr<Shader> shader;
+	explicit RenderingStep(const std::shared_ptr<ShaderProgram> &shader);
+	RenderingStep(const RenderingStep &other);
+
+	virtual ~RenderingStep();
+	std::shared_ptr<ShaderProgram> shader;
 	std::vector<std::shared_ptr<Attribute>> attributes;
 	std::shared_ptr<Model3D> model;
 	std::shared_ptr<SuperMesh> super = nullptr;
@@ -177,12 +228,8 @@ public:
     GLuint elementBufferLoc = 0;
 
 	std::map<std::string, GLSLType> uniforms;
-	std::map<std::string, std::shared_ptr<std::function<void(float, std::shared_ptr<Shader>)>>> uniformSetters;
+	std::map<std::string, std::shared_ptr<std::function<void(float, std::shared_ptr<ShaderProgram>)>>> uniformSetters;
 	std::function<void(float)> customStep;
-
-	explicit RenderingStep(const std::shared_ptr<Shader> &shader);
-	RenderingStep(const RenderingStep &other);
-	~RenderingStep();
 
 	void setModel(const std::shared_ptr<Model3D> &model);
 	void setSuperMesh(const std::shared_ptr<SuperMesh> &super);
@@ -204,23 +251,23 @@ public:
 	void addCustomAction(const std::function<void(float)> &action);
 	bool superLoaded() const { return super != nullptr; }
     bool weakSuperLoaded() const { return weak_super != nullptr; }
-    void init(const std::shared_ptr<Camera> &cam, const std::vector<Light> &lights);
+    virtual void init(const std::shared_ptr<Camera> &cam, const std::vector<Light> &lights);
     void initTextures();
     void bindTextures();
 
-	void addUniforms(const std::map<std::string, GLSLType> &uniforms, std::map<std::string, std::shared_ptr<std::function<void(float, std::shared_ptr<Shader>)>>> setters);
-	void addUniform(std::string uniformName, GLSLType uniformType, std::shared_ptr<std::function<void(float, std::shared_ptr<Shader>)>> setter);
+	void addUniforms(const std::map<std::string, GLSLType> &uniforms, std::map<std::string, std::shared_ptr<std::function<void(float, std::shared_ptr<ShaderProgram>)>>> setters);
+	void addUniform(std::string uniformName, GLSLType uniformType, std::shared_ptr<std::function<void(float, std::shared_ptr<ShaderProgram>)>> setter);
 	void addConstFloats(const std::map<std::string, float>& uniforms);
 	void addConstVec4(const std::string& name, vec4 value);
 	void addConstColor(const std::string &name, vec4 value) { addConstVec4(name, value); }
 	void setUniforms(float t);
 
-    void addCameraUniforms(const std::shared_ptr<Camera>& camera);
+    virtual void addCameraUniforms(const std::shared_ptr<Camera>& camera);
 	void addLightUniform(const Light &pointLight, int lightIndex = 1);
 	void addLightsUniforms(const std::vector<Light> &lights);
     void addTexturedMaterialUniforms();
 
-	void renderStep(float t);
+	virtual void renderStep(float t);
 
 };
 
@@ -232,7 +279,6 @@ public:
 
 
 class Renderer {
-private:
 	float frameOlderTimeThanThePublicOne = 0;
 	float since_last_scr = 0;
 
@@ -253,7 +299,7 @@ public:
 
 	explicit Renderer(float animSpeed=1.f, vec4 bgColor=BLACK, const std::string &screenshotDirectory="screenshots/", float screenshotFrequency=-1);
 
-	~Renderer();
+	virtual ~Renderer();
 	
 	void initMainWindow(int width, int height, const char* title);
 	void initMainWindow(Resolution resolution, const char* title);
@@ -264,21 +310,21 @@ public:
 
 	void setCamera(const std::shared_ptr<Camera> &camera);
 	void setLights(const std::vector<Light> &lights);
-	void setLightWithMesh(const Light &light, const MaterialPhong& material, const Shader &shader, float radius);
-	void setLightsWithMesh(const std::vector<Light> &lights, const MaterialPhong& material, const Shader &shader, float radius);
-	void setLightWithMesh(const Light &light, float ambient, float diff, float spec, float shine, const Shader &shader, float radius);
-	void setLightsWithMesh(const std::vector<Light> &lights, float ambient, float diff, float spec, float shine, const Shader &shader, float radius);
+	void setLightWithMesh(const Light &light, const MaterialPhong& material, const ShaderProgram &shader, float radius);
+	void setLightsWithMesh(const std::vector<Light> &lights, const MaterialPhong& material, const ShaderProgram &shader, float radius);
+	void setLightWithMesh(const Light &light, float ambient, float diff, float spec, float shine, const ShaderProgram &shader, float radius);
+	void setLightsWithMesh(const std::vector<Light> &lights, float ambient, float diff, float spec, float shine, const ShaderProgram &shader, float radius);
 
 	void addRenderingStep(std::shared_ptr<RenderingStep> renderingStep);
-	void addMeshStep(const Shader& shader, const std::shared_ptr<WeakSuperMesh> &model, const MaterialPhong& material);
+	void addMeshStep(const ShaderProgram& shader, const std::shared_ptr<WeakSuperMesh> &model, const MaterialPhong& material);
 
 	float initFrame();
 	float lastDeltaTime() const;
 
-	void addPerFrameUniforms(const std::map<std::string, GLSLType> &uniforms, std::map<std::string, std::shared_ptr<std::function<void(float, std::shared_ptr<Shader>)>>> setters);
-	void addPerFrameUniform(const std::string &uniformName, GLSLType uniformType, std::shared_ptr<std::function<void(float, std::shared_ptr<Shader>)>> setter);
-	void addConstUniforms(const std::map<std::string, GLSLType>& uniforms, std::map<std::string, std::shared_ptr<std::function<void(std::shared_ptr<Shader>)>>> setters);
-	void addConstUniform(const std::string &uniformName, GLSLType uniformType, std::shared_ptr<std::function<void(std::shared_ptr<Shader>)>> setter);
+	void addPerFrameUniforms(const std::map<std::string, GLSLType> &uniforms, std::map<std::string, std::shared_ptr<std::function<void(float, std::shared_ptr<ShaderProgram>)>>> setters);
+	void addPerFrameUniform(const std::string &uniformName, GLSLType uniformType, std::shared_ptr<std::function<void(float, std::shared_ptr<ShaderProgram>)>> setter);
+	void addConstUniforms(const std::map<std::string, GLSLType>& uniforms, std::map<std::string, std::shared_ptr<std::function<void(std::shared_ptr<ShaderProgram>)>>> setters);
+	void addConstUniform(const std::string &uniformName, GLSLType uniformType, std::shared_ptr<std::function<void(std::shared_ptr<ShaderProgram>)>> setter);
 	void addTimeUniform();
 	void addConstFloats(const std::map<std::string, float> &uniforms);
 	void addCustomAction(std::function<void(float)> action);
@@ -288,7 +334,7 @@ public:
 	void screenshot() const;
 	void addSurfaceFamilyDeformer(SurfaceParametricPencil &pencil, WeakSuperMesh &surface);
 
-	void initRendering();
-	void renderAllSteps();
-	int mainLoop();
+	virtual void initRendering();
+	virtual void renderAllSteps();
+	virtual int mainLoop();
 };

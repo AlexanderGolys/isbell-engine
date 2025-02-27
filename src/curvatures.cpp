@@ -52,8 +52,8 @@ int main(void) {
 
 
 	auto shader = make_shared<Shader>(
-			"C:\\Users\\PC\\Desktop\\ogl-master\\src\\shaders\\rev.vert",
-			"C:\\Users\\PC\\Desktop\\ogl-master\\src\\shaders\\rev.frag");
+			"C:\\Users\\PC\\Desktop\\ogl-master\\src\\templateShaders\\rev.vert",
+			"C:\\Users\\PC\\Desktop\\ogl-master\\src\\templateShaders\\rev.frag");
 
 	auto step = make_shared<RenderingStep>(shader);
 	//	auto step2 = make_shared<RenderingStep>(shader);

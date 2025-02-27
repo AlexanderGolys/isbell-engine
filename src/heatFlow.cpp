@@ -51,7 +51,7 @@ int main() {
 	auto mesh = make_shared<WeakSuperMesh>(sim.bdMesh({"T"}));
 	mesh->addGlobalMaterial(midmat);
 
-	auto shader = make_shared<Shader>(
+	auto shader = make_shared<ShaderProgram>(
 			R"(C:\Users\PC\Desktop\ogl-master\src\shaders\heat.vert)",
 R"(C:\Users\PC\Desktop\ogl-master\src\shaders\heat.frag)");
 

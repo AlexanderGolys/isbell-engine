@@ -1,5 +1,5 @@
-// #include "common/glsl_utils.hpp"
-// #include "common/specific.hpp"
+// #include "shading/glsl_utils.hpp"
+// #include "shading/specific.hpp"
 // #include <memory>
 // #include <cmath>
 //
@@ -72,8 +72,8 @@
 //     circ2.addToWeakMesh(13, TUBE, circ.getWeakMesh());
 //
 //     auto step = make_shared<RenderingStep>(make_shared<Shader>(
-//             "C:\\Users\\PC\\Desktop\\ogl-master\\src\\shaders\\hyperbolicAut.vert",
-//             "C:\\Users\\PC\\Desktop\\ogl-master\\src\\shaders\\hyperbolicAut.frag"));
+//             "C:\\Users\\PC\\Desktop\\ogl-master\\src\\templateShaders\\hyperbolicAut.vert",
+//             "C:\\Users\\PC\\Desktop\\ogl-master\\src\\templateShaders\\hyperbolicAut.frag"));
 //
 // 	step->setWeakSuperMesh(circ.getWeakMesh());
 //

@@ -20,9 +20,6 @@ uniform sampler2D texture_specular;
 uniform float time;
 
 
-
-
-
 vec4 saturate(vec4 color) {
     return clamp(color, 0., 1.);
 }
@@ -86,6 +83,6 @@ void main()
 	float speed = v_color.a;
 	vec4 col = vec4(v_color.rgb, 1.);
 
-//	color = mix(col*.7, col, smoothstep(0., 1, speed));
+	color = mix(col*.7, col, smoothstep(0., 1, speed));
 	color = col;
 }

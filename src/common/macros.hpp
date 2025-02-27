@@ -83,7 +83,7 @@ namespace std {
 #define O_(A)         HOM(A, float)
 #define burdl(A)      HOM(float, A)
 #define curvy(A)      HOM(float, A)
-#define path(A)       HOM(float, A)
+#define pathSpace(A)  HOM(float, A)
 #define TRG           const IndexedTriangle&
 #define triple_O(A)   HOM(A, vec3)
 #define O_x3(A)       HOM(A, vec3)
@@ -124,16 +124,17 @@ std::function<A(std::function<B(C)>)> curr(std::function<A(B, C)> f) {
 // #define Foo1FooRigidFoo33 hom(float, Foo(RigidBody)_Foo33 )
 
 // #define F[vec v] [F](vec v){return F(v[0], v[1]);}
-#define BigMatrix_t HOM(float, BigMatrix)
+#define BigMatrix_t HOM(float, FloatMatrix)
 #define vec69_t HOM(float, vec69)
 #define rigidMotion std::pair<vec3, vec3>
 
-#define BigMatrix_hm std::optional<BigMatrix>
+#define BigMatrix_hm std::optional<FloatMatrix>
 #define vec69_hm std::optional<vec69>
 #define mat3_hm std::optional<glm::mat3>
 #define float_hm std::optional<float>
 #define R3_hm std::optional<R3>
 #define HM_NO std::nullopt
+#define OPT(x) std::optional<x>
 
 namespace glm{
 #define BLACK glm::vec4(0, 0, 0, 1)

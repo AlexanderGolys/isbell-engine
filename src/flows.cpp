@@ -165,7 +165,7 @@ int main(void)
 
 
 
-	Shader mainShader = Shader("C:\\Users\\PC\\Desktop\\ogl-master\\src\\shaders\\flowsShader");
+	Shader mainShader = Shader("C:\\Users\\PC\\Desktop\\ogl-master\\src\\templateShaders\\flowsShader");
 	mainShader.initUniforms({
 		{"mvp", MAT4},
 		{"material", MAT4},
@@ -175,7 +175,7 @@ int main(void)
 		{"light3", MAT4},
 		{"tex", SAMPLER2D} });
 
-	Shader flowShader = Shader("C:\\Users\\PC\\Desktop\\ogl-master\\src\\shaders\\flowsTexShader");
+	Shader flowShader = Shader("C:\\Users\\PC\\Desktop\\ogl-master\\src\\templateShaders\\flowsTexShader");
 	flowShader.initUniforms({
 		{"bg_color", VEC4},
 		{"flowPower", FLOAT},
@@ -265,4 +265,3 @@ int main(void)
 
 	return window.destroy();
 }
-

@@ -56,12 +56,12 @@ int main(void)
     auto matsp =  MaterialPhong(std::move(tex1), std::move(tex2),std::move(tex3), 0.051031423, .3962453956641656 , .0931160145739731, 60.0);
 
 
-    auto step = make_shared<RenderingStep>(make_shared<Shader>(
-            "C:\\Users\\PC\\Desktop\\ogl-master\\src\\shaders\\curvaCircle.vert",
-            "C:\\Users\\PC\\Desktop\\ogl-master\\src\\shaders\\curvaCircle.frag"));
-    auto step2 = make_shared<RenderingStep>(make_shared<Shader>(
-            "C:\\Users\\PC\\Desktop\\ogl-master\\src\\shaders\\curvaCircle.vert",
-            "C:\\Users\\PC\\Desktop\\ogl-master\\src\\shaders\\curvaCircle.frag"));
+    auto step = make_shared<RenderingStep>(make_shared<ShaderProgram>(
+            "C:\\Users\\PC\\Desktop\\ogl-master\\src\\templateShaders\\curvaCircle.vert",
+            "C:\\Users\\PC\\Desktop\\ogl-master\\src\\templateShaders\\curvaCircle.frag"));
+    auto step2 = make_shared<RenderingStep>(make_shared<ShaderProgram>(
+            "C:\\Users\\PC\\Desktop\\ogl-master\\src\\templateShaders\\curvaCircle.vert",
+            "C:\\Users\\PC\\Desktop\\ogl-master\\src\\templateShaders\\curvaCircle.frag"));
 
 
     shared_ptr<WeakSuperMesh> sph = make_shared<WeakSuperMesh>(icosphere(.995, 4, vec3(0, 0, 0), PolyGroupID(222)));

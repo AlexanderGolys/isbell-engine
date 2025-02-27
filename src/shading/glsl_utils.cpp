@@ -15,234 +15,11 @@
 
 #include <GL/glew.h>
 
-#include "specific.hpp"
+//#include "specific.hpp"
 
 using namespace glm;
 using std::vector, std::string, std::shared_ptr, std::unique_ptr, std::make_shared, std::make_unique;
 
-GLuint LoadShaders(const char *vertex_file_path, const char *fragment_file_path)
-{
-
-	// Create the shaders
-	GLuint VertexShaderID = glCreateShader(GL_VERTEX_SHADER);
-	GLuint FragmentShaderID = glCreateShader(GL_FRAGMENT_SHADER);
-
-	// Read the Vertex Shader code from the file
-	string VertexShaderCode;
-	std::ifstream VertexShaderStream(vertex_file_path, std::ios::in);
-	if (VertexShaderStream.is_open())
-	{
-		std::stringstream sstr;
-		sstr << VertexShaderStream.rdbuf();
-		VertexShaderCode = sstr.str();
-		VertexShaderStream.close();
-	}
-	else
-	{
-		printf("Impossible to open %s. Are you in the right directory ? Don't forget to read the FAQ !\n", vertex_file_path);
-		getchar();
-		return 0;
-	}
-
-	// Read the Fragment Shader code from the file
-	string FragmentShaderCode;
-	std::ifstream FragmentShaderStream(fragment_file_path, std::ios::in);
-	if (FragmentShaderStream.is_open())
-	{
-		std::stringstream sstr;
-		sstr << FragmentShaderStream.rdbuf();
-		FragmentShaderCode = sstr.str();
-		FragmentShaderStream.close();
-	}
-
-	GLint Result = GL_FALSE;
-	int InfoLogLength;
-
-	// Compile Vertex Shader
-	printf("Compiling shader : %s\n", vertex_file_path);
-	char const *VertexSourcePointer = VertexShaderCode.c_str();
-	glShaderSource(VertexShaderID, 1, &VertexSourcePointer, NULL);
-	glCompileShader(VertexShaderID);
-
-	// Check Vertex Shader
-	glGetShaderiv(VertexShaderID, GL_COMPILE_STATUS, &Result);
-	glGetShaderiv(VertexShaderID, GL_INFO_LOG_LENGTH, &InfoLogLength);
-	if (InfoLogLength > 0)
-	{
-		vector<char> VertexShaderErrorMessage(InfoLogLength + 1);
-		glGetShaderInfoLog(VertexShaderID, InfoLogLength, NULL, &VertexShaderErrorMessage[0]);
-		printf("%s\n", &VertexShaderErrorMessage[0]);
-	}
-
-	// Compile Fragment Shader
-	printf("Compiling shader : %s\n", fragment_file_path);
-	char const *FragmentSourcePointer = FragmentShaderCode.c_str();
-	glShaderSource(FragmentShaderID, 1, &FragmentSourcePointer, NULL);
-	glCompileShader(FragmentShaderID);
-
-	// Check Fragment Shader
-	glGetShaderiv(FragmentShaderID, GL_COMPILE_STATUS, &Result);
-	glGetShaderiv(FragmentShaderID, GL_INFO_LOG_LENGTH, &InfoLogLength);
-	if (InfoLogLength > 0)
-	{
-		vector<char> FragmentShaderErrorMessage(InfoLogLength + 1);
-		glGetShaderInfoLog(FragmentShaderID, InfoLogLength, NULL, &FragmentShaderErrorMessage[0]);
-		printf("%s\n", &FragmentShaderErrorMessage[0]);
-	}
-
-	// Link the program
-	printf("Linking program\n");
-	GLuint ProgramID = glCreateProgram();
-	glAttachShader(ProgramID, VertexShaderID);
-	glAttachShader(ProgramID, FragmentShaderID);
-	glLinkProgram(ProgramID);
-
-	// Check the program
-	glGetProgramiv(ProgramID, GL_LINK_STATUS, &Result);
-	glGetProgramiv(ProgramID, GL_INFO_LOG_LENGTH, &InfoLogLength);
-	if (InfoLogLength > 0)
-	{
-		vector<char> ProgramErrorMessage(InfoLogLength + 1);
-		glGetProgramInfoLog(ProgramID, InfoLogLength, NULL, &ProgramErrorMessage[0]);
-		printf("%s\n", &ProgramErrorMessage[0]);
-	}
-
-	glDetachShader(ProgramID, VertexShaderID);
-	glDetachShader(ProgramID, FragmentShaderID);
-
-	glDeleteShader(VertexShaderID);
-	glDeleteShader(FragmentShaderID);
-
-	return ProgramID;
-}
-
-GLuint LoadShaders(const char *vertex_file_path, const char *geometry_file_path,const char *fragment_file_path)
-{
-
-	// Create the shaders
-	GLuint VertexShaderID = glCreateShader(GL_VERTEX_SHADER);
-	GLuint FragmentShaderID = glCreateShader(GL_FRAGMENT_SHADER);
-	GLuint GeometryShaderID = glCreateShader(GL_GEOMETRY_SHADER);
-
-	// Read the Vertex Shader code from the file
-	string VertexShaderCode;
-	std::ifstream VertexShaderStream(vertex_file_path, std::ios::in);
-	if (VertexShaderStream.is_open())
-	{
-		std::stringstream sstr;
-		sstr << VertexShaderStream.rdbuf();
-		VertexShaderCode = sstr.str();
-		VertexShaderStream.close();
-	}
-	else
-	{
-		printf("Impossible to open %s. Are you in the right directory ? Don't forget to read the FAQ !\n", vertex_file_path);
-		getchar();
-		return 0;
-	}
-
-	// Read the Fragment Shader code from the file
-	string FragmentShaderCode;
-	std::ifstream FragmentShaderStream(fragment_file_path, std::ios::in);
-	if (FragmentShaderStream.is_open())
-	{
-		std::stringstream sstr;
-		sstr << FragmentShaderStream.rdbuf();
-		FragmentShaderCode = sstr.str();
-		FragmentShaderStream.close();
-	}
-
-	// Read the Geometry Shader code from the file
-	string GeometryShaderCode;
-	std::ifstream GeometryShaderStream(geometry_file_path, std::ios::in);
-	if (GeometryShaderStream.is_open())
-	{
-		std::stringstream sstr;
-		sstr << GeometryShaderStream.rdbuf();
-		GeometryShaderCode = sstr.str();
-		GeometryShaderStream.close();
-	}
-
-	GLint Result = GL_FALSE;
-	int InfoLogLength;
-
-	// Compile Vertex Shader
-	printf("Compiling vertex shader : %s\n", vertex_file_path);
-	char const *VertexSourcePointer = VertexShaderCode.c_str();
-	glShaderSource(VertexShaderID, 1, &VertexSourcePointer, NULL);
-	glCompileShader(VertexShaderID);
-
-	// Check Vertex Shader
-	glGetShaderiv(VertexShaderID, GL_COMPILE_STATUS, &Result);
-	glGetShaderiv(VertexShaderID, GL_INFO_LOG_LENGTH, &InfoLogLength);
-	if (InfoLogLength > 0)
-	{
-		vector<char> VertexShaderErrorMessage(InfoLogLength + 1);
-		glGetShaderInfoLog(VertexShaderID, InfoLogLength, NULL, &VertexShaderErrorMessage[0]);
-		printf("%s\n", &VertexShaderErrorMessage[0]);
-	}
-
-	// Compile Geometry Shader
-	printf("Compiling geometry shader : %s\n", geometry_file_path);
-	char const *GeometrySourcePointer = GeometryShaderCode.c_str();
-	glShaderSource(GeometryShaderID, 1, &GeometrySourcePointer, NULL);
-	glCompileShader(GeometryShaderID);
-
-	// Check Geometry Shader
-	glGetShaderiv(GeometryShaderID, GL_COMPILE_STATUS, &Result);
-	glGetShaderiv(GeometryShaderID, GL_INFO_LOG_LENGTH, &InfoLogLength);
-	if (InfoLogLength > 0)
-	{
-		vector<char> GeometryShaderErrorMessage(InfoLogLength + 1);
-		glGetShaderInfoLog(GeometryShaderID, InfoLogLength, NULL, &GeometryShaderErrorMessage[0]);
-		printf("%s\n", &GeometryShaderErrorMessage[0]);
-	}
-
-	// Compile Fragment Shader
-	printf("Compiling fragment shader : %s\n", fragment_file_path);
-	char const *FragmentSourcePointer = FragmentShaderCode.c_str();
-	glShaderSource(FragmentShaderID, 1, &FragmentSourcePointer, NULL);
-	glCompileShader(FragmentShaderID);
-
-	// Check Fragment Shader
-	glGetShaderiv(FragmentShaderID, GL_COMPILE_STATUS, &Result);
-	glGetShaderiv(FragmentShaderID, GL_INFO_LOG_LENGTH, &InfoLogLength);
-	if (InfoLogLength > 0)
-	{
-		vector<char> FragmentShaderErrorMessage(InfoLogLength + 1);
-		glGetShaderInfoLog(FragmentShaderID, InfoLogLength, NULL, &FragmentShaderErrorMessage[0]);
-		printf("%s\n", &FragmentShaderErrorMessage[0]);
-	}
-
-	// Link the program
-	printf("Linking program\n");
-	GLuint ProgramID = glCreateProgram();
-	glAttachShader(ProgramID, VertexShaderID);
-	glAttachShader(ProgramID, FragmentShaderID);
-	glAttachShader(ProgramID, GeometryShaderID);
-
-	glLinkProgram(ProgramID);
-
-	// Check the program
-	glGetProgramiv(ProgramID, GL_LINK_STATUS, &Result);
-	glGetProgramiv(ProgramID, GL_INFO_LOG_LENGTH, &InfoLogLength);
-	if (InfoLogLength > 0)
-	{
-		vector<char> ProgramErrorMessage(InfoLogLength + 1);
-		glGetProgramInfoLog(ProgramID, InfoLogLength, NULL, &ProgramErrorMessage[0]);
-		printf("%s\n", &ProgramErrorMessage[0]);
-	}
-
-	glDetachShader(ProgramID, VertexShaderID);
-	glDetachShader(ProgramID, GeometryShaderID);
-	glDetachShader(ProgramID, FragmentShaderID);
-
-	glDeleteShader(VertexShaderID);
-	glDeleteShader(GeometryShaderID);
-	glDeleteShader(FragmentShaderID);
-
-	return ProgramID;
-}
 
 void setUniformTextureSampler(GLuint programID, Texture *texture, int textureSlot)
 {
@@ -353,6 +130,102 @@ GLenum primitiveGLSLType(GLSLType type)
     return -1;
 }
 
+
+GLenum Shader::getTypeFromExtension(const string &extension) {
+	string nodot = extension;
+	if (nodot[0] == '.')
+		nodot = nodot.substr(1);
+
+	if (nodot == "vert")
+		return GL_VERTEX_SHADER;
+	if (nodot == "frag")
+		return GL_FRAGMENT_SHADER;
+	if (nodot == "geom" || nodot == "geo")
+		return GL_GEOMETRY_SHADER;
+	throw SystemError("Unknown shader extension: ." + nodot);
+}
+
+
+GLuint Shader::getID() const {
+	return shaderID;
+}
+
+void Shader::compile() {
+	shaderID = glCreateShader(shaderType);
+	GLint Result = GL_FALSE;
+	int InfoLogLength;
+
+	char const *sourcePtr = code.c_str();
+
+	glShaderSource(shaderID, 1, &sourcePtr, nullptr);
+	glCompileShader(shaderID);
+	glGetShaderiv(shaderID, GL_COMPILE_STATUS, &Result);
+	glGetShaderiv(shaderID, GL_INFO_LOG_LENGTH, &InfoLogLength);
+	if (InfoLogLength > 0)
+	{
+		vector<char> error(InfoLogLength + 1);
+		glGetShaderInfoLog(shaderID, InfoLogLength, nullptr, &error[0]);
+		throw SystemError(&error[0]);
+	}
+}
+
+string Shader::getCode() const { return code; }
+
+Shader::Shader(const string &code, GLenum shaderType) : shaderType(shaderType), code(code) {
+
+}
+
+
+Shader::Shader(CodeFileDescriptor &&file) {
+	shaderType = getTypeFromExtension(file.extension());
+	code = file.getCode();
+	shaderID = glCreateShader(shaderType);
+}
+
+Shader::Shader(CodeFileDescriptor &file) : Shader(file.getCode(), getTypeFromExtension(file.extension())) {}
+
+Shader::Shader(const Shader &other): shaderType(other.shaderType),
+									 shaderID(other.shaderID),
+									 code(other.code) {}
+
+Shader::Shader(Shader &&other) noexcept: shaderType(other.shaderType),
+										 shaderID(other.shaderID),
+										 code(std::move(other.code)) {}
+
+Shader & Shader::operator=(const Shader &other) {
+	if (this == &other)
+		return *this;
+	shaderType = other.shaderType;
+	shaderID   = other.shaderID;
+	code       = other.code;
+	return *this;
+}
+Shader & Shader::operator=(Shader &&other) noexcept {
+	if (this == &other)
+		return *this;
+	shaderType = other.shaderType;
+	shaderID   = other.shaderID;
+	code       = std::move(other.code);
+	return *this;
+}
+
+ConfigFile::ConfigFile(const string &path): CodeFileDescriptor("config.txt", path, false) {
+	int i = 0;
+	config = std::map<string, string>();
+	while (readLine(i).contains(':')) {
+		string key = readLine(i).substr(0, readLine(i).find(':'));
+		string value = readLine(i).substr(readLine(i).find(':') + 1);
+		std::erase(value, '\t');
+		std::erase(value, ' ');
+		std::erase(key, ':');
+		config[key] = value;
+		i++;
+	}
+}
+
+
+ConfigFile::ConfigFile(): ConfigFile(DEFAULT_CONFIG_PATH) {}
+
 void error_callback(int error, const char *description)
 {
 	fprintf(stderr, "Error: %s\n", description);
@@ -388,7 +261,7 @@ mat4 generateMVP(vec3 camPosition, vec3 camLookAt, vec3 upVector, float fov, flo
 Window::Window(int width, int height, const char *title)
 {
     if (!glfwInit())
-        exit(2137);
+        throw SystemError("GLFW initialization failed");
 	glfwWindowHint(GLFW_SAMPLES, 4);
 	glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 3);
 	glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 3);
@@ -510,46 +383,85 @@ void Window::initViewport() {
     glViewport(0, 0, this->width, this->height);
 }
 
-Shader::Shader(const char *vertex_file_path, const char *fragment_file_path)
-{
-	this->vertex_file_path = vertex_file_path;
-	this->fragment_file_path = fragment_file_path;
-	this->programID = LoadShaders(vertex_file_path, fragment_file_path);
-	shaderType = CLASSIC;
+
+void ShaderProgram::linkShaders() {
+	GLint Result = GL_FALSE;
+	int InfoLogLength;
+
+	vertexShader.compile();
+	fragmentShader.compile();
+	if (geometryShader) geometryShader->compile();
+
+
+		GLuint VertexShaderID =  vertexShader.getID();
+		GLuint FragmentShaderID =  fragmentShader.getID();
+		GLuint GeometryShaderID = geometryShader ? geometryShader->getID() : 0;
+
+
+		programID = glCreateProgram();
+
+		glAttachShader(programID, VertexShaderID);
+		glAttachShader(programID, FragmentShaderID);
+		if (geometryShader) glAttachShader(programID, GeometryShaderID);
+
+		glLinkProgram(programID);
+
+		glGetProgramiv(programID, GL_LINK_STATUS, &Result);
+		glGetProgramiv(programID, GL_INFO_LOG_LENGTH, &InfoLogLength);
+		if (InfoLogLength > 0)
+		{
+			vector<char> ProgramErrorMessage(InfoLogLength + 1);
+			glGetProgramInfoLog(programID, InfoLogLength, NULL, &ProgramErrorMessage[0]);
+			throw SystemError(&ProgramErrorMessage[0]);
+		}
+
+		glDetachShader(programID, VertexShaderID);
+		if (geometryShader) glDetachShader(programID, GeometryShaderID);
+		glDetachShader(programID, FragmentShaderID);
+
+		glDeleteShader(VertexShaderID);
+		if (geometryShader) glDeleteShader(GeometryShaderID);
+		glDeleteShader(FragmentShaderID);
+
+		shaderType = geometryShader ? GEOMETRY1 : CLASSIC;
+	}
+
+
+ShaderProgram::ShaderProgram(const Shader &vertexShader, const Shader &fragmentShader, const Shader &geometryShader) :
+	vertexShader(vertexShader),
+	fragmentShader(fragmentShader),
+	geometryShader(geometryShader){
+
+	linkShaders();
 }
 
-Shader::Shader(const char *vertex_file_path, const char *fragment_file_path, const char *geometry_file_path)
-{
-	this->vertex_file_path = vertex_file_path;
-	this->fragment_file_path = fragment_file_path;
-	this->geometry_file_path = geometry_file_path;
-	this->programID = LoadShaders(vertex_file_path, fragment_file_path, geometry_file_path);
-	shaderType = GEOMETRY1;
+ShaderProgram::ShaderProgram(const string &vertexPath, const string &fragPath) :
+vertexShader(CodeFileDescriptor(vertexPath, false)),
+fragmentShader(CodeFileDescriptor(fragPath, false)),
+geometryShader(std::nullopt){
+	linkShaders();
 }
 
-Shader::Shader(const string &standard_file_path)
-{
-	string vertex_file_path_str = standard_file_path + ".vert";
-	string fragment_file_path_str = standard_file_path + ".frag";
-	this->vertex_file_path = vertex_file_path_str.c_str();
-	this->fragment_file_path = fragment_file_path_str.c_str();
-	this->programID = LoadShaders(vertex_file_path, fragment_file_path);
-	this->uniformLocations = std::map<string, GLuint>();
-	this->uniformTypes = std::map<string, GLSLType>();
-	shaderType = CLASSIC;
+ShaderProgram::ShaderProgram(const Shader &vertexShader, const Shader &fragmentShader) :
+	vertexShader(vertexShader),
+	fragmentShader(fragmentShader),
+	geometryShader(std::nullopt){
+
+	linkShaders();
 }
 
-Shader::~Shader()
+
+ShaderProgram::~ShaderProgram()
 {
 	glDeleteProgram(this->programID);
 }
 
-void Shader::use()
+void ShaderProgram::use()
 {
 	glUseProgram(this->programID);
 }
 
-void Shader::initUniforms(const std::map<std::string, GLSLType> &uniforms)
+void ShaderProgram::initUniforms(const std::map<std::string, GLSLType> &uniforms)
 {
 	for (auto uni : uniforms)
 		this->uniformTypes[uni.first] = uni.second;
@@ -560,13 +472,13 @@ void Shader::initUniforms(const std::map<std::string, GLSLType> &uniforms)
 	}
 }
 
-void Shader::setTextureSampler(const Texture *texture, int textureSlot) const
+void ShaderProgram::setTextureSampler(const Texture *texture, int textureSlot) const
 {
 	GLuint samplerUniform = glGetUniformLocation(this->programID, texture->samplerName);
 	glUniform1i(samplerUniform, textureSlot);
 }
 
-void Shader::setUniforms(const std::map<string, const GLfloat *> &uniformValues)
+void ShaderProgram::setUniforms(const std::map<string, const GLfloat *> &uniformValues)
 {
 	for (auto const &uniform : uniformValues)
 	{
@@ -575,7 +487,7 @@ void Shader::setUniforms(const std::map<string, const GLfloat *> &uniformValues)
 	}
 }
 
-void Shader::setUniform(const string &uniformName, const GLfloat *uniformValue)
+void ShaderProgram::setUniform(const string &uniformName, const GLfloat *uniformValue)
 {
 	GLSLType uniformType = this->uniformTypes[uniformName];
 	GLuint uniformLocation = this->uniformLocations[uniformName];
@@ -612,7 +524,7 @@ void Shader::setUniform(const string &uniformName, const GLfloat *uniformValue)
 	}
 }
 
-void Shader::setUniform(const string &uniformName, float uniformValue)
+void ShaderProgram::setUniform(const string &uniformName, float uniformValue)
 {
 	if (this->uniformTypes[uniformName] != FLOAT)
 		throw std::invalid_argument("Uniform type must be FLOAT");
@@ -620,7 +532,7 @@ void Shader::setUniform(const string &uniformName, float uniformValue)
 	glUniform1f(uniformLocation, uniformValue);
 }
 
-void Shader::setUniform(const string &uniformName, int uniformValue)
+void ShaderProgram::setUniform(const string &uniformName, int uniformValue)
 {
 	if (this->uniformTypes[uniformName] != INT)
 		throw std::invalid_argument("Uniform type must be INT");
@@ -628,7 +540,7 @@ void Shader::setUniform(const string &uniformName, int uniformValue)
 	glUniform1i(uniformLocation, uniformValue);
 }
 
-void Shader::setUniform(const string &uniformName, vec2 uniformValue)
+void ShaderProgram::setUniform(const string &uniformName, vec2 uniformValue)
 {
 	if (this->uniformTypes[uniformName] != VEC2)
 		throw std::invalid_argument("Uniform type must be VEC2");
@@ -636,7 +548,7 @@ void Shader::setUniform(const string &uniformName, vec2 uniformValue)
 	glUniform2f(uniformLocation, uniformValue.x, uniformValue.y);
 }
 
-void Shader::setUniform(const string &uniformName, vec3 uniformValue)
+void ShaderProgram::setUniform(const string &uniformName, vec3 uniformValue)
 {
 	if (this->uniformTypes[uniformName] != VEC3)
 		throw std::invalid_argument("Uniform type must be VEC3");
@@ -644,7 +556,7 @@ void Shader::setUniform(const string &uniformName, vec3 uniformValue)
 	glUniform3f(uniformLocation, uniformValue.x, uniformValue.y, uniformValue.z);
 }
 
-void Shader::setUniform(const string &uniformName, vec4 uniformValue)
+void ShaderProgram::setUniform(const string &uniformName, vec4 uniformValue)
 {
 	if (this->uniformTypes[uniformName] != VEC4)
 		throw std::invalid_argument("Uniform type must be VEC4");
@@ -652,7 +564,7 @@ void Shader::setUniform(const string &uniformName, vec4 uniformValue)
 	glUniform4f(uniformLocation, uniformValue.x, uniformValue.y, uniformValue.z, uniformValue.w);
 }
 
-void Shader::setUniform(const string &uniformName, mat2 uniformValue)
+void ShaderProgram::setUniform(const string &uniformName, mat2 uniformValue)
 {
 	if (this->uniformTypes[uniformName] != MAT2)
 		throw std::invalid_argument("Uniform type must be MAT2");
@@ -660,7 +572,7 @@ void Shader::setUniform(const string &uniformName, mat2 uniformValue)
 	glUniformMatrix2fv(uniformLocation, 1, GL_FALSE, &uniformValue[0][0]);
 }
 
-void Shader::setUniform(const string &uniformName, mat3 uniformValue)
+void ShaderProgram::setUniform(const string &uniformName, mat3 uniformValue)
 {
 	if (this->uniformTypes[uniformName] != MAT3)
 		throw std::invalid_argument("Uniform type must be MAT3");
@@ -668,7 +580,7 @@ void Shader::setUniform(const string &uniformName, mat3 uniformValue)
 	glUniformMatrix3fv(uniformLocation, 1, GL_FALSE, &uniformValue[0][0]);
 }
 
-void Shader::setUniform(const string& uniformName, mat4 uniformValue)
+void ShaderProgram::setUniform(const string& uniformName, mat4 uniformValue)
 {
 	if (this->uniformTypes[uniformName] != MAT4)
 		throw std::invalid_argument("Uniform type must be MAT4");
@@ -676,7 +588,7 @@ void Shader::setUniform(const string& uniformName, mat4 uniformValue)
 	glUniformMatrix4fv(uniformLocation, 1, GL_FALSE, &uniformValue[0][0]);
 }
 
-void Shader::setUniform(const string& uniformName, float x, float y)
+void ShaderProgram::setUniform(const string& uniformName, float x, float y)
 {
 	if (this->uniformTypes[uniformName] != VEC2)
 		throw std::invalid_argument("Uniform type must be VEC2");
@@ -684,7 +596,7 @@ void Shader::setUniform(const string& uniformName, float x, float y)
 	glUniform2f(uniformLocation, x, y);
 }
 
-void Shader::setUniform(const string &uniformName, float x, float y, float z)
+void ShaderProgram::setUniform(const string &uniformName, float x, float y, float z)
 {
 	if (this->uniformTypes[uniformName] != VEC3)
 		throw std::invalid_argument("Uniform type must be VEC3");
@@ -692,7 +604,7 @@ void Shader::setUniform(const string &uniformName, float x, float y, float z)
 	glUniform3f(uniformLocation, x, y, z);
 }
 
-void Shader::setUniform(const string &uniformName, float x, float y, float z, float w)
+void ShaderProgram::setUniform(const string &uniformName, float x, float y, float z, float w)
 {
 	if (this->uniformTypes[uniformName] != VEC4)
 		throw std::invalid_argument("Uniform type must be VEC4");
@@ -787,7 +699,8 @@ mat4 Camera::vp(float t)
 
 mat4 Camera::mvp(float t, const mat4 &modelTransform)
 {
-    return projectionMatrix * viewMatrix(t) * modelTransform;	
+	return vp(t);
+    return projectionMatrix * viewMatrix(t) * modelTransform;
 }
 
 
@@ -817,8 +730,6 @@ void Attribute::initBuffer()
 	glGenBuffers(1, &buffer);
 	this->bufferAddress = buffer;
     // glBufferData(GL_ARRAY_BUFFER, bufferLength * this->size, firstElementAdress, GL_STATIC_DRAW);
-
-
 }
 
 void Attribute::enable()
@@ -832,7 +743,7 @@ void Attribute::enable()
 void Attribute::disable()
 {
 	glDisableVertexAttribArray(this->inputNumber);
-	this->enabled = false;	
+	this->enabled = false;
 }
 
 void Attribute::load(const void *firstElementAdress, int bufferLength)
@@ -858,13 +769,13 @@ void Attribute::freeBuffer() {
     this->enabled = false;
 }
 
-RenderingStep::RenderingStep(const shared_ptr<Shader> &shader)
+RenderingStep::RenderingStep(const shared_ptr<ShaderProgram> &shader)
 {
 	this->shader = shader;
 	this->attributes = vector<shared_ptr<Attribute>>();
 	this->model = std::make_shared<Model3D>();
 	this->uniforms = std::map<string, GLSLType>();
-	this->uniformSetters = std::map<string, shared_ptr<std::function<void(float, shared_ptr<Shader>)>>>();
+	this->uniformSetters = std::map<string, shared_ptr<std::function<void(float, shared_ptr<ShaderProgram>)>>>();
 	this->customStep = [](float t) {};
 }
 
@@ -881,9 +792,7 @@ RenderingStep::RenderingStep(const RenderingStep& other)
 RenderingStep::~RenderingStep()
 {
 	for (auto attribute : attributes)
-	{
 		attribute.reset();
-	}
 	shader.reset();
 	model.reset();
 }
@@ -1027,7 +936,7 @@ void RenderingStep::disableAttributes()
 		attribute->disable();
 }
 
-void RenderingStep::addUniform(string uniformName, GLSLType uniformType, shared_ptr<std::function<void(float, shared_ptr<Shader>)>> setter)
+void RenderingStep::addUniform(string uniformName, GLSLType uniformType, shared_ptr<std::function<void(float, shared_ptr<ShaderProgram>)>> setter)
 {
 	this->uniforms[uniformName] = uniformType;
 	this->uniformSetters[uniformName] = std::move(setter);
@@ -1037,64 +946,60 @@ void RenderingStep::addUniform(string uniformName, GLSLType uniformType, shared_
 void RenderingStep::addConstFloats(const std::map<std::string, float>& uniforms)
 {
 	for (auto uniform : uniforms)
-	{
-		addUniform(uniform.first, FLOAT, std::make_shared<std::function<void(float, shared_ptr<Shader>)>>
-			([uniform](float t, const shared_ptr<Shader>& shader)
-				{
-					shader->setUniform(uniform.first, uniform.second);	
-				}));
-	}
+		addUniform(uniform.first, FLOAT, std::make_shared<std::function<void(float, shared_ptr<ShaderProgram>)>>
+				   ([uniform](float t, const shared_ptr<ShaderProgram>& shader)
+				   {
+					   shader->setUniform(uniform.first, uniform.second);
+				   }));
 }
 
 void RenderingStep::addConstVec4(const std::string& uniformName, vec4 value)
 {
-	auto uniformSetter = [value, uniformName](float t, const shared_ptr<Shader> &shader) {
+	auto uniformSetter = [value, uniformName](float t, const shared_ptr<ShaderProgram> &shader) {
 		shader->setUniform(uniformName, value);
 	};
-	addUniform(uniformName, VEC4,  std::make_shared<std::function<void(float, shared_ptr<Shader>)>>(uniformSetter));
+	addUniform(uniformName, VEC4,  std::make_shared<std::function<void(float, shared_ptr<ShaderProgram>)>>(uniformSetter));
 }
 
 void RenderingStep::setUniforms(float t)
 {
-	for (const auto& uniform_descriptor : uniforms)
+	for (const auto &key: uniforms | std::views::keys)
 	{
-		auto name = uniform_descriptor.first;
+		auto name = key;
 		(*uniformSetters[name])(t, shader);
 	}
 }
 
 void RenderingStep::addCameraUniforms(const std::shared_ptr<Camera>& camera)
 {
-	std::function<void(float, shared_ptr<Shader>)> MVPsetter;
+	std::function<void(float, shared_ptr<ShaderProgram>)> MVPsetter;
 
-	if (superLoaded() || weakSuperLoaded()) {
-		MVPsetter = [camera, this](float t, const shared_ptr<Shader> &shader) {
+	if (superLoaded() || weakSuperLoaded())
+		MVPsetter = [camera, this](float t, const shared_ptr<ShaderProgram> &shader) {
 			mat4 mvp = camera->mvp(t, mat4(mat3(1)));
 			shader->setUniform("mvp", mvp);
 		};
-	}
-	else {
-		MVPsetter = [camera, this](float t, const shared_ptr<Shader> &shader) {
+	else
+		MVPsetter = [camera, this](float t, const shared_ptr<ShaderProgram> &shader) {
 			mat4 mvp = camera->mvp(t, model->transform);
 			shader->setUniform("mvp", mvp);
 		};
-	}
-	auto positionSetter = [camera, this](float t, const shared_ptr<Shader> &shader) {
+	auto positionSetter = [camera, this](float t, const shared_ptr<ShaderProgram> &shader) {
 		vec3 camPos = camera->position(t);
 		shader->setUniform("camPosition", camPos);
 	};
-	addUniform("mvp", MAT4,  std::make_shared<std::function<void(float, shared_ptr<Shader>)>>(MVPsetter));
-	addUniform("camPosition", VEC3,  std::make_shared<std::function<void(float, shared_ptr<Shader>)>>(positionSetter));
+	addUniform("mvp", MAT4,  std::make_shared<std::function<void(float, shared_ptr<ShaderProgram>)>>(MVPsetter));
+	addUniform("camPosition", VEC3,  std::make_shared<std::function<void(float, shared_ptr<ShaderProgram>)>>(positionSetter));
 }
 
 void RenderingStep::addLightUniform(const Light& pointLight, int lightIndex)
 {
 	string lightName = "light" + std::to_string(lightIndex);
-	auto lightSetter = [pointLight, lightName](float t, const shared_ptr<Shader> &shader) {
+	auto lightSetter = [pointLight, lightName](float t, const shared_ptr<ShaderProgram> &shader) {
 		mat4 lightMat = pointLight.compressToMatrix();
 		shader->setUniform(lightName, lightMat);
 	};
-	addUniform(lightName, MAT4, std::make_shared<std::function<void(float, shared_ptr<Shader>)>>(lightSetter));
+	addUniform(lightName, MAT4, std::make_shared<std::function<void(float, shared_ptr<ShaderProgram>)>>(lightSetter));
 }
 
 void RenderingStep::addLightsUniforms(const std::vector<Light> &lights)
@@ -1110,26 +1015,26 @@ void RenderingStep::addTexturedMaterialUniforms() {
     if (!weakSuperLoaded())
         throw std::invalid_argument("Material uniform can only be added for super mesh");
     vec4 intenc = weak_super->getMaterial().compressIntencities();
-    auto materialSetter = [intenc](float t, const shared_ptr<Shader> &s) { s->setUniform("intencities", intenc); };
-    addUniform("intencities", VEC4, std::make_shared<std::function<void(float, shared_ptr<Shader>)>>(materialSetter));
+    auto materialSetter = [intenc](float t, const shared_ptr<ShaderProgram> &s) { s->setUniform("intencities", intenc); };
+    addUniform("intencities", VEC4, std::make_shared<std::function<void(float, shared_ptr<ShaderProgram>)>>(materialSetter));
 
-    auto textureSetter = [m=weak_super->getMaterial().texture_ambient](float t, const shared_ptr<Shader> &s) {
+    auto textureSetter = [m=weak_super->getMaterial().texture_ambient](float t, const shared_ptr<ShaderProgram> &s) {
     	m->bind();
         s->setTextureSampler(m.get(), 0);
     };
-    addUniform("texture_ambient", SAMPLER2D, std::make_shared<std::function<void(float, shared_ptr<Shader>)>>(textureSetter));
+    addUniform("texture_ambient", SAMPLER2D, std::make_shared<std::function<void(float, shared_ptr<ShaderProgram>)>>(textureSetter));
 
-	auto textureSetter2 = [m=weak_super->getMaterial().texture_diffuse](float t, const shared_ptr<Shader> &s) {
+	auto textureSetter2 = [m=weak_super->getMaterial().texture_diffuse](float t, const shared_ptr<ShaderProgram> &s) {
 		m->bind();
 		s->setTextureSampler(m.get(), 1);
 	};
-	addUniform("texture_diffuse", SAMPLER2D, std::make_shared<std::function<void(float, shared_ptr<Shader>)>>(textureSetter2));
+	addUniform("texture_diffuse", SAMPLER2D, std::make_shared<std::function<void(float, shared_ptr<ShaderProgram>)>>(textureSetter2));
 
-	auto textureSetter3 = [m=weak_super->getMaterial().texture_specular](float t, const shared_ptr<Shader> &s) {
+	auto textureSetter3 = [m=weak_super->getMaterial().texture_specular](float t, const shared_ptr<ShaderProgram> &s) {
 		m->bind();
 		s->setTextureSampler(m.get(), 2);
 	};
-	addUniform("texture_specular", SAMPLER2D, std::make_shared<std::function<void(float, shared_ptr<Shader>)>>(textureSetter3));
+	addUniform("texture_specular", SAMPLER2D, std::make_shared<std::function<void(float, shared_ptr<ShaderProgram>)>>(textureSetter3));
 }
 
 void RenderingStep::init(const shared_ptr<Camera> &cam, const std::vector<Light> &lights) {
@@ -1153,7 +1058,7 @@ void RenderingStep::bindTextures() {
     weak_super->getMaterial().texture_specular->bind();
 }
 
-void RenderingStep::addUniforms(const std::map<std::string, GLSLType> &uniforms, std::map<string, shared_ptr<std::function<void(float, shared_ptr<Shader>)>>> setters)
+void RenderingStep::addUniforms(const std::map<std::string, GLSLType> &uniforms, std::map<string, shared_ptr<std::function<void(float, shared_ptr<ShaderProgram>)>>> setters)
 {
 	for (const auto& uniform : uniforms)
 		addUniform(uniform.first, uniform.second, setters[uniform.first]);
@@ -1237,7 +1142,7 @@ void Renderer::initMainWindow(int width, int height, const char *title)
 	this->window = std::make_unique<Window>(width, height, title);
 	glewExperimental = true;
 	if (glewInit() != GLEW_OK)
-		exit(2138);
+		throw SystemError("Failed to initialize GLEW");
 	this->vao = bindVAO();
 }
 
@@ -1250,8 +1155,8 @@ void Renderer::addRenderingStep(std::shared_ptr<RenderingStep> renderingStep)
 	this->renderingSteps.push_back(std::move(renderingStep));
 }
 
-void Renderer::addMeshStep(const Shader &shader, const std::shared_ptr<WeakSuperMesh> &model, const MaterialPhong &material) {
-	auto renderingStep = std::make_shared<RenderingStep>(make_shared<Shader>(shader));
+void Renderer::addMeshStep(const ShaderProgram &shader, const std::shared_ptr<WeakSuperMesh> &model, const MaterialPhong &material) {
+	auto renderingStep = std::make_shared<RenderingStep>(make_shared<ShaderProgram>(shader));
 	model->addGlobalMaterial(material);
 	renderingStep->setWeakSuperMesh(model);
 	addRenderingStep(renderingStep);
@@ -1269,27 +1174,27 @@ void Renderer::setLights(const std::vector<Light> &lights)
 	this->lights = lights;
 }
 
-void Renderer::setLightWithMesh(const Light &light, const MaterialPhong &material, const Shader &shader, float radius) {
-	this->lights.push_back(light);
-	addMeshStep(shader, std::make_shared<WeakSuperMesh>(icosphere(radius, 2, light.getPosition(), randomID())), material);
-}
+//void Renderer::setLightWithMesh(const Light &light, const MaterialPhong &material, const ShaderProgram &shader, float radius) {
+//	this->lights.push_back(light);
+//	addMeshStep(shader, std::make_shared<WeakSuperMesh>(icosphere(radius, 2, light.getPosition(), randomID())), material);
+//}
 
-void Renderer::setLightsWithMesh(const std::vector<Light> &lights, const MaterialPhong &material, const Shader &shader, float radius) {
+void Renderer::setLightsWithMesh(const std::vector<Light> &lights, const MaterialPhong &material, const ShaderProgram &shader, float radius) {
 	for (const auto &light : lights)
 		setLightWithMesh(light, material, shader, radius);
 }
 
-void Renderer::setLightWithMesh(const Light &light, float ambient, float diff, float spec, float shine, const Shader &shader, float radius) {
+void Renderer::setLightWithMesh(const Light &light, float ambient, float diff, float spec, float shine, const ShaderProgram &shader, float radius) {
 	setLightWithMesh(light, MaterialPhong(light.getColor(), light.getColor(), WHITE, ambient, diff, spec, shine), shader, radius);
 }
-void Renderer::setLightsWithMesh(const std::vector<Light> &lights, float ambient, float diff, float spec, float shine, const Shader &shader, float radius) {
+void Renderer::setLightsWithMesh(const std::vector<Light> &lights, float ambient, float diff, float spec, float shine, const ShaderProgram &shader, float radius) {
 	for (const auto &light : lights)
 		setLightWithMesh(light, ambient, diff, spec, shine, shader, radius);
 }
 
 float Renderer::initFrame()
 {
-	// glViewport(0, 0, window->width, window->height);
+//	glViewport(0, 0, window->width, window->height);
 	glClearColor(this->bgColor.x, this->bgColor.y, this->bgColor.z, 1.0f);
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT );
 
@@ -1305,14 +1210,14 @@ float Renderer::lastDeltaTime() const {
     return this->dt;
 }
 
-void Renderer::addPerFrameUniforms(const std::map<std::string, GLSLType> &uniforms, std::map<std::string, shared_ptr<std::function<void(float, std::shared_ptr<Shader>)>>> setters)
+void Renderer::addPerFrameUniforms(const std::map<std::string, GLSLType> &uniforms, std::map<std::string, shared_ptr<std::function<void(float, std::shared_ptr<ShaderProgram>)>>> setters)
 {
 	for (const auto& renderingStep : renderingSteps)
 		renderingStep->addUniforms(uniforms, setters);
-	
+
 }
 
-void Renderer::addPerFrameUniform(const std::string &uniformName, GLSLType uniformType, shared_ptr<std::function<void(float, std::shared_ptr<Shader>)>> setter)
+void Renderer::addPerFrameUniform(const std::string &uniformName, GLSLType uniformType, shared_ptr<std::function<void(float, std::shared_ptr<ShaderProgram>)>> setter)
 {
 	for (const auto& renderingStep : renderingSteps)
 		renderingStep->addUniform(uniformName, uniformType, setter);
@@ -1379,17 +1284,17 @@ void Renderer::initRendering()
 	}
 }
 
-void Renderer::addConstUniform(const std::string &uniformName, GLSLType uniformType, shared_ptr<std::function<void(std::shared_ptr<Shader>)>> setter)
+void Renderer::addConstUniform(const std::string &uniformName, GLSLType uniformType, shared_ptr<std::function<void(std::shared_ptr<ShaderProgram>)>> setter)
 {
-	std::function<void(float, std::shared_ptr<Shader>)> setterWrapper = [setter](float t, const std::shared_ptr<Shader> &shader) { (*setter)(shader); };
+	std::function<void(float, std::shared_ptr<ShaderProgram>)> setterWrapper = [setter](float t, const std::shared_ptr<ShaderProgram> &shader) { (*setter)(shader); };
 	for (const auto& renderingStep : renderingSteps)
-		renderingStep->addUniform(uniformName, uniformType, make_shared<std::function<void(float, std::shared_ptr<Shader>)>>(setterWrapper));
+		renderingStep->addUniform(uniformName, uniformType, make_shared<std::function<void(float, std::shared_ptr<ShaderProgram>)>>(setterWrapper));
 }
 
 void Renderer::addTimeUniform()
 {
-	addPerFrameUniform("time", FLOAT, std::make_shared<std::function<void(float, std::shared_ptr<Shader>)>>(
-	[](float t, const std::shared_ptr<Shader> &shader) {
+	addPerFrameUniform("time", FLOAT, std::make_shared<std::function<void(float, std::shared_ptr<ShaderProgram>)>>(
+	[](float t, const std::shared_ptr<ShaderProgram> &shader) {
 		shader->setUniform("time", t);
 	}));
 }
@@ -1417,7 +1322,7 @@ void Renderer::addCustomAction(std::function<void(float, float)> action)
     });
 }
 
-void Renderer::addConstUniforms(const std::map<std::string, GLSLType>& uniforms, std::map<std::string, shared_ptr<std::function<void(std::shared_ptr<Shader>)>>> setters)
+void Renderer::addConstUniforms(const std::map<std::string, GLSLType>& uniforms, std::map<std::string, shared_ptr<std::function<void(std::shared_ptr<ShaderProgram>)>>> setters)
 {	
 	for (const auto& uniform : uniforms)
 		addConstUniform(uniform.first, uniform.second,  setters[uniform.first]);

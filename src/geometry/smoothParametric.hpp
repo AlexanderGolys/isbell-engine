@@ -1,14 +1,11 @@
 #pragma once
+#include "hyperbolic.hpp"
 
 // #include <utility>
 
 #include <utility>
 
-//#include <src/common/indexedRendering.hpp>
 
-#include "hyperbolic.hpp"
-//#include "glm/glm.hpp"
-// #include "planarGeometry.hpp"
 
 class AffinePlane;
 class SmoothParametricPlaneCurve;

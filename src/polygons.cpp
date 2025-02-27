@@ -201,8 +201,8 @@ int main(void)
 	if (glewInit() != GLEW_OK)
 		exit(2138);
 
-	GLuint programID = LoadShaders("C:\\Users\\PC\\Desktop\\ogl-master\\src\\shaders\\polygons.vert", 
-								   "C:\\Users\\PC\\Desktop\\ogl-master\\src\\shaders\\polygons.frag");
+	GLuint programID = LoadShaders("C:\\Users\\PC\\Desktop\\ogl-master\\src\\templateShaders\\polygons.vert",
+								   "C:\\Users\\PC\\Desktop\\ogl-master\\src\\templateShaders\\polygons.frag");
 	glUseProgram(programID);
 	glEnable(GL_DEPTH_TEST);
 	glDepthFunc(GL_LESS);

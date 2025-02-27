@@ -377,6 +377,9 @@ TriangularMesh::TriangularMesh(const vector<TriangleR3> &triangles) : Triangular
 }
 
 
+PointLight::PointLight(vec3 position, float intensity_constant, float intensity_linear, float intensity_quadratic, float softShadowRadius, vec4 color) :
+	Light(position, color, vec4(intensity_constant, intensity_linear, intensity_quadratic, 0), 0, softShadowRadius) {}
+
 std::map<std::string, int> countEstimatedBufferSizesInOBJFile(const char *filename) {
     int positions = 0;
     int normals = 0;
@@ -1503,7 +1506,7 @@ void SuperMesh::precomputeBuffers(bool materials, bool extra) {
 
 
 void SuperMesh::merge(const SuperMesh &other) {
-	auto prefix_rand = randomString();
+	auto prefix_rand = randomStringNumeric();
 	for (auto &pair : other.triangleGroups)
 		triangleGroups[prefix(pair.first, prefix_rand)] = pair.second;
 	for (auto &pair : other.boundaryGroups)

@@ -67,18 +67,18 @@ int main(void)
     auto icomat =  MaterialPhong(std::move(icomat1), std::move(icomat2),std::move(icomat3), 0.041031423, .873962453956641656 , 1.2931160145739731, 7.0);
     auto outmat =  MaterialPhong(std::move(outmat1), std::move(outmat2),std::move(outmat3), 0.0321031423, .63962453956641656 , .9931160145739731, 18.0);
 
-    auto step = make_shared<RenderingStep>(make_shared<Shader>(
-            "C:\\Users\\PC\\Desktop\\ogl-master\\src\\shaders\\curvaCircle.vert",
-            "C:\\Users\\PC\\Desktop\\ogl-master\\src\\shaders\\curvaCircle.frag"));
-    auto step2 = make_shared<RenderingStep>(make_shared<Shader>(
-            "C:\\Users\\PC\\Desktop\\ogl-master\\src\\shaders\\curvaCircle.vert",
-            "C:\\Users\\PC\\Desktop\\ogl-master\\src\\shaders\\curvaCircle.frag"));
-    auto step3 = make_shared<RenderingStep>(make_shared<Shader>(
-            "C:\\Users\\PC\\Desktop\\ogl-master\\src\\shaders\\curvaCircle.vert",
-            "C:\\Users\\PC\\Desktop\\ogl-master\\src\\shaders\\curvaCircle.frag"));
-    auto step4 = make_shared<RenderingStep>(make_shared<Shader>(
-            "C:\\Users\\PC\\Desktop\\ogl-master\\src\\shaders\\curvaCircle.vert",
-            "C:\\Users\\PC\\Desktop\\ogl-master\\src\\shaders\\curvaCircle.frag"));
+    auto step = make_shared<RenderingStep>(make_shared<ShaderProgram>(
+            "C:\\Users\\PC\\Desktop\\ogl-master\\src\\templateShaders\\curvaCircle.vert",
+            "C:\\Users\\PC\\Desktop\\ogl-master\\src\\templateShaders\\curvaCircle.frag"));
+    auto step2 = make_shared<RenderingStep>(make_shared<ShaderProgram>(
+            "C:\\Users\\PC\\Desktop\\ogl-master\\src\\templateShaders\\curvaCircle.vert",
+            "C:\\Users\\PC\\Desktop\\ogl-master\\src\\templateShaders\\curvaCircle.frag"));
+    auto step3 = make_shared<RenderingStep>(make_shared<ShaderProgram>(
+            "C:\\Users\\PC\\Desktop\\ogl-master\\src\\templateShaders\\curvaCircle.vert",
+            "C:\\Users\\PC\\Desktop\\ogl-master\\src\\templateShaders\\curvaCircle.frag"));
+    auto step4 = make_shared<RenderingStep>(make_shared<ShaderProgram>(
+            "C:\\Users\\PC\\Desktop\\ogl-master\\src\\templateShaders\\curvaCircle.vert",
+            "C:\\Users\\PC\\Desktop\\ogl-master\\src\\templateShaders\\curvaCircle.frag"));
 
 
     PolyGroupID sphereID = PolyGroupID(421);

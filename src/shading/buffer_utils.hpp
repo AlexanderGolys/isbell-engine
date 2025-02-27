@@ -1,6 +1,7 @@
 
 #pragma once
 
+#include "glsl_utils.hpp"
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -10,11 +11,6 @@
 #include <glm/gtc/matrix_transform.hpp>
 #include <glm/gtx/transform.hpp>
 
-#include "glsl_utils.hpp"
-
-#include <map>
-#include <string>
-#include <memory>
 
 
 class VBO {

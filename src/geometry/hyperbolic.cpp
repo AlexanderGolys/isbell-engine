@@ -3,10 +3,14 @@
 #include <chrono>
 #include <functional>
 #include <iostream>
-#include <src/common/specific.hpp>
+#include "../shading/specific.hpp"
 
 using namespace glm;
 using std::vector, std::string, std::shared_ptr, std::unique_ptr, std::pair, std::make_unique, std::make_shared;
+
+const Complex I = Complex(0, 1);
+const Complex ONE = Complex(1, 0);
+const Complex ZERO = Complex(0, 0);
 
 auto planeToDisk(Complex z) -> Complex {
     return CayleyTransform.mobius(z);
@@ -25,23 +29,23 @@ HyperbolicPlane::HyperbolicPlane()
 
 HyperbolicPlane::HyperbolicPlane(Biholomorphism toH) {
     this->_toH = toH;
-    _center = toH.inv(I);
+    _center = toH.inv(1.0i);
 }
 
 vec2 HyperbolicPlane::geodesicEndsH(Complex z0, Complex z1)
 {
 
-    if (z0.x == z1.x)
-        return vec2(z0.x, z0.x);
-    float c = (z0.x + z1.x - (z1.y*z1.y - z0.y*z0.y) / (z0.x - z1.x)) / 2;
+    if (z0.re() == z1.re())
+        return vec2(z0.re(), z0.re());
+    float c = (z0.re() + z1.re() - (z1.im()*z1.im() - z0.im()*z0.im()) / (z0.re() - z1.re())) / 2;
     float r = abs(z0 - Complex(c, 0));
     return vec2(c-r, c+r);
 }
 
 Mob HyperbolicPlane::geodesicToVerticalH(Complex z0, Complex z1)
 {
-    if (z0.x == z1.x)
-        return Mob(1, -z0.x, 0, 1);
+    if (z0.re() == z1.re())
+        return Mob(1, -z0.re(), 0, 1);
     vec2 ends = geodesicEndsH(z0, z1);
     return Mob(Complex(1, 0), Complex(-ends.y, 0), Complex(1, 0), Complex(-ends.x, 0));
 }
@@ -49,8 +53,8 @@ Mob HyperbolicPlane::geodesicToVerticalH(Complex z0, Complex z1)
 ComplexCurve HyperbolicPlane::geodesic(Complex z0, Complex z1)
 {
     Mob m = geodesicToVerticalH(toH(z0), toH(z1)).inv();
-    float t0 = log(m.inv().mobius(toH(z0)).y);
-    float t1 = log(m.inv().mobius(toH(z1)).y);
+    float t0 = log(m.inv().mobius(toH(z0)).im());
+    float t1 = log(m.inv().mobius(toH(z1)).im());
     ComplexCurve curve = ComplexCurve([this, z0, z1](float t) {
         return this->fromH(geodesicToVerticalH(toH(z0), toH(z1)).inv().mobius(Complex(0, exp(t))));
     }, t0, t1);
@@ -269,8 +273,8 @@ Arc::Arc(Complex z0, Complex z1, Complex center)
     this->z1 = z1;
     this->center = center;
     this->r = abs(z0 - center);
-    this->theta0 = atan2(z0.y - center.y, z0.x - center.x);
-    this->theta1 = atan2(z1.y - center.y, z1.x - center.x);
+    this->theta0 = atan2(z0.im() - center.im(), z0.re() - center.re());
+    this->theta1 = atan2(z1.im() - center.im(), z1.re() - center.re());
 }
 
 Arc::Arc(Complex center, float r, float theta0, float theta1)
@@ -419,7 +423,7 @@ SchwarzPolygon SchwarzPolygon::halfRingH(float a, float b, int rad, int hor, flo
 }
 
 SchwarzPolygon SchwarzPolygon::pizzaSlice(float angle, int rad, int hor, float cut_bd) {
-    vector<Complex> vert = {ZERO, ONE, Complex(cos(angle), sin(angle))};
+    vector<Complex> vert = {0, 1, Complex(cos(angle), sin(angle))};
 
     std::vector<TriangleComplex> triangulation = {};
     triangulation.reserve(rad*hor*2);
@@ -530,7 +534,7 @@ float HyperbolicTriangleH::edgeCenter(int i) const {
 vec2 HyperbolicTriangleH::edgeArgs(int i) const {
     Complex v1 = vertices[i];
     Complex v2 = vertices[(i + 1) % 3];
-    if (v1.x > v2.x)
+    if (v1.re() > v2.re())
         std::swap(v1, v2);
     Complex center = Complex(edgeCenter(i), 0);
     return vec2((v1-center).arg(), (v2-center).arg());

@@ -48,9 +48,9 @@ int main(void) {
 	auto knotmat =  MaterialPhong(R"(C:\Users\PC\Desktop\ogl-master\src\textures\metal4.bmp)", .07, .32 , .0953, 50.0);
 
 
-	auto shader = make_shared<Shader>(R"(C:\Users\PC\Desktop\ogl-master\src\shaders\rev.vert)",
+	auto shader = make_shared<ShaderProgram>(R"(C:\Users\PC\Desktop\ogl-master\src\shaders\rev.vert)",
 									R"(C:\Users\PC\Desktop\ogl-master\src\shaders\rev.frag)");
-	auto shader2 = make_shared<Shader>(   R"(C:\Users\PC\Desktop\ogl-master\src\shaders\rev.vert)",
+	auto shader2 = make_shared<ShaderProgram>(   R"(C:\Users\PC\Desktop\ogl-master\src\shaders\rev.vert)",
 										R"(C:\Users\PC\Desktop\ogl-master\src\shaders\rev2.frag)");
 
 	auto step = make_shared<RenderingStep>(shader);

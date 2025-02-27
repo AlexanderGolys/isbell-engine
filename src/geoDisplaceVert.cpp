@@ -9,9 +9,9 @@ int main(void)
 
     Renderer renderer = Renderer(.05f, vec4(.08f, .1209f, 0.1185f, 1.0f));
     renderer.initMainWindow(UHD, "flows");
-    Shader geoShader1 = Shader("C:\\Users\\PC\\Desktop\\ogl-master\\src\\shaders\\randomTriangleExtrude.vert", 
-                     "C:\\Users\\PC\\Desktop\\ogl-master\\src\\shaders\\randomVertexExtrude.geo",
-                    "C:\\Users\\PC\\Desktop\\ogl-master\\src\\shaders\\randomTriangleExtrude.frag");
+    Shader geoShader1 = Shader("C:\\Users\\PC\\Desktop\\ogl-master\\src\\templateShaders\\randomTriangleExtrude.vert",
+                     "C:\\Users\\PC\\Desktop\\ogl-master\\src\\templateShaders\\randomVertexExtrude.geo",
+                    "C:\\Users\\PC\\Desktop\\ogl-master\\src\\templateShaders\\randomTriangleExtrude.frag");
 
 
 

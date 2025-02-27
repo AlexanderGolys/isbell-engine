@@ -1,22 +1,20 @@
 #pragma once
+#include "glsl_utils.hpp"
 
-// #include "buffer_utils.hpp"
 #include <chrono>
 #include <iosfwd>
 #include <vector>
 
 
-#include "glsl_utils.hpp"
-// #include "renderingUtils.hpp"
 
 
 const Biholomorphism EXP = Biholomorphism::_EXP();
 const Biholomorphism LOG = Biholomorphism::_LOG();
-const Biholomorphism IdC = Biholomorphism::linear(ONE, ZERO);
-const Biholomorphism ADD1 = Biholomorphism::linear(ONE, ONE);
+const Biholomorphism IdC = Biholomorphism::linear(1, 0);
+const Biholomorphism ADD1 = Biholomorphism::linear(1, 1);
 const Biholomorphism SQUARE = Biholomorphism::power(2);
 const Biholomorphism SQRT = Biholomorphism::power(.5f);
-const Biholomorphism CAYLEY = Biholomorphism::mobius(Matrix<Complex, 2>(ONE, -I, ONE, I));
+const Biholomorphism CAYLEY = Biholomorphism::mobius(Matrix<Complex, 2>(1, -1.0i, 1, 1.0i));
 const VectorFieldR3 dabbaX = VectorFieldR3::constant(vec3(1, 0, 0));
 const VectorFieldR3 dabbaY = VectorFieldR3::constant(vec3(0, 1, 0));
 const VectorFieldR3 dabbaZ = VectorFieldR3::constant(vec3(0, 0, 1));
@@ -193,4 +191,4 @@ SurfaceParametricPencil freeSurface(vector<float> a_m, vector<float> phi_m, vect
 
 
 WeakSuperMesh particles(int n, vec3 bound1, vec3 bound2, float radius);
-WeakSuperMesh box(vec3 size, vec3 center,PolyGroupID id);
+WeakSuperMesh box(vec3 size, vec3 center, PolyGroupID id);

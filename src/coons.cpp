@@ -93,13 +93,13 @@ int main() {
 //	mesh_coon4->flipNormals();
 
 
-	auto shader = Shader( R"(C:\Users\PC\Desktop\ogl-master\src\shaders2\shadingDemo.vert)",
+	auto shader = ShaderProgram( R"(C:\Users\PC\Desktop\ogl-master\src\shaders2\shadingDemo.vert)",
 R"(C:\Users\PC\Desktop\ogl-master\src\shaders2\shadingDemo.frag)");
-	auto lightShd = Shader( R"(C:\Users\PC\Desktop\ogl-master\src\shaders2\shadingDemo.vert)",
+	auto lightShd = ShaderProgram( R"(C:\Users\PC\Desktop\ogl-master\src\shaders2\shadingDemo.vert)",
 R"(C:\Users\PC\Desktop\ogl-master\src\shaders2\lightShader.frag)");
-	auto shdDevelop = Shader( R"(C:\Users\PC\Desktop\ogl-master\src\shaders2\shadingDemo.vert)",
+	auto shdDevelop = ShaderProgram( R"(C:\Users\PC\Desktop\ogl-master\src\shaders2\shadingDemo.vert)",
 R"(C:\Users\PC\Desktop\ogl-master\src\shaders2\shadingDemoDevelop.frag)");
-	auto shdDevelop2 = Shader( R"(C:\Users\PC\Desktop\ogl-master\src\shaders2\shadingDemo.vert)",
+	auto shdDevelop2 = ShaderProgram( R"(C:\Users\PC\Desktop\ogl-master\src\shaders2\shadingDemo.vert)",
 	R"(C:\Users\PC\Desktop\ogl-master\src\shaders2\shadingDemoDevelop2.frag)");
 
 	renderer.addMeshStep(shader, floor, floormat);

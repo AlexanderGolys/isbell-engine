@@ -34,8 +34,8 @@ int main(void)
 
     Renderer renderer = Renderer(.05f, bgColor);
     renderer.initMainWindow(res, "flows");
-    Shader geoShader1 = Shader("C:\\Users\\PC\\Desktop\\ogl-master\\src\\shaders\\hyperbolicTess.vert",
-                    "C:\\Users\\PC\\Desktop\\ogl-master\\src\\shaders\\hyperbolicTess.frag");
+    Shader geoShader1 = Shader("C:\\Users\\PC\\Desktop\\ogl-master\\src\\templateShaders\\hyperbolicTess.vert",
+                    "C:\\Users\\PC\\Desktop\\ogl-master\\src\\templateShaders\\hyperbolicTess.frag");
 
 
 

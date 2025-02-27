@@ -17,7 +17,7 @@ using namespace glm;
 	 return Discrete1Form(values, domain);
  }
 
- BigVector Discrete1Form::toBumpOrthoBasis() const { throw std::logic_error("Not implemented"); }
+ FloatVector Discrete1Form::toBumpOrthoBasis() const { throw std::logic_error("Not implemented"); }
  Discrete1Form Discrete1Form::bumpOrtho(int i, int j) { throw std::logic_error("Not implemented"); }
  Discrete1Form Discrete1Form::bumpStd(int i, int j) { throw std::logic_error("Not implemented"); }
  float Discrete1Form::integrate(const vector<int> &edgePath) const { throw std::logic_error("Not implemented"); }

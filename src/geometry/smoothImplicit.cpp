@@ -1,6 +1,5 @@
 #include "smoothImplicit.hpp"
-#include "src/fundamentals/func.hpp"
-#include "src/common/indexedRendering.hpp"
+
 
 using std::vector, std::string, std::shared_ptr, std::unique_ptr, std::pair, std::make_unique, std::make_shared, std::function;
 

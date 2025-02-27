@@ -1,36 +1,8 @@
 
 #include "specific.hpp"
 
-#include <chrono>
-#include <chrono>
-#include <chrono>
-#include <chrono>
-#include <chrono>
-#include <chrono>
-#include <random>
-#include <chrono>
-#include <iosfwd>
-#include <iosfwd>
-#include <iosfwd>
-#include <iosfwd>
-#include <iosfwd>
-#include <iosfwd>
-#include <vector>
-#include <vector>
-#include <vector>
-#include <vector>
-#include <vector>
-#include <vector>
-#include <glm/detail/_vectorize.hpp>
-#include <glm/detail/_vectorize.hpp>
-#include <glm/detail/_vectorize.hpp>
-#include <glm/detail/_vectorize.hpp>
-#include <glm/detail/_vectorize.hpp>
-#include <glm/detail/_vectorize.hpp>
-#include <glm/detail/_vectorize.hpp>
-#include <glm/detail/_vectorize.hpp>
-#include <glm/detail/_vectorize.hpp>
-#include <glm/detail/_vectorize.hpp>
+
+
 
 using namespace glm;
 using std::vector, std::array;

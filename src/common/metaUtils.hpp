@@ -1,29 +1,32 @@
 #pragma once
 
+#include <chrono>
 #include <exception>
 #include <map>
 #include <set>
 #include <string>
-#include "macros.hpp"
-#include <glm/glm.hpp>
+#include <iostream>
+#include <random>
+
+#include "concepts.hpp"
 
 
-inline std::string vecToString(glm::vec2 v) {
+inline std::string vecToString(vec2 v) {
 	return "(" + std::to_string(v.x) + ", " + std::to_string(v.y) + ")"; }
 
-inline std::string vecToString(glm::vec3 v) {
+inline std::string vecToString(vec3 v) {
 	return "(" + std::to_string(v.x) + ", " + std::to_string(v.y) + ", " + std::to_string(v.z) + ")"; }
 
-inline std::string vecToString(glm::vec4 v) {
+inline std::string vecToString(vec4 v) {
 	return  "(" + std::to_string(v.x) + ", " + std::to_string(v.y) + ", " + std::to_string(v.z) + ", " + std::to_string(v.w) + ")"; }
 
-inline std::string vecToString(glm::ivec2 v) {
+inline std::string vecToString(ivec2 v) {
 	return "(" + std::to_string(v.x) + ", " + std::to_string(v.y) + ")"; }
 
-inline std::string vecToString(glm::ivec3 v) {
+inline std::string vecToString(ivec3 v) {
 	return "(" + std::to_string(v.x) + ", " + std::to_string(v.y) + ", " + std::to_string(v.z) + ")"; }
 
-inline std::string vecToString(glm::ivec4 v) {
+inline std::string vecToString(ivec4 v) {
 	return  "(" + std::to_string(v.x) + ", " + std::to_string(v.y) + ", " + std::to_string(v.z) + ", " + std::to_string(v.w) + ")"; }
 
 
@@ -50,34 +53,34 @@ inline std::string plural (std::string word) {
     return word + "s";
 }
 
-class NotImplementedError : public std::exception {
-    std::string msg_;
-public:
-    explicit NotImplementedError(const std::string& notImplementedMethodName, const std::string& lackingType="Method")
-        : msg_(lackingType + " " + notImplementedMethodName + " is not implemented yet.") {}
-
-    const char* what() const noexcept override {
-        return msg_.c_str();
-    }
-};
-
-class IndexOutOfBounds : public std::exception {
+class ErrorClassWrapper : public std::exception {
 	std::string msg_;
 public:
-	IndexOutOfBounds(int index, int size, const std::string &indexName="i")
-		: msg_("Index " + indexName + " is out of bounds [" + std::to_string(index) + "/" + std::to_string(size) + "].") {}
-	IndexOutOfBounds(const std::string &index, const std::string &size, const std::string &indexName="i")
-		: msg_("Index " + indexName + " is out of bounds [" + index + "/" + size + "].") {}
-	IndexOutOfBounds(const ivec2 &index, const ivec2 &size, const std::string &indexName="i")
-		: msg_("Index " + indexName + " is out of bounds [" + vecToString(index) + "/" + vecToString(size) + "].") {}
-	IndexOutOfBounds(const ivec3 &index, const ivec3 &size, const std::string &indexName="i")
-	: msg_("Index " + indexName + " is out of bounds [" + vecToString(index) + "/" + vecToString(size) + "].") {}
-	IndexOutOfBounds(const ivec4 &index, const ivec4 &size, const std::string &indexName="i")
-	: msg_("Index " + indexName + " is out of bounds [" + vecToString(index) + "/" + vecToString(size) + "].") {}
-
+	explicit ErrorClassWrapper(const std::string& msg) : msg_(msg) {}
 	const char* what() const noexcept override {
 		return msg_.c_str();
 	}
+	string message() const { return msg_; }
+};
+
+class NotImplementedError : public ErrorClassWrapper {
+public:
+    explicit NotImplementedError(const std::string& notImplementedMethodName, const std::string& lackingType="Method")
+        : ErrorClassWrapper(lackingType + " " + notImplementedMethodName + " is not implemented yet.") {}
+};
+
+class IndexOutOfBounds : public ErrorClassWrapper {
+public:
+	IndexOutOfBounds(int index, int size, const std::string &indexName="i")
+		: ErrorClassWrapper("Index " + indexName + " is out of bounds [" + std::to_string(index) + "/" + std::to_string(size) + "].") {}
+	IndexOutOfBounds(const std::string &index, const std::string &size, const std::string &indexName="i")
+		: ErrorClassWrapper("Index " + indexName + " is out of bounds [" + index + "/" + size + "].") {}
+	IndexOutOfBounds(const ivec2 &index, const ivec2 &size, const std::string &indexName="i")
+		: ErrorClassWrapper("Index " + indexName + " is out of bounds [" + vecToString(index) + "/" + vecToString(size) + "].") {}
+	IndexOutOfBounds(const ivec3 &index, const ivec3 &size, const std::string &indexName="i")
+	: ErrorClassWrapper("Index " + indexName + " is out of bounds [" + vecToString(index) + "/" + vecToString(size) + "].") {}
+	IndexOutOfBounds(const ivec4 &index, const ivec4 &size, const std::string &indexName="i")
+	: ErrorClassWrapper("Index " + indexName + " is out of bounds [" + vecToString(index) + "/" + vecToString(size) + "].") {}
 };
 
 class NotImplementedMethodError : public NotImplementedError {
@@ -98,77 +101,70 @@ public:
       :NotImplementedError(variant + " of " + ofWhat, "Variant") {}
 };
 
-class UnknownVariantError : public std::exception {
-  std::string msg_;
+class UnknownVariantError : public ErrorClassWrapper {
 public:
   UnknownVariantError(const std::string& variant, const std::string& ofWhat)
-      : msg_("Variant " + variant + " of  " + ofWhat + " is an unknown type in this context.") {}
-  explicit UnknownVariantError(const std::string& msg)
-      : msg_(msg) {}
+      : ErrorClassWrapper("Variant " + variant + " of  " + ofWhat + " is an unknown type in this context.") {}
+  explicit UnknownVariantError(const std::string& msg) : ErrorClassWrapper(msg) {}
 
-
-  const char* what() const noexcept override {
-    return msg_.c_str();
-  }
 };
 
-class IllegalVariantError : public std::exception {
-  std::string msg_;
+class IllegalVariantError : public ErrorClassWrapper {
 public:
   IllegalVariantError(const std::string& variant, const std::string& ofWhat, const std::string& rejectingMethod)
-      : msg_(plural(ofWhat) + " in variant " + variant + " are considered invalid by method " + rejectingMethod + ".") {}
-  explicit IllegalVariantError(const std::string& msg)
-      : msg_(msg) {}
+      : ErrorClassWrapper(plural(ofWhat) + " in variant " + variant + " are considered invalid by method " + rejectingMethod + ".") {}
+  explicit IllegalVariantError(const std::string& msg) : ErrorClassWrapper(msg) {}
 
-  const char* what() const noexcept override {
-    return msg_.c_str();
-  }
 };
 
-class IllegalArgumentError : public std::exception {
-	std::string msg_;
+class IllegalArgumentError : public ErrorClassWrapper {
 public:
-	explicit IllegalArgumentError(const std::string& msg) : msg_(msg) {}
-	const char* what() const noexcept override {
-		return msg_.c_str();
-	}
+	explicit IllegalArgumentError(const std::string& msg) : ErrorClassWrapper(msg) {}
 };
 
-class ValueError : public std::exception {
-	std::string msg_;
+class ValueError : public ErrorClassWrapper {
 public:
-	explicit ValueError(const std::string& msg) : msg_(msg) {}
-	const char* what() const noexcept override {
-		return msg_.c_str();
-	}
+	explicit ValueError(const std::string& msg) : ErrorClassWrapper(msg) {}
 };
+
+class SystemError : public ErrorClassWrapper {
+public:
+	explicit SystemError(const std::string& msg) : ErrorClassWrapper(msg) {}
+};
+
+class FileNotFoundError : public SystemError {
+public:
+	explicit FileNotFoundError(const std::string& filename) : SystemError("File " + filename + " not found.") {}
+	FileNotFoundError(const std::string& filename, const std::string& dir) : SystemError("File " + filename + " not found in " + dir) {}
+};
+
 
 
 class COLOR_PALETTE {
 public:
-    glm::vec4 mainColor;
-    glm::vec4 second;
-    glm::vec4 third;
-    glm::vec4 accent;
-    glm::vec4 accent2;
+    vec4 mainColor;
+    vec4 second;
+    vec4 third;
+    vec4 accent;
+    vec4 accent2;
 
-    COLOR_PALETTE(glm::vec4 mainColor, glm::vec4 second, glm::vec4 third, glm::vec4 accent, glm::vec4 accent2);
-    COLOR_PALETTE(glm::vec3 mainColor, glm::vec3 second, glm::vec3 third, glm::vec3 accent, glm::vec3 accent2);
-    COLOR_PALETTE(glm::ivec3 mainColor, glm::ivec3 second, glm::ivec3 third, glm::ivec3 accent, glm::ivec3 accent2);
-    std::vector<glm::vec4> colors();
-    glm::vec4 operator[] (int i);
+    COLOR_PALETTE(vec4 mainColor, vec4 second, vec4 third, vec4 accent, vec4 accent2);
+    COLOR_PALETTE(vec3 mainColor, vec3 second, vec3 third, vec3 accent, vec3 accent2);
+    COLOR_PALETTE(ivec3 mainColor, ivec3 second, ivec3 third, ivec3 accent, ivec3 accent2);
+    std::vector<vec4> colors();
+    vec4 operator[] (int i);
 
 };
 
 class COLOR_PALETTE10 {
 public:
-    std::array<glm::vec4, 10> cls;
+    std::array<vec4, 10> cls;
 
-    explicit COLOR_PALETTE10(std::array<glm::vec4, 10> colors) : cls(colors) {}
+    explicit COLOR_PALETTE10(std::array<vec4, 10> colors) : cls(colors) {}
     COLOR_PALETTE10(COLOR_PALETTE p1, COLOR_PALETTE p2) : cls({p1[0], p1[1], p1[2], p1[3], p1[4], p2[0], p2[1], p2[2], p2[3], p2[4]}) {}
-    COLOR_PALETTE10(glm::ivec3 c1, glm::ivec3 c2, glm::ivec3 c3, glm::ivec3 c4, glm::ivec3 c5, glm::ivec3 c6, glm::ivec3 c7, glm::ivec3 c8, glm::ivec3 c9, glm::ivec3 c10);
-    std::vector<glm::vec4> colors() const { return std::vector<glm::vec4>(cls.begin(), cls.end()); }
-    glm::vec4 operator[] (int i) const { return cls[i]; }
+    COLOR_PALETTE10(ivec3 c1, ivec3 c2, ivec3 c3, ivec3 c4, ivec3 c5, ivec3 c6, ivec3 c7, ivec3 c8, ivec3 c9, ivec3 c10);
+    std::vector<vec4> colors() const { return std::vector<vec4>(cls.begin(), cls.end()); }
+    vec4 operator[] (int i) const { return cls[i]; }
 };
 
 
@@ -229,18 +225,18 @@ namespace glm {
 const PolyGroupID DEFAULT_POLY_GROUP_ID = PolyGroupID(0);
 constexpr RP1 inf = std::nullopt;
 constexpr RP1 unbounded = std::nullopt;
-const glm::vec3 e1 = glm::vec3(1, 0, 0);
-const glm::vec3 e2 = glm::vec3(0, 1, 0);
-const glm::vec3 e3 = glm::vec3(0, 0, 1);
-const glm::vec3 ORIGIN = glm::vec3(0, 0, 0);
-const glm::vec2 PLANE_ORIGIN = glm::vec2(0, 0);
+const vec3 e1 = vec3(1, 0, 0);
+const vec3 e2 = vec3(0, 1, 0);
+const vec3 e3 = vec3(0, 0, 1);
+const vec3 ORIGIN = vec3(0, 0, 0);
+const vec2 PLANE_ORIGIN = vec2(0, 0);
 const PolyGroupID DFLT_CURV = PolyGroupID(420);
 
 
 class ivec8 {
-	glm::ivec4 a, b;
+	ivec4 a, b;
 public:
-	ivec8(glm::ivec4 a, glm::ivec4 b) : a(a), b(b) {}
+	ivec8(ivec4 a, ivec4 b) : a(a), b(b) {}
 	ivec8(int a, int b, int c, int d, int e, int f, int g, int h) : a(a, b, c, d), b(e, f, g, h) {}
 	explicit ivec8(int i) : a(i), b(i) {}
 	int operator[](int i) const { return i < 4 ? a[i] : b[i - 4]; }
@@ -256,18 +252,18 @@ public:
 	ivec8 operator%(ivec8 v) const { return ivec8(a % v.a, b % v.b); }
 	static int size() { return 8; }
 //	friend int dot(ivec8 a, ivec8 b) { return dot(1.F*a.a, b.a) + dot(a.b, b.b); }
-	glm::ivec4 xyzw() const { return a; }
-	glm::ivec4 stuv() const { return b; }
-	glm::ivec3 xyz() const { return glm::ivec3(a); }
-	glm::ivec3 yzw() const { return glm::ivec3(a.y, a.z, a.w); }
-	glm::ivec3 stv() const { return glm::ivec3(b); }
-	glm::ivec3 tvu() const { return glm::ivec3(b.y, b.z, b.w); }
-	glm::ivec2 xy() const { return glm::ivec2(a); }
-	glm::ivec2 yz() const { return glm::ivec2(a.y, a.z); }
-	glm::ivec2 zw() const { return glm::ivec2(a.z, a.w); }
-	glm::ivec2 st() const { return glm::ivec2(b); }
-	glm::ivec2 tu() const { return glm::ivec2(b.y, b.z); }
-	glm::ivec2 uv() const { return glm::ivec2(b.z, b.w); }
+	ivec4 xyzw() const { return a; }
+	ivec4 stuv() const { return b; }
+	ivec3 xyz() const { return ivec3(a); }
+	ivec3 yzw() const { return ivec3(a.y, a.z, a.w); }
+	ivec3 stv() const { return ivec3(b); }
+	ivec3 tvu() const { return ivec3(b.y, b.z, b.w); }
+	ivec2 xy() const { return ivec2(a); }
+	ivec2 yz() const { return ivec2(a.y, a.z); }
+	ivec2 zw() const { return ivec2(a.z, a.w); }
+	ivec2 st() const { return ivec2(b); }
+	ivec2 tu() const { return ivec2(b.y, b.z); }
+	ivec2 uv() const { return ivec2(b.z, b.w); }
 	int x() const { return a.x; }
 	int y() const { return a.y; }
 	int z() const { return a.z; }
@@ -275,9 +271,9 @@ public:
 };
 
 class ivec6 {
-	glm::ivec3 a, b;
+	ivec3 a, b;
 public:
-	ivec6(glm::ivec3 a, glm::ivec3 b) : a(a), b(b) {}
+	ivec6(ivec3 a, ivec3 b) : a(a), b(b) {}
 	ivec6(int a, int b, int c, int d, int e, int f) : a(a, b, c), b(d, e, f) {}
 	explicit ivec6(int i) : a(i), b(i) {}
 	int operator[](int i) const { return i < 3 ? a[i] : b[i - 3]; }
@@ -294,12 +290,12 @@ public:
 	static int size() { return 6; }
 	bool operator==(ivec6 v) const { return a == v.a && b == v.b; }
 //	friend int dot(ivec6 a, ivec6 b) { return dot(a.a, b.a) + dot(a.b, b.b); }
-	glm::ivec3 xyz() const { return glm::ivec3(a); }
-	glm::ivec3 stv() const { return glm::ivec3(b); }
-	glm::ivec2 xy() const { return glm::ivec2(a); }
-	glm::ivec2 yz() const { return glm::ivec2(a.y, a.z); }
-	glm::ivec2 st() const { return glm::ivec2(b); }
-	glm::ivec2 tu() const { return glm::ivec2(b.y, b.z); }
+	ivec3 xyz() const { return ivec3(a); }
+	ivec3 stv() const { return ivec3(b); }
+	ivec2 xy() const { return ivec2(a); }
+	ivec2 yz() const { return ivec2(a.y, a.z); }
+	ivec2 st() const { return ivec2(b); }
+	ivec2 tu() const { return ivec2(b.y, b.z); }
 	int x() const { return a.x; }
 	int y() const { return a.y; }
 	int z() const { return a.z; }
@@ -321,7 +317,7 @@ std::vector<T> flattened2DVector(std::vector<std::vector<T>> v)
 }
 
 
-inline int flattened2DVectorIndex(int i, int j, glm::ivec2 size) {
+inline int flattened2DVectorIndex(int i, int j, ivec2 size) {
 	if (i < 0) return flattened2DVectorIndex(size.x + i, j, size);
 	if (j < 0) return flattened2DVectorIndex(i, size.y + j, size);
 	if (i >= size.x) throw IndexOutOfBounds(ivec2(i, j), size, "i");
@@ -331,7 +327,7 @@ inline int flattened2DVectorIndex(int i, int j, glm::ivec2 size) {
 
 
 template<typename T>
-T flattened2DVectorSample(std::vector<T> flattened, int i, int j, glm::ivec2 size) {
+T flattened2DVectorSample(std::vector<T> flattened, int i, int j, ivec2 size) {
 	return flattened[flattened2DVectorIndex(i, j, size)];
 }
 
@@ -348,7 +344,7 @@ std::vector<T> flattened3DVector(std::vector<std::vector<std::vector<T>>> v)
 }
 
 
-inline int flattened3DVectorIndex(int i, int j, int k,  glm::ivec3 size) {
+inline int flattened3DVectorIndex(int i, int j, int k,  ivec3 size) {
 	if (i < 0) return flattened3DVectorIndex(size.x + i, j, k, size);
 	if (j < 0) return flattened3DVectorIndex(i, size.y + j, k, size);
 	if (k < 0) return flattened3DVectorIndex(i, j, size.z + k, size);
@@ -360,11 +356,11 @@ inline int flattened3DVectorIndex(int i, int j, int k,  glm::ivec3 size) {
 
 
 template<typename T>
-T flattened3DVectorSample(std::vector<T> flattened, int i, int j, int k, glm::ivec3 size) {
+T flattened3DVectorSample(std::vector<T> flattened, int i, int j, int k, ivec3 size) {
 	return flattened[flattened3DVectorIndex(i, j, k, size)];
 }
 
-inline int flattened4DVectorIndex(int i, int j, int k, int m,  glm::ivec4 size) {
+inline int flattened4DVectorIndex(int i, int j, int k, int m,  ivec4 size) {
 	if (i < 0) return flattened4DVectorIndex(size.x + i, j, k,m, size);
 	if (j < 0) return flattened4DVectorIndex(i, size.y + j, k,m, size);
 	if (k < 0) return flattened4DVectorIndex(i, j, size.z + k,m, size);
@@ -377,8 +373,10 @@ inline int flattened4DVectorIndex(int i, int j, int k, int m,  glm::ivec4 size) 
 }
 
 
+
+
 template<typename T>
-T flattened4DVectorSample(std::vector<T> flattened, int i, int j, int k, int m, glm::ivec4 size) {
+T flattened4DVectorSample(std::vector<T> flattened, int i, int j, int k, int m, ivec4 size) {
 	return flattened[flattened4DVectorIndex(i, j, k, m, size)];
 }
 
@@ -583,3 +581,242 @@ inline ivec2 setMinus(ivec4 x, ivec2 y) {
 inline std::string hash_ivec3(ivec3 v) {
 	return std::to_string(v.x) + "--" + std::to_string(v.y) + "--" + std::to_string(v.z);
 }
+
+inline string replaceAll(const string &target, const string &old, const string &new_)
+{
+	    string res = target;
+    size_t pos = 0;
+    while ((pos = res.find(old, pos)) != string::npos) {
+        res.replace(pos, old.length(), new_);
+        pos += new_.length();
+    }
+    return res;
+}
+
+template<typename T>
+std::vector<T> concat(const std::vector<T> &a, const std::vector<T> &b) {
+    std::vector<T> res = a;
+    res.insert(res.end(), b.begin(), b.end());
+    return res;
+}
+
+template<typename T>
+void addAll(std::vector<T> &target, const std::vector<T> &addition) {
+    target.insert(target.end(), addition.begin(), addition.end());
+}
+
+inline long long timestampNow() {
+	return std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count();
+}
+
+inline int timestampNowTruncated() {
+	long long t0 = 1734327390240LL;
+	return (int)(timestampNow() - t0);
+}
+
+
+inline int randomInt() {
+	auto seed = std::chrono::system_clock::now().time_since_epoch().count();
+	auto generator = std::default_random_engine(seed);
+	auto distribution = std::uniform_int_distribution<int>(0, 1215752192);
+	return distribution(generator);
+}
+
+inline long randomLong() {
+	auto seed = std::chrono::system_clock::now().time_since_epoch().count();
+	auto generator = std::default_random_engine(seed);
+	auto distribution = std::uniform_int_distribution<long>(0, 1215752192);
+	return distribution(generator);
+}
+
+inline float randomFloat(float a=0, float b=1) {
+	auto seed = std::chrono::system_clock::now().time_since_epoch().count()*randomInt();
+	auto generator = std::default_random_engine(seed);
+	auto distribution = std::uniform_real_distribution<float>(a, b);
+	return distribution(generator);
+}
+
+inline std::string randomStringNumeric() {
+	return std::to_string(randomLong());
+}
+
+inline char randomLetter() {
+    return (char)randomInt()%('Z' - 'a') + 'a';
+}
+inline char randomLetterSmall() {
+    return (char)randomInt()%('z' - 'a') + 'a';
+}
+inline char randomLetterBig() {
+    return (char)randomInt()%('Z' - 'A') + 'A';
+}
+inline char randomNumericChar() {
+    return (char)randomInt()%('9' - '0') + '0';
+}
+
+
+inline std::string randomStringLetters(int size=10) {
+	std::string res;
+    for (int i = 0; i < size; i++)
+        res += (char)randomInt()%('Z' - 'a') + 'a';
+    return res;
+}
+
+inline std::string randomStringAllValid(int size=10) {
+	std::string res;
+	vector<char> validChars = {'a', 'b', 'c', 'd', 'e', 'f', 'g', 'h', 'i', 'j',
+                               'k', 'l', 'm', 'n', 'o', 'p', 'q', 'r', 's', 't',
+                               'u', 'v', 'w', 'x', 'y', 'z', 'A', 'B', 'C', 'D',
+                               'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L', 'M', 'N',
+                               'O', 'P', 'Q', 'R', 'S', 'T', 'U', 'V', 'W', 'X',
+                               'Y', 'Z', '0', '1', '2', '3', '4', '5', '6', '7',
+                               '8', '9', '!', '@', '#', '$', '%', '^', '&', '*', '(',
+                               ')', '-', '_', '+', '=', '{', '}', '[', ']', '|', };
+	for (int i = 0; i < size; i++)
+		res += (char)randomInt()%('Z' - 'a') + 'a';
+	return res;
+}
+
+//class SmallestUniqueNumber{
+//public:
+//
+//	static int count;
+//	static int generate() { return ++count; }
+//};
+//int SmallestUniqueNumber::count = 0;
+//
+//inline int smallestUniqueNumber() {
+//    return SmallestUniqueNumber::generate();
+//}
+//
+//inline string smallestUniqueNumberStr() {
+//	return std::to_string(SmallestUniqueNumber::generate());
+//}
+
+template<typename T>
+int indexOf(T x, const std::vector<T> &v) {
+	for (int i = 0; i < v.size(); i++)
+		if (v[i] == x)
+			return i;
+	throw ValueError("Element not found in vector.");
+}
+
+template<typename T>
+std::string str(T x) {
+	return std::to_string(x);
+}
+
+
+template<typename Y>
+HOM(vec3, Y) wrap(const TRIHOM(float, float, float, Y) &f_) { return [f=f_](vec3 v) {
+	return f(v.x, v.y, v.z); }; }
+
+template<typename Y>
+TRIHOM(float, float, float, Y) unwrap(const HOM(vec3, Y) &f_) { return [f=f_](float x, float y, float z) {
+	return f(vec3(x, y, z)); }; }
+
+
+template<typename Dom, typename Cod>
+vector<Cod> map(vector<Dom> v, const std::function<Cod(const Dom &)> &f) {
+	vector<Cod> res;
+	res.reserve(v.size());
+	for (auto x : v) res.push_back(f(x));
+	return res;
+}
+
+template<typename Dom, typename Cod, int k>
+std::array<Cod, k> map(std::array<Dom, k> v, const std::function<Cod(const Dom &)> &f) {
+	std::array<Cod, k> res;
+	for (int i = 0; i < k; i++) res[i] = f(v[i]);
+	return res;
+}
+
+template<TotallyOrderedAbelianSemigroup Dom, typename Cod>
+vector<Cod> mapArange(Dom a, Dom b, Dom step, const std::function<Cod(const Dom &)> &f) {
+	return map<Dom, Cod>(arange(a, b, step), f);
+}
+
+
+inline vector<int> range(int a, int b, int step=1) {
+	if (step == 0) throw std::invalid_argument("step cannot be 0");
+
+	vector<int> res = vector<int>();
+	res.reserve(abs(b - a) / abs(step));
+
+	if (step > 0) {
+		for (int i = a; i < b; i += step) res.push_back(i);
+		return res;
+	}
+
+	for (int i = b; i > a; i += step) res.push_back(i);
+	return res;
+}
+
+
+inline vector<int> range(int b) {
+	return range(0, b); }
+
+
+
+template<typename Cod>
+vector<Cod> mapRange(int a, int b, int step, const std::function<Cod(int)> &f) {
+	return map<int, Cod>(range(a, b, step), f);
+}
+
+template<typename Cod>
+vector<Cod> mapRange(int a, int b, const std::function<Cod(int)> &f) {
+	return mapRange(a, b, 1, f);
+}
+
+template<typename Cod>
+vector<Cod> mapRange(int b, const std::function<Cod(int)> &f) {
+	return mapRange(0, b, 1, f);
+}
+
+template<VectorSpaceConcept<float> Dom, typename Cod>
+vector<Cod> mapLinspace(Dom a, Dom b, int steps, const std::function<Cod(const Dom &)> &f) {
+	return map(linspace(a, b, steps), f);
+}
+
+template<typename Dom, typename Cod, int k>
+std::array<Cod, k> mapByVal(std::array<Dom, k> v, const std::function<Cod(Dom)> &f) {
+	std::array<Cod, k> res;
+	for (int i = 0; i < k; i++) res[i] = f(v[i]);
+	return res;
+}
+
+template<typename container, typename A>
+A combine(container arr, std::function<A(A, A)> binaryOperator) {
+	A res = arr[0];
+	for (int i = 1; i < arr.size(); i++) res = binaryOperator(res, arr[i]);
+	return res;
+}
+
+template<typename A, typename container>
+A sum(container arr) {
+	A res = arr[0];
+	for (int i = 1; i < arr.size(); i++) res += arr[i];
+	return res;
+}
+
+template<typename container, Semigroup A>
+A mult(container arr) {return combine(arr, [](A a, A b) { return a * b; }); }
+
+template<typename A, int k, typename homspace>
+std::array<A, k> arrayComprehension(const homspace &f) {
+	std::array<A, k> res = {f(0)};
+	for (int i = 1; i < k; i++) res[i] = f(i);
+	return res;
+}
+
+template<typename A, typename homspace>
+vector<A> vectorComprehension(const homspace &f, int n) {
+	vector res = {f(0)};
+	res.reserve(n);
+	for (int i = 1; i < n; i++) res[i] = f(i);
+	return res;
+}
+
+template<typename A>
+    A clamp(A x, A a=A(0), A b=A(1)) {
+		return x < a ? a : x > b ? b : x;
+	}

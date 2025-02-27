@@ -1,7 +1,6 @@
 #pragma once
 
 #include "renderingUtils.hpp"
-//#include "src/geometry/smoothParametric.hpp"
 
 #include <set>
 
@@ -15,9 +14,6 @@ struct buff4x4 {
 inline mat4 getMat(const buff4x4 &buff, int index) {
   return mat4(buff.a[index], buff.b[index], buff.c[index], buff.d[index]);
 }
-
-
-
 
 
 struct Stds {

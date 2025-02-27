@@ -58,10 +58,10 @@ int main() {
 		v.setColor(heli.meanCurvature(-v.getSurfaceParams()), 3); });
 
 
-	auto shader = Shader( R"(C:\Users\PC\Desktop\ogl-master\src\shaders2\shadingDemo.vert)",
+	auto shader = ShaderProgram( R"(C:\Users\PC\Desktop\ogl-master\src\shaders2\shadingDemo.vert)",
 R"(C:\Users\PC\Desktop\ogl-master\src\shaders2\curvFlowShd.frag)");
 
-	auto shaderWire = Shader( R"(C:\Users\PC\Desktop\ogl-master\src\shaders2\shadingDemo.vert)",
+	auto shaderWire = ShaderProgram( R"(C:\Users\PC\Desktop\ogl-master\src\shaders2\shadingDemo.vert)",
 R"(C:\Users\PC\Desktop\ogl-master\src\shaders2\shadingDemo.frag)");
 
 

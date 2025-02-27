@@ -1,4 +1,5 @@
-# pragma once
+
+#pragma once
 
 #include <cmath>
 #include <vector>
@@ -10,80 +11,8 @@
 #include <memory>
 
 
-#include "metaUtils.hpp"
+#include "func.hpp"
 
-
-
-template <typename T>
-concept AbelianSemigroup = requires (T a, T b) {
-	{ a + b } -> std::convertible_to<T>;
-};
-
-template <typename T>
-concept Semigroup = requires (T a, T b) {
-	{ a*b } -> std::convertible_to<T>;
-};
-
-template <typename T>
-concept TotalOrder =  requires (T a, T b) {
-	{ a < b } -> std::convertible_to<bool>;
-};
-
-template <typename T>
-concept TotallyOrderedAbelianSemigroup = AbelianSemigroup<T> && TotalOrder<T>;
-
-template <typename T>
-concept AbelianMonoid = AbelianSemigroup<T> && requires {
-	{T(0)} -> std::convertible_to<T>;
-};
-
-template <typename G>
-concept Monoid = Semigroup<G> &&  requires {
-	{G(1)} -> std::convertible_to<G>;
-};
-
-template <typename G>
-concept GroupConcept = Monoid<G> && (requires (G g) {
-	{ ~g } -> std::convertible_to<G>; }
-	|| requires (G g) {
-	{ G(1)/g } -> std::convertible_to<G>; }
-	|| requires (G g) {
-	{ 1.f/g } -> std::convertible_to<G>; });
-
-template <typename G>
-concept AbelianGroupConcept = AbelianMonoid<G> && requires (G g) {
-	{ -g } -> std::convertible_to<G>; };
-
-template <typename T>
-concept Rng = AbelianGroupConcept<T> && Semigroup<T>;
-
-
-template <typename T>
-concept RingConcept = Rng<T> && Monoid<T>;
-
-
-template <typename T>
-concept DivisionRing = RingConcept<T> && GroupConcept<T>;
-
-template <typename A, typename R>
-concept ModuleConcept = Rng<R> && AbelianGroupConcept<A> && requires (A a, R r) {
-    {a*r} -> std::convertible_to<A>; };
-
-template <typename A, typename R>
-concept Algebra = ModuleConcept<A, R> && Rng<A>;
-
-
-template <typename V, typename K> 
-concept VectorSpaceConcept = ModuleConcept<V, K> && DivisionRing<K>;
-
-template <typename T> 
-concept Normed = requires (T a, float c) {
-	norm(a);
-	a/c; };
-
-template <typename V>
-concept EuclideanSpaceConcept = VectorSpaceConcept<V, float> && requires (V a, V b) {
-	{dot(a, b)} -> std::convertible_to<float>; };
 
 
 template<typename vec>
@@ -105,15 +34,13 @@ public:
     Morphism(std::function<codomain(domain)> f) : _f(f) {} // NOLINT(*-explicit-constructor)
     codomain operator()(domain x) const { return _f(x); }
     Morphism operator+(const Morphism &g) const requires AbelianSemigroup<codomain> { return Morphism([f_=_f, g_=g._f](domain x) { return f_(x) + g_(x); }); }
-    // friend Morphism operator+(codomain a, const Morphism &f) requires AbelianSemigroup<codomain> { return Morphism([f_ = _f, a](domain x) { return f_(x) + a; }); }
 
-     Morphism operator-(const Morphism &g) const requires AbelianGroupConcept<codomain> { return Morphism([this, g](domain x) { return (*this)(x) - g(x); }); }
-     Morphism operator*(const Morphism &g) const requires Semigroup<codomain> { return Morphism([this, g](domain x) { return (*this)(x) * g(x); }); }
-     Morphism operator/(const Morphism &g) const requires DivisionRing<codomain> { return Morphism([this, g](domain x) { return (*this)(x) / g(x); }); }
-     Morphism operator*(codomain a) const requires Semigroup<codomain> { return Morphism([this, a](domain x) { return (*this)(x) * a; }); }
-    // friend Morphism operator*(codomain a, const Morphism &f) requires GroupConcept<codomain> { return Morphism([f, a](domain x) { return a*f(x); }); }
+     Morphism operator-(const Morphism &g) const requires AbelianGroupConcept<codomain>;
+	Morphism operator*(const Morphism &g) const requires Semigroup<codomain>;
+	Morphism operator/(const Morphism &g) const requires DivisionRing<codomain>;
+	Morphism operator*(codomain a) const requires Semigroup<codomain>;
 
-    template<DivisionRing K>  Morphism operator/(K a) const requires VectorSpaceConcept<codomain, K>      { return Morphism([this, a](domain x) { return (*this)(x) / a; }); }
+	template<DivisionRing K>  Morphism operator/(K a) const requires VectorSpaceConcept<codomain, K>      { return Morphism([this, a](domain x) { return (*this)(x) / a; }); }
     template<Rng R>           Morphism operator*(R a) const requires ModuleConcept<codomain, R>           { return Morphism([this, a](domain x) { return (*this)(x) * a; }); }
 };
 
@@ -131,19 +58,14 @@ template<typename domain>
 class Endomorphism : public Morphism<domain, domain> {
 public:
     using Morphism<domain, domain>::Morphism;
-    static Endomorphism id() { return Endomorphism([](domain x) { return x; }); }
-    Endomorphism pow(int p) const {
-        if (p < 0) return ~(*this).pow(-p);
-        if (p == 0) return Endomorphism::id();
-        if (p == 1) return *this;
-        if (p % 2 == 0) return this->pow(p / 2) * this->pow(p / 2);
-        return (*this) * this->pow(p / 2) * this->pow(p / 2); }
-    Endomorphism operator^(int p) const { return pow(p); }
+    static Endomorphism id();
+
+	Endomorphism pow(int p) const;
+	Endomorphism operator^(int p) const;
 };
 
 
 
-// composition, used with operator f&g
 template <typename X, typename Y, typename Z>
 Morphism<X, Z> compose(const Morphism<Y, Z> &f, const Morphism<X, Y> &g) {
     return Morphism<X, Z>([f_=f, g_=g](X x) { return f_(g_(x)); });
@@ -164,14 +86,14 @@ Morphism<X, Z> operator&(const Morphism<Y, Z> &f, const Morphism<X, Y> &g) {
 // -----------------------------  MATRICES  ----------------------------------
 
 
-template<RingConcept T, int n, int m=n> 
+template<RingConcept T, int n, int m=n>
 class Matrix {
 	std::array<std::array<T, n>, m> coefs;
-
 public:
+
 	Matrix();
 	explicit Matrix(std::array<std::array<T, n>, m> c);
-	explicit Matrix(std::vector<std::vector<T>> c);
+	explicit Matrix(vector<vector<T>> c);
 
 	Matrix operator*(const T &f) const;
 	Matrix operator/(const T &f) const requires DivisionRing<T>;
@@ -180,13 +102,13 @@ public:
 	Matrix<T, m, n> transpose() const;
 	Matrix operator-() const;
 	explicit operator std::string() const;
-	static Matrix zero() { return Matrix(); }
-	T at(int i, int j) const { return this->coefs[i][j]; }
+	static Matrix zero();
+	T at(int i, int j) const;
 };
 
 
 template <RingConcept T, int n>
-class Matrix<T, n> {
+class Matrix<T, n, n> {
 	std::array<std::array<T, n>, n> coefs;
 
 public:
@@ -205,6 +127,9 @@ public:
 };
 
 
+
+
+
 template <>
 class Matrix<float, 3> {
 public:
@@ -212,12 +137,15 @@ public:
 	Matrix(vec3 v1, vec3 v2, vec3 v3) : Matrix(mat3(v1, v2, v3)) {}
 };
 
+
+
 template <>
 class Matrix<float, 4> {
 public:
 	explicit Matrix(mat4 m);
 	Matrix(vec4 v1, vec4 v2, vec4 v3, vec4 v4) : Matrix(mat4(v1, v2, v3, v4)) {}
 };
+
 
 template <RingConcept T>
 class Matrix<T, 2> {
@@ -267,7 +195,7 @@ public:
 
     void set(int i, int j, float val);
     float get(int i, int j);
-	glm::ivec2 size() const { return glm::ivec2(n, m); }
+	ivec2 size() const { return ivec2(n, m); }
 
     float operator()(int i, int j) { return get(i, j); }
     SparseMatrix operator* (float f);
@@ -278,95 +206,93 @@ public:
 
 
 
-class BigVector {
+class FloatVector {
 	std::vector<float> data;
 public:
-	explicit BigVector(const std::vector<float> &data) { this->data = data; }
-	explicit BigVector(vec2 data) { this->data = vecToVecHeHe(data); }
-	explicit BigVector(vec3 data) { this->data = vecToVecHeHe(data); }
-	explicit BigVector(vec4 data) { this->data = vecToVecHeHe(data); }
-	explicit BigVector(const std::vector<std::vector<float>> &data);
-	BigVector(int n, float val);
-	explicit BigVector(int n) : BigVector(n, 0) {}
+	explicit FloatVector(const std::vector<float> &data) { this->data = data; }
+	explicit FloatVector(vec2 data);
+	explicit FloatVector(vec3 data);
+	explicit FloatVector(vec4 data);
+	explicit FloatVector(const std::vector<std::vector<float>> &data);
+	FloatVector(int n, float val);
+	explicit FloatVector(int n);
 
-	BigVector(const BigVector &other) = default;
-	BigVector(BigVector &&other) noexcept : data(std::move(other.data)) {}
-	BigVector & operator=(const BigVector &other);
-	BigVector & operator=(BigVector &&other) noexcept;
+	FloatVector(const FloatVector &other) = default;
+	FloatVector(FloatVector &&other) noexcept;
+	FloatVector & operator=(const FloatVector &other);
+	FloatVector & operator=(FloatVector &&other) noexcept;
 
 
-	float operator[](int i) const { return this->data[i]; }
-	BigVector operator*(float f) const;
-	BigVector operator/(float f) const { return *this * (1.f / f); }
-	BigVector operator+(const BigVector& v) const;
-	BigVector operator-(const BigVector& v) const;
-	BigVector operator-() const { return *this * -1; }
-	void operator+=(const BigVector &v) { for (int i = 0; i < this->data.size(); i++) this->data[i] += v[i]; }
-	void operator-=(const BigVector &v) { for (int i = 0; i < this->data.size(); i++) this->data[i] -= v[i]; }
-	void operator*=(float f) { for (float & i : this->data) i *= f; }
-	void operator/=(float f) { *this *= 1.f / f; }
+	float operator[](int i) const;
+	FloatVector operator*(float f) const;
+	FloatVector operator/(float f) const;
+	FloatVector operator+(const FloatVector& v) const;
+	FloatVector operator-(const FloatVector& v) const;
+	FloatVector operator-() const;
+	void operator+=(const FloatVector &v);
+	void operator-=(const FloatVector &v);
+	void operator*=(float f);
+	void operator/=(float f);
 
-	void append (float f) { this->data.push_back(f); }
-	void append (const BigVector &v) { for (float f : v.data) this->data.push_back(f); }
-	void append (const vec69 &v) { for (float f : v) this->data.push_back(f); }
+	void append (float f);
+	void append (const FloatVector &v);
+	void append (const vec69 &v);
 
-	std::vector<float> getVec() const { return this->data; }
-	int size() { return this->data.size(); }
+	std::vector<float> getVec() const;
+	int size();
 
-	friend float dot(BigVector a, BigVector b);
-	friend BigVector concat(const BigVector& a, const BigVector& b) { BigVector res = a; res.append(b); return res; }
+	friend float dot(FloatVector a, FloatVector b);
+	friend FloatVector concat(const FloatVector& a, const FloatVector& b);
 };
 
 
-class BigMatrix {
+class FloatMatrix {
   MATR$X data;
 public:
-  BigMatrix(int n, int m);
-  explicit BigMatrix(const MATR$X &data);
-  explicit BigMatrix(const vector<float> &data);
-  explicit BigMatrix(const vector<vec2> &data);
-  explicit BigMatrix(const vector<vec3> &data);
-  explicit BigMatrix(const vector<vec4> &data);
-  explicit BigMatrix(const vector<mat3> &data);
+  	FloatMatrix(int n, int m);
+  	explicit FloatMatrix(const MATR$X &data);
+  	explicit FloatMatrix(const vector<float> &data) : data({data}) {}
+  	explicit FloatMatrix(const vector<vec2> &data) : data(map<vec2, vector<float>>(data, vecToVecHeHe<vec2>)) {}
+  	explicit FloatMatrix(const vector<vec3> &data) : data(map<vec3, vector<float>>(data, vecToVecHeHe<vec3>)) {}
+  	explicit FloatMatrix(const vector<vec4> &data) : data(map<vec4, vector<float>>(data, vecToVecHeHe<vec4>)) {}
 
-  explicit BigMatrix(MATR$X &&data);
-  explicit BigMatrix(vec69 &&data) : BigMatrix({data}) {}
-//  explicit BigMatrix(const mat3 &data) : BigMatrix(vecToVecHeHe(data)) {}
+  	explicit FloatMatrix(MATR$X &&data);
+  	explicit FloatMatrix(vec69 &&data);
 
-  void set(int i, int j, float val) { this->data[i][j] = val; }
-  float get(int i, int j) const { return this->data[i][j]; }
-  bool isSquare() const { return this->n() == this->m(); }
-  float det();
-  BigMatrix transpose() const;
-  BigMatrix operator*(float f) const;
-  BigMatrix operator+(const BigMatrix &M) const;
-  BigMatrix operator-(const BigMatrix &M) const;
-  BigMatrix operator*(const BigMatrix &M) const;
-  BigMatrix operator*(const MATR$X &M) const;
+  	void set(int i, int j, float val);
+  	float get(int i, int j) const;
+  	bool isSquare() const;
+  	float det();
+  	FloatMatrix transpose() const;
+  	FloatMatrix operator*(float f) const;
+  	FloatMatrix operator+(const FloatMatrix &M) const;
+  	FloatMatrix operator-(const FloatMatrix &M) const;
+  	FloatMatrix operator*(const FloatMatrix &M) const;
+  	FloatMatrix operator*(const MATR$X &M) const;
 
-  vec69 operator*(const vec69 &v) const { return (*this * vector<vec69>{v})[0]; }
-  BigVector operator*(const BigVector &v) const { return BigVector(*this * v.getVec()); }
+  	vec69 operator*(const vec69 &v) const;
+  	FloatVector operator*(const FloatVector &v) const;
 
-  BigMatrix operator-() const { return *this * (-1.f); }
-  BigMatrix operator/(float x) const { return *this * (1.f / x); }
-  BigMatrix inv();
-  BigMatrix pow(int p);
-  BigMatrix operator~() { return inv(); }
-  BigMatrix GramSchmidtProcess();
-  BigMatrix submatrix(int i, int j);
-	BigMatrix diagonalComponent() const;
-  BigMatrix invertedDiagonal() const;
-	BigMatrix subtractedDiagonal() const { return *this - diagonalComponent(); }
+  	FloatMatrix operator-() const;
+  	FloatMatrix operator/(float x) const;
+  	FloatMatrix inv();
+  	FloatMatrix pow(int p);
+  	FloatMatrix operator~();
+    FloatMatrix GramSchmidtProcess();
+  	FloatMatrix submatrix(int i, int j);
+	FloatMatrix diagonalComponent() const;
+  	FloatMatrix invertedDiagonal() const;
+	FloatMatrix subtractedDiagonal() const;
 
-  vec69 operator[] (int i) { return this->data[i]; }
-	friend BigMatrix operator*(const MATR$X &M, const BigMatrix &B);
+	vec69 operator[] (int i);
+	friend FloatMatrix operator*(const MATR$X &M, const FloatMatrix &B);
 
-  glm::ivec2 size() const {return  glm::ivec2(n(), m());}
-  int n() const { return this->data.size(); }
-  int m() const { return this->data[0].size(); }
+  	ivec2 size() const;
+  	int n() const;
+  	int m() const;
 
-    explicit operator float () { if (n() != m() || n() != 1) throw std::format_error("wrong dimension of matrix (not 1x1)"); return this->data[0][0]; }
-    explicit operator vec2 ();
+  	explicit operator float ();
+	explicit operator vec2 ();
     explicit operator vec3 ();
     explicit operator vec4 ();
 };
@@ -381,7 +307,6 @@ public:
 	GenericTensor(int length, M fill, int dim=1) : dim_(dim) {data = std::vector<M>(); data.reserve(length); for (int i = 0; i < length; i++) data.push_back(fill);}
 	explicit GenericTensor(vector<M> data, int dim=1) : data(data), dim_(dim) {}
 
-
 	M operator[](int i) const { return this->data[i]; }
 
 	template <ModuleConcept<R> E0=R> E0 at(int i, int j) const { return this->data[i][j]; }
@@ -394,7 +319,7 @@ public:
 	template <ModuleConcept<R> E0=R> void set(int i, int j, int k, E0 val) { this->data[i][j][k] = val; }
 
 
-	GenericTensor<R, GenericTensor> pretendFat() const { return GenericTensor<R, GenericTensor>({*this}, dim+1); }
+	GenericTensor<R, GenericTensor> pretendFat() const { return GenericTensor<R, GenericTensor>({*this}, dim_+1); }
 	int dim() const { return this->dim_; }
 	int size() const { return this->data.size(); }
 
@@ -417,7 +342,7 @@ public:
 };
 
 template <Rng R>
-glm::ivec2 mat_size(const GEN_MAT(R) &M) { return glm::ivec2(M.size(), M[0].size()); }
+ivec2 mat_size(const GEN_MAT(R) &M) { return ivec2(M.size(), M[0].size()); }
 
 
 
@@ -435,57 +360,58 @@ GEN_MAT(R) operator*(const GEN_MAT(R) &M1, const GEN_MAT(R) &M2) {
 
 
 
-
 class Complex {
 public: 
 	vec2 z;
-	float x;
-	float y;
+	float x, y;
 	Complex();
-	// ReSharper disable once CppNonExplicitConvertingConstructor
-	explicit Complex(vec2 z); // NOLINT(*-explicit-constructor)
+	explicit Complex(vec2 z);
 	Complex(float x, float y);
-	// ReSharper disable once CppNonExplicitConvertingConstructor
-	Complex(float x); // NOLINT(*-explicit-constructor)
-	auto operator+(Complex c) const -> Complex;
-	auto operator-(Complex c) const -> Complex;
-	auto operator*(Complex c) const -> Complex;
-	auto operator/(Complex c) const -> Complex;
-	auto operator~() const -> Complex;
-	auto operator-() const -> Complex;
-	void operator+=(Complex c);
-	void operator-=(Complex c);
-	void operator*=(Complex c);
-	void operator/=(Complex c);
+	Complex(float x);
+	Complex(int x) : Complex(float(x)) {}
+	Complex operator+(Complex c) const;
+	Complex operator-(Complex c) const;
+	Complex operator*(Complex c) const;
+	Complex operator/(Complex c) const;
+	Complex operator~() const;
+	Complex operator-() const;
+	void operator+=(const Complex &c);
+	void operator-=(const Complex &c);
+	void operator*=(const Complex &c);
+	void operator/=(const Complex &c);
 
-	friend Complex operator*(float f, Complex c) { return c * f; }
-	friend Complex operator/(float f, Complex c) { return Complex(f) / c; }
-	friend Complex operator+(float f, Complex c) { return c + f; }
-	friend Complex operator-(float f, Complex c) { return Complex(f) - c; }
+	friend Complex operator*(float f, const Complex &c);
+	friend Complex operator/(float f, const Complex &c);
+	friend Complex operator+(float f, const Complex &c);
+	friend Complex operator-(float f, const Complex &c);
 
-	Complex inv() const { return ~(*this); }
-	auto operator==(Complex c) const -> bool;
-	auto operator==(float f) const -> bool;
-	static auto one() -> Complex;
-	static auto zero() -> Complex;
-	auto expForm() const -> vec2;
-	auto arg() const -> float;
-	auto conj() const -> Complex;
-	auto pow(float exponent) const -> Complex;
-	auto re() const -> float;
-	auto im() const -> float;
+	Complex inv() const;
+	auto operator==(Complex c) const->bool;
+	auto operator==(float f) const->bool;
+	Complex one();
+	Complex zero();
+	auto expForm() const->vec2;
+	auto arg() const->float;
+	auto conj() const->Complex;
+	auto pow(float exponent) const->Complex;
+	float re() const;
+	float im() const;
 
-	auto real() const -> float { return re(); }
-	auto imag() const -> float { return im(); }
-	auto square() const -> Complex;
-	auto sqrt() const -> Complex;
-	friend auto operator<<(std::ostream &_stream, Complex const &z) -> std::ostream &;
+	auto real() const->float;
+	auto imag() const->float;
+
+	auto square() const->Complex;
+	auto sqrt() const->Complex;
+	friend auto operator<<(std::ostream &_stream, Complex const &z)->std::ostream &;
 	// ReSharper disable once CppNonExplicitConversionOperator
 	explicit operator glm::vec2() const;
 	explicit operator std::string() const;
 
 	bool nearlyEqual(Complex c) const;
 };
+
+constexpr Complex operator ""i(long double im);
+constexpr Complex operator ""i(unsigned long long int im);
 
 auto norm2(Complex c) -> float;
 auto abs(Complex c) -> float;
@@ -511,11 +437,11 @@ Complex atanh(Complex c);
 Complex cot(Complex c);
 
 
-const Complex ONE = Complex(1, 0);
-const Complex ZERO = Complex(0, 0);
-const Complex I = Complex(0, 1);
-
 Complex intersectLines(Complex p1, Complex p2, Complex q1, Complex q2);
+
+
+
+
 
 class Quaternion {
 	vec4 q;
@@ -539,14 +465,14 @@ public:
 	Quaternion operator+(float f) const { return *this + Quaternion(f); }
 	Quaternion operator-(float f) const { return *this - Quaternion(f); }
 	Quaternion operator/(Quaternion r) const { return *this * r.inv(); }
-	friend Quaternion operator*(float f, Quaternion q) { return q * f; }
-	friend Quaternion operator/(float f, Quaternion q) { return Quaternion(f) * q.inv(); }
-	friend Quaternion operator+(float f, Quaternion q) { return q + f; }
-	friend Quaternion operator-(float f, Quaternion q) { return Quaternion(f) - q; }
+	friend Quaternion operator*(float f, Quaternion x) { return x * f; }
+	friend Quaternion operator/(float f, Quaternion x) { return Quaternion(f) * x.inv(); }
+	friend Quaternion operator+(float f, Quaternion x) { return x + f; }
+	friend Quaternion operator-(float f, Quaternion x) { return Quaternion(f) - x; }
 	explicit operator vec4() const { return q; }
 	explicit operator std::string() const { return std::format("({0}, {1}, {2}, {3})", q.x, q.y, q.z, q.w); }
-	float re() const { return q.w; }
-	vec3 im() const { return vec3(q.x, q.y, q.z); }
+	constexpr float re() const { return q.w; }
+	constexpr vec3 im() const { return vec3(q.x, q.y, q.z); }
 
 	Quaternion conj() const { return Quaternion(q.w, -q.x, -q.y, -q.z); }
 	Quaternion normalise() const { return *this / norm(); }
@@ -604,16 +530,16 @@ int binomial(int n, int k);
 template <typename M>
 float det(const M &m) {return determinant(m);}
 
-template <Normed T>
-T normalise(T v) { if (norm(v) > 1e-6) return v / norm(v); return v*0.f; };
+template <typename T>
+T normalise(T v) {  return norm(v) < 1e-6 ? v*0.f : v / norm(v);}
 
-template<Normed T>
+template<typename T>
 bool nearlyEqual(T a, T b) { return norm(a - b) < 1e-6; }
 
 inline bool nearlyEqual(float a, int b) { return norm(a - b) < 1e-6; }
 inline bool nearlyEqual(int a, float b) { return norm(a - b) < 1e-6; }
 
-template<Normed T>
+template<typename T>
 bool nearlyEqual(T a) { return norm(a) < 1e-6; }
 
 
@@ -632,8 +558,11 @@ mat2 rotationMatrix2(float angle);
 mat2 rotationBetween(vec2 v0, vec2 v1);
 
 inline vec2 orthogonalComplement(vec2 v) { return vec2(-v.y, v.x); }
-inline mat2 GramSchmidtProcess(mat2 m) { return mat2( normalise(m[0]), normalise(m[1] - normalise(m[0]) * dot(normalise(m[0]), m[1]))); }
+inline mat2 GramSchmidtProcess(mat2 m) { return mat2( normalise<vec2>(m[0]), normalise(m[1] - normalise(m[0]) * dot(normalise(m[0]), m[1]))); }
 
+
+
+// TODO: make proper tensors, this is just a crime agains humanity or at least against Grothendieck
 template <VectorSpaceConcept<float> V, VectorSpaceConcept<float> M>
 float bilinearForm(V a, V b, M m) {
 	float res=0;
@@ -683,9 +612,9 @@ public:
 	EuclideanSpace orthogonalProjection(EuclideanSpace v) { return v - normalise(*this) * dot(v, *this); }
 	M GSProcess(const M &basis);
 
-	friend float norm(EuclideanSpace v) { return v.norm(); }
-	friend float norm2(EuclideanSpace v) { return v.norm2(); }
-	friend EuclideanSpace normalise(EuclideanSpace v) { return v / norm(v); }
+
+
+
 
 	vec2 toVec2() { if (dim != 2) throw std::format_error("wrong dimension of vector (not 2)"); return vec2(value); }
 	vec3 toVec3() { if (dim != 3) throw std::format_error("wrong dimension of vector (not 2)"); return vec3(value); }
@@ -704,6 +633,16 @@ public:
         return eigenbasisExists(static_cast<mat2>(metric)); }
 };
 
+
+template <VectorSpaceConcept<float> V, VectorSpaceConcept<float> M>
+float norm(const EuclideanSpace<V, M> &v) { return v.norm(); }
+
+template <VectorSpaceConcept<float> V, VectorSpaceConcept<float> M>
+float norm2(EuclideanSpace<V, M> v) { return v.norm2(); }
+
+template <VectorSpaceConcept<float> V, VectorSpaceConcept<float> M>
+EuclideanSpace<V, M> normalise(EuclideanSpace<V, M> v) { return v / norm(v); }
+
 vec3 projectVectorToPlane(vec3 v, vec3 n);
 mat3 scaleMatrix3(vec3 s);
 mat3 scaleMatrix3(float s);
@@ -719,6 +658,8 @@ mat3 GramSchmidtProcess(mat3 m);
 
 inline float min(float a, float b) { return a < b ? a : b; }
 inline float max(float a, float b) { return a > b ? a : b; }
+inline vec3 max(vec3 a, float b) { return vec3(max(a.x, b), max(a.y, b), max(a.z, b)); }
+inline vec3 min(vec3 a, float b) { return vec3(min(a.x, b), min(a.y, b), min(a.z, b)); }
 
 template<typename V>
 V lerp(V a, V b, float t) { return b * t + a * (1.f - t); }
@@ -762,9 +703,6 @@ vector<vector<V>> linspace2D(V p0, V v0, V v1, int n, int m) {
 
 
 
-vector<int> range(int a, int b, int step=1);
-inline vector<int> range(int n) { return range(0, n); }
-
 template<TotallyOrderedAbelianSemigroup A>
 vector<A> arange(A a, A b, A step) {
 	vector<A> res;
@@ -793,6 +731,40 @@ int binSearch(std::vector<T> v, T x)
 
 
 
+
+template<typename domain, typename codomain>
+Morphism<domain, codomain> Morphism<domain, codomain>::operator-(const Morphism &g) const requires AbelianGroupConcept<codomain> {
+	return Morphism([this, g](domain x) { return (*this)(x) - g(x); });
+}
+
+template<typename domain, typename codomain>
+Morphism<domain, codomain> Morphism<domain, codomain>::operator*(const Morphism &g) const requires Semigroup<codomain> {
+	return Morphism([this, g](domain x) { return (*this)(x) * g(x); });
+}
+
+template<typename domain, typename codomain>
+Morphism<domain, codomain> Morphism<domain, codomain>::operator/(const Morphism &g) const requires DivisionRing<codomain> {
+	return Morphism([this, g](domain x) { return (*this)(x) / g(x); });
+}
+
+template<typename domain, typename codomain>
+Morphism<domain, codomain> Morphism<domain, codomain>::operator*(codomain a) const requires Semigroup<codomain> {
+	return Morphism([this, a](domain x) { return (*this)(x) * a; });
+}
+
+template<typename domain>
+Endomorphism<domain> Endomorphism<domain>::id() { return Endomorphism([](domain x) { return x; }); }
+
+template<typename domain>
+Endomorphism<domain> Endomorphism<domain>::pow(int p) const {
+	if (p < 0) return ~(*this).pow(-p);
+	if (p == 0) return Endomorphism::id();
+	if (p == 1) return *this;
+	if (p % 2 == 0) return this->pow(p / 2) * this->pow(p / 2);
+	return (*this) * this->pow(p / 2) * this->pow(p / 2); }
+
+template<typename domain>
+Endomorphism<domain> Endomorphism<domain>::operator^(int p) const { return pow(p); }
 
 template<RingConcept T, int n, int m>
 Matrix<T, n, m>::Matrix() {
@@ -866,26 +838,29 @@ Matrix<T, n, m> Matrix<T, n, m>::operator-() const
 
 template<RingConcept T, int n>
 Matrix<T, n, n>::Matrix(T diag): Matrix() {
-	for (int i            = 0; i < n; i++)
+	for (int i = 0; i < n; i++)
 		this->coefs[i][i] = diag;
 }
 
+
 template<RingConcept T, int n>
-T Matrix<T, n>::minor(int i, int j) const {
-	if (n <= 1)
-		throw std::invalid_argument("Matrix must be at least 2x2");
-	auto cfs = std::vector<std::vector<T>>();
-	for (int k = 0; k < n; k++) {
-		if (k == i) continue;
-		auto row = std::vector<T>();
-		for (int l = 0; l < n; l++) {
-			if (l == j) continue;
-			row.push_back(this->coefs[k][l]);
+	T Matrix<T, n, n>::minor(int i, int j) const {
+		if (n <= 1)
+			throw std::invalid_argument("Matrix must be at least 2x2");
+		auto cfs = std::vector<std::vector<T>>();
+		for (int k = 0; k < n; k++) {
+			if (k == i) continue;
+			auto row = std::vector<T>();
+			for (int l = 0; l < n; l++) {
+				if (l == j) continue;
+				row.push_back(this->coefs[k][l]);
+			}
+			cfs.push_back(row);
 		}
-		cfs.push_back(row);
+		if (n == 2)
+			return cfs[0][0] * cfs[1][1] - cfs[0][1] * cfs[1][0];
+		return Matrix<T, n-1>(coefs).det();
 	}
-	return Matrix<T, std::max(1,n - 1)>(cfs).det();
-}
 
 
 template<RingConcept T, int n, int m, int k>
@@ -1002,6 +977,12 @@ Matrix<T, n, m>::operator std::string() const
 	}
 	return s;
 }
+
+template<RingConcept T, int n, int m>
+Matrix<T, n, m> Matrix<T, n, m>::zero() { return Matrix(); }
+
+template<RingConcept T, int n, int m>
+T Matrix<T, n, m>::at(int i, int j) const { return this->coefs[i][j]; }
 
 template <RingConcept T, int n>
 Matrix<T, n> Matrix<T, n>::inv() const requires DivisionRing<T>
@@ -1230,7 +1211,15 @@ float polarAngle(vec3 v, vec3 t1, vec3 t2);
 float polarAngle(vec3 v, vec3 n);
 
 float cot(float x);
-inline float square(float x) { return x * x; }
+vec3 stereoProjection(vec4 v);
+RealFunctionR1 smoothenReLu(float c0, float x_change_to_id);
+RealFunctionR1 expImpulse(float peak);
+RealFunctionR1 cubicShroom(float center, float margin);
+RealFunctionR1 powerShroom(float begin, float end, float zeroExponent, float oneExponent);
+RealFunctionR1 toneMap(float k);
+RealFunctionR1 rationalInfiniteShroom(float steepFactor, float center);
+
+inline float square(float x) { return x*x; }
 inline float cube(float x) { return x * x * x; }
 inline float pow4(float x) { return x * x * x * x; }
 inline float pow5(float x) { return x * x * x * x * x; }
@@ -1240,3 +1229,5 @@ inline float pow8(float x) { return x * x * x * x * x * x * x * x; }
 inline float pow3(float x) { return x * x * x; }
 inline float pow2(float x) { return x * x; }
 inline float sq(float x) { return x * x; }
+
+#pragma clang diagnostic pop

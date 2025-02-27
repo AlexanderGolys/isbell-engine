@@ -4,7 +4,7 @@
 #include <cmath>
 
 using namespace glm;
-using std::vector, std::string, std::map, std::shared_ptr, std::unique_ptr, std::pair, std::make_unique, std::make_shared;
+using std::vector, std::string, std::shared_ptr, std::unique_ptr, std::pair, std::make_unique, std::make_shared;
 
 float debugSin(float t)
 {
@@ -72,9 +72,9 @@ int main(void) {
 	auto redmat =  MaterialPhong(REDPINK_PALLETTE[5], 0.031031423, .5962453956641656 , 0.21931160145739731, 50.0, "");
 
 
-	auto shader = make_shared<Shader>(
-			"C:\\Users\\PC\\Desktop\\ogl-master\\src\\shaders\\rev.vert",
-			"C:\\Users\\PC\\Desktop\\ogl-master\\src\\shaders\\bezier.frag");
+	auto shader = make_shared<ShaderProgram>(
+			"C:\\Users\\PC\\Desktop\\ogl-master\\src\\templateShaders\\rev.vert",
+			"C:\\Users\\PC\\Desktop\\ogl-master\\src\\templateShaders\\bezier.frag");
 
 	auto step = make_shared<RenderingStep>(shader);
 		auto step2 = make_shared<RenderingStep>(shader);

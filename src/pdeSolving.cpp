@@ -49,7 +49,7 @@ int main() {
 //	mesh->addGlobalMaterial(midmat);
 	meshstream->addGlobalMaterial(redmat);
 
-	auto shader = make_shared<Shader>(
+	auto shader = make_shared<ShaderProgram>(
 			R"(C:\Users\PC\Desktop\ogl-master\src\shaders\pde.vert)",
 R"(C:\Users\PC\Desktop\ogl-master\src\shaders\pde.frag)");
 

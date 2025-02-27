@@ -79,7 +79,7 @@ ComplexCurve ComplexCurve::line(Complex z0, Complex z1)
 ComplexCurve ComplexCurve::circle(Complex z0, float r)
 {
 	return ComplexCurve([&z0, &r](float t) {
-		return z0 + exp(I * t) * r;
+		return z0 + exp(1.0i * t) * r;
 		}, 0, TAU, TAU, .001f);
 }
 
@@ -89,13 +89,13 @@ ComplexCurve ComplexCurve::arc(Complex center, Complex z0, Complex z1)
 	float phi0 = (z0 - center).arg();
 	float phi1 = (z1 - center).arg();
 	return ComplexCurve([&center, &r, &phi0, &phi1](float t) {
-		return center + exp(I * t) * r;
+		return center + exp(1.0i * t) * r;
 		}, phi0, phi1);
 }
 
 Meromorphism::Meromorphism() {
 	_f = make_shared<endC>([](Complex z) {return z; });
-	_df =  make_shared<endC>([](Complex z) {return ONE; });
+	_df =  make_shared<endC>([](Complex z) {return 1; });
 }
 
 Meromorphism::Meromorphism(shared_ptr<endC> f, shared_ptr<endC> df) {
@@ -176,7 +176,7 @@ Complex Meromorphism::df(Complex z) const {
 
 Biholomorphism::Biholomorphism() {
 	_f = make_shared<endC>([](Complex z) {return z; });
-	_df = make_shared<endC>([](Complex z) {return ONE; });
+	_df = make_shared<endC>([](Complex z) {return 1; });
 	_f_inv = make_shared<endC>([](Complex z) {return z; });
 }
 
@@ -197,7 +197,7 @@ Biholomorphism Biholomorphism::linear(Complex a, Complex b) {
 
 Biholomorphism Biholomorphism::_LOG() {
 	auto _f = make_shared<endC>([](Complex z) {return log(z); });
-	auto _df = make_shared<endC>([](Complex z) {return ONE / z; });
+	auto _df = make_shared<endC>([](Complex z) {return 1 / z; });
 	auto _f_inv = make_shared<endC>([](Complex z) {return exp(z); });
 	return Biholomorphism(_f, _df, _f_inv);
 }
@@ -211,7 +211,7 @@ Biholomorphism Biholomorphism::_EXP() {
 
 Biholomorphism Biholomorphism::power(float a) {
 	auto _f = make_shared<endC>([a](Complex z) {return z.pow(a); });
-	auto _df = make_shared<endC>([a](Complex z) {return a!=0 ? z.pow(a - 1)*a : ZERO; });
+	auto _df = make_shared<endC>([a](Complex z) {return a!=0 ? z.pow(a - 1)*a : 0; });
 	auto _f_inv = make_shared<endC>([a](Complex z) {return z.pow(1 / a); });
 	return Biholomorphism(_f, _df, _f_inv);
 }
@@ -223,7 +223,7 @@ Complex Biholomorphism::f_inv(Complex z) const {
 Biholomorphism Biholomorphism::operator~() const {
     auto df_cpy = _df;
     auto f_inv_cpy = _f_inv;
-    return Biholomorphism(_f_inv, make_shared<endC>([df_cpy, f_inv_cpy](Complex z) {return ONE / (*df_cpy)((*f_inv_cpy)(z)); }), _f);
+    return Biholomorphism(_f_inv, make_shared<endC>([df_cpy, f_inv_cpy](Complex z) {return 1 / (*df_cpy)((*f_inv_cpy)(z)); }), _f);
 }
 
 Biholomorphism::operator PlaneAutomorphism() const {

@@ -11,8 +11,8 @@ Thumbs.db
 OpenGL-tutorial_v*
 **.mtl
 .DS_Store
-.vs
-.vscode
+unwanted/.vs
+unwanted/.vscode
 cmake-build-debug
 distrib
 external
@@ -27,3 +27,5 @@ CMakeLists.txt
 CMakeSettings.json
 Makefile
 .idea
+src/tests/experimentalTests.cpp
+!/src/docbook/

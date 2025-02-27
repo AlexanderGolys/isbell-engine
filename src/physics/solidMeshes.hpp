@@ -1,6 +1,6 @@
 #pragma once
+#include "../shading/specific.hpp"
 #include <array>
-#include "src/common/specific.hpp"
 
 enum FACE {DOWN = 0, UP = 1, RIGHT = 2, LEFT = 3, FRONT = 4, BACK = 5};
 

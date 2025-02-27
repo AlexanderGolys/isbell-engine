@@ -29,8 +29,8 @@ int main(void)
 
     Renderer renderer = Renderer(.05f, vec4(.05f, .0209f, 0.0285f, 1.0f));
     renderer.initMainWindow(FHD, "flows");
-    Shader geoShader1 = Shader("C:\\Users\\PC\\Desktop\\ogl-master\\src\\shaders\\hyperbolicAut.vert",
-                    "C:\\Users\\PC\\Desktop\\ogl-master\\src\\shaders\\hyperbolicAut.frag");
+    Shader geoShader1 = Shader("C:\\Users\\PC\\Desktop\\ogl-master\\src\\templateShaders\\hyperbolicAut.vert",
+                    "C:\\Users\\PC\\Desktop\\ogl-master\\src\\templateShaders\\hyperbolicAut.frag");
 
 
 

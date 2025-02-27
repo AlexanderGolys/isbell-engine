@@ -90,8 +90,8 @@ int main(void)
 {
     Renderer renderer = Renderer(.05f, vec4(.08f, .0709f, 0.0585f, 1.0f));
     renderer.initMainWindow(UHD, "flows");
-    Shader geoShader1 = Shader("C:\\Users\\PC\\Desktop\\ogl-master\\src\\shaders\\hyperbolicRandom.vert", 
-                    "C:\\Users\\PC\\Desktop\\ogl-master\\src\\shaders\\hyperbolicRandom.frag");
+    Shader geoShader1 = Shader("C:\\Users\\PC\\Desktop\\ogl-master\\src\\templateShaders\\hyperbolicRandom.vert",
+                    "C:\\Users\\PC\\Desktop\\ogl-master\\src\\templateShaders\\hyperbolicRandom.frag");
 
 
 

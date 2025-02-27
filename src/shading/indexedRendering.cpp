@@ -1,9 +1,6 @@
 #include "indexedRendering.hpp"
 
-#include <stdio.h>
-#include <vector>
 #include<fstream>
-#include<sstream>
 
 using namespace glm;
 using std::vector, std::string, std::shared_ptr, std::unique_ptr, std::pair, std::make_unique, std::make_shared, std::array, std::weak_ptr;
@@ -54,7 +51,7 @@ int BufferManager::bufferLength(CommonBufferType type) const {
         case INDEX:
             return indices->size();
     }
-    throw UnknownVariantError("Buffer not recognised among common types. ");
+    throw UnknownVariantError("Buffer not recognised among shading types. ");
 }
 
 void *BufferManager::firstElementAddress(CommonBufferType type) const {
@@ -80,9 +77,9 @@ void *BufferManager::firstElementAddress(CommonBufferType type) const {
     case INDEX:
         return indices->data();
     default:
-		throw UnknownVariantError("Buffer not recognised among common types. ");
+		throw UnknownVariantError("Buffer not recognised among shading types. ");
     }
-    throw UnknownVariantError("Buffer not recognised among common types. ");
+    throw UnknownVariantError("Buffer not recognised among shading types. ");
 }
 
 

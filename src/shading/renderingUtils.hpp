@@ -1,17 +1,5 @@
 #pragma once
-
-#include <array>
-#include <map>
-#include <variant>
-#include <vector>
-
-#include <string>
-#include <glm/glm.hpp>
-
-#include <memory>
-#include <optional>
-#include <gl/glew.h>
-#include "src/geometry/smoothImplicit.hpp"
+#include "../geometry/smoothImplicit.hpp"
 
 
 enum GLSLType {
@@ -355,10 +343,11 @@ protected:
 	vec4 color;
 	vec4 intensities;
 	float mode;
+	float softShadowRadius;
 public:
-	Light(vec3 position, vec4 color, vec4 intensities, float mode) : position(position), color(color), intensities(intensities), mode(mode) {}
+	Light(vec3 position, vec4 color, vec4 intensities, float mode, float r) : position(position), color(color), intensities(intensities), mode(mode), softShadowRadius(r) {}
 	virtual ~Light() = default;
-	mat4 compressToMatrix() const { return mat4(vec4(position, 0), color, intensities, vec4(mode, 0, 0, 0)); }
+	virtual mat4 compressToMatrix() const { return mat4(vec4(position, 0), color, intensities, vec4(mode, softShadowRadius, 0, 0)); }
 	vec3 getPosition() const { return position; }
 	vec4 getColor() const { return color; }
 };
@@ -366,23 +355,18 @@ public:
 class PointLightQuadric : public Light {
 	float intensity;
 public:
-	PointLightQuadric(vec3 position, vec4 color, float intensity) : Light(position, color, vec4(intensity, 0, 0, 0), 0), intensity(intensity) {}
+	PointLightQuadric(vec3 position, vec4 color, float intensity, float r=.1) : Light(position, color, vec4(intensity, 0, 0, 0), 0, r), intensity(intensity) {}
 	PointLightQuadric() : PointLightQuadric(vec3(0, 0, 0), vec4(1, 1, 1, 1), 1) {}
 	using Light::compressToMatrix;
 };
 
 class PointLight: public Light {
-public:
-	PointLight(vec3 position, vec4 color, float intensity_constant, float intensity_linear, float intensity_quadratic) : Light(position, color, vec4(intensity_constant, intensity_linear, intensity_quadratic, 0), 2) {}
-	PointLight(vec3 position, vec4 color, vec3 intensities) : PointLight(position, color, intensities[0], intensities[1], intensities[2]) {}
-	PointLight(vec3 position, vec4 color, float intensity_linear, float intensity_quadratic) : PointLight(position, color, 1, intensity_linear, intensity_quadratic) {}
-	PointLight(vec3 position, vec4 color, float expectedDistance) : PointLight(position, color, 1, 4.5f/expectedDistance, 75.f/(expectedDistance*expectedDistance)) {}
 
-	PointLight(vec3 position, float intensity_constant, float intensity_linear, float intensity_quadratic) : Light(position, WHITE, vec4(intensity_constant, intensity_linear, intensity_quadratic, 0), 2) {}
-	PointLight(vec3 position, vec3 intensities) : PointLight(position, intensities[0], intensities[1], intensities[2]) {}
-	PointLight(vec3 position, float intensity_linear, float intensity_quadratic) : PointLight(position, 1, intensity_linear, intensity_quadratic) {}
-	PointLight(vec3 position, float expectedDistance) : PointLight(position, 1, 4.5f/expectedDistance, 75.f/(expectedDistance*expectedDistance)) {}
-	using Light::compressToMatrix;
+public:
+	PointLight(vec3 position, float intensity_constant, float intensity_linear, float intensity_quadratic, float softShadowRadius=.1f, vec4 color=WHITE);
+
+	PointLight(vec3 position, vec3 intensities, float r=.1f, vec4 color=WHITE) : PointLight(position, intensities[0], intensities[1], intensities[2], r, color) {}
+	PointLight(vec3 position, float intensity_linear, float intensity_quadratic, vec4 color=WHITE) : PointLight(position, 1, intensity_linear, intensity_quadratic, .1f, color) {}
 };
 
 
@@ -604,7 +588,7 @@ public:
 
 class SuperPencilPlanar : public SuperMesh{
 	float _t=0;
-	std::function<Biholomorphism(float)> _time_operator = [](float t){return Biholomorphism::linear(ONE, ZERO);};
+	std::function<Biholomorphism(float)> _time_operator = [](float t){return Biholomorphism::linear(1, 0);};
 
 public:
 	using SuperMesh::SuperMesh;

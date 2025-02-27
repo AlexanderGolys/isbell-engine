@@ -1,6 +1,5 @@
 #pragma once
-#include "src/fundamentals/func.hpp"
-// #include "smoothParametric.hpp"
+#include "../common/symbolic.hpp"
 
 
 class SmoothParametricCurve;

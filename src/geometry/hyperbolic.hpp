@@ -1,7 +1,6 @@
 #pragma once
 
 #include "complexGeo.hpp"
-// #include "src/common/specific.hpp"
 
 
 Complex planeToDisk(Complex z);
@@ -18,7 +17,7 @@ class TriangularMesh;
 class HyperbolicPlane {
 protected:
 	Biholomorphism _toH;
-	Complex _center = I;
+	Complex _center = 1.0i;
 public:
 	virtual ~HyperbolicPlane() = default;
 	HyperbolicPlane();

@@ -34,8 +34,8 @@ int main(void)
     RENDER_SETTINGS settings = RENDER_SETTINGS(FHD, "vao", GL_SMOOTH, true, vec3(.08f, .0809f, 0.1385f), 20, TRADITIONAL_MEDIA_WITHOUT_ADBLOCK);
     VAORenderer renderer = VAORenderer(settings, &camera, lights);
 
-    auto shader = Shader(   "C:\\Users\\PC\\Desktop\\ogl-master\\src\\shaders\\vaoTest.vert",
-                                "C:\\Users\\PC\\Desktop\\ogl-master\\src\\shaders\\vaoTest.frag");
+    auto shader = Shader(   "C:\\Users\\PC\\Desktop\\ogl-master\\src\\templateShaders\\vaoTest.vert",
+                                "C:\\Users\\PC\\Desktop\\ogl-master\\src\\templateShaders\\vaoTest.frag");
 
 
 
