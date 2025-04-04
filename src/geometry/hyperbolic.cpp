@@ -8,40 +8,46 @@
 using namespace glm;
 using std::vector, std::string, std::shared_ptr, std::unique_ptr, std::pair, std::make_unique, std::make_shared;
 
+const Complex I = Complex(0, 1);
+const Complex ONE = Complex(1, 0);
+const Complex ZERO = Complex(0, 0);
+
 auto planeToDisk(Complex z) -> Complex {
-    return CayleyTransform.mobius(z);
+    return CAYLEY(z);
 }
 
 Complex diskToPlane(Complex z)
 {
-    return CayleyTransformInv.mobius(z);
+    return CAYLEY.inv(z);
 }
 
+const Matrix<Complex> Imob = Matrix<Complex>(1, 0, 0, 1);
 
-HyperbolicPlane::HyperbolicPlane()
+
+HyperbolicPlane::HyperbolicPlane() : _toH(Biholomorphism::linear(1, 0))
 {
-    this->_toH = Biholomorphism();
+    _center = 1.0i;
 }
 
-HyperbolicPlane::HyperbolicPlane(Biholomorphism toH) {
-    this->_toH = toH;
-    _center = toH.inv(I);
+HyperbolicPlane::HyperbolicPlane(Biholomorphism toH) : _toH(toH)
+{
+    _center = toH.inv(1.0i);
 }
 
 vec2 HyperbolicPlane::geodesicEndsH(Complex z0, Complex z1)
 {
 
-    if (z0.x == z1.x)
-        return vec2(z0.x, z0.x);
-    float c = (z0.x + z1.x - (z1.y*z1.y - z0.y*z0.y) / (z0.x - z1.x)) / 2;
+    if (z0.re() == z1.re())
+        return vec2(z0.re(), z0.re());
+    float c = (z0.re() + z1.re() - (z1.im()*z1.im() - z0.im()*z0.im()) / (z0.re() - z1.re())) / 2;
     float r = abs(z0 - Complex(c, 0));
     return vec2(c-r, c+r);
 }
 
 Mob HyperbolicPlane::geodesicToVerticalH(Complex z0, Complex z1)
 {
-    if (z0.x == z1.x)
-        return Mob(1, -z0.x, 0, 1);
+    if (z0.re() == z1.re())
+        return Mob(1, -z0.re(), 0, 1);
     vec2 ends = geodesicEndsH(z0, z1);
     return Mob(Complex(1, 0), Complex(-ends.y, 0), Complex(1, 0), Complex(-ends.x, 0));
 }
@@ -49,8 +55,8 @@ Mob HyperbolicPlane::geodesicToVerticalH(Complex z0, Complex z1)
 ComplexCurve HyperbolicPlane::geodesic(Complex z0, Complex z1)
 {
     Mob m = geodesicToVerticalH(toH(z0), toH(z1)).inv();
-    float t0 = log(m.inv().mobius(toH(z0)).y);
-    float t1 = log(m.inv().mobius(toH(z1)).y);
+    float t0 = log(m.inv().mobius(toH(z0)).im());
+    float t1 = log(m.inv().mobius(toH(z1)).im());
     ComplexCurve curve = ComplexCurve([this, z0, z1](float t) {
         return this->fromH(geodesicToVerticalH(toH(z0), toH(z1)).inv().mobius(Complex(0, exp(t))));
     }, t0, t1);
@@ -149,7 +155,7 @@ void HyperbolicPlane::transformInPlace(Biholomorphism f) {
     _toH = _toH.compose(f);
 }
 
-HyperbolicPlane HyperbolicPlane::transformByMobiusH(Matrix<Complex, 2> m) {
+HyperbolicPlane HyperbolicPlane::transformByMobiusH(Matrix<Complex> m) {
     return transform(Biholomorphism::mobius(m));
 }
 
@@ -161,13 +167,13 @@ Biholomorphism HyperbolicPlane::toHTransform() const {
 }
 
 Biholomorphism HyperbolicPlane::toDTransform() const {
-    return Biholomorphism::mobius(CayleyTransform).compose(_toH);
+    return CAYLEY.compose(_toH);
 }
 
 
 PoincareDisk::PoincareDisk()
 {
-    this->_toH = Biholomorphism::mobius(CayleyTransform.inv());
+    this->_toH = CAYLEY.inv();
 }
 
 
@@ -196,11 +202,11 @@ HyperbolicBand::HyperbolicBand()
     this->_toH = EXP;
 }
 
-ComplexCurve HyperbolicBand::boundary()
-{
-    ComplexCurve l = ComplexCurve::line(Complex(-5, PI-.01), Complex(5, PI-.01));
-    return ComplexCurve::line(Complex(-5, .01), Complex(5, .01)).disjointUnion(l);
-}
+// ComplexCurve HyperbolicBand::boundary()
+// {
+//     ComplexCurve l = ComplexCurve::line(Complex(-5, PI-.01), Complex(5, PI-.01));
+//     return ComplexCurve::line(Complex(-5, .01), Complex(5, .01)).disjointUnion(l);
+// }
 
 // HyperbolicVerticalBand::HyperbolicVerticalBand()
 // {
@@ -208,11 +214,11 @@ ComplexCurve HyperbolicBand::boundary()
 //     this->_fromH = [](Complex z) {return (atan(planeToDisk(z))); };
 // }
 
-ComplexCurve HyperbolicVerticalBand::boundary()
-{
-    ComplexCurve l = ComplexCurve::line(Complex(-PI/4+.01, -5), Complex(-PI/4+.01, 5));
-    return ComplexCurve::line(Complex(PI/4-.01, -5), Complex(PI/4-.01, 5)).disjointUnion(l);
-}
+// ComplexCurve HyperbolicVerticalBand::boundary()
+// {
+//     ComplexCurve l = ComplexCurve::line(Complex(-PI/4+.01, -5), Complex(-PI/4+.01, 5));
+//     return ComplexCurve::line(Complex(PI/4-.01, -5), Complex(PI/4-.01, 5)).disjointUnion(l);
+// }
 
 // HyperbolicHalfBand::HyperbolicHalfBand()
 // {
@@ -269,8 +275,8 @@ Arc::Arc(Complex z0, Complex z1, Complex center)
     this->z1 = z1;
     this->center = center;
     this->r = abs(z0 - center);
-    this->theta0 = atan2(z0.y - center.y, z0.x - center.x);
-    this->theta1 = atan2(z1.y - center.y, z1.x - center.x);
+    this->theta0 = atan2(z0.im() - center.im(), z0.re() - center.re());
+    this->theta1 = atan2(z1.im() - center.im(), z1.re() - center.re());
 }
 
 Arc::Arc(Complex center, float r, float theta0, float theta1)
@@ -388,8 +394,8 @@ float Arc::angle(Arc &c)
     float theta2 = (z - c.center).arg();
     ComplexCurve curve1 = parametric();
     ComplexCurve curve2 = c.parametric();
-    vec2 v1 = (*curve1.df)(theta1).z;
-    vec2 v2 = (*curve2.df)(theta2).z;
+    vec2 v1 = (curve1._df)(theta1).z;
+    vec2 v2 = (curve2._df)(theta2).z;
     return acos(dot(v1, v2) / (norm(v1) * norm(v2)));
 }
 
@@ -419,7 +425,7 @@ SchwarzPolygon SchwarzPolygon::halfRingH(float a, float b, int rad, int hor, flo
 }
 
 SchwarzPolygon SchwarzPolygon::pizzaSlice(float angle, int rad, int hor, float cut_bd) {
-    vector<Complex> vert = {ZERO, ONE, Complex(cos(angle), sin(angle))};
+    vector<Complex> vert = {0, 1, Complex(cos(angle), sin(angle))};
 
     std::vector<TriangleComplex> triangulation = {};
     triangulation.reserve(rad*hor*2);
@@ -530,7 +536,7 @@ float HyperbolicTriangleH::edgeCenter(int i) const {
 vec2 HyperbolicTriangleH::edgeArgs(int i) const {
     Complex v1 = vertices[i];
     Complex v2 = vertices[(i + 1) % 3];
-    if (v1.x > v2.x)
+    if (v1.re() > v2.re())
         std::swap(v1, v2);
     Complex center = Complex(edgeCenter(i), 0);
     return vec2((v1-center).arg(), (v2-center).arg());
@@ -592,7 +598,7 @@ std::vector<TriangleComplex> HyperbolicTriangleH::triangulation(float max_sidele
 SchwarzPolygon::SchwarzPolygon(): mobiusToFDDisk(Imob) {
 }
 
-SchwarzPolygon::SchwarzPolygon(std::vector<Complex> vertices, Matrix<Complex, 2> mobiusToFDDisk,
+SchwarzPolygon::SchwarzPolygon(std::vector<Complex> vertices, Matrix<Complex> mobiusToFDDisk,
                                std::shared_ptr<HyperbolicPlane> plane, std::vector<TriangleComplex> triangulation): mobiusToFDDisk(mobiusToFDDisk) {
     this->vertices = vertices;
     this->plane = plane;
@@ -617,7 +623,7 @@ SchwarzPolygon::SchwarzPolygon(std::vector<Complex> vertices, std::vector<Hyperb
     }
 }
 
-SchwarzPolygon SchwarzPolygon::transform(Matrix<Complex, 2> m) {
+SchwarzPolygon SchwarzPolygon::transform(Matrix<Complex> m) {
     vector<Complex> vert = vertices;
     std::vector<Complex> newVertices;
     newVertices.reserve(vert.size());
@@ -673,7 +679,7 @@ std::vector<Complex> SchwarzPolygon::getVertices() const {
 }
 
 
-std::vector<std::vector<Matrix<Complex, 2>>> FuchsianGroup::extendGeneratingList(int last_len, int n, std::vector<std::vector<Matrix<Complex, 2>>> list) {
+std::vector<std::vector<Matrix<Complex>>> FuchsianGroup::extendGeneratingList(int last_len, int n, std::vector<std::vector<Matrix<Complex>>> list) {
     auto newList = list;
     for (auto g: generatorsD) {
         for (auto l: list) {
@@ -698,23 +704,23 @@ std::vector<std::vector<Matrix<Complex, 2>>> FuchsianGroup::extendGeneratingList
     return extendGeneratingList(last_len + 1, n, newList);
 }
 
-Matrix<Complex, 2> FuchsianGroup::multiplyGeneratingSequence(std::vector<Matrix<Complex, 2>> seq) {
+Matrix<Complex> FuchsianGroup::multiplyGeneratingSequence(std::vector<Matrix<Complex>> seq) {
     Mob result = Imob;
     for (auto m: seq)
         result = result * m;
     return result;
 }
 
-bool FuchsianGroup::isValidNewSequence(std::vector<Matrix<Complex, 2>> seq) {
+bool FuchsianGroup::isValidNewSequence(std::vector<Matrix<Complex>> seq) {
     if (relationDuplicateIndicator(seq))
         return false;
-    if (seq.size() >= 2 && nearlyEqual(seq[seq.size() - 1], seq[seq.size() - 2].inv()))
+    if (seq.size() >= 2 && seq[seq.size() - 1] == seq[seq.size() - 2].inv())
         return false;
     return true;
 }
 
-std::vector<Matrix<Complex, 2>> FuchsianGroup::multiplyGeneratingSequences(std::vector<std::vector<Matrix<Complex, 2>>> list) {
-    std::vector<Matrix<Complex, 2>> result;
+std::vector<Matrix<Complex>> FuchsianGroup::multiplyGeneratingSequences(std::vector<std::vector<Matrix<Complex>>> list) {
+    std::vector<Matrix<Complex>> result;
     result.reserve(list.size());
     for (const auto l: list)
         result.push_back(multiplyGeneratingSequence(l));
@@ -725,8 +731,8 @@ FuchsianGroup::FuchsianGroup() {
     this->generatorsD = vector<Mob>();
 }
 
-std::vector<Matrix<Complex, 2>> FuchsianGroup::generateElementsD(int n) {
-    std::vector<std::vector<Matrix<Complex, 2>>> list = {};
+std::vector<Matrix<Complex>> FuchsianGroup::generateElementsD(int n) {
+    std::vector<std::vector<Matrix<Complex>>> list = {};
     list.reserve(n);
     for (auto g: getGeneratorsD())
         list.push_back({g});
@@ -738,12 +744,12 @@ std::vector<Matrix<Complex, 2>> FuchsianGroup::generateElementsD(int n) {
 
 
 
-FuchsianGroup::FuchsianGroup(std::vector<Matrix<Complex, 2>> generators, std::function<bool(std::vector<Matrix<Complex, 2>>)> relationDuplicateIndicator, bool disk) {
+FuchsianGroup::FuchsianGroup(std::vector<Matrix<Complex>> generators, std::function<bool(std::vector<Matrix<Complex>>)> relationDuplicateIndicator, bool disk) {
     this->generatorsD = generators;
     this->relationDuplicateIndicator = relationDuplicateIndicator;
     if (!disk)
         for (int i = 0; i < generators.size(); i++)
-            this->generatorsD[i] = CayleyTransform * generators[i] * CayleyTransformInv;
+            this->generatorsD[i] = CAYLEY_MAT * generators[i] * CAYLEY_MAT_INV;
 }
 
 FuchsianGroup::FuchsianGroup(std::vector<Mob> generators, bool disk) : FuchsianGroup(generators, [](std::vector<Mob> v) { return false; }, disk) {}
@@ -752,11 +758,11 @@ vector<Mob> FuchsianGroup::getGeneratorsD() {
     return generatorsD;
 }
 
-std::vector<Matrix<Complex, 2>> FuchsianGroup::getGeneratorsAndInverses() {
+std::vector<Matrix<Complex>> FuchsianGroup::getGeneratorsAndInverses() {
     vector<Mob> gens = getGeneratorsD();
     gens.reserve(gens.size()*2);
     for (auto g: generatorsD)
-        if (!nearlyEqual(g, g.inv()))
+        if (g.nearly_equal(g.inv()))
             gens.push_back(g.inv());
     return gens;
 }
@@ -775,9 +781,9 @@ FuchsianGroup FuchsianGroup::Ga(float a, float b) {
 
 FuchsianGroup FuchsianGroup::modular() {
     return FuchsianGroup({Mob(0, 1, -1, 0), Mob(0, 1, -1, 0)*Mob(1, 1, 0, 1)}, [](vector<Mob> v) {
-        return v.size() >= 3 && nearlyEqual(v[v.size() - 1]*v[v.size() - 2], v[v.size() - 3].inv()) ||
-            v.size() >= 3 && nearlyEqual(v[v.size() - 1]*v[v.size() - 2], -v[v.size() - 3].inv()) ||
-                v.size() >= 2 && nearlyEqual(v[v.size() - 1], -v[v.size() - 2].inv());
+        return v.size() >= 3 && nearlyEqual_mat(v[v.size() - 1]*v[v.size() - 2], v[v.size() - 3].inv()) ||
+            v.size() >= 3 && nearlyEqual_mat(v[v.size() - 1]*v[v.size() - 2], -v[v.size() - 3].inv()) ||
+                v.size() >= 2 && nearlyEqual_mat(v[v.size() - 1], -v[v.size() - 2].inv());
     }, false);
 }
 

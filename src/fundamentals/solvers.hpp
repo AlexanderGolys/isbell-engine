@@ -1,7 +1,7 @@
 #pragma once
 
 //#include "func.hpp"
-#include "src/geometry/smoothImplicit.hpp"
+#include "../geometry/smoothImplicit.hpp"
 
 
 
@@ -17,9 +17,9 @@ protected:
 public:
 	virtual ~ODESolver() = default;
 
-	ODESolver( BIHOM(float, V, V) &f, float t0, const V &initial) : _f(f), _t0(t0), initial(initial) {}
-	virtual float getStep() { throw std::format_error("not implemented"); }
-	virtual void computeStep() { throw std::format_error("not implemented"); }
+	ODESolver(BIHOM(float, V, V) &f, float t0, const V &initial) : _f(f), _t0(t0), initial(initial) {}
+	virtual float getStep() { throw std::runtime_error("not implemented"); }
+	virtual void computeStep() { throw std::runtime_error("not implemented"); }
 	virtual V operator[](int i) const { return solutionSequence[i]; }
 	virtual float timeAtStep(int i) const { return times[i]; }
 	virtual float timeReached() const { return times.back(); }

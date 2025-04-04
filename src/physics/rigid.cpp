@@ -4,6 +4,10 @@
 using namespace glm;
 using std::vector, std::string, std::shared_ptr, std::unique_ptr, std::pair, std::make_unique, std::make_shared;
 
+void Force::setUpdateCallback(const std::function<void(float)> &updateOnSource) {this->updateOnSource = updateOnSource;}
+
+void Force::setDestructionCallback(const std::function<void()> &noLongerValidInterface) {this->noLongerValidInterface = noLongerValidInterface;}
+
 RigidBodyTriangulated2D::RigidBodyTriangulated2D(std::shared_ptr<WeakSuperMesh> mesh, vec3 angularVelocity,  vec3 linearVelocity,  vec3 angularAcceleration,  vec3 linearAcceleration):
 mesh(mesh), angularVelocity(angularVelocity), linearVelocityCM(linearVelocity), angularAcceleration(angularAcceleration), linearAccelerationCM(linearAcceleration) {
 	calculateCenterOfMass();
@@ -19,6 +23,16 @@ void RigidBodyTriangulated2D::update(float dt) {
 		mesh->deformWithAmbientMap(SpaceAutomorphism::rotation(normalise(angularVelocity), norm(angularVelocity)*dt, centerOfMass));
 }
 
+void RigidBodyTriangulated2D::setAngularVelocity(const vec3 &omega) {angularVelocity = omega;}
+
+void RigidBodyTriangulated2D::setLinearVelocity(const vec3 &v) {linearVelocityCM = v;}
+void RigidBodyTriangulated2D::setAngularAcceleration(const vec3 &alpha) {angularAcceleration = alpha;}
+void RigidBodyTriangulated2D::setLinearAcceleration(const vec3 &a) {linearAccelerationCM = a;}
+void RigidBodyTriangulated2D::addAngularVelocity(const vec3 &omega) {angularVelocity += omega;}
+void RigidBodyTriangulated2D::addLinearVelocity(const vec3 &v) {linearVelocityCM += v;}
+void RigidBodyTriangulated2D::addAngularAcceleration(const vec3 &alpha) {angularAcceleration += alpha;}
+void RigidBodyTriangulated2D::addLinearAcceleration(const vec3 &a) {linearAccelerationCM += a;}
+
 void RigidBodyTriangulated2D::approximateInertiaTensor(vec3 p) {
 	mat3 result     = mat3(0);
 	float totalArea = 0;
@@ -33,6 +47,8 @@ void RigidBodyTriangulated2D::approximateInertiaTensor(vec3 p) {
 		}
 	I = result/totalArea;
 }
+
+void RigidBodyTriangulated2D::approximateInertiaTensorCM() {approximateInertiaTensor(centerOfMass);}
 
 void RigidBodyTriangulated2D::calculateCenterOfMass() {
 	vec3 sum  = vec3(0);
@@ -164,6 +180,11 @@ void RollingBody::roll(float dt, WeakSuperMesh &mesh, WeakSuperMesh &centermesh)
 	float rotAngle = rotationAngle(polarParam-angle, polarParam);
 	rotate(rotAngle, mesh, centermesh);
 }
+
+float RollingBody::getAngularVelocity() {return angularVelocity;}
+std::shared_ptr<WeakSuperMesh> RollingBody::getMesh() {return std::make_shared<WeakSuperMesh>(*mesh);}
+std::shared_ptr<WeakSuperMesh> RollingBody::getCenterMesh() {return std::make_shared<WeakSuperMesh>(*centermesh);}
+std::shared_ptr<WeakSuperMesh> RollingBody::getFloorMesh() {return std::make_shared<WeakSuperMesh>(*floormesh);}
 
 RigidBody3D::RigidBody3D( vec3 cm, mat3 I, vec3 angularVelocity, vec3 linearVelocity, vec3 angularAcceleration, vec3 linearAcceleration, float mass, mat3 R)
 : centerOfMass(cm), I(I), angularVelocity(angularVelocity), linearVelocityCM(linearVelocity),

@@ -40,7 +40,7 @@ public:
   ~EBO() { destroy(); }  void bind() { glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, id); }
   static void unbind() { glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0); }
   void load(const void* data, size_t size, GLenum usage);
-  void load(const std::vector<glm::ivec3> &data, GLenum usage);
+  void load(const std::vector<ivec3> &data, GLenum usage);
 
 };
 
@@ -146,12 +146,12 @@ public:
   const char* title;
   GLenum shading;
   bool depthTest;
-  glm::vec3 bgColor;
+  vec3 bgColor;
   int maxFPS;
   LOGGING logging;
 
-  RENDER_SETTINGS(int width, int height, const char* title, GLenum shading, bool depthTest, glm::vec3 bgColor, int maxFPS, LOGGING logging) : width(width), height(height), title(title), shading(shading), depthTest(depthTest), bgColor(bgColor), maxFPS(maxFPS), logging(logging) {}
-  RENDER_SETTINGS(Resolution res, const char* title, GLenum shading, bool depthTest, glm::vec3 bgColor, int maxFPS, LOGGING logging) : RENDER_SETTINGS(predefinedWidth(res), predefinedHeight(res), title, shading, depthTest, bgColor, maxFPS, logging) {}
+  RENDER_SETTINGS(int width, int height, const char* title, GLenum shading, bool depthTest, vec3 bgColor, int maxFPS, LOGGING logging) : width(width), height(height), title(title), shading(shading), depthTest(depthTest), bgColor(bgColor), maxFPS(maxFPS), logging(logging) {}
+  RENDER_SETTINGS(Resolution res, const char* title, GLenum shading, bool depthTest, vec3 bgColor, int maxFPS, LOGGING logging) : RENDER_SETTINGS(predefinedWidth(res), predefinedHeight(res), title, shading, depthTest, bgColor, maxFPS, logging) {}
   float min_dt() { return 1.f / maxFPS; }
 };
 

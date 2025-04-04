@@ -28,8 +28,8 @@ void EBO::load(const void *data, size_t size, GLenum usage) {
     bind();
     glBufferData(GL_ELEMENT_ARRAY_BUFFER, size, data, usage);
 }
-void EBO::load(const std::vector<glm::ivec3> &data, GLenum usage) {
-    load(data.data(), data.size() * sizeof(glm::ivec3), usage);
+void EBO::load(const std::vector<ivec3> &data, GLenum usage) {
+    load(data.data(), data.size() * sizeof(ivec3), usage);
 }
 
 void VAO::linkAttribute(VBO vbo, const Attribute &attr, const void *offset) {
@@ -63,14 +63,14 @@ void VAORenderingObject::loadStdVBO(GLenum usage) {
     stdVBO.load(mesh->getBufferLocation(POSITION), mesh->getBufferLength(POSITION)*sizeof(Stds), usage);
 }
 void VAORenderingObject::loadMatVBO(GLenum usage) {
-    matVBO.load(mesh->getBufferLocation(MATERIAL1), mesh->getBufferLength(MATERIAL1)*sizeof(vec4x4), usage);
+    matVBO.load(mesh->getBufferLocation(MATERIAL1), mesh->getBufferLength(MATERIAL1)*sizeof(mat4), usage);
 
 }
 void VAORenderingObject::loadEx0VBO(GLenum usage) {
     ex0VBO.load(mesh->getBufferLocation(EXTRA0), mesh->getBufferLength(EXTRA0)*sizeof(vec4), GL_STATIC_DRAW);
 }
 void VAORenderingObject::loadExVBO(GLenum usage) {
-    exVBO.load(mesh->getBufferLocation(EXTRA1), mesh->getBufferLength(EXTRA1)*sizeof(vec4x4), GL_STATIC_DRAW);
+    exVBO.load(mesh->getBufferLocation(EXTRA1), mesh->getBufferLength(EXTRA1)*sizeof(mat4), GL_STATIC_DRAW);
 }
 void VAORenderingObject::loadEBO(GLenum usage) {
     ebo.load(mesh->bufferIndexLocation(), mesh->bufferIndexSize(), GL_STATIC_DRAW);
@@ -283,4 +283,3 @@ int VAORenderer::mainLoop() {
 
     return window.destroy();
 }
-

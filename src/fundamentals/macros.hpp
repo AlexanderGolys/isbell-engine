@@ -1,35 +1,42 @@
 #pragma once
 #include <glm/glm.hpp>
-
 #include <variant>
 #include <string>
 #include <optional>
 #include <functional>
 #include <ranges>
+#include <GL/glew.h>
+#include <GLFW/glfw3.h>
+// #include "../../external/glm-0.9.7.1/glm/glm.hpp"
 
 
-using std::vector, glm::vec2, glm::vec3, glm::vec4, glm::mat3, glm::mat4, glm::mat2, glm::mat2x3, glm::ivec2, glm::ivec3;
+using std::vector, glm::vec2, glm::vec3, glm::vec4, glm::mat3, glm::mat4, glm::mat2, glm::mat2x3, glm::ivec2, glm::ivec3, glm::ivec4;
 using std::variant, std::string, std::optional;
 
 #define PI 3.14159265359f
 #define TAU 6.28318530718f
 #define RP1 optional<float>
 #define maybeFloat std::optional<float>
+#define INF_FLOAT std::nullopt
 #define PolyGroupID std::variant<int, std::string>
 #define Mat2C Matrix<Complex, 2>
 #define INT(x) static_cast<int>(x)
 #define End1P std::function<SpaceEndomorphism(float)>
 #define End2P std::function<SpaceEndomorphism(float, float)>
 #define maybeMaterial std::optional<MaterialPhongConstColor>
-#define Mob Matrix<Complex, 2>
+#define Mob Matrix<Complex>
 #define isClose nearlyEqual
 
 #define GEN_VEC(R) GenericTensor<R, R>
 #define GEN_MAT(R) GenericTensor<R, GEN_VEC(R)>
 
 namespace std {
+#define MAYBE(A) std::optional<A>
 #define HOM(B,A) std::function<A(B)>
 #define BIHOM(A, B, C) std::function<C(A,B)>
+#define TRIHOM(A, B, C, D) std::function<D(A,B,C)>
+#define QUADHOM(A, B, C, D, E) std::function<E(A,B,C,D)>
+
 
 #define FUNC(B, ...) std::function<B(...)>
 #define END(A) HOM(A, A)
@@ -50,6 +57,20 @@ namespace std {
 #define Foo113 std::function<vec3(float, float)>
 #define Foo112 std::function<vec2(float, float)>
 #define Foo111 std::function<float(float, float)>
+
+#define Foo1111 std::function<float(float, float, float)>
+#define Foo1113 std::function<vec3(float, float, float)>
+#define Foo313 std::function<vec3(vec3, float)>
+#define Foo311 std::function<float(vec3, float)>
+
+#define upt std::unique_ptr
+#define spt std::shared_ptr
+#define wpt std::weak_ptr
+#define mupt std::make_unique
+#define mspt std::make_shared
+
+
+
 #define betterInFamily(A) HOM(float, A)
 #define procrastinateIn(A) HOM(A, void)
 #define alboLeniwyAlboCwaniak HOM(void, void)
@@ -77,7 +98,7 @@ namespace std {
 #define O_(A)         HOM(A, float)
 #define burdl(A)      HOM(float, A)
 #define curvy(A)      HOM(float, A)
-#define path(A)       HOM(float, A)
+#define pathSpace(A)  HOM(float, A)
 #define TRG           const IndexedTriangle&
 #define triple_O(A)   HOM(A, vec3)
 #define O_x3(A)       HOM(A, vec3)
@@ -92,8 +113,8 @@ namespace std {
 #define unpackTripleWeird(_F, F, vec, ...) [_F](vec v, ...){return F(v[0], v[1], v[2], ...);}
 
 #define unpackQuad(F, vec, ...) [F](vec v, ...){return F(v[0], v[1], v[2], v[3], ...);}
-#define curry(F, arg, ...) [F](arg a, ...){return F(a, ...);}
-#define uncarry(F, arg, arg2, ...) [F](HOM(arg, HOM(arg2, ...)) f, arg a, ...){return f(a)(...);}
+// #define curry(F, arg, ...) [F](arg a, ...){return F(a, ...);}
+// #define uncarry(F, arg, arg2, ...) [F](HOM(arg, HOM(arg2, ...)) f, arg a, ...){return f(a)(...);}
 }
 
 // #define Foo(A)_Foo33 Foo33([](float){return hom(A, glm::mat3)(t);};)
@@ -118,16 +139,17 @@ std::function<A(std::function<B(C)>)> curr(std::function<A(B, C)> f) {
 // #define Foo1FooRigidFoo33 hom(float, Foo(RigidBody)_Foo33 )
 
 // #define F[vec v] [F](vec v){return F(v[0], v[1]);}
-#define BigMatrix_t HOM(float, BigMatrix)
+#define BigMatrix_t HOM(float, FloatMatrix)
 #define vec69_t HOM(float, vec69)
 #define rigidMotion std::pair<vec3, vec3>
 
-#define BigMatrix_hm std::optional<BigMatrix>
+#define BigMatrix_hm std::optional<FloatMatrix>
 #define vec69_hm std::optional<vec69>
 #define mat3_hm std::optional<glm::mat3>
 #define float_hm std::optional<float>
 #define R3_hm std::optional<R3>
 #define HM_NO std::nullopt
+#define OPT(x) std::optional<x>
 
 namespace glm{
 #define BLACK glm::vec4(0, 0, 0, 1)
@@ -159,12 +181,13 @@ namespace glm{
 								// red red reddy
 #define PALETTE3 COLOR_PALETTE(glm::ivec3(144, 156, 194), glm::ivec3(244, 157, 55), glm::ivec3(232, 72, 85), glm::ivec3(1, 2, 2), glm::ivec3(34, 34, 34))
                                // light powder blue			light intense orange           aggressive redpink        calm darker gray      dark purple, calm
-
 #define INTENSE_DARKER_RED_PALLETTE COLOR_PALETTE(glm::ivec3(173, 40, 49), glm::ivec3(128, 14, 19), glm::ivec3(100, 13, 20), glm::ivec3(56, 4, 14), glm::ivec3(37, 9, 2))
 #define BLUE_PALLETTE COLOR_PALETTE10(glm::ivec3(226, 239, 246), glm::ivec3(183, 215, 234), glm::ivec3(141, 190, 220), glm::ivec3(100, 164, 206), glm::ivec3(72, 147, 198), glm::ivec3(45, 130, 189), glm::ivec3(36, 118, 177), glm::ivec3(25, 101, 160), glm::ivec3(15, 85, 143), glm::ivec3(0, 58, 112))
 #define GREEN_PALLETTE COLOR_PALETTE10(glm::ivec3(219, 234, 215), glm::ivec3(195, 220, 188), glm::ivec3(171, 206, 161), glm::ivec3(148, 193, 134), glm::ivec3(124, 179, 107), glm::ivec3(102, 162, 83), glm::ivec3(85, 135, 69), glm::ivec3(68, 108, 55), glm::ivec3(51, 81, 42), glm::ivec3(32, 51, 26))
-
 #define REDPINK_PALLETTE COLOR_PALETTE10(glm::ivec3(243, 219, 234), glm::ivec3(236, 197, 221), glm::ivec3(204, 154, 181), glm::ivec3(179, 116, 149), glm::ivec3(153, 77, 116), glm::ivec3(128, 39, 84), glm::ivec3(102, 0, 51), glm::ivec3(85, 6, 45), glm::ivec3(67, 12, 39), glm::ivec3(52, 9, 30))
+
+
+#define GRAY_PALLETTE COLOR_PALETTE10(glm::ivec3(248, 249, 250), glm::ivec3(233, 236, 239), glm::ivec3(222, 226, 230), glm::ivec3(206, 212, 218), glm::ivec3(173, 181, 189), glm::ivec3(108, 117, 125), glm::ivec3(73, 80, 87), glm::ivec3(52, 58, 64), glm::ivec3(33, 37, 41), glm::ivec3(22, 26, 29))
 
 #define R3 glm::vec3
 #define R2 glm::vec2

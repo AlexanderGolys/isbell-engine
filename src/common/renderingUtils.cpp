@@ -377,6 +377,9 @@ TriangularMesh::TriangularMesh(const vector<TriangleR3> &triangles) : Triangular
 }
 
 
+PointLight::PointLight(vec3 position, float intensity_constant, float intensity_linear, float intensity_quadratic, float softShadowRadius, vec4 color) :
+	Light(position, color, vec4(intensity_constant, intensity_linear, intensity_quadratic, 0), 0, softShadowRadius) {}
+
 std::map<std::string, int> countEstimatedBufferSizesInOBJFile(const char *filename) {
     int positions = 0;
     int normals = 0;
@@ -1503,7 +1506,7 @@ void SuperMesh::precomputeBuffers(bool materials, bool extra) {
 
 
 void SuperMesh::merge(const SuperMesh &other) {
-	auto prefix_rand = randomString();
+	auto prefix_rand = randomStringNumeric();
 	for (auto &pair : other.triangleGroups)
 		triangleGroups[prefix(pair.first, prefix_rand)] = pair.second;
 	for (auto &pair : other.boundaryGroups)
@@ -1713,7 +1716,7 @@ Texture::Texture(int width, int height, int slot, const char* sampler)
 	glGenFramebuffers(1, &frameBufferID);
 }
 
-Texture::Texture(glm::vec3 color, int slot, const char *sampler) {
+Texture::Texture(vec3 color, int slot, const char *sampler) {
     width = 1;
     height = 1;
     size = 3;
@@ -1731,7 +1734,7 @@ Texture::Texture(glm::vec3 color, int slot, const char *sampler) {
 	load();
 }
 
-Texture::Texture(glm::vec4 color, int slot, const char *sampler) {
+Texture::Texture(vec4 color, int slot, const char *sampler) {
     width = 1;
     height = 1;
     size = 4;
@@ -1790,14 +1793,17 @@ Texture::Texture(const char* filename, int slot, const char* sampler, bool alpha
 	load();
 }
 
+Texture::Texture(const std::string &filename, int slot, const char *sampler, bool alpha)
+: Texture(filename.c_str(), slot, sampler, alpha) {}
+
 void Texture::deleteTexture()
 {
-//	free(this->data);
+	free(this->data);
 	glDeleteTextures(1, &this->textureID);
 }
 
 void Texture::addFilters(GLenum minFilter, GLenum magFilter, GLenum wrapS, GLenum wrapT) {
-	if (minFilter == GL_LINEAR_MIPMAP_LINEAR || minFilter == GL_LINEAR_MIPMAP_NEAREST || minFilter == GL_NEAREST_MIPMAP_LINEAR || minFilter == GL_NEAREST_MIPMAP_NEAREST)
+	if (minFilter == GL_LINEAR_MIPMAP_LINEAR)
 	{
 		glGenerateMipmap(GL_TEXTURE_2D);
 	}
@@ -1814,21 +1820,22 @@ void Texture::bind() const
 }
 
 
-void Texture::bindToFrameBuffer() const
-{
+void Texture::bindToFrameBuffer() const {
 	glBindFramebuffer(GL_DRAW_FRAMEBUFFER, frameBufferID);
 	glBindTexture(GL_TEXTURE_2D, this->textureID);
 	glFramebufferTexture2D(GL_DRAW_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, this->textureID, 0);
 	glViewport(0, 0, this->width, this->height);
 }
 
-void Texture::calculateMipmap() const { glGenerateMipmap(this->textureID); }
+void Texture::calculateMipmap() const {
+	glGenerateMipmap(this->textureID);
+}
 
 void Texture::load() {
     glGenTextures(1, &this->textureID);
-//	glActiveTexture(this->textureSlot);
+	glActiveTexture(this->textureSlot);
 	glBindTexture(GL_TEXTURE_2D, this->textureID);
-	addFilters( GL_LINEAR_MIPMAP_LINEAR, GL_LINEAR, GL_CLAMP_TO_EDGE, GL_CLAMP_TO_EDGE);
+	addFilters( GL_LINEAR_MIPMAP_LINEAR, GL_LINEAR, GL_REPEAT, GL_REPEAT);
 
     if (alpha)
         glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, this->width, this->height, 0, GL_BGRA, GL_UNSIGNED_BYTE, this->data);
@@ -2118,7 +2125,7 @@ void SuperPencilCurve::addLocalDeformation(End1P _local_operator, float t) {
 	this->_t = t;
 }
 
-void SuperPencilCurve::addDeformationAlongVectorField(VectorFieldR3 vectorField, float t) {
+void SuperPencilCurve::addDeformationAlongVectorField(VectorField vectorField, float t) {
 	auto local_operator = [vectorField](float dt) {
 		return SpaceEndomorphism([vectorField, dt](vec3 p) {
 			return p + vectorField(p) * dt;

@@ -75,4 +75,5 @@ void main()
 			        colorFromPointlight(light3, camPosition, v_position, normal, v_uv);
 	color.a = 1.;
 
+
 }

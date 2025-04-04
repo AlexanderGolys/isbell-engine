@@ -78,7 +78,7 @@ HexahedronWithNbhd::HexahedronWithNbhd(const ivec6 &faces, HOM(int, IndexedQuadr
 //	std::vector<HexahedronWithNbhd*> nbhd = {};
 //	for (auto &fc : {DOWN, UP, RIGHT, LEFT, FRONT, BACK})
 //		if (hasNeighbour(fc))
-//			nbhd.emplace_back(*getNeighbour(fc), hexSampler, std::map<FACE, glm::ivec3*>());
+//			nbhd.emplace_back(*getNeighbour(fc), hexSampler, std::map_cref<FACE, glm::ivec3*>());
 //	return nbhd;
 //}
 

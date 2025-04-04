@@ -34,21 +34,21 @@ public:
 class Discrete1Form;
 
 
-class DiscreteRealFunction {
-	BigVector values;
+class DiscreteRealFunctionManifold {
+	FloatVector values;
 	std::shared_ptr<TriangulatedManifold> domain;
 public:
-	explicit DiscreteRealFunction(const vector<float> &values, const std::shared_ptr<TriangulatedManifold> &domain) : values(values), domain(domain) {}
-	explicit DiscreteRealFunction(const BigVector &values, const std::shared_ptr<TriangulatedManifold> &domain) : values(values), domain(domain) {}
+	explicit DiscreteRealFunctionManifold(const vector<float> &values, const std::shared_ptr<TriangulatedManifold> &domain) : values(values), domain(domain) {}
+	explicit DiscreteRealFunctionManifold(const FloatVector &values, const std::shared_ptr<TriangulatedManifold> &domain) : values(values), domain(domain) {}
 
 	float operator()(int i) { return values[i]; }
-	DiscreteRealFunction operator+(const DiscreteRealFunction &f) const { return DiscreteRealFunction(values + f.values, domain); }
-	DiscreteRealFunction operator-(const DiscreteRealFunction &f) const { return DiscreteRealFunction(values - f.values, domain); }
-	DiscreteRealFunction operator*(float a) const { return DiscreteRealFunction(values*a, domain); }
-	DiscreteRealFunction operator/(float a) const { return DiscreteRealFunction(values/a, domain); }
-	DiscreteRealFunction operator-() const { return DiscreteRealFunction(-values, domain); }
-	BigVector toBumpBasis() const;
-	static DiscreteRealFunction bump(int i);
+	DiscreteRealFunctionManifold operator+(const DiscreteRealFunctionManifold &f) const { return DiscreteRealFunctionManifold(values + f.values, domain); }
+	DiscreteRealFunctionManifold operator-(const DiscreteRealFunctionManifold &f) const { return DiscreteRealFunctionManifold(values - f.values, domain); }
+	DiscreteRealFunctionManifold operator*(float a) const { return DiscreteRealFunctionManifold(values*a, domain); }
+	DiscreteRealFunctionManifold operator/(float a) const { return DiscreteRealFunctionManifold(values/a, domain); }
+	DiscreteRealFunctionManifold operator-() const { return DiscreteRealFunctionManifold(-values, domain); }
+	FloatVector toBumpBasis() const;
+	static DiscreteRealFunctionManifold bump(int i);
 
 	float edgeLength(int i) const { return length(domain->edgeVector(i)); }
 	float faceArea(int i) const { return abs(det(domain->faceVertices(i))); }
@@ -58,12 +58,12 @@ public:
 class Discrete2Form;
 
 class Discrete1Form {
-	BigVector edgeValues;
+	FloatVector edgeValues;
 	std::shared_ptr<TriangulatedManifold> domain;
 
 public:
 	explicit Discrete1Form(const vector<float> &values, const std::shared_ptr<TriangulatedManifold> &domain) : edgeValues(values), domain(domain) {}
-	explicit Discrete1Form(const BigVector &values, const std::shared_ptr<TriangulatedManifold> &domain) :  edgeValues(values), domain(domain) {}
+	explicit Discrete1Form(const FloatVector &values, const std::shared_ptr<TriangulatedManifold> &domain) :  edgeValues(values), domain(domain) {}
 
 	float operator()(int i) { return  edgeValues[i]; }
 	Discrete1Form operator+(const Discrete1Form &f) const { return Discrete1Form( edgeValues + f. edgeValues, domain); }
@@ -71,7 +71,7 @@ public:
 	Discrete1Form operator*(float a) const { return  Discrete1Form( edgeValues*a, domain); }
 	Discrete1Form operator/(float a) const { return Discrete1Form( edgeValues/a, domain); }
 	Discrete1Form operator-() const { return Discrete1Form(- edgeValues, domain); }
-	BigVector toBumpOrthoBasis() const;
+	FloatVector toBumpOrthoBasis() const;
 	static Discrete1Form bumpOrtho(int i, int j);
 	static Discrete1Form bumpStd(int i, int j);
 	float integrate(const vector<int> &edgePath) const;
@@ -80,11 +80,11 @@ public:
 };
 
 class Discrete2Form {
-	BigVector faceValues;
+	FloatVector faceValues;
 	std::shared_ptr<TriangulatedManifold> domain;
 public:
 	explicit Discrete2Form(const vector<float> &values, const std::shared_ptr<TriangulatedManifold> &domain) : faceValues(values), domain(domain) {}
-	explicit Discrete2Form(const BigVector &values, const std::shared_ptr<TriangulatedManifold> &domain) : faceValues(values), domain(domain) {}
+	explicit Discrete2Form(const FloatVector &values, const std::shared_ptr<TriangulatedManifold> &domain) : faceValues(values), domain(domain) {}
 	Discrete2Form operator+(const Discrete2Form &f) const { return Discrete2Form( faceValues + f. faceValues, domain); }
 	Discrete2Form operator-(const Discrete2Form &f) const { return Discrete2Form( faceValues - f. faceValues, domain); }
 	Discrete2Form operator*(float a) const { return  Discrete2Form( faceValues*a, domain); }
@@ -92,7 +92,7 @@ public:
 	Discrete2Form operator-() const { return Discrete2Form(- faceValues, domain); }
 	float integrate();
 
-	BigVector toBumpOrthoBasis() const;
+	FloatVector toBumpOrthoBasis() const;
 	static Discrete2Form bumpOrtho(int i, int j);
 	static Discrete2Form bumpStd(int i, int j);
 };

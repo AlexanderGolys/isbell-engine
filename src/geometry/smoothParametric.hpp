@@ -4,11 +4,8 @@
 
 #include <utility>
 
-//#include <src/common/indexedRendering.hpp>
+#include "complexGeo.hpp"
 
-#include "hyperbolic.hpp"
-//#include "glm/glm.hpp"
-// #include "planarGeometry.hpp"
 
 class AffinePlane;
 class SmoothParametricPlaneCurve;
@@ -34,13 +31,15 @@ public:
     SmoothParametricCurve(Foo13 f, Foo13 df, Foo13 ddf, PolyGroupID id=DFLT_CURV, float t0=0, float t1=TAU, bool periodic=true, float epsilon=0.01);
 	SmoothParametricCurve(Foo13 f, Foo13 df,PolyGroupID id=DFLT_CURV,  float t0=0, float t1=TAU, bool periodic=true, float epsilon=0.01);
     explicit SmoothParametricCurve(const Foo13 &f, PolyGroupID id=DFLT_CURV,  float t0=0, float t1=TAU, bool periodic=true, float epsilon=0.01) : SmoothParametricCurve(f, derivativeOperator(f, epsilon), std::move(id), t0, t1, periodic, epsilon) {}
-	SmoothParametricCurve( const RealFunctionR1& fx, const RealFunctionR1& fy, const RealFunctionR1& fz, PolyGroupID id=DFLT_CURV, float t0=0, float t1=TAU, bool periodic=true, float epsilon=0.01);
+	SmoothParametricCurve( const RealFunction& fx, const RealFunction& fy, const RealFunction& fz, PolyGroupID id=DFLT_CURV, float t0=0, float t1=TAU, bool periodic=true, float epsilon=0.01);
     SmoothParametricCurve(Foo13 f, std::function<Foo13(int)> derivativeOperator, PolyGroupID id=DFLT_CURV, float t0=0, RP1 t1=TAU, bool periodic=true, float epsilon=0.01);
     SmoothParametricCurve(Foo13 f, std::vector<Foo13> derivatives, PolyGroupID id=DFLT_CURV, float t0=0, float t1=TAU, bool periodic=true, float epsilon=0.01);
     SmoothParametricCurve(const SmoothParametricCurve &other);
     SmoothParametricCurve(SmoothParametricCurve &&other) noexcept;
     SmoothParametricCurve &operator=(const SmoothParametricCurve &other);
     SmoothParametricCurve &operator=(SmoothParametricCurve &&other) noexcept;
+
+
 
     PolyGroupID getID() const { return id; }
     void setID(PolyGroupID id) { this->id = id; }
@@ -61,9 +60,9 @@ public:
 	vec3 second_derivative(float t) const { return _ddf(t); }
 	vec3 higher_derivative(float t, int n) const { return _der_higher(n)(t); }
 	vec3 ddf(float t) const { return second_derivative(t); }
-	vec3 tangent(float t) const { return normalise(_df(t)); }
-	vec3 normal(float t) const { return normalise(cross(tangent(t), binormal(t))); }
-	vec3 binormal(float t) const { return normalise(cross(_df(t), _ddf(t))); }
+	vec3 tangent(float t) const;
+	vec3 binormal(float t) const { return normalise(cross(tangent(t), normal(t))); }
+	vec3 normal(float t) const;
 	float length(float t0, float t1, int n) const;
 
 	SmoothParametricCurve precompose(SpaceEndomorphism g_) const;
@@ -130,7 +129,7 @@ public:
   SmoothParametricSurface(const Foo113& f, const Foo113& df_t, const Foo113& df_u, vec2 t_range, vec2 u_range, bool t_periodic=false, bool u_periodic=false, float epsilon=.01);
   SmoothParametricSurface(const Foo113& f, vec2 t_range, vec2 u_range, bool t_periodic=false, bool u_periodic=false, float epsilon=.01);
   SmoothParametricSurface(const std::function<SmoothParametricCurve(float)>& pencil, vec2 t_range, vec2 u_range, bool t_periodic=false, bool u_periodic=false, float eps=.01);
-
+  SmoothParametricSurface(RealFunctionR2 plot, vec2 t_range, vec2 u_range);
 
   vec3 operator()(float t, float s) const;
   vec3 operator()(vec2 tu) const;
@@ -151,8 +150,13 @@ public:
 	SmoothParametricSurface scale(float a, vec3 center=ORIGIN) const;
 
 	SmoothParametricCurve restrictToInterval(vec2 p0, vec2 p1, PolyGroupID id=420) const;
+	SmoothParametricCurve restrictToInterval(vec2 p0, vec2 p1, bool periodic, PolyGroupID id=420) const;
 
-    vec2 boundsT() const { return vec2(t0, t1); }
+	SmoothParametricCurve constT(float t0) const;
+	SmoothParametricCurve constU(float u0) const;
+
+
+  vec2 boundsT() const { return vec2(t0, t1); }
     vec2 boundsU() const { return vec2(u0, u1); }
     float tMin() const { return t0; }
     float tMax() const { return t1; }
@@ -166,19 +170,21 @@ public:
     vec3 normal(float t, float s) const;
     vec3 normal(vec2 tu) const { return normal(tu.x, tu.y); }
 
+	void changeDomain(vec2 t_range, vec2 u_range, bool t_periodic, bool u_periodic);
 
 
-	mat2 metricTensor(float t, float s) const;
+
+  mat2 metricTensor(float t, float s) const;
 	EuclideanSpace<vec2, mat2> toTangentStdBasis(float t, float s, vec3 v) const;
 	vec3 embeddTangentVector(float t, float s, EuclideanSpace<vec2, mat2> v) const;
 
 	mat3 DarbouxFrame(float t, float s) const;
-	glm::mat2x3 tangentStandardBasis(float t, float s ) const { return glm::mat2x3(_df_t(t, s), _df_u(t, s)); }
+	mat2x3 tangentStandardBasis(float t, float s ) const { return mat2x3(_df_t(t, s), _df_u(t, s)); }
 
 
 	mat2 changeOfTangentBasisToPrincipal(float t, float s) const;
 	mat2 changeOfPrincipalBasisToStandard(float t, float s) const;
-	glm::mat2x3 tangentSpacePrincipalBasis(float t, float s) const;
+	mat2x3 tangentSpacePrincipalBasis(float t, float s) const;
 
 
 	mat2 firstFundamentalForm(float t, float s) const;
@@ -198,10 +204,13 @@ public:
 	mat2 shapeOperator(float t, float s) const;
 	float meanCurvature(float t, float s) const;
 	float gaussianCurvature(float t, float s) const;
-	glm::mat2x3 principalDirections(float t, float s) const;
+	mat2x3 principalDirections(float t, float s) const;
 	std::pair<float, float> principalCurvatures(float t, float s) const;
 	void normaliseDomainToI2();
 	vec3 Laplacian(float t, float s) const;
+
+	float meanCurvature(vec2 tu) const { return meanCurvature(tu.x, tu.y); }
+
 
 	float globalAreaIntegral(const RealFunctionPS &f) const;
 
@@ -260,7 +269,6 @@ class RealFunctionPS {
 public:
     RealFunctionPS(const std::function<float(float, float)> &f, const std::shared_ptr<SmoothParametricSurface> &surface) : _f(f), surface(surface) {}
     RealFunctionPS(const Foo21 &f, const std::shared_ptr<SmoothParametricSurface> &surface) : surface(surface), _f( pack(f, f, vec2, float)), _df(pack(f, derivativeOperator(f, .01), vec2, float)) {}
-
     RealFunctionPS(const Foo31 &emb_pullback, const std::shared_ptr<SmoothParametricSurface> &surface);
     float operator()(float t, float s) const;
 
@@ -399,8 +407,8 @@ public:
 
 
 
-inline Fooo BernsteinPolynomial(int n, int i, float t0, float t1) { return [n, i, t0, t1](float t) { return binomial(n, i)*pow(t-t0, i)*pow(t1-t, n-i)/pow(t1-t0, n); }; }
-inline Fooo BernsteinPolynomial(int n, int i) { return [n, i](float t) { return binomial(n, i)*pow(t, i)*pow(1-t, n-i); }; }
+inline Fooo BernsteinPolynomial(int n, int i, float t0, float t1) { return [n, i, t0, t1](float t) { return binomial(n, i)*std::pow(t-t0, i)*std::pow(t1-t, n-i)/std::pow(t1-t0, n); }; }
+inline Fooo BernsteinPolynomial(int n, int i) { return [n, i](float t) { return binomial(n, i)*std::pow(t, i)*std::pow(1-t, n-i); }; }
 
 FunctionalPartitionOfUnity BernsteinBasis(int n);
 FunctionalPartitionOfUnity BernsteinBasis(int n, float t0, float t1);

@@ -18,6 +18,9 @@ BufferManager::BufferManager(const std::set<CommonBufferType> &activeBuffers) {
     indices = activeBuffers.contains(INDEX) ? make_unique<IBUFF3>() : nullptr;
     this->activeBuffers = activeBuffers;
 }
+
+
+
 BufferManager::BufferManager(bool materials, const std::set<CommonBufferType> &extras) : BufferManager({POSITION, NORMAL, UV, COLOR, INDEX}) {
     if (materials) {
         this->activeBuffers = {POSITION, NORMAL, UV, COLOR, MATERIAL1, MATERIAL2, MATERIAL3, MATERIAL4, INDEX};
@@ -83,7 +86,7 @@ void *BufferManager::firstElementAddress(CommonBufferType type) const {
 }
 
 
-int BufferManager::addTriangleVertexIndices(glm::ivec3 ind, int shift) {
+int BufferManager::addTriangleVertexIndices(ivec3 ind, int shift) {
     indices->push_back(ind+ivec3(shift));
     return bufferLength(INDEX) - 1;
 }
@@ -93,16 +96,51 @@ int BufferManager::addStdAttributesFromVertex(vec3 pos, vec3 norm, vec2 uv, vec4
     stds->normals.push_back(norm);
     stds->uvs.push_back(uv);
     stds->colors.push_back(col);
+	if (activeBuffers.contains(EXTRA0))
+		extra0->push_back(vec4(0));
+	if (activeBuffers.contains(EXTRA1))
+		extra->a.push_back(vec4(0));
+	if (activeBuffers.contains(EXTRA2))
+		extra->b.push_back(vec4(0));
+	if (activeBuffers.contains(EXTRA3))
+		extra->c.push_back(vec4(0));
+	if (activeBuffers.contains(EXTRA4))
+		extra->d.push_back(vec4(0));
     return stds->positions.size() - 1;
+}
+
+int BufferManager::addAttributesFromVertex(vec3 pos, vec3 norm, vec2 uv, vec4 col, vec4 extra0Data) {
+	stds->positions.push_back(pos);
+	stds->normals.push_back(norm);
+	stds->uvs.push_back(uv);
+	stds->colors.push_back(col);
+	extra0->push_back(extra0Data);
+	if (activeBuffers.contains(EXTRA1))
+		extra->a.push_back(vec4(0));
+	if (activeBuffers.contains(EXTRA2))
+		extra->b.push_back(vec4(0));
+	if (activeBuffers.contains(EXTRA3))
+		extra->c.push_back(vec4(0));
+	if (activeBuffers.contains(EXTRA4))
+		extra->d.push_back(vec4(0));
+	return stds->positions.size() - 1;
 }
 
 int BufferManager::addFullVertexData(vec3 pos, vec3 norm, vec2 uv, vec4 col) {
     return addStdAttributesFromVertex(pos, norm, uv, col);
 }
+
+int BufferManager::addFullVertexData(vec3 pos, vec3 norm, vec2 uv, vec4 col, vec4 extra0Data) {
+	return addAttributesFromVertex(pos, norm, uv, col, extra0Data);
+}
+
 int BufferManager::addFullVertexData(const Vertex &v) {
     return addStdAttributesFromVertex(v.getPosition(), v.getNormal(), v.getUV(), v.getColor());
 }
 
+int BufferManager::addFullVertexData(const Vertex &v, vec4 extra0Data) {
+	return addAttributesFromVertex(v.getPosition(), v.getNormal(), v.getUV(), v.getColor(), extra0Data);
+}
 
 BufferedVertex::BufferedVertex(BufferManager &bufferBoss, const Vertex &v) : bufferBoss(bufferBoss) {
     index = this->bufferBoss.addFullVertexData(v);
@@ -116,31 +154,31 @@ void BufferedVertex::applyFunction(const SpaceEndomorphism &f) {
 }
 
 
-glm::mat3 IndexedTriangle::orthonormalFrame() const {
+mat3 IndexedTriangle::orthonormalFrame() const {
     vec3 p0 = getVertex(0).getPosition();
     vec3 p1 = getVertex(1).getPosition();
     vec3 p2 = getVertex(2).getPosition();
     return  GramSchmidtProcess(mat3(p0-p2, p1-p2, cross(p1-p2, p0-p2)));
 }
 
-glm::vec3 IndexedTriangle::fromPlanar(glm::vec2 v) const {
+vec3 IndexedTriangle::fromPlanar(vec2 v) const {
     mat3 frame = orthonormalFrame();
     return frame[0]*v.x + frame[1]*v.y + getVertex(2).getPosition();
 }
 
-glm::vec2 IndexedTriangle::toPlanar(glm::vec3 v) const {
+vec2 IndexedTriangle::toPlanar(vec3 v) const {
     mat3 frame = orthonormalFrame();
     return vec2(dot(frame[0], v-getVertex(2).getPosition()), dot(frame[1], v-getVertex(2).getPosition()));
 }
 
 
-glm::vec3 IndexedTriangle::fromBars(glm::vec2 v) const {
+vec3 IndexedTriangle::fromBars(vec2 v) const {
     return getVertex(0).getPosition() * v.x + getVertex(1).getPosition() * v.y +
            getVertex(2).getPosition() * (1 - v.x - v.y);
 }
 
 
-std::array<glm::vec3, 3> IndexedTriangle::borderTriangle(float width) const {
+std::array<vec3, 3> IndexedTriangle::borderTriangle(float width) const {
     vec3 p0 = getVertex(0).getPosition();
     vec3 p1 = getVertex(1).getPosition();
     vec3 p2 = getVertex(2).getPosition();
@@ -176,11 +214,15 @@ std::array<glm::vec3, 3> IndexedTriangle::borderTriangle(float width) const {
     return {fromPlanar(b0), fromPlanar(b1), fromPlanar(b2)};
 }
 
+bool IndexedTriangle::containsEdge(int i, int j) const {
+	return contains(getVertexIndices(), i) && contains(getVertexIndices(), j);
+}
+
 
 WeakSuperMesh::WeakSuperMesh(WeakSuperMesh &&other) noexcept: boss(std::move(other.boss)),
-                                                              vertices(std::move(other.vertices)),
-                                                              triangles(std::move(other.triangles)),
-                                                              material(std::move(other.material)) {}
+															  vertices(std::move(other.vertices)),
+															  triangles(std::move(other.triangles)),
+															  material(std::move(other.material)) {}
 
 WeakSuperMesh & WeakSuperMesh::operator=(WeakSuperMesh &&other) noexcept {
     if (this == &other)
@@ -198,11 +240,11 @@ WeakSuperMesh::WeakSuperMesh(const vector<Vertex> &hardVertices, const vector<iv
     addNewPolygroup(hardVertices, faceIndices, id);
 }
 
-WeakSuperMesh::WeakSuperMesh(const char *filename, const std::variant<int, std::string> &id) : WeakSuperMesh() {
+WeakSuperMesh::WeakSuperMesh(const char *filename, const PolyGroupID &id) : WeakSuperMesh() {
     addNewPolygroup(filename, id);
 }
 
-void WeakSuperMesh::addNewPolygroup(const char *filename, const std::variant<int, std::string> &id) {
+void WeakSuperMesh::addNewPolygroup(const char *filename, const PolyGroupID &id) {
 	int shift = boss->bufferLength(POSITION);
     vertices[id] = vector<BufferedVertex>();
     triangles[id] = vector<IndexedTriangle>();
@@ -231,16 +273,15 @@ void WeakSuperMesh::addNewPolygroup(const char *filename, const std::variant<int
         if (line.substr(0,2) == "v ")
         {
             std::istringstream s(line.substr(2));
-            glm::vec3 vert;
+            vec3 vert;
             s >> vert.x; s >> vert.y; s >> vert.z;
-            std::cout << vert.x << " " << vert.y << " " << vert.z << std::endl;
             vertices[id].emplace_back(*boss, Vertex(vert, vec2(2137, 0), vec3(0, 0, 0), BLACK));
             pos.push_back(vert);
         }
         if (line.substr(0,3) == "vt ")
         {
             std::istringstream s(line.substr(3));
-            glm::vec2 uv;
+            vec2 uv;
             s >> uv.x; s >> uv.y;
             uvs.push_back(uv);
         }
@@ -248,7 +289,7 @@ void WeakSuperMesh::addNewPolygroup(const char *filename, const std::variant<int
         if (line.substr(0,3) == "vn ")
         {
             std::istringstream s(line.substr(3));
-            glm::vec3 norm;
+            vec3 norm;
             s >> norm.x; s >> norm.y; s >> norm.z;
             norms.push_back(norm);
         }
@@ -275,15 +316,15 @@ void WeakSuperMesh::addNewPolygroup(const char *filename, const std::variant<int
                 }
             }
             ivec3 face = ivec3(0);
-            for (int i = 0; i < 3; i++) {
-                if (vertices[id][vertexIndex[i]].getNormal() == normsVec[i] && vertices[id][vertexIndex[i]].getUV() == uvsVec[i])
-                    face[i] = vertexIndex[i];
-                else {
-                    vertices[id].emplace_back(*boss, Vertex(vertices[id][vertexIndex[i]].getPosition(), uvsVec[i], normsVec[i], BLACK));
-                    face[i] = vertices[id].size() - 1;
-                }
-            }
-            triangles[id].emplace_back(*boss, face, shift);
+            for (int i = 0; i < 3; i++)
+				if (vertices[id][vertexIndex[i]].getNormal() == normsVec[i] && vertices[id][vertexIndex[i]].getUV() == uvsVec[i])
+					face[i] = vertexIndex[i];
+				else {
+					vertices[id].emplace_back(*boss, Vertex(vertices[id][vertexIndex[i]].getPosition(), uvsVec[i], normsVec[i], BLACK));
+					face[i] = vertices[id].size() - 1;
+				}
+
+			triangles[id].emplace_back(*boss, face, shift);
         }
     }
 }
@@ -299,8 +340,9 @@ WeakSuperMesh & WeakSuperMesh::operator=(const WeakSuperMesh &other) {
     return *this;
 }
 
-WeakSuperMesh::WeakSuperMesh(const SmoothParametricSurface &surf, int tRes, int uRes, const PolyGroupID &id) : WeakSuperMesh() {
-    addUniformSurface(surf, tRes, uRes, id);
+WeakSuperMesh::WeakSuperMesh(const SmoothParametricSurface &surf, int tRes, int uRes, const PolyGroupID &id)
+: WeakSuperMesh() {
+	addUniformSurface(surf, tRes, uRes, id);
 }
 
 
@@ -322,10 +364,25 @@ void WeakSuperMesh::addNewPolygroup(const vector<Vertex> &hardVertices, const ve
         triangles[id].emplace_back(*boss, ind, shift);
 }
 
+void WeakSuperMesh::addNewPolygroup(const std::vector<Vertex> &hardVertices, const std::vector<ivec3> &faceIndices, const PolyGroupID &id, const std::vector<vec4> &extra0) {
+	addNewPolygroup(hardVertices, faceIndices, id);
+	for (int i = 0; i < vertices[id].size(); i++)
+		boss->setExtra(vertices[id][i].getIndex(), extra0[i], 0);
+}
+
+void WeakSuperMesh::addNewPolygroup(const vector<Vertex> &hardVertices, const vector<ivec3> &faceIndices, const std::variant<int, std::string> &id, const vector<vec4> &extra0, const vector<mat4> &extra) {
+	addNewPolygroup(hardVertices, faceIndices, id);
+	for (int i = 0; i < vertices[id].size(); i++)
+		boss->setExtra(vertices[id][i].getIndex(), extra0[i], 0);
+	for (int e = 0; e < extra.size(); e++)
+		for (int i = 0; i < vertices[id].size(); i++)
+			boss->setExtra(vertices[id][i].getIndex(), extra[e][i], e+1);
+}
+
 WeakSuperMesh::WeakSuperMesh(const WeakSuperMesh &other): boss(&*other.boss),
-                                                          vertices(other.vertices),
-                                                          triangles(other.triangles),
-                                                          material(other.material) {}
+														  vertices(other.vertices),
+														  triangles(other.triangles),
+														  material(other.material) {}
 
 
 void WeakSuperMesh::addUniformSurface(const SmoothParametricSurface &surf, int tRes, int uRes, const PolyGroupID &id) {
@@ -334,27 +391,69 @@ void WeakSuperMesh::addUniformSurface(const SmoothParametricSurface &surf, int t
     hardVertices.reserve(tRes * uRes + uRes + tRes + 1);
     faceIndices.reserve(2 * (tRes) * (uRes));
 
+
+
     for (int i = 0; i < tRes; i++)
         for (int j = 0; j < uRes; j++) {
+
             float t_ = 1.f * i / (1.f * tRes - 1);
+        	if (surf.isPeriodicT()) t_ = 1.f * i / (1.f * tRes);
+
             float u_ = 1.f * j / (1.f * uRes - 1);
+        	if (surf.isPeriodicU()) u_ = 1.f * j / (1.f * uRes);
+
             float t = lerp(surf.tMin(), surf.tMax(), t_);
             float u = lerp(surf.uMin(), surf.uMax(), u_);
             hardVertices.emplace_back(surf(t, u), vec2(t_, u_), surf.normal(t, u), vec4(t, u, 0, 1));
         }
 
+	ivec2 size = ivec2(tRes, uRes);
+
     for (int i = 1; i < tRes ; i++)
         for (int j = 1; j < uRes; j++) {
-            int i0 =   i * uRes + j;
-            int i1 =	(i-1) * uRes + j;
-            int i2 =	(i-1) * uRes + j-1;
-            int i3 =	i * uRes + j-1;
-            faceIndices.emplace_back(i0, i1, i2);
-            faceIndices.emplace_back(i0, i3, i2);
+
+        	int i0 = flattened2DVectorIndex(i, j, size);
+            int i1 = flattened2DVectorIndex(i-1, j, size);
+            int i2 = flattened2DVectorIndex(i-1, j-1, size);
+        	int i3 = flattened2DVectorIndex(i, j-1, size);
+
+			faceIndices.emplace_back(i0, i1, i2);
+			faceIndices.emplace_back(i0, i3, i2);
         }
+
+
+	if (surf.isPeriodicT())
+		for (int j = 1; j < uRes; j++) {
+			int i0 = flattened2DVectorIndex(0, j, size);
+			int i1 = flattened2DVectorIndex(-1, j, size);
+			int i2 = flattened2DVectorIndex(-1, j-1, size);
+			int i3 = flattened2DVectorIndex(0, j-1, size);
+			faceIndices.emplace_back(i0, i1, i2);
+			faceIndices.emplace_back(i0, i3, i2);
+		}
+//
+	if (surf.isPeriodicU())
+		for (int i = 1; i < tRes; i++) {
+			int i0 = flattened2DVectorIndex(i, 0, size);
+			int i1 = flattened2DVectorIndex(i-1, 0, size);
+			int i2 = flattened2DVectorIndex(i-1, -1, size);
+			int i3 = flattened2DVectorIndex(i, -1, size);
+			faceIndices.emplace_back(i0, i1, i2);
+			faceIndices.emplace_back(i0, i3, i2);
+		}
+
+	if (surf.isPeriodicT() && surf.isPeriodicU()) {
+		int i0 = flattened2DVectorIndex(0, 0, size);
+		int i1 = flattened2DVectorIndex(-1, 0, size);
+		int i2 = flattened2DVectorIndex(-1, -1, size);
+		int i3 = flattened2DVectorIndex(0, -1, size);
+		faceIndices.emplace_back(i0, i1, i2);
+		faceIndices.emplace_back(i0, i3, i2);
+	}
 
     addNewPolygroup(hardVertices, faceIndices, id);
 }
+
 
 void WeakSuperMesh::merge(const WeakSuperMesh &other) {
 	for (const auto& id: other.getPolyGroupIDs())
@@ -365,6 +464,67 @@ void WeakSuperMesh::mergeAndKeepID(const WeakSuperMesh &other) {
 		addNewPolygroup(other.getVertices(id), other.getIndices(id), id);
 }
 
+void WeakSuperMesh::copyPolygroup(const WeakSuperMesh &other, const std::variant<int, std::string> &id, const std::variant<int, std::string> &newId) {
+	addNewPolygroup(other.getVertices(id), other.getIndices(id), newId);
+}
+
+void WeakSuperMesh::copyPolygroup(const std::variant<int, std::string> &id, const std::variant<int, std::string> &newId) {
+	copyPolygroup(*this, id, newId);
+}
+
+bool WeakSuperMesh::hasExtra0() const {
+	return boss->hasExtra0();
+}
+
+bool WeakSuperMesh::hasExtra1() const {
+	return boss->hasExtra1();
+}
+
+bool WeakSuperMesh::hasExtra2() const {
+	return boss->hasExtra2();
+}
+
+bool WeakSuperMesh::hasExtra3() const {
+	return boss->hasExtra3();
+}
+
+bool WeakSuperMesh::hasExtra4() const {
+	return boss->hasExtra4();
+}
+
+bool WeakSuperMesh::hasExtra(int slot) const {
+	if (slot == 0) return hasExtra0();
+	if (slot == 1) return hasExtra1();
+	if (slot == 2) return hasExtra2();
+	if (slot == 3) return hasExtra3();
+	if (slot == 4) return hasExtra4();
+	throw std::invalid_argument("slot must be between 0 and 4");
+}
+
+void * WeakSuperMesh::bufferIndexLocation() const {
+	return boss->firstElementAddress(INDEX);
+}
+
+size_t WeakSuperMesh::bufferIndexSize() const {
+	return boss->bufferSize(INDEX);
+}
+
+int WeakSuperMesh::bufferIndexLength() const {
+	return boss->bufferLength(INDEX);
+}
+
+const void * WeakSuperMesh::getBufferLocation(CommonBufferType type) const {
+	return boss->firstElementAddress(type);
+}
+
+unsigned int WeakSuperMesh::getBufferLength(CommonBufferType type) const {
+	return boss->bufferLength(type);
+}
+
+size_t WeakSuperMesh::getBufferSize(CommonBufferType type) const {
+	return boss->bufferSize(type);
+}
+
 
 std::vector<PolyGroupID> WeakSuperMesh::getPolyGroupIDs() const {
     vector<PolyGroupID> ids = {};
@@ -373,12 +533,47 @@ std::vector<PolyGroupID> WeakSuperMesh::getPolyGroupIDs() const {
     return ids;
 }
 
-void WeakSuperMesh::deformPerVertex(const std::variant<int, std::string> &id, const std::function<void(int, BufferedVertex &)> &deformation) {
+BufferManager & WeakSuperMesh::getBufferBoss() const {
+	return *boss;
+}
+
+bool WeakSuperMesh::isActive(CommonBufferType type) const {
+	return boss->isActive(type);
+}
+
+bool WeakSuperMesh::hasGlobalTextures() const {
+	return !isActive(MATERIAL1) && material->textured();
+}
+
+BufferedVertex & WeakSuperMesh::getAnyVertexFromPolyGroup(const std::variant<int, std::string> &id) {
+	return vertices.at(id).front();
+}
+
+void WeakSuperMesh::deformPerVertex(const PolyGroupID &id, const HOM(BufferedVertex&, void) &deformation) {
+	for (auto &v : vertices.at(id))
+		deformation(v);
+}
+
+void WeakSuperMesh::deformPerVertex(const HOM(BufferedVertex&, void) &deformation) {
+	for (auto id: getPolyGroupIDs())
+		for (auto &v : vertices.at(id))
+			deformation(v);
+}
+
+void WeakSuperMesh::deformPerVertex(const PolyGroupID &id, const BIHOM(int, BufferedVertex&, void) &deformation) {
 	for (int i=0; i<vertices.at(id).size(); i++)
 		deformation(i, vertices.at(id)[i]);
 }
 
-vec2 WeakSuperMesh::getSurfaceParameters(const BufferedVertex &v) const { return vec2(v.getColor().x, v.getColor().y); }
+void WeakSuperMesh::deformPerId(const BIHOM(BufferedVertex&, PolyGroupID, void) &deformation) {
+	for (auto id: getPolyGroupIDs())
+		for (auto &v : vertices.at(id))
+			deformation(v, id);
+}
+
+vec2 WeakSuperMesh::getSurfaceParameters(const BufferedVertex &v) {
+	return vec2(v.getColor().x, v.getColor().y);
+}
 
 
 void WeakSuperMesh::encodeSurfacePoint(BufferedVertex &v, const SmoothParametricSurface &surf, vec2 tu) {
@@ -389,24 +584,63 @@ void WeakSuperMesh::encodeSurfacePoint(BufferedVertex &v, const SmoothParametric
 	v.setColor(tu.y, 1);
 }
 
-void WeakSuperMesh::adjustToNewSurface(const SmoothParametricSurface &surf, const std::variant<int, std::string> &id) {
+void WeakSuperMesh::adjustToNewSurface(const SmoothParametricSurface &surf, const PolyGroupID &id) {
 	deformPerVertex(id, [&](BufferedVertex &v) {
-	encodeSurfacePoint(v, surf, getSurfaceParameters(v));
-}); }
+		encodeSurfacePoint(v, surf, getSurfaceParameters(v));
+	});
+}
 
-void WeakSuperMesh::adjustToNewSurface(const SmoothParametricSurface &surf) { for (auto id: getPolyGroupIDs()) adjustToNewSurface(surf, id); }
+void WeakSuperMesh::adjustToNewSurface(const SmoothParametricSurface &surf) {
+	for (auto id: getPolyGroupIDs())
+		adjustToNewSurface(surf, id);
+}
 
-void WeakSuperMesh::moveAlongVectorField(const std::variant<int, std::string> &id, VectorFieldR3 X, float delta) {
+void WeakSuperMesh::moveAlongVectorField(const PolyGroupID &id, VectorField X, float delta) {
     for (BufferedVertex &v: vertices.at(id))
         v.setPosition(X.moveAlong(v.getPosition(), delta));
 }
 
-void WeakSuperMesh::deformWithAmbientMap(const std::variant<int, std::string> &id, SpaceEndomorphism f) {
+void WeakSuperMesh::deformWithAmbientMap(const PolyGroupID &id, SpaceEndomorphism f) {
     for (BufferedVertex &v: vertices.at(id))
         v.applyFunction(f);
 }
 
-vector<Vertex> WeakSuperMesh::getVertices(const std::variant<int, std::string> &id) const {
+void WeakSuperMesh::deformWithAmbientMap(const SpaceEndomorphism &f) {
+	for (auto id: getPolyGroupIDs())
+		deformWithAmbientMap(id, f);
+}
+
+void WeakSuperMesh::initGlobalTextures() const {
+	if (hasGlobalTextures())
+		material->initTextures();
+}
+
+void WeakSuperMesh::affineTransform(const mat3 &M, vec3 v, const std::variant<int, std::string> &id) {
+	deformWithAmbientMap(id, SpaceEndomorphism::affine(M, v));
+}
+
+void WeakSuperMesh::affineTransform(const mat3 &M, vec3 v) {
+	for (auto& name: getPolyGroupIDs())
+		affineTransform(M, v, name);
+}
+
+void WeakSuperMesh::shift(vec3 v, const std::variant<int, std::string> &id) {
+	affineTransform(mat3(1), v, id);
+}
+
+void WeakSuperMesh::shift(vec3 v) {
+	affineTransform(mat3(1), v);
+}
+
+void WeakSuperMesh::scale(float s, const std::variant<int, std::string> &id) {
+	affineTransform(mat3(s), vec3(0), id);
+}
+
+void WeakSuperMesh::scale(float s) {
+	affineTransform(mat3(s), vec3(0));
+}
+
+vector<Vertex> WeakSuperMesh::getVertices(const PolyGroupID &id) const {
     vector<Vertex> verts = {};
     verts.reserve(vertices.at(id).size());
     for (const BufferedVertex &v: vertices.at(id))
@@ -414,8 +648,12 @@ vector<Vertex> WeakSuperMesh::getVertices(const std::variant<int, std::string> &
     return verts;
 }
 
+vector<BufferedVertex> WeakSuperMesh::getBufferedVertices(const PolyGroupID &id) const {
+	return vertices.at(id);
+}
 
-vector<ivec3> WeakSuperMesh::getIndices(const std::variant<int, std::string> &id) const {
+
+vector<ivec3> WeakSuperMesh::getIndices(const PolyGroupID &id) const {
     vector<ivec3> inds = {};
     inds.reserve(triangles.at(id).size());
     for (const IndexedTriangle &t: triangles.at(id))
@@ -423,15 +661,41 @@ vector<ivec3> WeakSuperMesh::getIndices(const std::variant<int, std::string> &id
     return inds;
 }
 
+vector<IndexedTriangle> WeakSuperMesh::getTriangles(const PolyGroupID &id) const {
+	return triangles.at(id);
+}
+
+vec4 WeakSuperMesh::getIntencities() const {
+	return material->compressIntencities();
+}
+
+MaterialPhong WeakSuperMesh::getMaterial() const {
+	return *material;
+}
 
 
+void WeakSuperMesh::addGlobalMaterial(const MaterialPhong &mat) {
+	material = std::make_shared<MaterialPhong>(mat);
+}
 
-void WeakSuperMesh::pointNormalsInDirection(vec3 dir, const std::variant<int, std::string> &id) { deformPerVertex(id, [dir](BufferedVertex &v) {
+void WeakSuperMesh::flipNormals(const PolyGroupID &id) {
+	deformPerVertex(id, [](BufferedVertex &v) {
+		v.setNormal(-v.getNormal());
+	});
+}
+
+void WeakSuperMesh::pointNormalsInDirection(vec3 dir, const PolyGroupID &id) {
+	deformPerVertex(id, [dir](BufferedVertex &v) {
 	vec3 n = v.getNormal();
 	v.setNormal(n*1.f*sgn(dot(n, dir)));
 }); }
 
-WeakSuperMesh WeakSuperMesh::subdivideBarycentric(const std::variant<int, std::string> &id) const {
+void WeakSuperMesh::pointNormalsInDirection(vec3 dir) {
+	for (auto &name: getPolyGroupIDs())
+		pointNormalsInDirection(dir, name);
+}
+
+WeakSuperMesh WeakSuperMesh::subdivideBarycentric(const PolyGroupID &id) const {
     vector<ivec3> trInds = getIndices(id);
     vector<Vertex> verts = getVertices(id);
     verts.reserve(verts.size() + trInds.size());
@@ -449,7 +713,7 @@ WeakSuperMesh WeakSuperMesh::subdivideBarycentric(const std::variant<int, std::s
 }
 
 
-WeakSuperMesh WeakSuperMesh::subdivideEdgecentric(const std::variant<int, std::string> &id) const {
+WeakSuperMesh WeakSuperMesh::subdivideEdgecentric(const PolyGroupID &id) const {
     vector<ivec3> trInds = getIndices(id);
     vector<Vertex> verts = getVertices(id);
     verts.reserve(verts.size() + 3 * trInds.size());
@@ -629,7 +893,7 @@ void BufferManager::initialiseExtraBufferSlot(int slot) {
 	}
     }
 
-glm::vec4 BufferManager::getExtra(int index, int slot) const {
+vec4 BufferManager::getExtra(int index, int slot) const {
     switch (slot) {
     case 0:
         return (*extra0)[index];
@@ -646,7 +910,7 @@ glm::vec4 BufferManager::getExtra(int index, int slot) const {
 }
 
 
-void BufferManager::setExtra(int index, glm::vec4 value, int slot) {
+void BufferManager::setExtra(int index, vec4 value, int slot) {
     switch (slot) {
         case 0:
             (*extra0)[index] = value;
@@ -666,7 +930,7 @@ void BufferManager::setExtra(int index, glm::vec4 value, int slot) {
     }
     throw UnknownVariantError("Extra slot not recognised. ");
 }
-void BufferManager::setExtra(int index, glm::vec3 value, int slot) {
+void BufferManager::setExtra(int index, vec3 value, int slot) {
     setExtra(index, value.x, slot, 0);
     setExtra(index, value.y, slot, 1);
     setExtra(index, value.z, slot, 2);
@@ -711,7 +975,7 @@ void BufferManager::reserveSpace(int targetSize) {
 
 }
 
-vec3 WeakSuperMesh::centerOfMass(std::variant<int, std::string> id) const {
+vec3 WeakSuperMesh::centerOfMass(PolyGroupID id) const {
 	vec3 sum        = vec3(0);
 	float totalArea = 0;
 	for (const IndexedTriangle &t: triangles.at(id)) {
@@ -733,19 +997,550 @@ vec3 WeakSuperMesh::centerOfMass() const {
 }
 
 
-std::function<void(float, float)> deformationOperator(const std::function<void(BufferedVertex &, float, float)> &deformation, WeakSuperMesh &mesh, const std::variant<int, std::string> &id) {
+Wireframe::Wireframe(const SmoothParametricSurface &surf, float width, int n, int m, int curve_res_rad, int curve_res_hor)
+	:	WeakSuperMesh(), width(width), surf(surf) , n(n), m(m), curve_res_rad(curve_res_rad), curve_res_hor(curve_res_hor)
+{
+	for (float t_i: linspace(surf.tMin(), surf.tMax(), n)) {
+		SmoothParametricCurve curve = surf.constT(t_i);
+		auto id = randomID();
+			addUniformSurface(curve.pipe(width), curve_res_rad, curve_res_hor, id);
+			deformPerVertex(id, [t_i](BufferedVertex &v) {
+				v.setColor(t_i, 2);
+				v.setColor(v.getColor().x, 3);
+		});
+	}
+
+	for (float u_i: linspace(surf.uMin(), surf.uMax(), m)) {
+		SmoothParametricCurve curve = surf.constU(u_i);
+		auto id                     = randomID();
+			addUniformSurface(curve.pipe(width), curve_res_rad, curve_res_hor, id);
+			deformPerVertex(id, [u_i](BufferedVertex &v) {
+				v.setColor(u_i, 3);
+				v.setColor(v.getColor().x, 2);
+		});
+	}
+}
+
+
+
+void Wireframe::changeBaseSurface(const SmoothParametricSurface &newsurf) {
+	for (auto id: getPolyGroupIDs())
+		for (BufferedVertex &v: vertices.at(id)) {
+			vec2 tu     = getSurfaceParameters(v);
+			vec3 old_p0 = surf(tu);
+			vec3 new_p0 = newsurf(tu);
+
+			vec3 old_n0 = surf.normal(tu);
+			vec3 new_n0 = newsurf.normal(tu);
+			v.applyFunction(SpaceEndomorphism::affine(mat3(1), new_p0 - old_p0));
+			v.applyFunction(SpaceAutomorphism::deltaRotation(old_n0, new_n0, v.getPosition()));
+		}
+	surf = newsurf;
+}
+vec2 Wireframe::getSurfaceParameters(const BufferedVertex &v) const {
+	return vec2(v.getColor().z, v.getColor().w);
+}
+
+PlanarFlowLines::PlanarFlowLines(const VectorFieldR2 &X, float dt, int steps, const std::function<float(float, float, float, vec2, vec2)> &width, const std::function<vec4(float, float, float, vec2, vec2)> &color)
+	: WeakSuperMesh(), X(X), dt(dt), steps(steps), width(width), color(color) {
+	boss = make_unique<BufferManager>(std::set({POSITION, NORMAL, UV, COLOR, INDEX, EXTRA0}));
+}
+
+
+void PlanarFlowLines::generateGrid(vec2 v_min, vec2 v_max, ivec2 res) {
+	startPoints = flatten(linspace2D(v_min, vec2((v_max-v_min).x/res.x, 0), vec2(0, (v_max-v_min).y/res.y), res.x+1, res.y+1));
+	ids = {};
+	ids.reserve(startPoints.size());
+	for (int i = 0; i < startPoints.size(); i++)
+		ids.push_back(randomID());
+}
+
+
+void PlanarFlowLines::generateRandomUniform(vec2 v_min, vec2 v_max, int n) {
+	startPoints = {};
+	startPoints.reserve(n);
+	ids = {};
+	ids.reserve(n);
+	for (int i = 0; i < n; i++) {
+		startPoints.emplace_back(randomFloat(v_min.x, v_max.x), randomFloat(v_min.y, v_max.y));
+		ids.push_back(randomID());
+	}
+}
+
+void PlanarFlowLines::generateStartTimesAll0() {
+	startTimes = vector<float>(startPoints.size(), 0);
+}
+
+void PlanarFlowLines::generateStartTimesUniform(float t_max) {
+	for (int i = 0; i < startPoints.size(); i++)
+		startTimes.push_back(randomFloat(0, t_max));
+}
+
+void PlanarFlowLines::generateLine(int i) {
+
+	float t0 = startTimes[i];
+	vec2 p0 = startPoints[i];
+	vec2 p = startPoints[i];
+	vector<Vertex> verts = {};
+	vector<ivec3> trs = {};
+	vector<vec4> extra0 = {};
+	float len = 0;
+
+	for (int j = 1; j <= steps; j++) {
+		len += norm(X(p)*dt);
+		p += X(p)*dt;
+		vec2 n = X.normal(p);
+		float t = t0 + j*dt;
+		float speed = X.speed(p);
+		float w = width(t, t0, speed, p, p0);
+		vec2 q0 = p - n*w;
+		vec2 q1 = p + n*w;
+		vec4 c = color(t, t0, speed, p, p0);
+		c.w = speed;
+		verts.emplace_back(vec3(q0, t/(steps*dt*20)), vec2(t, w), e3, c);
+		verts.emplace_back(vec3(p, t/(steps*dt*20)), vec2(t, 0), e3, c);
+		verts.emplace_back(vec3(q1, t/(steps*dt*20)), vec2(t, -w), e3, c);
+
+		extra0.emplace_back(t0, p0.x, p0.y, len);
+		extra0.emplace_back(t0, p0.x, p0.y, len);
+		extra0.emplace_back(t0, p0.x, p0.y, len);
+
+
+		if (j > 1) {
+			int last_ind = verts.size() - 1;
+			trs.emplace_back(last_ind, last_ind-3, last_ind-4);
+			trs.emplace_back(last_ind, last_ind-1, last_ind-4);
+			trs.emplace_back(last_ind-1, last_ind-5, last_ind-4);
+			trs.emplace_back(last_ind-1, last_ind-2, last_ind-5);
+		}
+	}
+
+	addNewPolygroup(verts, trs, ids[i], extra0);
+}
+
+void PlanarFlowLines::generateLines() {
+	for (int i = 0; i < startPoints.size(); i++)
+		generateLine(i);
+}
+
+float PlanarFlowLines::getTimeRelative(const BufferedVertex &v) {
+	return v.getUV().x;
+}
+
+float PlanarFlowLines::getT0(const BufferedVertex &v) {
+	return v.getExtra(0).x;
+}
+
+float PlanarFlowLines::getTimeAbsolute(const BufferedVertex &v) {
+	return getT0(v) + getTimeRelative(v);
+}
+
+vec2 PlanarFlowLines::getPos(const BufferedVertex &v) {
+	return vec2(v.getPosition());
+}
+
+vec2 PlanarFlowLines::getStartPoint(const BufferedVertex &v) {
+	return vec2(v.getExtra(0).y, v.getExtra(0).z);
+}
+
+float PlanarFlowLines::getSpeed(const BufferedVertex &v) {
+	return v.getColor().w;
+}
+
+float PlanarFlowLines::getLength(const BufferedVertex &v) {
+	return v.getExtra(0).w;
+}
+
+vec4 PlanarFlowLines::getColor(const BufferedVertex &v) {
+	return vec4(vec3(v.getColor()), 1);
+}
+
+float PlanarFlowLines::getWidth(const BufferedVertex &v) {
+	return v.getUV().y;
+}
+
+PlanarDiffusedInterval::	PlanarDiffusedInterval(const VectorFieldR2 &X, float dt, int steps, vec4 color, const HOM(float, float) &time_dump, const HOM(float, float) &width_ratio_dump, vec2 a, vec2 b, float t0)
+: X(X),
+  dt(dt),
+  steps(steps),
+  color(color),
+  width_ratio_dump(width_ratio_dump),
+  time_dump(time_dump),
+  a(a),
+  b(b),
+  t0(t0)
+{
+	vec2 p_a = a;
+	vec2 p_b = b;
+	vector<Vertex> verts = {};
+	vector<ivec3> trs = {};
+	float t = t0;
+	float eps = 0.1;
+	float width = length(b-a);
+	for (int j = 0; j <= steps; j++) {
+		float width_ratio = width/length(p_b-p_a);
+		float t_dump = time_dump(t-t0);
+		float w_dump = width_ratio_dump(width_ratio);
+		vec4 col = color;
+		col.w = t_dump*w_dump;
+		if (t_dump*w_dump < .05) col.w=0.f;
+		verts.emplace_back(vec3(p_a, (t-t0)*eps), vec2(t, t0), e3, col);
+		verts.emplace_back(vec3(p_b, (t-t0)*eps), vec2(t, t0), e3, col);
+		p_a += X(p_a)*dt;
+		p_b += X(p_b)*dt;
+		t += dt;
+		if (j > 0 && width_ratio > .15) {
+			int last_ind = verts.size() - 1;
+			trs.emplace_back(last_ind, last_ind-3, last_ind-2);
+			trs.emplace_back(last_ind, last_ind-1, last_ind-3);
+		}
+	}
+	addNewPolygroup(verts, trs, id);
+}
+
+PlanarDiffusedCurve::PlanarDiffusedCurve(const VectorFieldR2 &X, float dt, int steps, vec4 color, const HOM(float, float) &time_dump, const HOM(float, float) &width_ratio_dump, const SmoothParametricPlaneCurve &curve, vec2 domain, int resolution, float t0)
+: X(X),
+  dt(dt),
+  steps(steps),
+  color(color),
+  width_ratio_dump(width_ratio_dump),
+  time_dump(time_dump),
+  domain(domain),
+  resolution(resolution),
+  t0(t0),
+  curve(curve)
+{
+	for (int i=0; i<resolution; i++) {
+		float a = lerp(domain.x, domain.y, 1.f*i/resolution);
+		float b = lerp(domain.x, domain.y, 1.f*(i+1)/resolution);
+		auto line = PlanarDiffusedInterval(X, dt, steps, color, time_dump, width_ratio_dump, curve(a), curve(b), t0);
+		merge(line);
+	}
+}
+
+PlanarDiffusedPatterns::PlanarDiffusedPatterns(const VectorFieldR2 &X, float dt, int steps, const vector<vec4> &colors, const vector<vec2> &shifts, const std::function<float(float)> &time_dump, const std::function<float(float)> &width_ratio_dump, const SmoothParametricPlaneCurve &curve_pattern, vec2 domain, int resolution, float t0) {
+	for (int i=0; i<colors.size(); i++) {
+		auto c = curve_pattern + shifts[i];
+		auto line = PlanarDiffusedCurve(X, dt, steps, colors[i], time_dump, width_ratio_dump, c, domain, resolution, t0);
+		merge(line);
+	}
+}
+
+PipeCurveVertexShader::PipeCurveVertexShader(const SmoothParametricCurve &curve, float r, int horRes, int radialRes): r(r) {
+	auto id = randomID();
+	auto params = linspace(curve.getT0(), curve.getT1(), horRes);
+	vector<vec3> normals = vector<vec3>();
+	vector<vec3> binormals = vector<vec3>();
+
+	for (float t: params) {
+		vec3 b = curve.binormal(t);
+		vec3 n = curve.normal(t);
+		normals.push_back(n);
+		binormals.push_back(b);
+	}
+
+	vector<Vertex> verts = vector<Vertex>();
+	vector<ivec3> inds = vector<ivec3>();
+
+
+	for (int i = 0; i < horRes; i++) {
+		float t = params[i];
+		vec3 p = curve(t);
+		vec3 b = binormals[i];
+		vec3 n = normals[i];
+		for (float theta: linspace(0.f, TAU, radialRes)) {
+			verts.emplace_back(p, vec2(t, theta), n, vec4(b.x, b.y, b.z, r));
+			verts.back().addExtraData("extra0", vec4(0));
+		}
+		if (i < horRes - 1) {
+			for (int j = 0; j < radialRes; j++) {
+				inds.emplace_back(i*radialRes+j, (i+1)*radialRes+j, i*radialRes+(j+1)%radialRes);
+				inds.emplace_back((i+1)*radialRes+j, (i+1)*radialRes+(j+1)%radialRes, i*radialRes+(j+1)%radialRes);
+			}
+		}
+	}
+	addNewPolygroup(verts, inds, id);
+}
+
+PipeCurveVertexShader::PipeCurveVertexShader(const RealFunction &plot, vec2 dom, float r, int horRes, int radialRes) {
+	auto id = randomID();
+	auto params = linspace(dom.x, dom.y, horRes);
+
+	vector<Vertex> verts = vector<Vertex>();
+	vector<ivec3> inds = vector<ivec3>();
+
+
+	for (int i = 0; i < horRes; i++) {
+		float t = params[i];
+		vec3 p = vec3(t, 0, plot(t));
+		vec3 b = e2;
+		vec3 n = normalise(vec3(plot.df(t), 0, -1));
+		for (float theta: linspace(0.f, TAU, radialRes)) {
+			verts.emplace_back(p, vec2(t, theta), n, vec4(b.x, b.y, b.z, r));
+			verts.back().addExtraData("extra0", vec4(0));
+		}
+		if (i < horRes - 1) {
+			for (int j = 0; j < radialRes; j++) {
+				inds.emplace_back(i*radialRes+j, (i+1)*radialRes+j, i*radialRes+(j+1)%radialRes);
+				inds.emplace_back((i+1)*radialRes+j, (i+1)*radialRes+(j+1)%radialRes, i*radialRes+(j+1)%radialRes);
+			}
+		}
+	}
+	addNewPolygroup(verts, inds, id);
+}
+
+PipeCurveVertexShader::PipeCurveVertexShader(const DiscreteRealFunction &plot, float r, int radialRes) {
+	auto id = randomID();
+	vec2 dom = plot.getDomain();
+	auto horRes = plot.samples();
+	auto params = linspace(dom.x, dom.y, horRes);
+	auto df = plot.derivative();
+
+	vector<Vertex> verts = vector<Vertex>();
+	vector<ivec3> inds = vector<ivec3>();
+
+
+	for (int i = 0; i < horRes; i++) {
+		float t = params[i];
+		vec3 p = vec3(t, 0, plot(t));
+		vec3 b = e2;
+		vec3 n = normalise(vec3(df(t), 0, -1));
+		for (float theta: linspace(0.f, TAU, radialRes)) {
+			verts.emplace_back(p, vec2(t, theta), n, vec4(b.x, b.y, b.z, r));
+			verts.back().addExtraData("extra0", vec4(0));
+		}
+		if (i < horRes - 1) {
+			for (int j = 0; j < radialRes; j++) {
+				inds.emplace_back(i*radialRes+j, (i+1)*radialRes+j, i*radialRes+(j+1)%radialRes);
+				inds.emplace_back((i+1)*radialRes+j, (i+1)*radialRes+(j+1)%radialRes, i*radialRes+(j+1)%radialRes);
+			}
+		}
+	}
+	addNewPolygroup(verts, inds, id);
+}
+
+void PipeCurveVertexShader::updateCurve(const SmoothParametricCurve &curve) {
+	deformPerVertex([this, &curve](BufferedVertex &v) {
+		float t = v.getUV().x;
+		vec3 p = curve(t);
+		vec3 b = curve.binormal(t);
+		vec3 n = curve.normal(t);
+		if (dot(n, v.getNormal()) < 0)
+			n = -n;
+		if (dot(b, vec3(v.getColor())) < 0)
+			b = -b;
+		v.setPosition(p);
+		v.setNormal(n);
+		v.setColor(b.x, 0);
+		v.setColor(b.y, 1);
+		v.setColor(b.z, 2);
+	});
+}
+
+void PipeCurveVertexShader::updateCurve(const DiscreteRealFunction &plot) {
+	auto df = plot.derivative();
+	deformPerVertex([this, &plot, &df](BufferedVertex &v) {
+		float t = v.getUV().x;
+		vec3 p = vec3(t, 0, plot(t));
+		vec3 n = normalize(vec3(df(t), 0, -1));
+		v.setPosition(p);
+		v.setNormal(n);
+	});}
+
+void PipeCurveVertexShader::updateRadius(const HOM(float, float) &r) {
+	deformPerVertex([this, &r](BufferedVertex &v) {
+		float t = v.getUV().x;
+		v.setColor(r(t), 3);
+	});}
+
+
+
+std::function<void(float, float)> deformationOperator(const std::function<void(BufferedVertex &, float, float)> &deformation, WeakSuperMesh &mesh, const PolyGroupID &id) {
     return [&deformation, &mesh, id](float t, float delta) {
-        mesh.deformPerVertex(id, [deformation, t, delta](BufferedVertex &v) { deformation(v, t, delta); });
+        mesh.deformPerVertex(id, [deformation, t, delta](BufferedVertex &v) {
+	        deformation(v, t, delta);
+        });
     };
 }
-std::function<void(float)> deformationOperator(const std::function<void(BufferedVertex &, float)> &deformation, WeakSuperMesh &mesh, const std::variant<int, std::string> &id) {
+std::function<void(float)> deformationOperator(const std::function<void(BufferedVertex &, float)> &deformation, WeakSuperMesh &mesh, const PolyGroupID &id) {
     return [&deformation, &mesh, id](float t) {
-        mesh.deformPerVertex(id, [deformation, t](BufferedVertex &v) { deformation(v, t); });
+        mesh.deformPerVertex(id, [deformation, t](BufferedVertex &v) {
+	        deformation(v, t);
+        });
     };
 }
 
-std::function<void(float, float)> moveAlongCurve(const SmoothParametricCurve &curve, WeakSuperMesh &mesh, const std::variant<int, std::string> &id) {
+std::function<void(float, float)> moveAlongCurve(const SmoothParametricCurve &curve, WeakSuperMesh &mesh, const PolyGroupID &id) {
     return deformationOperator([curve](BufferedVertex &v, float t, float delta) {
         v.setPosition(v.getPosition() + curve(t) - curve(t - delta));
     }, mesh, id);
+}
+
+// ReSharper disable once CppPassValueParameterByConstReference
+mat3 WeakSuperMesh::inertiaTensorCMAppBd(PolyGroupID id) const {
+	return inertiaTensorAppBd(id, centerOfMass(id));
+}
+
+vector<int> WeakSuperMesh::findVertexNeighbours(int i, const PolyGroupID &id) const {
+	std::set<int> neighbours = {};
+	for (const IndexedTriangle &t: triangles.at(id))
+		if (contains(i, t.getVertexIndices())) {
+			neighbours.insert(setMinus(t.getVertexIndices(), i)[0]);
+			neighbours.insert(setMinus(t.getVertexIndices(), i)[1]);
+		}
+	return vector(neighbours.begin(), neighbours.end());
+}
+
+vector<int> WeakSuperMesh::findVertexParentTriangles(int i, const PolyGroupID &id) const {
+	std::set<int> parentTriangles = {};
+	for (int j = 0; j < triangles.at(id).size(); j++)
+		if (contains(i, triangles.at(id)[j].getVertexIndices()))
+			parentTriangles.insert(j);
+	return vector(parentTriangles.begin(), parentTriangles.end());
+}
+
+void WeakSuperMesh::recalculateNormal(int i, const PolyGroupID &id) {
+	auto trs = findVertexParentTriangles(i, id);
+	vec3 n   = vec3(0);
+	for (int j: trs)
+		n += triangles.at(id)[j].faceNormal()*triangles.at(id)[j].area();
+	vertices.at(id)[i].setNormal(normalize(n));
+}
+
+void WeakSuperMesh::recalculateNormalsNearby(int i, const PolyGroupID &id) {
+	for (int j: findVertexNeighbours(i, id))
+		recalculateNormal(j, id);
+}
+
+void WeakSuperMesh::recalculateNormals(const PolyGroupID &id) {
+	for (int i = 0; i < vertices.at(id).size(); i++)
+		recalculateNormal(i, id);
+}
+
+void WeakSuperMesh::recalculateNormals() {
+	for (auto id: getPolyGroupIDs()) recalculateNormals(id);
+}
+
+void WeakSuperMesh::orientFaces(const PolyGroupID &id) {
+	for (auto &t: triangles.at(id))
+		if (dot(t.faceNormal(), t.getVertex(0).getNormal()) < 0)
+			t.changeOrientation();
+}
+
+void WeakSuperMesh::orientFaces() { for (auto id: getPolyGroupIDs()) orientFaces(id); }
+
+vector<int> WeakSuperMesh::findNeighboursSorted(int i, const PolyGroupID &id) const {
+	vector<int> neighbours = findVertexNeighbours(i, id);
+	std::map<int, float> angles = {};
+	auto t = orthogonalComplementBasis(vertices.at(id)[i].getNormal());
+	for (int j = 0; j < neighbours.size(); j++)
+		angles[i] = polarAngle(vertices.at(id)[neighbours[j]].getPosition() - vertices.at(id)[i].getPosition(), vertices.at(id)[i].getNormal());
+	std::ranges::sort(neighbours, [&angles](int a, int b) { return angles[a] < angles[b]; });
+	return neighbours;
+}
+
+bool WeakSuperMesh::checkIfHasCompleteNeighbourhood(int i, const PolyGroupID &id) const {
+	vector<int> trs = findVertexParentTriangles(i, id);
+	vector<int> neighbours = findVertexNeighbours(i, id);
+	for (int p: neighbours) {
+		int found = 0;
+		for (int t: trs)
+			if (triangles.at(id)[t].containsEdge(i, p))
+				found++;
+		if (found < 2)
+			return false;
+	}
+	return true;
+}
+
+float WeakSuperMesh::meanCurvature(int i, const PolyGroupID &id) const {
+	if (!checkIfHasCompleteNeighbourhood(i, id))
+		return 0;
+	float sum = 0;
+	auto nbhd = findNeighboursSorted(i, id);
+	vec3 p = vertices.at(id)[i].getPosition();
+	for (int j=0; j<nbhd.size(); j++) {
+		vec3 prev = vertices.at(id)[nbhd[(j-1+nbhd.size())%nbhd.size()]].getPosition();
+		vec3 next = vertices.at(id)[nbhd[(j+1)%nbhd.size()]].getPosition();
+		vec3 current = vertices.at(id)[nbhd[j]].getPosition();
+		float angle1 = abs(angle(prev-p, prev-current));
+		float angle2 = abs(angle(next-p, next-current));
+		sum += 0.5f*(cot(angle1) + cot(angle2))*length(current-p);
+	}
+//	return sum/
+	return sum;
+}
+
+vec3 WeakSuperMesh::meanCurvatureVector(int i, const PolyGroupID &id) const {
+	return meanCurvature(i, id)*vertices.at(id)[i].getNormal();
+}
+
+void WeakSuperMesh::meanCurvatureFlowDeform(float dt, const PolyGroupID &id) {
+	for (int i=0; i<vertices.at(id).size(); i++) {
+		vertices.at(id)[i].setPosition(vertices.at(id)[i].getPosition() - dt*meanCurvatureVector(i, id));
+		recalculateNormalsNearby(i, id);
+	}
+	recalculateNormals(id);
+}
+
+float WeakSuperMesh::GaussCurvature(int i, const PolyGroupID &id) const {
+	auto nbhd = findNeighboursSorted(i, id);
+	float sum = 0;
+	vec3 p = vertices.at(id)[i].getPosition();
+	for (int j=0; j<nbhd.size(); j++) {
+		vec3 prev = vertices.at(id)[nbhd[(j-1+nbhd.size())%nbhd.size()]].getPosition();
+		vec3 next = vertices.at(id)[nbhd[(j+1)%nbhd.size()]].getPosition();
+		vec3 current = vertices.at(id)[nbhd[j]].getPosition();
+		sum += angle(prev-current, next-current)/length(prev-next)*length(p-current)/2;
+	}
+	return sum;
+}
+
+void WeakSuperMesh::paintMeanCurvature(const PolyGroupID &id) {
+	deformPerVertex(id, [this, id](BufferedVertex &v) {
+		v.setColor(meanCurvature(v.getIndex(), id), 2);
+	});
+}
+
+void WeakSuperMesh::paintMeanCurvature() {
+	for (auto id: getPolyGroupIDs())
+		paintMeanCurvature(id);
+}
+
+
+
+mat3 WeakSuperMesh::inertiaTensorAppBd(PolyGroupID id, vec3 p) const {
+	vec3 cm = p;
+	return integrateOverTriangles<mat3>([ cm](const IndexedTriangle &t) {
+		vec3 p = t.center();
+		return mat3(pow((p-cm).z, 2) + pow((p-cm).y, 2), -(p-cm).x*(p-cm).y, -(p-cm).x*(p-cm).z,
+					-(p-cm).x*(p-cm).y, pow((p-cm).x, 2) + pow((p-cm).z, 2), -(p-cm).y*(p-cm).z,
+					-(p-cm).x*(p-cm).z, -(p-cm).y*(p-cm).z, pow((p-cm).x, 2) + pow((p-cm).y, 2));
+	}, id);
+}
+
+
+SurfacePlotDiscretisedMesh::SurfacePlotDiscretisedMesh(const DiscreteRealFunctionR2 &plot) {
+	vector<Vertex> points = vector<Vertex>();
+	vector<ivec3> triangles = vector<ivec3>();
+
+	for (int i = 0; i < plot.samples_t(); i++) {
+		float t = plot.args_t()[i];
+		for (int j = 0; j < plot.samples_x(); j++) {
+			float x = plot.args_x()[j];
+			vec3 p = vec3(x, t, plot[i][j]);
+			vec3 n = e3;
+			if (i > 0 && j > 0) {
+				auto p1 = points.back().getPosition();
+				auto p2 = points.at(points.size()-plot.samples_x()).getPosition();
+				n = normalize(cross(p1-p, p2-p));
+				if (dot(n, e3) < 0) n = -n;
+				triangles.emplace_back((i-1)*plot.samples_x()+j-1, (i-1)*plot.samples_x()+j, i*plot.samples_x()+j);
+				triangles.emplace_back((i-1)*plot.samples_x()+j-1, i*plot.samples_x()+j, i*plot.samples_x()+j-1);
+			}
+			points.emplace_back(p, vec2(x, t), n, vec4(0));
+		}
+	}
+	addNewPolygroup(points, triangles, randomID());
+
 }

@@ -1,36 +1,14 @@
 
 #include "specific.hpp"
 
-#include <chrono>
-#include <chrono>
-#include <chrono>
-#include <chrono>
-#include <chrono>
-#include <chrono>
+
 #include <random>
 #include <chrono>
 #include <iosfwd>
-#include <iosfwd>
-#include <iosfwd>
-#include <iosfwd>
-#include <iosfwd>
-#include <iosfwd>
+
 #include <vector>
-#include <vector>
-#include <vector>
-#include <vector>
-#include <vector>
-#include <vector>
-#include <glm/detail/_vectorize.hpp>
-#include <glm/detail/_vectorize.hpp>
-#include <glm/detail/_vectorize.hpp>
-#include <glm/detail/_vectorize.hpp>
-#include <glm/detail/_vectorize.hpp>
-#include <glm/detail/_vectorize.hpp>
-#include <glm/detail/_vectorize.hpp>
-#include <glm/detail/_vectorize.hpp>
-#include <glm/detail/_vectorize.hpp>
-#include <glm/detail/_vectorize.hpp>
+
+
 
 using namespace glm;
 using std::vector, std::array;
@@ -181,6 +159,23 @@ COLOR_PALETTE10::COLOR_PALETTE10(ivec3 c1, ivec3 c2, ivec3 c3,
          vec4(c10.x / 255.f, c10.y / 255.f, c10.z / 255.f, 1.0f)};
 
 }
+
+Permutation Permutation::operator&(const Permutation &p) const {
+	if (size() != p.size())
+		throw ValueError("Permutations must have the same size to be composed.");
+	auto lst = p.perm;
+	for (int i = 0; i < lst.size(); i++)
+		lst[i] = perm[lst[i]];
+	return Permutation(lst);
+}
+
+Permutation Permutation::operator~() const {
+	vector<int> lst = vector<int>(perm.size());
+	for (int i = 0; i < perm.size(); i++)
+		lst[perm[i]] = i;
+	return Permutation(lst);
+}
+
 SmoothParametricPlaneCurve circle(float r, vec2 center, float eps) {
         return SmoothParametricPlaneCurve(
                 [center, r](float t) {return center + r * vec2(cos(t), sin(t)); },
@@ -351,6 +346,47 @@ SmoothParametricSurface disk(float r, vec3 center, vec3 v1, vec3 v2,float eps) {
 
 SmoothParametricSurface cylinder(float r, vec3 c1, vec3 c2, vec3 v1, vec3 v2, float eps) {
 	return  SmoothParametricSurface([r, c1, c2, v1, v2](float u, float v) { return c1 + (cos(u)*v1 + sin(u)*v2)*r + v*(c2 - c1); }, vec2(0, TAU), vec2(0, 1), true, false, eps);
+}
+
+SmoothParametricSurface hyperbolic_helicoid(float a, float eps) {
+	return SmoothParametricSurface([a](float t, float u) {
+		return vec3(std::sin(a*t)* std::sin(u)* std::exp(t),
+					std::cos(a*t)* std::sin(u)* std::exp(t),
+					std::cos(u)* std::exp(t));
+
+	}, vec2(0, TAU), vec2(0, TAU), false, true, eps);
+}
+
+SmoothParametricSurface LawsonTwist(float alpha, Quaternion q, vec2 range_u, float eps) {
+	auto L = [alpha](float t, float u) {
+		return vec4(::cos(u)*cos(t),
+					cos(t)*sin(u),
+					sin(t)*cos(alpha*u),
+					sin(t)*sin(alpha*u)); };
+	return SmoothParametricSurface([L, q](float t, float u) {
+									   return stereoProjection(q.normalise().rotateS3(L(t, u))); },
+								   vec2(0, TAU), range_u, false, false, eps);
+}
+
+SmoothParametricSurface coolLawson(float eps) {
+	return LawsonTwist(2, Quaternion(.5, .5, .5, .5), vec2(-PI/4, PI/4), eps);
+}
+
+SmoothParametricSurface sudaneseMobius(float eps) {
+	return LawsonTwist(.5, Quaternion(.5, .5, .5, .5), vec2(-PI/2, PI/2), eps);
+}
+
+
+SmoothParametricSurface parametricPlane2ptHull(vec3 v1, vec3 v2, float normal_shift, float eps) {
+	return SmoothParametricSurface([v1, v2, normal_shift](float u, float v) { return u*v1 + v*v2 + normalise(cross(v1, v2))*normal_shift; }, vec2(0, 1), vec2(0, 1), false, false, eps);
+}
+
+SmoothParametricSurface twistedTorus(float a, float m, float n, int dommul1, int dommul2, float eps) {
+	return SmoothParametricSurface([a, m, n](float u, float v) {
+		return vec3((a + std::cos(n * u / 2) * std::sin(v) - std::sin(n * u / 2) * std::sin(2 * v)) * std::cos(m * u / 2),
+			(a + std::cos(n * u / 2) * std::sin(v) - std::sin(n * u / 2) * std::sin(2 * v)) * std::sin(m * u / 2),
+			std::sin(n * u / 2) * std::sin(v) + std::cos(n * u / 2) * std::sin(2 * v));
+	}, vec2(0, TAU*dommul1), vec2(0, TAU*dommul2), true, true, eps);
 }
 
 inline WeakSuperMesh icosahedron(float r, vec3 center, std::variant<int, std::string> id) {
@@ -532,8 +568,127 @@ SmoothParametricSurface cone(const SmoothParametricCurve &base, vec3 apex, float
 	return SmoothParametricSurface([base, apex](float u, float v) {return base(u) + v*(apex - base(u)); }, [base, apex](float u, float v) {return cross(base.tangent(u), apex - base(u)); }, [base, apex](float u, float v) {return cross(base.tangent(u), apex - base(u)); }, base.bounds(), vec2(0, 1), base.isPeriodic(), false, eps);
 }
 
+
+
 SmoothParametricSurface coneSide(float r, float h, vec3 center, vec3 v1, vec3 v2, vec3 dir, float eps) {
 	return cone(circle(r, center, v1, v2, eps), center + normalise(dir)*h, eps);
+}
+
+
+
+
+
+
+
+SmoothImplicitSurface sphereImplicit(float r, vec3 center, float eps) {
+	return SmoothImplicitSurface([r, center](vec3 p) { return norm2(p - center) - r*r; }, eps);
+}
+
+SmoothImplicitSurface torusImplicit(float r, float R, vec3 center, float eps) {
+	return SmoothImplicitSurface([r, R, center](vec3 p) {
+		vec3 q = p - center;
+		return std::pow(norm2(q) + R*R - r*r, 2) - 4*R*R*(q.x*q.x + q.y*q.y);
+	}, eps);
+}
+
+SmoothImplicitSurface genus2Implicit(float eps) {
+	return SmoothImplicitSurface([](vec3 p) {
+		float x = p.x, y = p.y, z = p.z;
+		return 2.f*y*(y*y - 3.f*x*x)*(1.f - z*z) + std::pow((x*x + y*y),2) - (9.f*z*z - 1.f)*(1.f - z*z);
+	}, eps);
+}
+
+SmoothImplicitSurface wineGlass(float eps) {
+	return SmoothImplicitSurface([](vec3 p) {
+		return p.x*p.x + p.y*p.y - ::pow(log(p.z +3.2), 2) - .02;
+	}, eps);
+}
+
+SmoothImplicitSurface equipotentialSurface(vector<vec3> points, vector<float> charges, float potential, float eps) {
+	return SmoothImplicitSurface([points, charges, potential](vec3 p) {
+		float res = 0;
+		for (int i = 0; i < points.size(); i++)
+			res += charges[i]/norm(p - points[i]);
+		return res - potential;
+	}, eps);
+}
+
+SmoothImplicitSurface chair(float k, float a, float b, float eps) {
+	return SmoothImplicitSurface([k, a, b](vec3 p) {
+		return square(norm2(p) - a*k*k) - b*(square(p.z - k) - 2.f*p.x*p.x)*(square(p.z + k) - 2.f*square(p.y));
+	}, eps);
+}
+
+SmoothImplicitSurface tangleCube(float eps) {
+	return SmoothImplicitSurface(
+		[](float x, float y, float z) { return pow4(x) - square(x)*5 + pow4(y) - square(y)*5 + pow4(z) - square(z)*5 + 10; },
+		[](float x, float y, float z) { return vec3(cube(x)*4 - x*10,  cube(y)*4 - y*10, cube(z)*4 - z*10); },
+		eps);
+}
+SmoothImplicitSurface wineImplicit(float eps) {
+	return SmoothImplicitSurface(
+		[](float x, float y, float z) { return -.4*sin(x*5) -.4*sin(y*5) -.4*sin(z*5) + .1*square(x) + .3*square(y) + .2*square(z) - .5; },
+		[](float x, float y, float z) { return vec3( -2*cos(x*5)+ .2*x, -2*cos(y*5)+ .6*y, -2*cos(z*5)+ .4*z ); },
+		eps);
+}
+
+SmoothImplicitSurface gumdrop(float eps) {
+	//return 4*(x**4 + (y**2 + z**2)**2) + 17*x**2*(y**2 + z**2) - 20*(x**2 + y**2 + z**2) + 17
+	return SmoothImplicitSurface([](float x, float y, float z) {
+									 return 4*pow4(x) + 4*pow4(y) + 4*pow4(z) + 8*sq(y)*sq(z) + 17*sq(x)*sq(y) + 17*sq(x)*sq(z) - 20*sq(x) - 20*sq(y) - 20*sq(z) + 17;
+								 },
+								 [](float x, float y, float z) { return vec3(
+										 16*cube(x) + 34*x*sq(z) + 34*x*sq(y) - 40*x,
+										 16*cube(y) + 16*y*sq(z) + 34*y*sq(x) - 40*y,
+										 16*cube(z) + 16*z*sq(y) + 34*z*sq(x) - 40*z); }, eps);
+}
+
+SmoothImplicitSurface genus2Implicit2(float eps) {
+	return SmoothImplicitSurface([](float x, float y, float z) {
+									 return .04 - pow4(x) + 2*pow6(x) - pow8(x) + 2*sq(x)*sq(y) - 2*pow4(x)*sq(y) - pow4(y) - sq(z);
+								 },
+								 [](float x, float y, float z) { return vec3(
+										 -4*pow3(x) + 12*pow5(x) - 8*pow7(x) + 8*x*sq(y) - 8*pow3(x)*sq(y),
+										 4*y*sq(x) - 4*y*pow4(x) - 4*pow3(y),
+										 -2*z); }, eps);
+
+}
+
+
+
+SmoothImplicitSurface genus2Implicit3(float c, float d, float eps) {
+	return SmoothImplicitSurface([c, d](float x, float y, float z) {
+		return sq(sq(x-1) + sq(y) - sq(c))*sq(sq(x+1) + sq(y) - sq(c)) + sq(z) - d;
+	}, eps);
+
+}
+
+SmoothImplicitSurface genus2Implicit4(float d, float eps) {
+	return SmoothImplicitSurface([d](float x, float y, float z) {
+		return sq(sq(x) - pow4(x) - sq(y)) + sq(z) - d;
+	}, eps);
+
+}
+
+SmoothImplicitSurface superellipsoid(float alpha1, float alpha2, float a, float b, float c, float r, float eps) {
+	return SmoothImplicitSurface([alpha1, alpha2, a, b, c, r](float x, float y, float z) {
+		return std::pow(::pow(abs(x/a), 2/alpha2) + std::pow(abs(y/b), 2/alpha2), alpha2/alpha1) + std::pow(abs(z/c), 2/alpha1) - r;
+	}, eps);
+
+}
+
+SmoothImplicitSurface superQuadric(float alpha, float beta, float gamma, float a, float b, float c, float r, float eps) {
+	return SmoothImplicitSurface([alpha, beta, gamma, a, b, c, r](float x, float y, float z) {
+		return ::pow(abs(x/a), alpha) + std::pow(abs(y/b), beta) + ::pow(abs(z/c), gamma) - r;
+	}, eps);
+
+}
+
+SmoothImplicitSurface K3Surface222(float eps) {
+	return SmoothImplicitSurface([](float x, float y, float z) {
+		return (sq(x) + 1)*(sq(y) + 1)*(sq(z) + 1) + 8*x*y*z - 2;
+	}, eps);
+
 }
 
 WeakSuperMesh arrow(vec3 start, vec3 head, float radius, float head_len, float head_radius, int radial, int straight, float eps, std::variant<int, std::string> id) {
@@ -570,7 +725,7 @@ WeakSuperMesh drawArrows(const vector<vec3> &points, const vector<vec3> &directi
 	return mesh;
 }
 
-WeakSuperMesh drawArrows(const vector<vec3> &points, const VectorFieldR3 &field, const std::function<float(float)>& radius,const std::function<float(float)>& len, const std::function<float(float)> &head_len, const std::function<float(float)> &head_radius,
+WeakSuperMesh drawArrows(const vector<vec3> &points, const VectorField &field, const std::function<float(float)>& radius,const std::function<float(float)>& len, const std::function<float(float)> &head_len, const std::function<float(float)> &head_radius,
 		int radial, int straight, float eps, const std::variant<int, std::string> &id) {
 	WeakSuperMesh mesh;
 	for (int i = 0; i < points.size(); i++) {
@@ -580,7 +735,7 @@ WeakSuperMesh drawArrows(const vector<vec3> &points, const VectorFieldR3 &field,
 	return mesh;
 }
 
-WeakSuperMesh drawVectorFieldArrows(const VectorFieldR3 &field, const vector<vec3> &points, const std::function<float(float)>& len, const std::function<float(float)> &radius, const std::function<float(float)>& head_len,
+WeakSuperMesh drawVectorFieldArrows(const VectorField &field, const vector<vec3> &points, const std::function<float(float)>& len, const std::function<float(float)> &radius, const std::function<float(float)>& head_len,
 		const std::function<float(float)>& head_radius, int radial, int straight, float eps, const std::variant<int, std::string> &id) {
 	WeakSuperMesh mesh;
 	for (auto point : points) {
@@ -623,12 +778,12 @@ SmoothParametricPlaneCurve GernsterWave(float a, float b, float k, float c) {
 					b- ::exp(b*k)/k* ::cos(a*k + t*k*c)); }, 0, 1, false, .01);
 }
 
-VectorFieldR3 PousevillePlanarFlow(float h, float nabla_p, float mu, float v0, float eps) {
-	return VectorFieldR3([h, nabla_p, mu, v0](vec3 p) {return vec3(0,nabla_p/(2*mu)*p.z*(h-p.z) + v0*p.z/h, 0); }, eps);
+VectorField PousevillePlanarFlow(float h, float nabla_p, float mu, float v0, float eps) {
+	return VectorField([h, nabla_p, mu, v0](vec3 p) {return vec3(0,nabla_p/(2*mu)*p.z*(h-p.z) + v0*p.z/h, 0); }, eps);
 }
 
-VectorFieldR3 PousevillePipeFlow(float nabla_p, float mu, float c1, float c2, float eps) {
-	return VectorFieldR3([nabla_p, mu, c1, c2](vec3 p) {
+VectorField PousevillePipeFlow(float nabla_p, float mu, float c1, float c2, float eps) {
+	return VectorField([nabla_p, mu, c1, c2](vec3 p) {
 		float r = norm(p);
 		return vec3(-nabla_p*r*r/(4*mu) + c1* ::log(r) + c2); }, eps);
 }
@@ -685,7 +840,81 @@ SmoothParametricCurve trefoil(float r, float R, float eps) {
 }
  SmoothParametricCurve torusKnot23(float scale, float R, float eps) {
 	return SmoothParametricCurve([scale, R](float t)
-		{return vec3((R + cos(3 * t)) * cos(2 * t),
-			(R + cos(3 * t)) * sin(2 * t),
-			sin(3 * t))*scale; }, "TorusKnot23", 0, TAU, true, eps);
+		{
+		float r = R + cos(3 * t);
+		return vec3(r*cos(2 * t),
+			r*sin(2 * t),
+			-sin(3 * t))*scale; }, "TorusKnot23", 0, TAU, true, eps);
+}
+
+SmoothParametricCurve torusKnot_pq(int p, int q, float R, float scale, float eps) {
+	return SmoothParametricCurve([scale, R, p, q](float t)
+			{
+			float r = R + cos(q * t);
+			return vec3(r*cos(p * t),
+				r*sin(p * t),
+				-sin(q * t))*scale; }, "TorusKnotpq", 0, TAU, true, eps);}
+
+
+
+RealFunction smoothenReLu(float c0, float x_change_to_id) {
+	return RealFunction([c0, x_change_to_id](float t) {
+		if (t>=x_change_to_id) return t;
+		float a = 2.0*c0 - x_change_to_id;
+		float b = 2.0*x_change_to_id - 3.0*c0;
+		float x = t/x_change_to_id;
+		return (a*x + b)*x*x + c0;
+	});
+}
+
+RealFunction expImpulse(float peak, float decay) {
+	auto F = [](float x) {
+		if (abs(x) >= 1) return 0.f;
+		return std::exp(1.f-1.f/(1.f-x*x));
+	};
+	return RealFunction([F, peak, decay](float t) {
+		return F((t-peak)/decay);
+	});
+}
+
+RealFunction expImpulse_k(float peak, float decay, float k) {
+	auto F = [k](float x) {
+		if (abs(x) >= 1) return 0.f;
+		return 1/(std::exp(k*((1-abs(2*x))/(x*x-abs(x))))+1);
+	};
+	return RealFunction([F, peak, decay](float t) {
+		return F((t-peak)/decay);
+	});
+}
+
+RealFunction cubicShroom(float center, float margin) {
+	return RealFunction([center, margin](float t) {
+			if (abs(t-center) > margin) return 0.f;
+			return 1.f - sq(t-center)*(3.f-2.f*abs(t-center)/margin)/sq(margin);
+		});
+}
+
+RealFunction powerShroom(float begin, float end, float zeroExponent, float oneExponent) {
+	if (zeroExponent <= 0) throw IllegalArgumentError("zeroExponent must be positive.");
+	if (oneExponent <= 0) throw IllegalArgumentError("oneExponent must be positive.");
+	return RealFunction([begin, end, zeroExponent, oneExponent](float t) {
+		float x = (t-begin)/(end-begin);
+		if (x < 0) return 0.f;
+		if (x > 1) return 0.f;
+		float c = std::pow(zeroExponent + oneExponent, zeroExponent + oneExponent)/(std::pow(zeroExponent, zeroExponent)*std::pow(oneExponent, oneExponent));
+		return c*std::pow(x, zeroExponent)*std::pow(1.f - x, oneExponent);
+	});
+}
+
+RealFunction toneMap(float k) {
+	return RealFunction([k](float t) {
+		return (k*t)/(1+k*t);
+	});
+}
+
+RealFunction rationalInfiniteShroom(float steepFactor, float center) {
+	if (steepFactor <= 0) throw IllegalArgumentError("steepFactor must be positive.");
+	return RealFunction([steepFactor, center](float t) {
+			return 1.f/(steepFactor*sq(t-center) + 1);
+		});
 }

@@ -1,25 +1,18 @@
 #pragma once
+#include "glsl_utils.hpp"
+// #include "../fundamentals/flows.hpp"
 
-// #include "buffer_utils.hpp"
+
 #include <chrono>
 #include <iosfwd>
 #include <vector>
 
 
-#include "glsl_utils.hpp"
-// #include "renderingUtils.hpp"
 
 
-const Biholomorphism EXP = Biholomorphism::_EXP();
-const Biholomorphism LOG = Biholomorphism::_LOG();
-const Biholomorphism IdC = Biholomorphism::linear(ONE, ZERO);
-const Biholomorphism ADD1 = Biholomorphism::linear(ONE, ONE);
-const Biholomorphism SQUARE = Biholomorphism::power(2);
-const Biholomorphism SQRT = Biholomorphism::power(.5f);
-const Biholomorphism CAYLEY = Biholomorphism::mobius(Matrix<Complex, 2>(ONE, -I, ONE, I));
-const VectorFieldR3 dabbaX = VectorFieldR3::constant(vec3(1, 0, 0));
-const VectorFieldR3 dabbaY = VectorFieldR3::constant(vec3(0, 1, 0));
-const VectorFieldR3 dabbaZ = VectorFieldR3::constant(vec3(0, 0, 1));
+const VectorField dabbaX = VectorField::constant(vec3(1, 0, 0));
+const VectorField dabbaY = VectorField::constant(vec3(0, 1, 0));
+const VectorField dabbaZ = VectorField::constant(vec3(0, 0, 1));
 
 
 
@@ -52,6 +45,7 @@ SmoothParametricCurve sphericalSpiral(float a, float t_max, PolyGroupID id, floa
 SmoothParametricCurve sphericalSpiral(float a, float r, float t_max, PolyGroupID id, float eps = .001);
 SmoothParametricCurve trefoil(float r, float R, float eps = .01);
 SmoothParametricCurve torusKnot23(float scale, float R, float eps = .01);
+SmoothParametricCurve torusKnot_pq(int p, int q,  float R, float scale, float eps = .01);
 
 
 
@@ -73,7 +67,7 @@ WeakSuperMesh icosahedron(float r, vec3 center, PolyGroupID id);
 WeakSuperMesh icosphere(float r, int n, vec3 center, PolyGroupID id, vec4 color=BLACK);
 WeakSuperMesh disk3d(float r, vec3 center, vec3 v1, vec3 v2, int radial_res, int vertical_res, const PolyGroupID &id);
 
-WeakSuperMesh singleQuadShadeFlat(vec3 outer1, vec3 inner1, vec3 inner2, vec3 outer2, PolyGroupID id);
+WeakSuperMesh singleQuadShadeFlat(vec3 outer1, vec3 inner1, vec3 inner2, vec3 outer2, PolyGroupID id=randomID());
 
 
 
@@ -86,7 +80,7 @@ class Disk3D : public WeakSuperMesh {
     float radius;
     PolyGroupID id;
 public:
-    Disk3D(const std::vector<Vertex> &nodes, const std::vector<glm::ivec3> &faceInds, vec3 center, vec3 forward, vec3 down, PolyGroupID id);
+    Disk3D(const std::vector<Vertex> &nodes, const std::vector<ivec3> &faceInds, vec3 center, vec3 forward, vec3 down, PolyGroupID id);
     Disk3D(const char* filename, vec3 center, vec3 forward, vec3 down, PolyGroupID id);
     Disk3D(float r, vec3 center, vec3 forward, vec3 down, int radial_res, int vertical_res, const PolyGroupID &id);
     void move(vec3 center, vec3 forward, vec3 down, bool scaleWidth);
@@ -116,13 +110,56 @@ SmoothParametricSurface sphere(float r, vec3 center=ORIGIN, float cutdown=0, flo
 SmoothParametricSurface DupinCyclide(float a, float b, float d, float eps=.01);
 SmoothParametricSurface disk(float r, vec3 center, vec3 v1, vec3 v2, float eps);
 SmoothParametricSurface cylinder(float r, vec3 c1, vec3 c2, vec3 v1, vec3 v2, float eps);
+SmoothParametricSurface hyperbolic_helicoid(float a, float eps=.01); // todo check out
 
+SmoothParametricSurface LawsonTwist(float alpha, Quaternion q, vec2 range_u, float eps=.01);
+SmoothParametricSurface coolLawson(float eps=0.01);
+
+SmoothParametricSurface sudaneseMobius(float eps=0.01);
+SmoothParametricSurface parametricPlane2ptHull(vec3 v1=e1, vec3 v2=e2, float normal_shift=0, float eps=.01);
+
+SmoothParametricSurface LawsonKleinBottle(float eps=0.01);
+SmoothParametricSurface catenoid(float a, float eps=.01);
+SmoothParametricSurface helicoid(float a, float eps=.01);
+SmoothParametricSurface enneper(float k, float l, float eps=.01);
+SmoothParametricSurface twistedTorus(float a, float m, float n, int dommul1, int dommul2, float eps=.01);
+
+SmoothParametricSurface polyTorus(float r, float n, float alpha, float eps=.01);
+SmoothParametricSurface ellipticTorus(float c, float eps=.01);
+SmoothParametricSurface limpetTorus(float eps=.01);
+SmoothParametricSurface fig8(float c, float eps=.01);
+SmoothParametricSurface doubleTorus(float eps=.01);
+SmoothParametricSurface saddleTorus(float eps=.01);
+SmoothParametricSurface kinkyTorus(float eps=.01);
+SmoothParametricSurface GraysKlein(float a, float n, float m, float eps=.01);
+SmoothParametricSurface bowTie(float eps=.01);
+SmoothParametricSurface bohemianDome(float a, float b, float c, float eps=.01);
+SmoothParametricSurface horn(float eps=.01);
+SmoothParametricSurface crescent(float eps=.01);
+SmoothParametricSurface seaShell(int n, float a, float b, float c, float eps=.01);
 SmoothParametricSurface cone(const SmoothParametricCurve &base, vec3 apex, float eps);
 SmoothParametricSurface coneSide(float r, float h, vec3 center, vec3 v1, vec3 v2, float eps);
 
+SmoothImplicitSurface sphereImplicit(float r, vec3 center, float eps=.01);
+SmoothImplicitSurface torusImplicit(float r, float R, vec3 center, float eps=.01);
+SmoothImplicitSurface genus2Implicit(float eps=.01);
+SmoothImplicitSurface wineGlass(float eps=.01);
+SmoothImplicitSurface equipotentialSurface(vector<vec3> points, vector<float> charges, float potential, float eps=.01);
+SmoothImplicitSurface chair(float k=5, float a=.95, float b=.82, float eps=.01);
+SmoothImplicitSurface tangleCube(float eps=.01);
+SmoothImplicitSurface wineImplicit(float eps=.01);
+SmoothImplicitSurface gumdrop(float eps=.01);
+SmoothImplicitSurface genus2Implicit2(float eps=.01);
+SmoothImplicitSurface genus2Implicit3(float c, float d, float eps=.01);
+SmoothImplicitSurface genus2Implicit4(float d=.01, float eps=.01);
+SmoothImplicitSurface superellipsoid(float alpha1, float alpha2, float a, float b, float c, float r=1, float eps=.01);
+SmoothImplicitSurface superQuadric(float alpha, float beta, float gamma, float a, float b, float c, float r=1, float eps=.01);
+SmoothImplicitSurface K3Surface222(float eps=.01);
+
+
 WeakSuperMesh arrow(vec3 start, vec3 head, float radius, float head_len, float head_radius, int radial, int straight, float eps, std::variant<int, std::string> id);
 WeakSuperMesh drawArrows(const vector<vec3> &points, const vector<vec3> &directions, float radius, float head_len, float head_radius, int radial, int straight, float eps, const std::variant<int, std::string> &id);
-WeakSuperMesh drawVectorFieldArrows(const VectorFieldR3 &field, const vector<vec3> &points, const HOM(float, float)& len, const HOM(float, float) &radius, const HOM(float, float) &head_len, const HOM(float, float)& head_radius, int radial, int straight, float eps, const std::variant<int, std::string> &id);
+WeakSuperMesh drawVectorFieldArrows(const VectorField &field, const vector<vec3> &points, const HOM(float, float)& len, const HOM(float, float) &radius, const HOM(float, float) &head_len, const HOM(float, float)& head_radius, int radial, int straight, float eps, const std::variant<int, std::string> &id);
 vec3 getArrayHead(const BufferedVertex &v);
 vec3 getArrayStart(const BufferedVertex &v);
 vec3 getArrayDirection(const BufferedVertex &v);
@@ -142,8 +179,8 @@ inline SmoothParametricCurve segment(vec3 p0, vec3 p1, float t0, float t1) {
 }
 
 SmoothParametricPlaneCurve GernsterWave(float a, float b, float k, float c);
-VectorFieldR3 PousevillePlanarFlow(float h, float nabla_p, float mu, float v0, float eps=.01);
-VectorFieldR3 PousevillePipeFlow(float nabla_p, float mu, float c1, float c2, float eps=.01);
+VectorField PousevillePlanarFlow(float h, float nabla_p, float mu, float v0, float eps=.01);
+VectorField PousevillePipeFlow(float nabla_p, float mu, float c1, float c2, float eps=.01);
 
 vec3 freeSurfaceComponent(float amplitude, float phase, vec2 waveNumber, float angFrequency, float h, vec2 ab, float t);
 SurfaceParametricPencil freeSurface(vector<float> a_m, vector<float> phi_m, vector<vec2> k_m, vector<float> omega_m, float h);
@@ -151,4 +188,14 @@ SurfaceParametricPencil freeSurface(vector<float> a_m, vector<float> phi_m, vect
 
 
 WeakSuperMesh particles(int n, vec3 bound1, vec3 bound2, float radius);
-WeakSuperMesh box(vec3 size, vec3 center,PolyGroupID id);
+WeakSuperMesh box(vec3 size, vec3 center, PolyGroupID id);
+
+
+RealFunction smoothenReLu(float c0, float x_change_to_id);
+RealFunction expImpulse(float peak, float decay=1);
+RealFunction expImpulse_k(float peak, float decay=1, float k=1);
+
+RealFunction cubicShroom(float center, float margin);
+RealFunction powerShroom(float begin, float end, float zeroExponent, float oneExponent);
+RealFunction toneMap(float k);
+RealFunction rationalInfiniteShroom(float steepFactor, float center);

@@ -1,4 +1,5 @@
 #pragma once
+#include "../geometry/smoothImplicit.hpp"
 
 #include <array>
 #include <map>
@@ -10,8 +11,6 @@
 
 #include <memory>
 #include <optional>
-#include <gl/glew.h>
-#include "src/geometry/smoothImplicit.hpp"
 
 
 enum GLSLType {
@@ -43,11 +42,10 @@ public:
     explicit Texture(vec3 color, int slot = 0, const char* sampler = "tex");
     explicit Texture(vec4 color, int slot = 0, const char* sampler = "tex");
 	explicit Texture(const char* filename, int slot, const char* sampler, bool alpha=false);
-	explicit Texture(const std::string& filename, int slot, const char* sampler, bool alpha=false)
-	: Texture(filename.c_str(), slot, sampler, alpha) {}
+	explicit Texture(const std::string& filename, int slot, const char* sampler, bool alpha=false);
 
 	void deleteTexture();
-//	~Texture() { deleteTexture(); }
+	~Texture() { deleteTexture(); }
 
 	static void addFilters(GLenum minFilter, GLenum magFilter, GLenum wrapS, GLenum wrapT);
 	void bind() const;
@@ -71,7 +69,7 @@ public:
 
 	virtual ~MaterialPhong() = default;
 
-	MaterialPhong() = default;
+	MaterialPhong() : MaterialPhong(vec4(0), vec4(0), vec4(0), 0, 0, 0, 0) {}
 
 	static std::shared_ptr<Texture> constAmbientTexture(vec4 color);
 	static std::shared_ptr<Texture> constDiffuseTexture(vec4 color);
@@ -109,9 +107,21 @@ public:
 
 	virtual bool textured() const {return true;}
 
-	void setAmbientTexture(const std::shared_ptr<Texture> &texture) { texture_ambient->deleteTexture(); texture_ambient = texture; texture_ambient->load(); }
-	void setDiffuseTexture(const std::shared_ptr<Texture> &texture) { texture_diffuse->deleteTexture(); texture_diffuse = texture; texture_diffuse->load(); }
-	void setSpecularTexture(const std::shared_ptr<Texture> &texture) { texture_specular->deleteTexture(); texture_specular = texture; texture_specular->load(); }
+	void setAmbientTexture(const std::shared_ptr<Texture> &texture) {
+	    texture_ambient->deleteTexture();
+    	texture_ambient = texture;
+    	texture_ambient->load();
+    }
+	void setDiffuseTexture(const std::shared_ptr<Texture> &texture) {
+	    texture_diffuse->deleteTexture();
+    	texture_diffuse = texture;
+    	texture_diffuse->load();
+    }
+	void setSpecularTexture(const std::shared_ptr<Texture> &texture) {
+	    texture_specular->deleteTexture();
+    	texture_specular = texture;
+    	texture_specular->load();
+    }
 
 	void addAmbientTexture (const std::string &filename, bool alpha=false) { setAmbientTexture(makeAmbientTexture(filename, alpha));}
 	void addDiffuseTexture (const std::string &filename, bool alpha=false) { setDiffuseTexture(makeDiffuseTexture(filename, alpha));}
@@ -222,7 +232,7 @@ public:
 	operator TriangleR2() const;
 	TriangleComplex operator+(Complex v) const;
 	TriangleComplex operator*(Complex M) const;
-	TriangleComplex operator*(const Matrix<Complex, 2> &M) const;
+	TriangleComplex operator*(const Matrix<Complex> &M) const;
 	TriangleComplex operator*(Meromorphism f) const;
 	TriangleR3 embeddInR3(float z = 0) const;
 
@@ -355,10 +365,11 @@ protected:
 	vec4 color;
 	vec4 intensities;
 	float mode;
+	float softShadowRadius;
 public:
-	Light(vec3 position, vec4 color, vec4 intensities, float mode) : position(position), color(color), intensities(intensities), mode(mode) {}
+	Light(vec3 position, vec4 color, vec4 intensities, float mode, float r) : position(position), color(color), intensities(intensities), mode(mode), softShadowRadius(r) {}
 	virtual ~Light() = default;
-	mat4 compressToMatrix() const { return mat4(vec4(position, 0), color, intensities, vec4(mode, 0, 0, 0)); }
+	virtual mat4 compressToMatrix() const { return mat4(vec4(position, 0), color, intensities, vec4(mode, softShadowRadius, 0, 0)); }
 	vec3 getPosition() const { return position; }
 	vec4 getColor() const { return color; }
 };
@@ -366,23 +377,18 @@ public:
 class PointLightQuadric : public Light {
 	float intensity;
 public:
-	PointLightQuadric(vec3 position, vec4 color, float intensity) : Light(position, color, vec4(intensity, 0, 0, 0), 0), intensity(intensity) {}
+	PointLightQuadric(vec3 position, vec4 color, float intensity, float r=.1) : Light(position, color, vec4(intensity, 0, 0, 0), 0, r), intensity(intensity) {}
 	PointLightQuadric() : PointLightQuadric(vec3(0, 0, 0), vec4(1, 1, 1, 1), 1) {}
 	using Light::compressToMatrix;
 };
 
 class PointLight: public Light {
-public:
-	PointLight(vec3 position, vec4 color, float intensity_constant, float intensity_linear, float intensity_quadratic) : Light(position, color, vec4(intensity_constant, intensity_linear, intensity_quadratic, 0), 2) {}
-	PointLight(vec3 position, vec4 color, vec3 intensities) : PointLight(position, color, intensities[0], intensities[1], intensities[2]) {}
-	PointLight(vec3 position, vec4 color, float intensity_linear, float intensity_quadratic) : PointLight(position, color, 1, intensity_linear, intensity_quadratic) {}
-	PointLight(vec3 position, vec4 color, float expectedDistance) : PointLight(position, color, 1, 4.5f/expectedDistance, 75.f/(expectedDistance*expectedDistance)) {}
 
-	PointLight(vec3 position, float intensity_constant, float intensity_linear, float intensity_quadratic) : Light(position, WHITE, vec4(intensity_constant, intensity_linear, intensity_quadratic, 0), 2) {}
-	PointLight(vec3 position, vec3 intensities) : PointLight(position, intensities[0], intensities[1], intensities[2]) {}
-	PointLight(vec3 position, float intensity_linear, float intensity_quadratic) : PointLight(position, 1, intensity_linear, intensity_quadratic) {}
-	PointLight(vec3 position, float expectedDistance) : PointLight(position, 1, 4.5f/expectedDistance, 75.f/(expectedDistance*expectedDistance)) {}
-	using Light::compressToMatrix;
+public:
+	PointLight(vec3 position, float intensity_constant, float intensity_linear, float intensity_quadratic, float softShadowRadius=.1f, vec4 color=WHITE);
+
+	PointLight(vec3 position, vec3 intensities, float r=.1f, vec4 color=WHITE) : PointLight(position, intensities[0], intensities[1], intensities[2], r, color) {}
+	PointLight(vec3 position, float intensity_linear, float intensity_quadratic, vec4 color=WHITE) : PointLight(position, 1, intensity_linear, intensity_quadratic, .1f, color) {}
 };
 
 
@@ -419,7 +425,7 @@ public:
 
 	TriangularMesh();
 	explicit TriangularMesh(const std::vector <TriangleR3> &triangles);
-	TriangularMesh(std::vector <Vertex> vertices, std::vector <glm::ivec3> faceIndices);
+	TriangularMesh(std::vector <Vertex> vertices, std::vector <ivec3> faceIndices);
 	explicit TriangularMesh(const char* filename, MeshFormat format = OBJ);
 	TriangularMesh(ComplexCurve* curve, int nSegments, float h_middle, float w_middle, float w_side);
 	std::vector<TriangleR3> getTriangles() const;
@@ -604,7 +610,7 @@ public:
 
 class SuperPencilPlanar : public SuperMesh{
 	float _t=0;
-	std::function<Biholomorphism(float)> _time_operator = [](float t){return Biholomorphism::linear(ONE, ZERO);};
+	std::function<Biholomorphism(float)> _time_operator = [](float t){return Biholomorphism::linear(1, 0);};
 
 public:
 	using SuperMesh::SuperMesh;
@@ -717,7 +723,7 @@ public:
 
   void addAmbientDeformation(End2P _ambient_operator, float t=0);
   void addLocalDeformation(End1P _local_operator, float t=0);
-  void addDeformationAlongVectorField(VectorFieldR3 vectorField, float t=0);
+  void addDeformationAlongVectorField(VectorField vectorField, float t=0);
   void addPencil(std::function<SmoothParametricCurve(float)> family, float t = 0);
   float time() const;
   void transformMesh(float new_t);
