@@ -147,32 +147,52 @@ public:
 	mat3 getI() const {return I;}
 };
 
-class RollingCircularBody {
-	float radius;
-	float mass;
-	float momentOfInertia;
-	SmoothParametricCurve floorArclen;
-	float s;
-	vec3 gravityForce;
+class RollingBody {
+	SmoothParametricCurve boundary; // polar b(phi)
+	SmoothParametricCurve floor; // arclen f(s)
+	vec3 gravity;
+	vec3 centerOfMass;
+	float angularVelocity = 0;
+	float distanceTravelled=0;
+	float polarParam=0;
+	float I_center;
 
+	PolyGroupID boundaryID;
+	PolyGroupID floorID;
+	PolyGroupID centerID;
 
 public:
-	vec3 center() {return contactPoint() + normal()*radius;}
-//	float dAngle() {return omega()/(radius + floorArclen.curvature_radius(s));}
-	vec3 contactPoint() {return floorArclen(s);}
-//	float omega() {return centerSpeed/radius;}
-	float angle() {return ::angle(floorArclen.tangent(0), tangent()) + s/radius;}
-//	float dsdt() {return radius*dAngle();}
-//	vec3 centerVelocity() {return dsdt()*tangent();}
-	vec3 normal() {return floorArclen.normal(s);}
-	vec3 tangent() {return floorArclen.tangent(s);}
-	vec3 centerShift() {return center() - floorArclen(0)+floorArclen.normal(0)*radius;}
-	mat3 rotationMatrix() {return rotationMatrix3(cross(normal(), tangent()), angle());}
+	std::shared_ptr<WeakSuperMesh> mesh;
+	std::shared_ptr<WeakSuperMesh> floormesh;
+	std::shared_ptr<WeakSuperMesh> centermesh;
 
-	void moveByAngle(float dAngle);
-	void moveByDistance(float dDistance) {s += dDistance;}
+	RollingBody(std::shared_ptr<WeakSuperMesh> mesh, SmoothParametricCurve boundary, SmoothParametricCurve floor, vec3 gravity);
+	RollingBody(SmoothParametricCurve boundary, SmoothParametricCurve floor, vec3 polarConeCenter, vec3 gravity, int n, int m, float pipe_r);
+
+	float rollingPathLen(float phi);
+	void roll(float dt);
+	float calculate_angularAcc();
+	void update_omega(float dt);
+	float I_zz(vec3 p);
+	float I_0();
+	vec3 contactPoint() {return floor(distanceTravelled);}
+	vec3 r_contact() {return centerOfMass-contactPoint();}
+	void shift(vec3 v);
+	void rotate(float angle);
+	void step(float dt);
+	float rotationAngle(float d1, float d2);
+
+	void shift(vec3 v, WeakSuperMesh &mesh, WeakSuperMesh &centermesh);
+	void rotate(float angle, WeakSuperMesh &mesh, WeakSuperMesh &centermesh);
+	void step(float dt, WeakSuperMesh &mesh, WeakSuperMesh &centermesh);
+	void roll(float dt, WeakSuperMesh &mesh, WeakSuperMesh &centermesh);
 
 
+	vec3 getCM() {return centerOfMass;}
+	float getAngularVelocity();
+	std::shared_ptr<WeakSuperMesh> getMesh();
+	std::shared_ptr<WeakSuperMesh> getCenterMesh();
+	std::shared_ptr<WeakSuperMesh> getFloorMesh();
 
 };
 
@@ -207,4 +227,4 @@ public:
 	vec3 getCM() const {return centerOfMass;}
 };
 
-//std::pair<RigidBody3D, WeakSuperMesh> boxRigid(vec3 size, vec3 center, float mass, vec3 velocity, vec3 angularVelocity, vec3 angularAcceleration, vec3 linearAcceleration, const mat3 &R);
+std::pair<RigidBody3D, WeakSuperMesh> boxRigid(vec3 size, vec3 center, float mass, vec3 velocity, vec3 angularVelocity, vec3 angularAcceleration, vec3 linearAcceleration, const mat3 &R);

@@ -6,6 +6,17 @@
 Complex planeToDisk(Complex z);
 Complex diskToPlane(Complex z);
 
+
+const Biholomorphism EXP = Biholomorphism::_EXP();
+const Biholomorphism LOG = Biholomorphism::_LOG();
+const Biholomorphism IdC = Biholomorphism::linear(1, 0);
+const Biholomorphism ADD1 = Biholomorphism::linear(1, 1);
+const Biholomorphism SQUARE = Biholomorphism::power(2);
+const Biholomorphism SQRT = Biholomorphism::power(.5f);
+const Matrix<Complex> CAYLEY_MAT = Matrix<Complex>(0.0i+1.f, -1.0i, 1, 1.0i);
+const Matrix<Complex> CAYLEY_MAT_INV = CAYLEY_MAT.inv();
+const Biholomorphism CAYLEY = Biholomorphism::mobius(Matrix<Complex>(0.0i+1.f, -1.0i, 1, 1.0i));
+
 class PlanarMeshWithBoundary;
 class SuperMesh;
 class SuperPencilPlanar;
@@ -22,7 +33,7 @@ public:
 	virtual ~HyperbolicPlane() = default;
 	HyperbolicPlane();
 	explicit HyperbolicPlane(Biholomorphism toH);
-	virtual glm::vec2 geodesicEndsH(Complex z0, Complex z1);
+	virtual vec2 geodesicEndsH(Complex z0, Complex z1);
 	virtual Mob geodesicToVerticalH(Complex z0, Complex z1);
 	virtual ComplexCurve geodesic(Complex z0, Complex z1);
 	virtual ComplexCurve boundary();
@@ -124,7 +135,7 @@ public:
 	float edgeCenter(int i) const;
 	float edgeRadius(int i) const;
 	float edgeEuclideanLength(int i) const;
-	glm::vec2 edgeArgs(int i) const;
+	vec2 edgeArgs(int i) const;
 	int longestEdge() const;
 	std::vector<HyperbolicTriangleH> subdivideLongestEdge(int n);
 	std::vector<HyperbolicTriangleH> subdivide(float max_sidelen, int n=2) const;

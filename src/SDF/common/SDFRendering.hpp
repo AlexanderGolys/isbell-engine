@@ -53,6 +53,8 @@ public:
 
 struct SDFObjectInstance {
 	SDFObject obj;
+	vec3 position;
+	mat3 rotation;
 	SDFMaterialPlus material;
 	vector<vec3> parameters;
 public:
@@ -68,7 +70,7 @@ public:
 	void resolveName(const string &name);
 	SDFObjectInstance smoothUnion(const SDFObjectInstance &other, float k) const;
 	void addParameterToMain(const string &key, vec3 value);
-	void addTranslationAndRotationParameters(vec3 center, mat3 rotation_);
+	void addTranslationAndRotationParameters(vec3 center, mat3 rotation);
 };
 
 
@@ -94,6 +96,7 @@ public:
 	string totalCode() const;
 
 
+	void addMainParameterToObject(const string &name, int objectIndex, const vec3 &value);
 	CodeMacro mainMacro() const;
 	CodeMacro objNumberMacro() const;
 	CodeMacro paramNumberMacro() const;

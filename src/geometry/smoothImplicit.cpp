@@ -1,5 +1,6 @@
 #include "smoothImplicit.hpp"
-
+#include "src/fundamentals/func.hpp"
+#include "src/common/indexedRendering.hpp"
 
 using std::vector, std::string, std::shared_ptr, std::unique_ptr, std::pair, std::make_unique, std::make_shared, std::function;
 
@@ -40,14 +41,14 @@ void SmoothImplicitSurfacePencil::deformMesh(float t, WeakSuperMesh &mesh, float
 
 SmoothImplicitSurfacePencil interpolate(const SmoothImplicitSurface &s1, const SmoothImplicitSurface &s2) {
 	return SmoothImplicitSurfacePencil([F=s1.getF(), G=s2.getF()](float t) {
-		float s = glm::smoothstep(0.f, 1.f, t);
+		float s = smoothstep(0.f, 1.f, t);
 		return (1-s)*F + s*G;
 	});
 }
 
 SmoothImplicitSurfacePencil productMerge(const SmoothImplicitSurface &s1, const SmoothImplicitSurface &s2, float Rmax) {
 	return SmoothImplicitSurfacePencil([F=s1.getF(), G=s2.getF(), Rmax](float t) {
-	float s = glm::smoothstep(0.f, 1.f, t);
+	float s = smoothstep(0.f, 1.f, t);
 	return F*G - s*Rmax;
 	});
 }

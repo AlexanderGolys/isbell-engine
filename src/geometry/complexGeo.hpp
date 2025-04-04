@@ -1,29 +1,39 @@
 #pragma once
 
+#include <utility>
+
 #include "planarGeometry.hpp"
 
+using std::make_shared, std::shared_ptr, std::function, std::vector, std::pair, std::make_unique;
 
-const Mob CayleyTransform = Mob(1, -1.0i, 1, 1.0i);
-const Mob CayleyTransformInv = ~Mob(1, -1.0i, 1, -1.0i);
-const Mob Imob = Mob(1, 0, 0, 1);
+
+// const Mob CayleyTransform = Mob(1, -1.0i, 1, 1.0i);
+// const Mob CayleyTransformInv = ~Mob(1, -1.0i, 1, -1.0i);
+// const Mob Imob = Mob(1, 0, 0, 1);
 
 class ComplexCurve // TODO: make this shit modern
 {
 public:
-    std::unique_ptr<std::function<Complex(float)>> f;
-    float epsilon;
-    std::unique_ptr<std::function<Complex(float)>> df;
-    std::unique_ptr<std::function<Complex(float)>> ddf;
-    std::unique_ptr<std::function<Complex(float)>> N;
+    HOM(float, Complex) _f;
+    float epsilon = .01;
+    HOM(float, Complex) _df;
+    HOM(float, Complex) N;
     bool cyclic;
     float period;
     float t0, t1;
 
-    ComplexCurve(std::function<Complex(float)> curve, float t0, float t1, float period=0.f, float epsilon = 0.01);
-    // explicit ComplexCurve(SmoothParametricPlaneCurve* curve);
-    Complex operator()(float t) const;
-    std::vector<Complex> sample(float t0, float t1, int n);
-    std::vector<Complex> sample(int n);
+	explicit ComplexCurve(HOM(float, Complex) f, bool cyclic=true, float t0=0, float t1=TAU);
+    explicit ComplexCurve(const SmoothParametricPlaneCurve& curve);
+	Complex operator()(float t) const {return _f(t);}
+    vector<Complex> sample(float x0, float x1, int n) {
+		vector<Complex> res ={};
+		for (int i=0; i<n; i++)
+			res.push_back((*this)(lerp(x0, x1, 1.f*i/n)));
+		return res;
+	}
+    vector<Complex> sample(int n) {
+	    return sample(t0, t1, n);
+    }
     ComplexCurve disjointUnion(ComplexCurve &other);
 
     static ComplexCurve line(Complex z0, Complex z1);
@@ -34,68 +44,82 @@ public:
 
 class Meromorphism {
 public:
-	std::shared_ptr<endC> _f; // TODO: is this shared ptr even making sense
-	std::shared_ptr<endC> _df;
-	Meromorphism();
-	Meromorphism(std::shared_ptr<endC> f, std::shared_ptr<endC> df);
-	Meromorphism(std::shared_ptr<endC> f, float eps); // todo
-	Complex operator()(Complex z) const;
-	Complex operator()(vec2 z) const { return (*_f)(Complex(z)); }
-	Complex df(Complex z) const;
-	Complex df(vec2 z) const { return (*_df)(Complex(z)); }
-	operator PlaneSmoothEndomorphism() const; // todo
-	Meromorphism compose(Meromorphism g) const;
-	Meromorphism operator+(Meromorphism g) const;
-	Meromorphism operator*(Meromorphism g) const;
-	Meromorphism operator-() const;
-	Meromorphism operator-(Meromorphism g) const;
-	Meromorphism operator/(Meromorphism g) const;
+	endC _f; // TODO: is this shared ptr even making sense
+	endC _df;
+
+	Meromorphism(const Meromorphism &other);
+	Meromorphism(Meromorphism &&other) noexcept;
+	Meromorphism & operator=(const Meromorphism &other);
+	Meromorphism & operator=(Meromorphism &&other) noexcept;
+	Meromorphism() : _f([](Complex){return Complex(0.f);}), _df([](Complex){return Complex(0.f);}) {}
+	Meromorphism(endC f, endC df) : _f(std::move(f)), _df(std::move(df)) {}
+	explicit Meromorphism(endC f, float eps=.01) : _f(std::move(f)), _df([F=f, e=eps](Complex z){return (F(z + Complex(e)) - F(z))/e;}) {}
+
+	Complex operator()(Complex z) const {return _f(z);}
+	Complex operator()(vec2 z) const { return _f(Complex(z)); }
+	Complex df(Complex z) const { return _df(z); }
+	Complex df(vec2 z) const { return _df(Complex(z)); }
+	Meromorphism compose(const Meromorphism &g) const {return Meromorphism([f=_f, g=g._f](Complex z){return f(g(z));}, [f=_f, df=_df, g=g._f, dg=g._df](Complex z){return df(g(z)) * dg(z);});}
+	Meromorphism operator&(const Meromorphism &g) const {return (this)->compose(g);}
+	Meromorphism operator+(const Meromorphism& g) const {return Meromorphism([f=_f, g=g._f](Complex z){return f(z) + g(z);}, [df=_df, dg=g._df](Complex z){return df(z) + dg(z);});}
+	Meromorphism operator*(const Meromorphism& g) const {return Meromorphism([f=_f, g=g._f](Complex z){return f(z) * g(z);}, [f=_f, df=_df, g=g._f, dg=g._df](Complex z){return f(z) * dg(z) + df(z) * g(z);});}
+	Meromorphism operator-() const {return Meromorphism([f=_f](Complex z){return -f(z);}, [df=_df](Complex z){return -df(z);});}
+	Meromorphism operator-(const Meromorphism& g) const {return *this + -g;}
 };
 
 
 class Biholomorphism : public Meromorphism {
 public:
-	std::shared_ptr<endC> _f_inv;
-	Biholomorphism();
-	Biholomorphism(std::shared_ptr<endC> f, std::shared_ptr<endC> df, std::shared_ptr<endC> f_inv);
-	Biholomorphism(std::shared_ptr<endC> f, std::shared_ptr<endC> f_inv, float eps);
-	Complex f_inv(Complex z) const;
+	Meromorphism f_inv;
+	Biholomorphism(endC f, endC df, endC f_inv) : Meromorphism(std::move(f), df), f_inv(std::move(f_inv)) {}
+	Biholomorphism(endC f, endC f_inv, float eps=.01) : Meromorphism(std::move(f), eps), f_inv(std::move(f_inv), eps) {}
+	Biholomorphism(Meromorphism f, Meromorphism f_inv) : Meromorphism(f), f_inv(f_inv) {}
+
 	Complex inv(Complex z) const { return f_inv(z); }
-	Biholomorphism operator~() const;
+	Biholomorphism operator~() const {return Biholomorphism(f_inv, f_inv._df, _f);}
 	Biholomorphism operator*(Complex a) const;
 	Biholomorphism operator+(Complex a) const;
 	Biholomorphism operator-(Complex a) const;
 	Biholomorphism operator/(Complex a) const;
 	Biholomorphism inv() const { return ~(*this); }
-	operator PlaneAutomorphism() const;
-	Complex operator()(Complex z) const;
+	Complex operator()(Complex z) const { return _f(z); }
 	Biholomorphism compose(Biholomorphism g) const;
-	static Biholomorphism mobius(Matrix<Complex, 2> mobius);
+	static Biholomorphism mobius(Matrix<Complex> m);
 	static Biholomorphism linear(Complex a, Complex b);
 	static Biholomorphism _LOG();
 	static Biholomorphism _EXP();
 	static Biholomorphism power(float a);
-
 };
 
 
 
+
+
+
+
 inline Biholomorphism Biholomorphism::operator*(Complex a) const {
-	return Biholomorphism::linear(a, 0).compose(*this);
+	return linear(a, 0).compose(*this);
 }
 
 inline Biholomorphism Biholomorphism::operator+(Complex a) const {
-	return Biholomorphism::linear(1, a).compose(*this);
+	return linear(1, a).compose(*this);
 }
 
 inline Biholomorphism Biholomorphism::operator-(Complex a) const {
-	return Biholomorphism::linear(1, -a).compose(*this);
+	return linear(1, -a).compose(*this);
 }
 
 inline Biholomorphism Biholomorphism::operator/(Complex a) const {
-	return Biholomorphism::linear(1/a, 0).compose(*this);
+	return linear(1/a, 0).compose(*this);
 }
 
-inline Complex Biholomorphism::operator()(Complex z) const {
-	return (*_f)(z);
+
+inline Biholomorphism Biholomorphism::mobius(Matrix<Complex> m) {
+	Complex a = m[0][0];
+	Complex b = m[0][1];
+	Complex c = m[1][0];
+	Complex d = m[1][1];
+	return Biholomorphism([a, b, c, d](Complex z) {return (a * z + b) / (c * z + d); },
+		[a, b, c, d](Complex z) {return (a * d - b * c) / ((c * z + d) * (c * z + d)); },
+		[a, b, c, d](Complex z) {return (d * z - b) / (-c * z + a); });
 }

@@ -1,5 +1,5 @@
 #pragma once
-#include "../../shading/specific.hpp"
+#include "src/common/specific.hpp"
 
 
 
@@ -83,9 +83,9 @@ public:
 
 	string sdfCode() const;
 
-	SDFObject unitaryPostcompose(const ShaderRealFunction &foo, const RealFunctionR1 &eval) const;
+	SDFObject unitaryPostcompose(const ShaderRealFunction &foo, const RealFunction &eval) const;
 	friend SDFObject binaryPostcompose(const ShaderBinaryOperator &foo, BIHOM(float, float, float) eval, const SDFObject &obj1, const SDFObject &obj2);
-	SDFObject unitaryPostcomposeWithKnownOperator(string operatorName, const RealFunctionR1 &eval) const;
+	SDFObject unitaryPostcomposeWithKnownOperator(string operatorName, const RealFunction &eval) const;
 	friend SDFObject binaryPostcomposeWithKnownOperator(string operatorName, BIHOM(float, float, float) eval, const SDFObject &obj1, const SDFObject &obj2);
 
 	SDFObject translate(vec3 t) const;

@@ -24,6 +24,10 @@ vec4 saturate(vec4 color) {
     return clamp(color, 0., 1.);
 }
 
+float saturate(float x) {
+    return clamp(x, 0., 1.);
+}
+
 int lightMode(mat4 m) {
     return m[3][0] < 1.1 ? 1 : 2;
 }
@@ -73,7 +77,7 @@ void main()
 
 	vec3 normal = normalize(v_normal);
 	float t = v_uv.x;
-	    if (t > time-.5) {
+	    if (t > time-1.2) {
         discard;
     }
 	float width = v_uv.y;
@@ -83,6 +87,7 @@ void main()
 	float speed = v_color.a;
 	vec4 col = vec4(v_color.rgb, 1.);
 
-	color = mix(col*.7, col, smoothstep(0., 1, speed));
-	color = col;
+	color = mix(col*.6, col, smoothstep(0., .1, speed));
+	color = saturate(col/(.8 + .8*pow(time-t, 4)));
+    color.a = 1;
 }

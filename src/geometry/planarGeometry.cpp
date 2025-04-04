@@ -1,6 +1,6 @@
 #include "planarGeometry.hpp"
 #include "glm/glm.hpp"
-//#include "src/common/func.hpp"
+#include "src/fundamentals/func.hpp"
 
 using namespace glm;
 using std::vector, std::string, std::shared_ptr, std::unique_ptr, std::pair, std::make_unique, std::make_shared;
@@ -59,6 +59,14 @@ SmoothParametricPlaneCurve::SmoothParametricPlaneCurve( const std::function<vec2
                                                         bool period, float epsilon) :
                             SmoothParametricPlaneCurve(curve, derivativeOperator(curve, epsilon), t0, t1, period, epsilon) {}
 
+
+SmoothParametricPlaneCurve SmoothParametricPlaneCurve::operator+(vec2 v) const {
+    return SmoothParametricPlaneCurve([f=_f, v](float t){return f(t)+v;}, _df, _ddf, t0.value(), t1.value(), periodic, eps);
+}
+
+SmoothParametricPlaneCurve SmoothParametricPlaneCurve::operator-(vec2 v) const {
+    return SmoothParametricPlaneCurve([f=_f, v](float t){return f(t)-v;}, _df, _ddf, t0.value(), t1.value(), periodic, eps);
+}
 
 vector<vec2> SmoothParametricPlaneCurve::sample(float t0, float t1, int n) const {
 	vector<vec2> result = std::vector<vec2>();

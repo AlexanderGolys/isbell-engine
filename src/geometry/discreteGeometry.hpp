@@ -1,6 +1,6 @@
 #pragma once
 
-#include "../shading/indexedRendering.hpp"
+#include "src/common/indexedRendering.hpp"
 
 
 class TriangulatedManifold : public WeakSuperMesh {
@@ -34,21 +34,21 @@ public:
 class Discrete1Form;
 
 
-class DiscreteRealFunction {
+class DiscreteRealFunctionManifold {
 	FloatVector values;
 	std::shared_ptr<TriangulatedManifold> domain;
 public:
-	explicit DiscreteRealFunction(const vector<float> &values, const std::shared_ptr<TriangulatedManifold> &domain) : values(values), domain(domain) {}
-	explicit DiscreteRealFunction(const FloatVector &values, const std::shared_ptr<TriangulatedManifold> &domain) : values(values), domain(domain) {}
+	explicit DiscreteRealFunctionManifold(const vector<float> &values, const std::shared_ptr<TriangulatedManifold> &domain) : values(values), domain(domain) {}
+	explicit DiscreteRealFunctionManifold(const FloatVector &values, const std::shared_ptr<TriangulatedManifold> &domain) : values(values), domain(domain) {}
 
 	float operator()(int i) { return values[i]; }
-	DiscreteRealFunction operator+(const DiscreteRealFunction &f) const { return DiscreteRealFunction(values + f.values, domain); }
-	DiscreteRealFunction operator-(const DiscreteRealFunction &f) const { return DiscreteRealFunction(values - f.values, domain); }
-	DiscreteRealFunction operator*(float a) const { return DiscreteRealFunction(values*a, domain); }
-	DiscreteRealFunction operator/(float a) const { return DiscreteRealFunction(values/a, domain); }
-	DiscreteRealFunction operator-() const { return DiscreteRealFunction(-values, domain); }
+	DiscreteRealFunctionManifold operator+(const DiscreteRealFunctionManifold &f) const { return DiscreteRealFunctionManifold(values + f.values, domain); }
+	DiscreteRealFunctionManifold operator-(const DiscreteRealFunctionManifold &f) const { return DiscreteRealFunctionManifold(values - f.values, domain); }
+	DiscreteRealFunctionManifold operator*(float a) const { return DiscreteRealFunctionManifold(values*a, domain); }
+	DiscreteRealFunctionManifold operator/(float a) const { return DiscreteRealFunctionManifold(values/a, domain); }
+	DiscreteRealFunctionManifold operator-() const { return DiscreteRealFunctionManifold(-values, domain); }
 	FloatVector toBumpBasis() const;
-	static DiscreteRealFunction bump(int i);
+	static DiscreteRealFunctionManifold bump(int i);
 
 	float edgeLength(int i) const { return length(domain->edgeVector(i)); }
 	float faceArea(int i) const { return abs(det(domain->faceVertices(i))); }

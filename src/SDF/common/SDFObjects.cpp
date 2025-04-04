@@ -45,9 +45,10 @@ void SDFObject::setMain(const ShaderSDFMethodTemplate &main) {
 string SDFObject::randomRenameHelper(int i) {
 	string oldName = helperMethods[i].getName();
 	string newName = helperMethods[i].randomRename();
-	for (int j=i; j<helperMethods.size(); j++)
-		helperMethods[j].applyRenaming(oldName, newName);
-	mainFunction.applyRenaming(oldName, newName);
+	for (auto &helper : helperMethods)
+		helper.replaceFunctionCalls(oldName, newName);
+	mainFunction.replaceFunctionCalls(oldName, newName);
+	return newName;
 }
 
 void SDFObject::randomRenameHelpers() {
@@ -61,6 +62,7 @@ void SDFObject::randomRenameAll() {
 }
 
 string SDFObject::randomRenameMain() {
+	string oldName = mainFunction.getName();
 	string newName = mainFunction.randomRename();
 	return newName;
 }
@@ -82,9 +84,7 @@ string SDFObject::helperCall(int i, const string &args) const {
 	return helperMethods[i].generateCall(args);
 }
 
-string SDFObject::helperCall(int i, const string &arg1, const string &arg2) const {
-	return helperMethods[i].generateCall(arg1, arg2);
-}
+string SDFObject::helperCall(int i, const string &arg1, const string &arg2) const {return helperMethods[i].generateCall(arg1, arg2);}
 
 void SDFObject::renameMainAndResolve(const string &name) {
 	resolveConflictsWithName(name);
@@ -113,7 +113,7 @@ void SDFObject::addHelperWithIncrease(const ShaderMethodTemplateFromUniform &hel
 	helperMethods.back().increseFirstIndex(increase);
  }
 
-SDFObject SDFObject::unitaryPostcomposeWithKnownOperator(string operatorName, const RealFunctionR1 &eval) const {
+SDFObject SDFObject::unitaryPostcomposeWithKnownOperator(string operatorName, const RealFunction &eval) const {
 	RealFunctionR3 combinedSdfEval = eval & _d;
 	ShaderSDFMethodTemplate main = operatorName & mainFunction;
 	SDFObject result = *this;
@@ -123,7 +123,7 @@ SDFObject SDFObject::unitaryPostcomposeWithKnownOperator(string operatorName, co
 }
 
 
-SDFObject SDFObject::unitaryPostcompose(const ShaderRealFunction &foo, const RealFunctionR1 &eval) const {
+SDFObject SDFObject::unitaryPostcompose(const ShaderRealFunction &foo, const RealFunction &eval) const {
 	SDFObject result = unitaryPostcomposeWithKnownOperator(foo.getName(), eval);
 	result.addHelperDefaultIncrease(foo);
 	return result;
@@ -133,26 +133,8 @@ SDFObject SDFObject::unitaryPostcompose(const ShaderRealFunction &foo, const Rea
 
 
 SDFObject binaryPostcompose(const ShaderBinaryOperator &foo, BIHOM(float, float, float) eval, const SDFObject &obj1, const SDFObject &obj2) {
-	auto combinedSdfEval = RealFunctionR3([eval, d1=obj1._d, d2=obj2._d](vec3 p) { return eval(d1(p), d2(p)); });
-	auto result = obj1;
-	result.setEvalSdf(combinedSdfEval);
-	int firstSdfInd = result.numberOfHelpers();
-	int increase = result.firstFreeParamIndex();
-	result.addHelperNoIncrease(obj1.mainFunction);
-
-	for (const auto& helper : obj2.helperMethods)
-		result.addHelperWithIncrease(helper, increase);
-
-	int secondSdfInd = result.numberOfHelpers();
-	result.addHelperWithIncrease(obj2.mainFunction, increase);
-
-	int operatorInd = result.numberOfHelpers();
+	SDFObject result = binaryPostcomposeWithKnownOperator(foo.getName(), eval, obj1, obj2);
 	result.addHelperDefaultIncrease(foo);
-
-	ShaderRealFunctionR3 main = ShaderRealFunctionR3("sdf_sum",
-		result.helperCall(operatorInd, result.helperCall(firstSdfInd, "x") + ", " + result.helperCall(secondSdfInd, "x")),
-		result.firstFreeParamIndex());
-	result.setMain(main);
 	return result;
 }
 
@@ -164,14 +146,13 @@ SDFObject binaryPostcomposeWithKnownOperator(string operatorName, std::function<
 	int increase = result.firstFreeParamIndex();
 
 	result.addHelperNoIncrease(obj1.mainFunction);
-
 	for (const auto& helper : obj2.helperMethods)
 		result.addHelperWithIncrease(helper, increase);
 	int secondSdfInd = result.numberOfHelpers();
 	result.addHelperWithIncrease(obj2.mainFunction, increase);
 
 	ShaderRealFunctionR3 main = ShaderRealFunctionR3("sdf_sum",
-		operatorName + "(" + result.helperCall(firstSdfInd, "x") + ", " + result.helperCall(secondSdfInd, "x") + ")", result.firstFreeParamIndex());
+		operatorName + "(" + result.helperCall(firstSdfInd, "x") + ", " + result.helperCall(secondSdfInd, "x") + ")");
 	result.setMain(main);
 	return result;
 }
@@ -211,18 +192,18 @@ SDFObject SDFObject::operator*(const SDFObject &other) const {
 }
 
 SDFObject SDFObject::operator~() const {
-	return unitaryPostcomposeWithKnownOperator("(-1)*", -RealFunctionR1::x());
+	return unitaryPostcomposeWithKnownOperator("(-1)*", -RealFunction::x());
 }
 
 
 SDFObject SDFObject::offset(float d) const {
 	ShaderRealFunction addition = ShaderRealFunction("sub_d", "x - " + str(d));
-	return unitaryPostcompose(addition, RealFunctionR1([d](float x){ return x - d; }));
+	return unitaryPostcompose(addition, RealFunction([d](float x){ return x - d; }));
 }
 
 SDFObject SDFObject::onion(float thickness) const {
 	ShaderRealFunction modifier = ShaderRealFunction("onion", "abs(x) - " + str(thickness));
-	return unitaryPostcompose(modifier, RealFunctionR1([thickness](float x){ return abs(x) - thickness; }));
+	return unitaryPostcompose(modifier, RealFunction([thickness](float x){ return abs(x) - thickness; }));
 }
 
 SDFObject SDFObject::smoothUnion(const SDFObject &other, float k) const {
@@ -337,9 +318,7 @@ void SDFObject::addTranslationAndRotationParameters() {
 	mainFunction.setBody("\tmat3 M = mat3(__rot0__, __rot1__, __rot2__);\n\tx = transpose(M)*(x-__center__);\n" + mainFunction.getBody());
 }
 
-void SDFObject::addParameterToMain(const string &key) {
-	mainFunction.addParameter(key);
-}
+void SDFObject::addParameterToMain(const string &key) { mainFunction.addParameter(key); }
 
 SDFObject sphereSDF(float radius,const string &name) {
 	auto d = RealFunctionR3([radius](vec3 p) { return length(p) - radius; });
@@ -377,7 +356,7 @@ SDFObject roundBoxSDF(vec3 size, float r,  const string &name) {
 
 SDFObject torusSDF(float r, float R, string name) {
 	auto d_ = RealFunctionR3([r, R](vec3 p) {return norm(vec2(norm(vec2(p.x, p.y))-R,p.z)) - r;});
-	ShaderRealFunctionR3 main = ShaderRealFunctionR3(name, "\tfloat l = length(vec2(length(x.xy)-__r__.y, x.z)) - __r__.x;", "l", {"__r__"});
+	ShaderRealFunctionR3 main = ShaderRealFunctionR3(name, "\tfloat l = length(vec2(length(x.xy)-__r__.y,x.z)) - __r__.x;", "l", {"__r__"});
 	return SDFObject(d_, main);
 }
 
@@ -399,7 +378,7 @@ SDFObject torusSDF(float r, float R, string name) {
 //		vec3 p3 = x - c;
 //		vec3 nor = cross( v21, v13 );
 //
-//	return sqrt( (sign(dot(cross(v21,nor),p1)) +
+//	return SQRT( (sign(dot(cross(v21,nor),p1)) +
 //				  sign(dot(cross(v32,nor),p2)) +
 //				  sign(dot(cross(v13,nor),p3))<2.0)
 //				  ?
@@ -419,7 +398,7 @@ SDFObject torusSDF(float r, float R, string name) {
 //			  "vec3 p3 = x - " + parameters[2] + ";\n" +
 //			  "vec3 nor = cross( v21, v13 );";
 //	},
-//			  string("sqrt( (sign(dot(cross(v21,nor),p1)) +\n") +
+//			  string("SQRT( (sign(dot(cross(v21,nor),p1)) +\n") +
 //				  "sign(dot(cross(v32,nor),p2)) +\n" +
 //				  "sign(dot(cross(v13,nor),p3))<2.0)\n" +
 //				  "?\n" +
@@ -446,7 +425,7 @@ SDFObject torusSDF(float r, float R, string name) {
 //			vec3 ad = a - d;
 //			vec3 xd = x - d;
 //			vec3 nor = cross(ba, ad);
-//		return sqrt(
+//		return SQRT(
 //	(sign(dot(cross(ba,nor),xa)) +
 //	 sign(dot(cross(cb,nor),xb)) +
 //	 sign(dot(cross(dc,nor),xc)) +
@@ -470,7 +449,7 @@ SDFObject torusSDF(float r, float R, string name) {
 //			  "vec3 ad = " + parameters[0] + " - " + parameters[3] + ";\n" +
 //			  "vec3 xd = x - " + parameters[3] + ";\n" +
 //			  "vec3 nor = cross(ba, ad);";
-//	}, string("sqrt(\n") + "(\n" +  "sign(dot(cross(ba,nor),xa)) +\n" +
+//	}, string("SQRT(\n") + "(\n" +  "sign(dot(cross(ba,nor),xa)) +\n" +
 //	 "sign(dot(cross(cb,nor),xb)) +\n" +
 //	 "sign(dot(cross(dc,nor),xc)) +\n" +
 //	 "sign(dot(cross(ad,nor),xd))<3.0)\n" +

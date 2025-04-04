@@ -136,93 +136,6 @@ int SDFMaterialPlus::getExtraIndex(const string &name) const {
 }
 
 
-
-
-
-SDFObjectInstance::SDFObjectInstance(const SDFObject &obj_, const vec3 &position, const mat3 &rotation, const SDFMaterialPlus &material, const vector<vec3> &parameters)
-: obj(obj_),
-material(material),
-parameters(parameters) {
-
-	this->obj.addAffineTransformToCppSDF(position, rotation);
-	addTranslationAndRotationParameters(position, rotation);
-}
-
-SDFObjectInstance::SDFObjectInstance(const SDFObject &obj_, const vec3 &position, const mat3 &rotation, const SDFMaterialPlus &material, const vector<std::map<string, vec3>> &parametersPerTemplate)
-: obj(obj_),
-material(material),
-parameters({}) {
-
-	for (int i = 0; i < parametersPerTemplate.size(); i++) {
-		for (string key: obj.sortedParameterNamesPerFunction(i))
-			parameters.push_back(parametersPerTemplate[i].at(key));
-	}
-	this->obj.addAffineTransformToCppSDF(position, rotation);
-	addTranslationAndRotationParameters(position, rotation);
-
-}
-
-SDFObjectInstance::SDFObjectInstance(const SDFObject &obj_, const vec3 &position, const mat3 &rotation, const SDFMaterialPlus &material,
-                                     const std::map<string, std::map<string, vec3>> &parametersPerTemplate)
-: obj(obj_),
-material(material),
-parameters({})
-{
-	for (auto &helper : obj.sortedTemplateFunctionNames())
-		for (string key: obj.getHelper(helper).getSortedKeys())
-			parameters.push_back(parametersPerTemplate.at(helper).at(key));
-
-	this->obj.addAffineTransformToCppSDF(position, rotation);
-	addTranslationAndRotationParameters(position, rotation);
-}
-
-vector<vec3> SDFObjectInstance::parameterBuffer() const {
-	return parameters;
-}
-
-vector<vec4> SDFObjectInstance::materialBuffer() const {
-	return material.compress();
-}
-
-SDFObject SDFObjectInstance::getObject() const {
-	return obj;
-}
-
-SDFObjectInstance::SDFObjectInstance(const SDFObject &obj, const vec3 &position, const SDFMaterialPlus &material, const vector<vec3> &parameters)
-		: SDFObjectInstance(obj, position, mat3(1), material, parameters) {
-}
-
-SDFObjectInstance::SDFObjectInstance(const SDFObject &obj, const SDFMaterialPlus &material, const vector<vec3> &parameters)
-		: SDFObjectInstance(obj, vec3(0), mat3(1), material, parameters) {
-}
-
-void SDFObjectInstance::resolveName(const string &name) {
-	obj.resolveConflictsWithName(name);
-}
-
-SDFObjectInstance SDFObjectInstance::smoothUnion(const SDFObjectInstance &other, float k) const {
-	return SDFObjectInstance(obj.smoothUnion(other.obj, k), vec3(0), mat3(1), material,
-							 concat(parameters, other.parameters));
-}
-
-void SDFObjectInstance::addParameterToMain(const string &key, vec3 value) {
-	obj.addParameterToMain(key);
-	parameters.push_back(value);
-}
-
-void SDFObjectInstance::addTranslationAndRotationParameters(vec3 center_, mat3 rotation_) {
-	obj.addTranslationAndRotationParameters();
-	parameters.push_back(center_);
-	parameters.push_back(rotation_[0]);
-	parameters.push_back(rotation_[1]);
-	parameters.push_back(rotation_[2]);
-}
-
-
-
-
-
-
 SDFScene::SDFScene(const vector<SDFObjectInstance> &objectInstances, const string &objectNumberKey, const string &paramNumberKey, const string &sdfKey)
 		: objects({}), materialParamSize(objectInstances[0].material.size()), materialBuffer({}), parameterBuffer({}), objectNumberKey(objectNumberKey), paramNumberKey(paramNumberKey),
 		  sdfKey(sdfKey) {
@@ -333,6 +246,12 @@ int SDFScene::getParameterSize() const {
 	return parameterBuffer.size();
 }
 
+void SDFScene::addMainParameterToObject(const string &name, int objectIndex, const vec3 &value) {
+	int bufferIndex = objects[objectIndex].firstFreeParamIndex();
+	objects[objectIndex].addParameterToMain(name);
+	parameterBuffer.insert(parameterBuffer.begin() + bufferIndex, value);
+}
+
 
 
 SDFRenderingStep::SDFRenderingStep(const std::shared_ptr<ShaderProgram> &shader, const SDFScene &object)
@@ -424,4 +343,74 @@ int SDFRenderer::mainLoop() {
 
 void SDFRenderer::addSDFStep(const shared_ptr<SDFRenderingStep> &step) {
 	sdfSteps.push_back(step);
+}
+
+SDFObjectInstance::SDFObjectInstance(const SDFObject &obj, const vec3 &position, const mat3 &rotation, const SDFMaterialPlus &material, const vector<vec3> &parameters)
+		: obj(obj), position(position), rotation(rotation), material(material), parameters(parameters) {
+	this->obj.addAffineTransformToCppSDF(position, rotation);
+	addTranslationAndRotationParameters(position, rotation);
+}
+
+SDFObjectInstance::SDFObjectInstance(const SDFObject &obj, const vec3 &position, const mat3 &rotation, const SDFMaterialPlus &material, const vector<std::map<string, vec3>> &parametersPerTemplate)
+		: obj(obj), position(position), rotation(rotation), material(material), parameters({}) {
+
+	for (int i = 0; i < parametersPerTemplate.size(); i++) {
+		for (string key: obj.sortedParameterNamesPerFunction(i))
+			parameters.push_back(parametersPerTemplate[i].at(key));
+	}
+	this->obj.addAffineTransformToCppSDF(position, rotation);
+	addTranslationAndRotationParameters(position, rotation);
+
+}
+
+SDFObjectInstance::SDFObjectInstance(const SDFObject &obj, const vec3 &position, const mat3 &rotation, const SDFMaterialPlus &material,
+                                     const std::map<string, std::map<string, vec3>> &parametersPerTemplate)
+		: obj(obj), position(position), rotation(rotation), material(material), parameters({}) {
+	for (string helper: keys(parametersPerTemplate))
+		for (string key: obj.getHelper(helper).getSortedKeys())
+			parameters.push_back(parametersPerTemplate.at(helper).at(key));
+
+	this->obj.addAffineTransformToCppSDF(position, rotation);
+	addTranslationAndRotationParameters(position, rotation);
+}
+
+vector<vec3> SDFObjectInstance::parameterBuffer() const {
+	return parameters;
+}
+
+vector<vec4> SDFObjectInstance::materialBuffer() const {
+	return material.compress();
+}
+
+SDFObject SDFObjectInstance::getObject() const {
+	return obj;
+}
+
+SDFObjectInstance::SDFObjectInstance(const SDFObject &obj, const vec3 &position, const SDFMaterialPlus &material, const vector<vec3> &parameters)
+		: SDFObjectInstance(obj, position, mat3(1), material, parameters) {
+}
+
+SDFObjectInstance::SDFObjectInstance(const SDFObject &obj, const SDFMaterialPlus &material, const vector<vec3> &parameters)
+		: SDFObjectInstance(obj, vec3(0), mat3(1), material, parameters) {
+}
+
+void SDFObjectInstance::resolveName(const string &name) {
+	obj.resolveConflictsWithName(name);
+}
+
+SDFObjectInstance SDFObjectInstance::smoothUnion(const SDFObjectInstance &other, float k) const {
+	return SDFObjectInstance(obj.smoothUnion(other.obj, k), vec3(0), mat3(1), material, concat(parameters, other.parameters));
+}
+
+void SDFObjectInstance::addParameterToMain(const string &key, vec3 value) {
+	obj.addParameterToMain(key);
+	parameters.push_back(value);
+}
+
+void SDFObjectInstance::addTranslationAndRotationParameters(vec3 center, mat3 rotation) {
+	obj.addTranslationAndRotationParameters();
+	parameters.push_back(center);
+	parameters.push_back(rotation[0]);
+	parameters.push_back(rotation[1]);
+	parameters.push_back(rotation[2]);
 }

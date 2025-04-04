@@ -1,6 +1,12 @@
 #pragma once
+#include <array>
 
-#include "../shading/indexedRendering.hpp"
+#include <iosfwd>
+#include <utility>
+#include <vector>
+
+//#include "src/common/indexedRendering.hpp"
+
 #include "smoothParametric.hpp"
 
 class AffineLine;
