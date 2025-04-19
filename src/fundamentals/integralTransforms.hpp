@@ -125,3 +125,84 @@ public:
 	RealFunction inv_cnt(FiniteSequence<Complex> fn) const override;
 	FiniteSequence<float> frequencies() const;
 };
+
+
+class DiscreteGaborTransform {
+	DiscreteRealFunction shroom_kernel;
+	int step;
+public:
+	explicit DiscreteGaborTransform(const DiscreteRealFunction &shroom_kernel, int step=1) : shroom_kernel(shroom_kernel), step(step) {}
+	explicit DiscreteGaborTransform(int k, int step=1) : DiscreteGaborTransform(DiscreteRealFunction(EXP_R&(-X_R*X_R*PI), vec2(-1.91, 1.91), k), step) {}
+
+	int window_size() const { return shroom_kernel.samples(); }
+
+	DiscreteComplexFunctionR2 transform(const DiscreteRealFunction &f) const {
+		vector<DiscreteComplexFunction> res;
+		int win_size = window_size();
+		auto padded = f.two_sided_zero_padding(f.samples() + win_size);
+		for (int i = 0; i < padded.samples()-win_size; i+=step) {
+			auto piece = (padded.slice(i, i+win_size)*shroom_kernel).fft();
+			piece.setDom(-1, 1);
+			// for (int j = 0; j < step; j++)
+			res.push_back(piece);
+		}
+		return DiscreteComplexFunctionR2(res, f.getDomain());
+	}
+
+	DiscreteComplexFunctionR2 transform_print(const DiscreteRealFunction &f) const {
+		vector<DiscreteComplexFunction> res;
+		int win_size = window_size();
+		auto padded = f.two_sided_zero_padding(f.samples() + win_size);
+		for (int i = 0; i < padded.samples()-win_size; i+=step) {
+			auto piece = (padded.slice(i, i+win_size)*shroom_kernel).fft();
+			piece.setDom(-1, 1);
+			res.push_back(piece);
+			if (i % ((padded.samples()-win_size)/20) < step)
+				std::cout << "progress: " << (int)100.f*(i+1)/(padded.samples()-win_size) << "%" << std::endl;
+
+		}
+		return DiscreteComplexFunctionR2(res, f.getDomain());
+	}
+};
+
+
+class MultiplierOperator {
+	virtual DiscreteComplexFunction kernel(int n) const = 0;
+public:
+	virtual ~MultiplierOperator() = default;
+	DiscreteComplexFunction operator()(const DiscreteComplexFunction &f) const {
+		return (f.fft() * kernel(f.samples())).ifft();
+	}
+	DiscreteRealFunction operator()(const DiscreteRealFunction &f) const {
+		return (f.fft() * kernel(f.samples())).ifft().re();
+	}
+	// DiscreteComplexFunctionR2 operator()(const DiscreteComplexFunctionR2 &f, int var) const {
+	// 	return (f.fft(var) * kernel(
+	// }
+	// TODO: All operations that mix two-variable discrete functions with one variable need some systematic implementation. In particular convolution on one component, multiplication on one component.
+};
+
+
+class higherDerivativeMultiplier : public MultiplierOperator {
+	int ord;
+public:
+	explicit higherDerivativeMultiplier(int ord) : ord(ord) {}
+	DiscreteComplexFunction kernel(int n) const override {
+		return DiscreteComplexFunction(Vector<Complex>(n, [n=n, ord=ord](int k) {
+		return pow(1.0i*(TAU/n)*k, ord) ;
+		}), vec2(-1, 1));
+	}
+};
+
+
+
+class MeanValueMultiplier : public MultiplierOperator {
+public:
+	MeanValueMultiplier(){}
+
+	DiscreteComplexFunction kernel(int n) const override {
+		return DiscreteComplexFunction(Vector<Complex>(n, [n=n](int k) {
+		return Complex(k==0);
+		}), vec2(-1, 1));
+	}
+};

@@ -120,7 +120,7 @@ public:
 	Vector operator/(const T &f) const requires DivisionRing<T> { return *this * (T(1) / f); }
 	Vector operator+(const Vector &v) const { return Vector(n, [this, v](int i) { return coefs[i] + v[i]; }); }
 	Vector operator-(const Vector &v) const { return *this + v * -1; }
-	Vector operator-() const { return *this * -1; }
+	Vector operator-() const { return *this * -T(1); }
 	explicit operator std::string() const { return std::format("({})", coefs); }
 
 	int length() const { return n; }
@@ -819,10 +819,11 @@ public:
 	auto operator==(float f) const -> bool;
 	static auto one() -> Complex;
 	static auto zero() -> Complex;
-	auto expForm() const -> vec2;
-	auto arg() const -> float;
-	auto conj() const -> Complex;
-	auto pow(float exponent) const -> Complex;
+	vec2 expForm() const;
+	float arg() const;
+	Complex conj() const;
+	Complex pow(int k) const;
+	Complex pow(float exponent) const;
 	float re() const;
 	float im() const;
 
@@ -838,6 +839,9 @@ public:
 
 	bool nearlyEqual(Complex c) const;
 	bool nearlyZero() const { return nearlyEqual(Complex(0, 0)); }
+
+	// __repr__ analogue
+	std::string to_str() const { return std::format("{0}+{1}i", x, y); }
 };
 
 

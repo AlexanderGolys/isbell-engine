@@ -370,7 +370,7 @@ void WeakSuperMesh::addNewPolygroup(const std::vector<Vertex> &hardVertices, con
 		boss->setExtra(vertices[id][i].getIndex(), extra0[i], 0);
 }
 
-void WeakSuperMesh::addNewPolygroup(const vector<Vertex> &hardVertices, const vector<ivec3> &faceIndices, const std::variant<int, std::string> &id, const vector<vec4> &extra0, const vector<mat4> &extra) {
+void WeakSuperMesh::addNewPolygroup(const vector<Vertex> &hardVertices, const vector<ivec3> &faceIndices, const PolyGroupID &id, const vector<vec4> &extra0, const vector<mat4> &extra) {
 	addNewPolygroup(hardVertices, faceIndices, id);
 	for (int i = 0; i < vertices[id].size(); i++)
 		boss->setExtra(vertices[id][i].getIndex(), extra0[i], 0);
@@ -464,12 +464,15 @@ void WeakSuperMesh::mergeAndKeepID(const WeakSuperMesh &other) {
 		addNewPolygroup(other.getVertices(id), other.getIndices(id), id);
 }
 
-void WeakSuperMesh::copyPolygroup(const WeakSuperMesh &other, const std::variant<int, std::string> &id, const std::variant<int, std::string> &newId) {
-	addNewPolygroup(other.getVertices(id), other.getIndices(id), newId);
-}
+void WeakSuperMesh::copyPolygroup(const WeakSuperMesh &other, const PolyGroupID &id, const PolyGroupID &newId) {
+	vector<Vertex> vertices = other.getVertices(id);
+	vector<ivec3> indices = other.getIndices(id);
+	addNewPolygroup(vertices, indices, newId);}
 
-void WeakSuperMesh::copyPolygroup(const std::variant<int, std::string> &id, const std::variant<int, std::string> &newId) {
-	copyPolygroup(*this, id, newId);
+void WeakSuperMesh::copyPolygroup(const PolyGroupID &id, PolyGroupID newId) {
+	vector<Vertex> vertices = getVertices(id);
+	vector<ivec3> indices = getIndices(id);
+	addNewPolygroup(vertices, indices, newId);
 }
 
 bool WeakSuperMesh::hasExtra0() const {
@@ -545,7 +548,7 @@ bool WeakSuperMesh::hasGlobalTextures() const {
 	return !isActive(MATERIAL1) && material->textured();
 }
 
-BufferedVertex & WeakSuperMesh::getAnyVertexFromPolyGroup(const std::variant<int, std::string> &id) {
+BufferedVertex & WeakSuperMesh::getAnyVertexFromPolyGroup(const PolyGroupID &id) {
 	return vertices.at(id).front();
 }
 
@@ -615,7 +618,7 @@ void WeakSuperMesh::initGlobalTextures() const {
 		material->initTextures();
 }
 
-void WeakSuperMesh::affineTransform(const mat3 &M, vec3 v, const std::variant<int, std::string> &id) {
+void WeakSuperMesh::affineTransform(const mat3 &M, vec3 v, const PolyGroupID &id) {
 	deformWithAmbientMap(id, SpaceEndomorphism::affine(M, v));
 }
 
@@ -624,7 +627,7 @@ void WeakSuperMesh::affineTransform(const mat3 &M, vec3 v) {
 		affineTransform(M, v, name);
 }
 
-void WeakSuperMesh::shift(vec3 v, const std::variant<int, std::string> &id) {
+void WeakSuperMesh::shift(vec3 v, const PolyGroupID &id) {
 	affineTransform(mat3(1), v, id);
 }
 
@@ -632,7 +635,7 @@ void WeakSuperMesh::shift(vec3 v) {
 	affineTransform(mat3(1), v);
 }
 
-void WeakSuperMesh::scale(float s, const std::variant<int, std::string> &id) {
+void WeakSuperMesh::scale(float s, const PolyGroupID &id) {
 	affineTransform(mat3(s), vec3(0), id);
 }
 
@@ -1226,8 +1229,11 @@ PlanarDiffusedPatterns::PlanarDiffusedPatterns(const VectorFieldR2 &X, float dt,
 	}
 }
 
-PipeCurveVertexShader::PipeCurveVertexShader(const SmoothParametricCurve &curve, float r, int horRes, int radialRes): r(r) {
-	auto id = randomID();
+PipeCurveVertexShader::PipeCurveVertexShader(const SmoothParametricCurve &curve, float r, int horRes, int radialRes)
+: r(r), id(randomID())
+{
+	boss = make_unique<BufferManager>(std::set({POSITION, NORMAL, UV, COLOR, INDEX, EXTRA0}));
+
 	auto params = linspace(curve.getT0(), curve.getT1(), horRes);
 	vector<vec3> normals = vector<vec3>();
 	vector<vec3> binormals = vector<vec3>();
@@ -1260,10 +1266,13 @@ PipeCurveVertexShader::PipeCurveVertexShader(const SmoothParametricCurve &curve,
 		}
 	}
 	addNewPolygroup(verts, inds, id);
+
 }
 
-PipeCurveVertexShader::PipeCurveVertexShader(const RealFunction &plot, vec2 dom, float r, int horRes, int radialRes) {
-	auto id = randomID();
+PipeCurveVertexShader::PipeCurveVertexShader(const RealFunction &plot, vec2 dom, float r, int horRes, int radialRes) : id(randomID()) {
+	boss = make_unique<BufferManager>(std::set({POSITION, NORMAL, UV, COLOR, INDEX, EXTRA0}));
+
+
 	auto params = linspace(dom.x, dom.y, horRes);
 
 	vector<Vertex> verts = vector<Vertex>();
@@ -1289,8 +1298,10 @@ PipeCurveVertexShader::PipeCurveVertexShader(const RealFunction &plot, vec2 dom,
 	addNewPolygroup(verts, inds, id);
 }
 
-PipeCurveVertexShader::PipeCurveVertexShader(const DiscreteRealFunction &plot, float r, int radialRes) {
-	auto id = randomID();
+PipeCurveVertexShader::PipeCurveVertexShader(const DiscreteRealFunction &plot, float r, int radialRes) : id(randomID()) {
+	boss = make_unique<BufferManager>(std::set({POSITION, NORMAL, UV, COLOR, INDEX, EXTRA0}));
+
+
 	vec2 dom = plot.getDomain();
 	auto horRes = plot.samples();
 	auto params = linspace(dom.x, dom.y, horRes);
@@ -1320,7 +1331,7 @@ PipeCurveVertexShader::PipeCurveVertexShader(const DiscreteRealFunction &plot, f
 }
 
 void PipeCurveVertexShader::updateCurve(const SmoothParametricCurve &curve) {
-	deformPerVertex([this, &curve](BufferedVertex &v) {
+	deformPerVertex(id, [this, &curve](BufferedVertex &v) {
 		float t = v.getUV().x;
 		vec3 p = curve(t);
 		vec3 b = curve.binormal(t);
@@ -1337,9 +1348,13 @@ void PipeCurveVertexShader::updateCurve(const SmoothParametricCurve &curve) {
 	});
 }
 
+void PipeCurveVertexShader::duplicateCurve(const PolyGroupID &copy_id) {
+	copyPolygroup(id, copy_id);
+}
+
 void PipeCurveVertexShader::updateCurve(const DiscreteRealFunction &plot) {
 	auto df = plot.derivative();
-	deformPerVertex([this, &plot, &df](BufferedVertex &v) {
+	deformPerVertex(id, [this, &plot, &df](BufferedVertex &v) {
 		float t = v.getUV().x;
 		vec3 p = vec3(t, 0, plot(t));
 		vec3 n = normalize(vec3(df(t), 0, -1));
@@ -1347,8 +1362,18 @@ void PipeCurveVertexShader::updateCurve(const DiscreteRealFunction &plot) {
 		v.setNormal(n);
 	});}
 
+
+void PipeCurveVertexShader::updateCurve(const DiscreteRealFunction &plot, const DiscreteRealFunction &df_precomputed) {
+	deformPerVertex(id, [this, &plot, &df_precomputed](BufferedVertex &v) {
+		float t = v.getUV().x;
+		vec3 p = vec3(t, 0, plot(t));
+		vec3 n = normalize(vec3(df_precomputed(t), 0, -1));
+		v.setPosition(p);
+		v.setNormal(n);
+	});}
+
 void PipeCurveVertexShader::updateRadius(const HOM(float, float) &r) {
-	deformPerVertex([this, &r](BufferedVertex &v) {
+	deformPerVertex(id, [this, &r](BufferedVertex &v) {
 		float t = v.getUV().x;
 		v.setColor(r(t), 3);
 	});}
@@ -1524,10 +1549,13 @@ SurfacePlotDiscretisedMesh::SurfacePlotDiscretisedMesh(const DiscreteRealFunctio
 	vector<Vertex> points = vector<Vertex>();
 	vector<ivec3> triangles = vector<ivec3>();
 
+	auto ts = plot.args_t();
+	auto xs = plot.args_x();
+
 	for (int i = 0; i < plot.samples_t(); i++) {
-		float t = plot.args_t()[i];
+		float t = ts[i];
 		for (int j = 0; j < plot.samples_x(); j++) {
-			float x = plot.args_x()[j];
+			float x = xs[j];
 			vec3 p = vec3(x, t, plot[i][j]);
 			vec3 n = e3;
 			if (i > 0 && j > 0) {
@@ -1544,3 +1572,38 @@ SurfacePlotDiscretisedMesh::SurfacePlotDiscretisedMesh(const DiscreteRealFunctio
 	addNewPolygroup(points, triangles, randomID());
 
 }
+
+SurfacePolarPlotDiscretisedMesh::SurfacePolarPlotDiscretisedMesh(const DiscreteRealFunctionR2 &plot, float r, float rot_speed) {
+	DiscreteRealFunctionR2 f = plot;
+	f.setDomain_x(vec2(-PI, PI));
+	vector<Vertex> points = vector<Vertex>();
+	vector<ivec3> triangles = vector<ivec3>();
+
+	auto ts = f.args_t();
+	auto xs = f.args_x();
+	int nt = ts.size();
+	int nx = xs.size();
+
+	for (int i = 0; i < nt; i++) {
+		float t = ts[i];
+		for (int j = 0; j < nx; j++) {
+			float phi = xs[j] + t*rot_speed;
+			// float R = r-f[i][j];
+			float R = r-log(1+f[i][j]);
+
+			vec3 p = vec3(R*sin(phi), t, R*cos(phi));
+			vec3 n = -vec3(sin(phi), 0, cos(phi));
+			if (i > 0) {
+				auto p1 = points.back().getPosition();
+				auto p2 = points.at(points.size()-nx).getPosition();
+				if (j == 0)
+					p2 = points.at(points.size()-2).getPosition();
+				n = normalize(cross(p1-p, p2-p));
+				if (dot(n, vec3(sin(phi), 0, cos(phi))) < 0) n = -n;
+				triangles.emplace_back((i-1)*nx+(j-1+nx)%nx, (i-1)*nx+j, i*nx+j);
+				triangles.emplace_back((i-1)*nx+(j-1+nx)%nx, i*nx+j, i*nx+(j-1+nx)%nx);
+			}
+			points.emplace_back(p, vec2(phi, t), n, vec4(0));
+		}
+	}
+	addNewPolygroup(points, triangles, randomID());}

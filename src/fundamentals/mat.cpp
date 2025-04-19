@@ -4,11 +4,9 @@
 #include <cmath>
 #include <cstdio>
 #include <cstdlib>
-#include <iostream>
 #include <set>
 #include <sstream>
 #include <vector>
-#include <GL/glew.h>
 #include <glm/glm.hpp>
 #include <glm/gtc/matrix_transform.hpp>
 
@@ -56,14 +54,18 @@ Complex Complex::operator*(Complex c) const { return Complex(vec2(z.x * c.z.x - 
 
 Complex Complex::conj() const { return Complex(vec2(z.x, -z.y)); }
 
+Complex Complex::pow(int k) const {
+	if (k == 0) return Complex(1, 0);
+	if (k == 1) return *this;
+	if (k < 0) return inv().pow(-k);
+	if (k % 2 == 0) return pow(k / 2)*pow(k / 2);
+	return *this * pow(k - 1);
+}
+
 Complex Complex::operator~() const { return Complex(z.x / norm2(z), -z.y / norm2(z)); }
-
 void Complex::operator+=(const Complex &c) { z += c.z; }
-
 void Complex::operator-=(const Complex &c) { z -= c.z; }
-
 void Complex::operator*=(const Complex &c) { z = vec2(z.x * c.z.x - z.y * c.z.y, z.x * c.z.y + z.y * c.z.x); }
-
 void Complex::operator/=(const Complex &c) { *this *= c.inv(); }
 
 
@@ -75,7 +77,6 @@ Complex Complex::operator-() const { return Complex(-z); }
 
 
 float Complex::re() const { return z.x; }
-
 float Complex::im() const { return z.y; }
 
 
@@ -186,7 +187,7 @@ vector<Complex> allRootsOf1(int n) {
 
 Complex exp(Complex c) {
 	// if (c.nearlyZero()) return Complex(1, 0);
-	return Complex(cos(c.imag()), sin(c.imag())) * std::exp(c.real());
+	return Complex(std::cos(c.imag()), std::sin(c.imag())) * std::exp(c.real());
 }
 
 Complex log(Complex c) { return Complex(std::log(norm(c.z)), c.arg()); }
@@ -544,7 +545,7 @@ FloatMatrix FloatMatrix::operator*(const std::vector<std::vector<float> > &M) co
 	return result;
 }
 
-std::vector<float> FloatMatrix::operator*(const std::vector<float> &v) const { return (*this * vector<vec69 >{v})[0]; }
+vector<float> FloatMatrix::operator*(const vector<float> &v) const { return (*this * vector<vec69 >{v})[0]; }
 FloatVector FloatMatrix::operator*(const FloatVector &v) const { return FloatVector(*this * v.getVec()); }
 FloatMatrix FloatMatrix::operator-() const { return *this * (-1.f); }
 FloatMatrix FloatMatrix::operator/(float x) const { return *this * (1.f / x); }
@@ -602,7 +603,7 @@ FloatMatrix FloatMatrix::GramSchmidtProcess() {
 FloatMatrix::FloatMatrix(vector<std::vector<float>> &&data) { this->data = std::move(data); }
 
 
-std::pair<Complex, Complex> eigenvalues(mat2 m) {
+pair<Complex, Complex> eigenvalues(mat2 m) {
 	float tr  = m[0][0] + m[1][1];
 	float det = m[0][0] * m[1][1] - m[0][1] * m[1][0];
 	float D   = tr * tr - 4 * det;
@@ -611,7 +612,7 @@ std::pair<Complex, Complex> eigenvalues(mat2 m) {
 }
 
 
-std::pair<vec2, mat2> eigendecomposition(mat2 m) {
+pair<vec2, mat2> eigendecomposition(mat2 m) {
 	vec2 lambda = eigenvaluesReal(m);
 	if (isClose(m[0][1] * m[1][0], 0)) lambda = vec2(m[0][0], m[1][1]);
 	vec2 v1 = vec2(lambda.x - m[1][1], m[0][1]);

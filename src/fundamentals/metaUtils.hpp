@@ -1149,3 +1149,29 @@ public:
 		return ::factorial(abs()) / factorial();
 	}
 };
+
+
+inline vector<string> split(const string &s, char delim) {
+	vector<string> res;
+	std::stringstream ss(s);
+	string item;
+	while (std::getline(ss, item, delim)) {
+		res.push_back(item);
+	}
+	return res;
+}
+
+inline vector<string> split(const string &s, const string &delim) {
+	vector<string> res;
+	size_t start = 0;
+	size_t end = s.find(delim);
+	while (end != string::npos) {
+		res.push_back(s.substr(start, end - start));
+		start = end + delim.length();
+		end = s.find(delim, start);
+	}
+	res.push_back(s.substr(start, end));
+	return res;
+}
+
+inline float angleBetween(vec3 vec3, glm::vec3 down) {return  acos(glm::dot(vec3, down)/length(vec3));}

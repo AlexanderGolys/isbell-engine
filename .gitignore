@@ -27,8 +27,8 @@ CMakeLists.txt
 CMakeSettings.json
 Makefile
 .idea
-src/tests/experimentalTests.cpp
-/src/tests/
+src/.tests/experimentalTests.cpp
+/src/.tests/
 !/main_renders/actOnPoint.cpp
 
 !/main_renders/bezier.cpp

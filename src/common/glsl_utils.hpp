@@ -280,7 +280,7 @@ public:
 
 
 class Renderer {
-	float frameOlderTimeThanThePublicOne = 0;
+	float last_time_capture = 0;
 	float since_last_scr = 0;
 
 public:

@@ -11,9 +11,9 @@
 
 
 #include "filesUtils.hpp"
-#include "monads.hpp"
 #include "mat.hpp"
 #include "modules.hpp"
+#include "monads.hpp"
 
 
 std::string polyGroupIDtoString(PolyGroupID id);
@@ -716,35 +716,68 @@ const auto COS_RC = ComplexValuedFunction([](float t) { return cos(Complex(t)); 
 const auto EXP_RC = ComplexValuedFunction([](float t) { return exp(Complex(t)); }, 0.01);
 
 
+
+template<typename Domain, typename Codomain>
+class DiscreteSingleVariableFunction {
+	int size = 2;
+public:
+	Domain dom_a, dom_b;
+
+	DiscreteSingleVariableFunction(Domain a, Domain b, int size) : size(size), dom_a(a), dom_b(b) {}
+	virtual ~DiscreteSingleVariableFunction() = default;
+
+	int samples() const { return size; }
+
+	float sampling_step() const {
+		if (size < 2) return dom_b - dom_a;
+		return (dom_b -dom_a) / (size-1);
+	}
+
+	bool starts_from_zero() const { return isClose(0, norm(dom_a)); }
+
+	bool symmetric() const { return isClose(0, norm(dom_a + dom_b)); }
+
+	void setDom(Domain a, Domain b) {
+		dom_a = a;
+		dom_b = b;
+	}
+};
+
+
+
 class DiscreteRealFunction;
 
-class DiscreteComplexFunction {
+
+class DiscreteComplexFunction : public DiscreteSingleVariableFunction<float, Complex> {
 	Vector<Complex> fn;
-	vec2 domain;
 public:
-	DiscreteComplexFunction(const Vector<Complex> &fn, vec2 domain) : fn(fn), domain(domain) {}
+	DiscreteComplexFunction(const Vector<Complex> &fn, vec2 domain) : DiscreteSingleVariableFunction(domain.x, domain.y, fn.length()), fn(fn) {}
+	DiscreteComplexFunction(const Vector<Complex> &fn, float dom_a, float dom_b) : DiscreteComplexFunction(fn, vec2(dom_a, dom_b)) {}
+	DiscreteComplexFunction(const vector<Complex> &fn, vec2 domain) : DiscreteSingleVariableFunction(domain.x, domain.y, fn.size()), fn(fn){}
 	DiscreteComplexFunction(const HOM(float, Complex) &fn, vec2 domain, int sampling);
 
-	int samples() const { return fn.size(); }
-	float sampling_step() const { return (domain[1] - domain[0]) / (samples()-1); }
-	Complex operator[](int i) const { return fn[i]; }
-	Vector<Complex> getVector() const { return fn; }
-	vec2 getDomain() const { return domain; }
 
+	Vector<Complex> getVector() const { return fn; }
+	vec2 domain() const { return vec2(dom_a, dom_b); }
+	vec2 getDomain() const { return domain(); }
+	Complex operator[](int i) const { return fn[i]; }
+	void setDomain(vec2 domain) { setDom(domain.x, domain.y); }
 
 	DiscreteComplexFunction(const DiscreteComplexFunction &other);
 	DiscreteComplexFunction(DiscreteComplexFunction &&other) noexcept;
 	DiscreteComplexFunction & operator=(const DiscreteComplexFunction &other);
 	DiscreteComplexFunction & operator=(DiscreteComplexFunction &&other) noexcept;
+
+
 	explicit DiscreteComplexFunction(const DiscreteRealFunction &other);
 
-	DiscreteComplexFunction operator+(const DiscreteComplexFunction &g) const;;
-	DiscreteComplexFunction operator+(Complex a) const;;
-	DiscreteComplexFunction operator+(float a) const;;
+	DiscreteComplexFunction operator+(const DiscreteComplexFunction &g) const;
+	DiscreteComplexFunction operator+(Complex a) const;
+	DiscreteComplexFunction operator+(float a) const;
 	friend DiscreteComplexFunction operator+(float a, const DiscreteComplexFunction &f) { return f + a; }
 	friend DiscreteComplexFunction operator+(Complex a, const DiscreteComplexFunction &f) { return f + a; }
 
-	DiscreteComplexFunction operator-() const { return DiscreteComplexFunction(-fn, domain); }
+	DiscreteComplexFunction operator-() const { return DiscreteComplexFunction(-fn, domain()); }
 	DiscreteComplexFunction operator-(const DiscreteComplexFunction &g) const { return (*this) + (-g); }
 	DiscreteComplexFunction operator-(float a) const { return (*this) + (-a); }
 	DiscreteComplexFunction operator-(Complex a) const { return (*this) + (-a); }
@@ -768,21 +801,20 @@ public:
 	DiscreteRealFunction abs() const;
 	DiscreteRealFunction arg() const;
 	DiscreteComplexFunction conj() const;
-	vector<float> args() const { return linspace(domain[0], domain[1], samples()); }
+	vector<float> args() const { return linspace(dom_a, dom_b, samples()); }
 
 
 	DiscreteComplexFunction fft() const;
-	DiscreteComplexFunction ifft() const;
+	DiscreteComplexFunction ifft_() const;
+	DiscreteComplexFunction ifft() const { return ifft_()*(1.f/samples()); }
 
 	Complex integral() const { return sum<Complex>(fn) * sampling_step(); }
 	float L2_norm() const { return norm((*this * conj()).integral()); }
-
-	float supp_len() const { return domain[1] - domain[0]; }
+	float supp_len() const { return dom_b-dom_a; }
 
 	DiscreteComplexFunction shift_domain_left() const;
 	DiscreteComplexFunction shift_domain_right() const;
-	bool starts_from_zero() const { return isClose(0, domain[0]); }
-	bool symmetric() const { return isClose(domain[0], -domain[1]); }
+	DiscreteComplexFunction downsample(int factor, int shift=0) const;
 };
 
 
@@ -791,8 +823,9 @@ class DiscreteRealFunction {
 	Vector<float> fn;
 	vec2 domain;
 public:
-	DiscreteRealFunction() = default;
+	DiscreteRealFunction() = delete;
 	DiscreteRealFunction(const Vector<float> &fn, vec2 domain);
+	DiscreteRealFunction(const vector<float> &fn, vec2 domain) : DiscreteRealFunction(Vector(fn), domain) {}
 	DiscreteRealFunction(const HOM(float, float) &f, vec2 domain, int sampling);
 
 	int samples() const { return fn.size(); }
@@ -800,6 +833,7 @@ public:
 	float operator[](int i) const { return fn[i]; }
 	Vector<float> getVector() const { return fn; }
 	vec2 getDomain() const { return domain; }
+	void setDomain(vec2 domain) { this->domain = domain; }
 
 	DiscreteRealFunction(const DiscreteRealFunction &other);
 	DiscreteRealFunction(DiscreteRealFunction &&other) noexcept;
@@ -818,19 +852,32 @@ public:
 	DiscreteRealFunction operator*(const DiscreteRealFunction &g) const { return DiscreteRealFunction(fn.pointwise_product(g.fn), domain); }
 	DiscreteRealFunction operator*(float a) const { return DiscreteRealFunction(fn * a, domain); }
 	friend DiscreteRealFunction operator*(float a, const DiscreteRealFunction &f) { return f * a; }
-	DiscreteRealFunction operator/(const DiscreteRealFunction &g) const;
+	DiscreteRealFunction operator/(const DiscreteRealFunction &g) const { return DiscreteRealFunction(fn.pointwise_division(g.fn), domain); }
 	DiscreteRealFunction operator/(float a) const { return this->operator*(1.0/a); }
 
+	friend DiscreteRealFunction max(const DiscreteRealFunction &f, const DiscreteRealFunction &g);
+	friend DiscreteRealFunction max(const DiscreteRealFunction &f, float g);
+	friend DiscreteRealFunction max(float f, const DiscreteRealFunction &g);
+	friend DiscreteRealFunction min(const DiscreteRealFunction &f, const DiscreteRealFunction &g);
+	friend DiscreteRealFunction min(const DiscreteRealFunction &f, float g);
+	friend DiscreteRealFunction min(float f, const DiscreteRealFunction &g);
+	friend DiscreteRealFunction maxAbs(const DiscreteRealFunction &f, const DiscreteRealFunction &g);
+
+	DiscreteRealFunction slice(int a, int b) const;
+
 	float operator()(float x) const;
-
 	DiscreteRealFunction two_sided_zero_padding(int target_size) const;
-
-	DiscreteComplexFunction fft() const {return DiscreteComplexFunction(*this).fft();}
+	DiscreteComplexFunction fft() const;
 
 	DiscreteRealFunction convolve(const DiscreteRealFunction &kernel) const;
+	DiscreteRealFunction smoothen(float L) const {
+		auto k = DiscreteRealFunction([L](float x){return exp(-x*x/L/L);}, domain, samples());
+		k = k / L2_norm();
+		return convolve(k);
+	}
 	DiscreteRealFunction derivative() const;
 	float integral() const { return sum(fn) * sampling_step(); }
-	float L2_norm() const { return sqrt((*this * *this).integral()); }
+	float L2_norm() const { return ::sqrt((*this * *this).integral()); }
 	float integral(int b) const { return sum(fn.slice_to(b)) * sampling_step(); }
 	float integral(int a, int b) const { return sum(fn.slice(a, b)) * sampling_step(); }
 
@@ -840,6 +887,11 @@ public:
 
 	DiscreteRealFunction shift_domain_left() const;
 	DiscreteRealFunction shift_domain_right() const;
+	DiscreteRealFunction downsample(int factor) const;
+	DiscreteRealFunction downsample(int factor, int shift) const;
+	DiscreteRealFunction downsample_max(int factor) const;
+
+
 	bool starts_from_zero() const { return isClose(0, domain[0]); }
 	bool symmetric() const { return isClose(domain[0], -domain[1]); }
 
@@ -849,46 +901,49 @@ class DiscreteRealFunctionR2;
 
 
 class DiscreteComplexFunctionR2 {
-	Vector<DiscreteComplexFunction> fn;
+	vector<DiscreteComplexFunction> fn;
 	vec2 domain;
 public:
-	DiscreteComplexFunctionR2(const vector<DiscreteComplexFunction> &fn, vec2 domain) : fn(fn), domain(domain) {}
+	DiscreteComplexFunctionR2(const vector<DiscreteComplexFunction> &fn, vec2 domain);
 	DiscreteComplexFunctionR2(const vector<HOM(float, Complex)> &f, vec2 domain, int sampling);
+
 	DiscreteComplexFunctionR2(const DiscreteComplexFunctionR2 &other) = default;
 	DiscreteComplexFunctionR2(DiscreteComplexFunctionR2 &&other) noexcept = default;
 	DiscreteComplexFunctionR2 & operator=(const DiscreteComplexFunctionR2 &other) = default;
 	DiscreteComplexFunctionR2 & operator=(DiscreteComplexFunctionR2 &&other) noexcept = default;
 
-	DiscreteComplexFunction operator[](int t) const { return fn[t]; }
-	int samples_t () const { return fn.size(); }
-	int samples_x () const { return fn[0].samples(); }
-	float sampling_step_t() const { return (domain[1] - domain[0]) / (samples_t()-1); }
-	float sampling_step_x() const { return fn[0].sampling_step(); }
-	vector<float> args_t() const { return linspace(domain[0], domain[1], samples_t()); }
-	vector<float> args_x() const { return fn[0].args(); }
+	int samples_t () const;
+	int samples_x () const;
+	ivec2 samples() const { return ivec2(samples_t(), samples_x()); }
+	float sampling_step_t() const;
+	float sampling_step_x() const;
+	vector<float> args_t() const;
+	vector<float> args_x() const;
+	void setDomain(vec2 domain) { this->domain = domain; }
 
 	DiscreteComplexFunctionR2 operator+(const DiscreteComplexFunctionR2 &g) const;
 	DiscreteComplexFunctionR2 operator+(Complex a) const;
 	DiscreteComplexFunctionR2 operator+(float a) const;
-	friend DiscreteComplexFunctionR2 operator+(float a, const DiscreteComplexFunctionR2 &f) { return f + a; }
-	friend DiscreteComplexFunctionR2 operator+(Complex a, const DiscreteComplexFunctionR2 &f) { return f + a; }
-	DiscreteComplexFunctionR2 operator-() const { return DiscreteComplexFunctionR2((-fn).vec(), domain); }
-	DiscreteComplexFunctionR2 operator-(const DiscreteComplexFunctionR2 &g) const { return (*this) + (-g); }
-	DiscreteComplexFunctionR2 operator-(float a) const { return (*this) + (-a); }
-	DiscreteComplexFunctionR2 operator-(Complex a) const { return (*this) + (-a); }
-	friend DiscreteComplexFunctionR2 operator-(float a, const DiscreteComplexFunctionR2 &f) { return f + -a; }
-	friend DiscreteComplexFunctionR2 operator-(Complex a, const DiscreteComplexFunctionR2 &f) { return f + -a; }
+	friend DiscreteComplexFunctionR2 operator+(float a, const DiscreteComplexFunctionR2 &f);
+	friend DiscreteComplexFunctionR2 operator+(Complex a, const DiscreteComplexFunctionR2 &f);
+	DiscreteComplexFunctionR2 operator-() const;
+	DiscreteComplexFunctionR2 operator-(const DiscreteComplexFunctionR2 &g) const;
+	DiscreteComplexFunctionR2 operator-(float a) const;
+	DiscreteComplexFunctionR2 operator-(Complex a) const;
+	friend DiscreteComplexFunctionR2 operator-(float a, const DiscreteComplexFunctionR2 &f);
+	friend DiscreteComplexFunctionR2 operator-(Complex a, const DiscreteComplexFunctionR2 &f);
 	DiscreteComplexFunctionR2 operator*(const DiscreteComplexFunctionR2 &g) const;
 	DiscreteComplexFunctionR2 operator*(Complex a) const;
-	DiscreteComplexFunctionR2 operator*(float a) const { return this->operator*(Complex(a)); }
-	friend DiscreteComplexFunctionR2 operator*(float a, const DiscreteComplexFunctionR2 &f) { return f * a; }
-	friend DiscreteComplexFunctionR2 operator*(Complex a, const DiscreteComplexFunctionR2 &f) { return f * a; }
+	DiscreteComplexFunctionR2 operator*(float a) const;
+	friend DiscreteComplexFunctionR2 operator*(float a, const DiscreteComplexFunctionR2 &f);
+	friend DiscreteComplexFunctionR2 operator*(Complex a, const DiscreteComplexFunctionR2 &f);
 	DiscreteComplexFunctionR2 operator/(const DiscreteComplexFunctionR2 &g) const;
-	DiscreteComplexFunctionR2 operator/(float a) const { return this->operator*(1.0/a); }
-	DiscreteComplexFunctionR2 operator/(Complex a) const { return this->operator*(1.0/a); }
-	Complex operator()(float t, float x) const { return fn[t](x); }
-	Complex operator()(vec2 x) const { return fn[x.x](x.y); }
+	DiscreteComplexFunctionR2 operator/(float a) const;
+	DiscreteComplexFunctionR2 operator/(Complex a) const;
 
+	DiscreteComplexFunction operator[](int t) const;
+	Complex operator()(float t, float x) const;
+	Complex operator()(vec2 x) const;
 
 
 
@@ -899,69 +954,23 @@ public:
 	Complex double_integral(int i_t) const;
 	Complex double_integral(int i_t, int i_x) const;
 
-	DiscreteComplexFunctionR2 fft_t() const {
-		vector<DiscreteComplexFunction> res = vector<DiscreteComplexFunction>();
-		for (auto &f : fn) {
-			res.push_back(f.fft());
-		}
-		return DiscreteComplexFunctionR2(res, domain);
-	}
+	DiscreteComplexFunctionR2 fft_t() const;
+	DiscreteComplexFunctionR2 ifft_t() const;
+	DiscreteComplexFunctionR2 fft_x() const;
+	DiscreteComplexFunctionR2 ifft_x() const;
+	DiscreteComplexFunctionR2 fft() const;
+	DiscreteComplexFunctionR2 fft(int var) const;;
+	DiscreteComplexFunctionR2 ifft(int var) const;;
+	DiscreteComplexFunctionR2 ifft() const;
 
-	DiscreteComplexFunctionR2 ifft_t() const {
-		vector<DiscreteComplexFunction> res = vector<DiscreteComplexFunction>();
-		for (auto &f : fn) {
-			res.push_back(f.ifft());
-		}
-		return DiscreteComplexFunctionR2(res, domain);
-	}
-	DiscreteComplexFunctionR2 fft_x() const {
-		return transpose().fft_t().transpose();
-	}
-	DiscreteComplexFunctionR2 ifft_x() const {
-		return transpose().ifft_t().transpose();
-	}
-	DiscreteComplexFunctionR2 fft() const {
-		float Lt=domain[1]-domain[0];
-		float Lx=fn[0].getDomain()[1]-fn[0].getDomain()[0];
-		vector<DiscreteComplexFunction> res = vector<DiscreteComplexFunction>();
+	DiscreteRealFunctionR2 re() const;
+	DiscreteRealFunctionR2 im() const;
+	DiscreteRealFunctionR2 abs() const;
+	DiscreteRealFunctionR2 arg() const;
 
-		for (int it=0; it<samples_t(); ++it) {
-			auto v = Vector<Complex>(samples_x(), [fn=fn, nx=samples_x(), Lx, Lt, nt=samples_t(), it](int ix) {
-				Complex c = 0;
-				for (int jx=0; jx<nx; ++jx)
-					for (int kt=0; kt<nt; ++kt)
-						c += exp(-1.0i * (TAU/nx  * ix*jx) - 1.0i * (TAU/nt * it*kt))*fn[kt][jx];
-				return c;
-			});
-			res.push_back(DiscreteComplexFunction(v, vec2(0, TAU/Lx)));
-		}
-		return DiscreteComplexFunctionR2(res, vec2(0, TAU/Lt));
-	}
-
-
-	DiscreteComplexFunctionR2 ifft() const {
-		float wt=domain[1];
-		float wx=fn[0].getDomain()[1];
-		vector<DiscreteComplexFunction> res = vector<DiscreteComplexFunction>();
-
-		for (int it=0; it<samples_t(); ++it) {
-			auto v = Vector<Complex>(samples_x(), [fn=fn, nx=samples_x(), nt=samples_t(), it](int ix) {
-				Complex c = 0;
-				for (int jx=0; jx<nx; ++jx)
-					for (int kt=0; kt<nt; ++kt)
-						c += exp(1.0i * (TAU/nx  * ix*jx) + 1.0i * (TAU/nt * it*kt))*fn[kt][jx];
-				return c/(nt*nx);
-			});
-			res.push_back(DiscreteComplexFunction(v, vec2(0, TAU/wx)));
-		}
-		return DiscreteComplexFunctionR2(res, vec2(0, TAU/wt));
-	}
-
-	DiscreteRealFunctionR2 re();
-	DiscreteRealFunctionR2 im();
-	DiscreteRealFunctionR2 abs();
-	DiscreteRealFunctionR2 arg();
-
+	DiscreteComplexFunctionR2 downsample_t(int factor) const;
+	DiscreteComplexFunctionR2 downsample_x(int factor) const;
+	DiscreteComplexFunctionR2 downsample(int factor_t, int factor_x) const;
 };
 
 
@@ -969,13 +978,8 @@ class DiscreteRealFunctionR2 {
 	vector<DiscreteRealFunction> fn;
 	vec2 domain;
 public:
-	DiscreteRealFunctionR2(const vector<DiscreteRealFunction> &fn, vec2 domain) : fn(fn), domain(domain) {}
-	DiscreteRealFunctionR2(const vector<HOM(float, float)> &f, vec2 domain, int sampling) {
-		fn = vector<DiscreteRealFunction>();
-		for (int i=0; i<f.size(); i++) {
-			fn.emplace_back(f[i], domain, sampling);
-		}
-	}
+	DiscreteRealFunctionR2(const vector<DiscreteRealFunction> &fn, vec2 domain);
+	DiscreteRealFunctionR2(const vector<HOM(float, float)> &f, vec2 domain, int sampling);
 	DiscreteRealFunctionR2(const DiscreteRealFunctionR2 &other) = default;
 	DiscreteRealFunctionR2(DiscreteRealFunctionR2 &&other) noexcept = default;
 	DiscreteRealFunctionR2 & operator=(const DiscreteRealFunctionR2 &other) = default;
@@ -992,50 +996,90 @@ public:
 	DiscreteRealFunctionR2 operator-(float a) const;
 	friend DiscreteRealFunctionR2 operator-(float a, const DiscreteRealFunctionR2 &f);
 	DiscreteRealFunctionR2 operator*(float a) const;
-	friend DiscreteRealFunctionR2 operator*(float a, const DiscreteRealFunctionR2 &f);
 	DiscreteRealFunctionR2 operator/(float a) const;
 	friend DiscreteRealFunctionR2 operator/(float a, const DiscreteRealFunctionR2 &f);
 	DiscreteRealFunctionR2 operator/(const DiscreteRealFunctionR2 &g) const;
-
-
-
 	DiscreteRealFunctionR2 operator*(const DiscreteRealFunctionR2 &g) const;
 
-	int samples_t () const { return fn.size(); }
-	int samples_x () const { return fn[0].samples(); }
-	float sampling_step_t() const { return (domain[1] - domain[0]) / (samples_t()-1); }
-	float sampling_step_x() const { return fn[0].sampling_step(); }
-	vector<float> args_t() const { return linspace(domain[0], domain[1], samples_t()); }
-	vector<float> args_x() const { return fn[0].args(); }
+	DiscreteRealFunctionR2 dfdx() const;
+
+
+	int samples_t () const;
+	int samples_x () const;
+	ivec2 samples() const { return ivec2(samples_t(), samples_x()); }
+	float sampling_step_t() const;
+	float sampling_step_x() const;
+	vector<float> args_t() const;
+	vector<float> args_x() const;
+	void setDomain_t(vec2 domain) { this->domain = domain; }
+	void setDomain_x(vec2 domain) { for (auto &f : fn) f.setDomain(domain); }
+	vec2 domain_x() const { return fn[0].getDomain(); }
 
 	DiscreteRealFunctionR2 transpose() const;
-	DiscreteRealFunction integrate_t() const {return transpose().integrate_x(); }
-	DiscreteRealFunction integrate_x() const {return DiscreteRealFunction(Vector<float>(fn.size(), [&](int i) { return fn[i].integral(); }), domain); }
-	float double_integral() const { return integrate_x().integral(); }
-	float double_integral(int i_t) const { return integrate_x().integral(i_t); }
+	DiscreteRealFunction integrate_t() const;
+	DiscreteRealFunction integrate_x() const;
+	float double_integral() const;
+	float double_integral(int i_t) const;
 	float double_integral(int i_t, int i_x) const;
-
-	DiscreteComplexFunctionR2 complexify() const {
-		vector<DiscreteComplexFunction> res = vector<DiscreteComplexFunction>();
-		for (auto &f : fn) {
-			res.push_back(DiscreteComplexFunction(f, domain, f.samples()));
+	DiscreteRealFunctionR2 double_convolve(const DiscreteRealFunctionR2 &kernel) const;
+	DiscreteRealFunctionR2 convolve_x(const DiscreteRealFunction &kernel) const {
+		vector<DiscreteRealFunction> convolved;
+		convolved.reserve(fn.size());
+		auto k_ = kernel;
+		if (kernel.samples() > samples_x()) throw std::runtime_error("DiscreteRealFunction: kernel too long to convolve");
+		if (kernel.samples() < samples_x()) {
+			k_ = k_.two_sided_zero_padding(samples_x());
 		}
-		return DiscreteComplexFunctionR2(res, domain);
+		auto k_fft = k_.fft();
+		for (const auto &f : fn) {
+			convolved.push_back((f.fft() * k_fft).ifft().re());
+		}
+		return DiscreteRealFunctionR2(convolved, domain);
+	}
+	DiscreteRealFunctionR2 convolve_x(const DiscreteRealFunctionR2 &kernel) const {
+		vector<DiscreteRealFunction> convolved;
+		convolved.reserve(fn.size());
+
+		for (int i = 0; i < fn.size(); ++i) {
+			convolved.push_back(fn[i].convolve(kernel[i]));
+		}
+		return DiscreteRealFunctionR2(convolved, domain);
+	}
+	DiscreteRealFunctionR2 smoothen_x(float L) const {
+		auto k = DiscreteRealFunction([L](float x){return exp(-x*x/L/L);}, domain_x(), samples_x());
+		k = k / k.L2_norm();
+		return convolve_x(k);
+	}
+	DiscreteRealFunctionR2 smoothen_t(float L) const {
+		return transpose().smoothen_x(L).transpose();
 	}
 
-	DiscreteComplexFunctionR2 fft_t () const {
-		return complexify().fft_t();
-	}
+	DiscreteComplexFunctionR2 complexify() const;
 
-	DiscreteComplexFunctionR2 fft_x () const {
-		return complexify().fft_x();
-	}
+	DiscreteComplexFunctionR2 fft_t () const;
+	DiscreteComplexFunctionR2 fft_x () const;
+	DiscreteComplexFunctionR2 fft() const;
+	DiscreteComplexFunctionR2 fft(int var) const;;
 
-	DiscreteComplexFunctionR2 fft() const {
-		return complexify().fft();
-	}
-
-	DiscreteRealFunctionR2 double_convolve(const DiscreteRealFunctionR2 &kernel) const {
-		return (this->fft()*(kernel.fft())).ifft().re();
-	}
+	DiscreteRealFunctionR2 downsample_t(int factor) const;
+	DiscreteRealFunctionR2 downsample_t(int factor, int shift) const;
+	DiscreteRealFunctionR2 downsample_t_max(int factor) const;
+	DiscreteRealFunctionR2 downsample_x(int factor) const;
+	DiscreteRealFunctionR2 downsample_x(int factor, int shift) const;
+	DiscreteRealFunctionR2 downsample_x_max(int factor) const;
+	DiscreteRealFunctionR2 downsample(int factor_t, int factor_x) const;
+	DiscreteRealFunctionR2 downsample_max(int factor_t, int factor_x) const;
 };
+
+
+DiscreteRealFunction loadSequence(const CodeFileDescriptor &file, vec2 domain);
+
+
+
+RealFunction smoothenReLu(float c0, float x_change_to_id);
+RealFunction expImpulse(float peak, float decay=1);
+RealFunction expImpulse_k(float peak, float decay=1, float k=1);
+RealFunction cubicShroom(float center, float margin);
+RealFunction powerShroom(float begin, float end, float zeroExponent, float oneExponent);
+RealFunction toneMap(float k);
+RealFunction rationalInfiniteShroom(float steepFactor, float center);

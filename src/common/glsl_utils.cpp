@@ -1151,9 +1151,8 @@ void Renderer::initMainWindow(Resolution resolution, const char *title) {
 }
 
 void Renderer::resetTimer() {
-	float dt = glfwGetTime() - this->frameOlderTimeThanThePublicOne;
-	this->frameOlderTimeThanThePublicOne = 0;
-	this->time = dt;
+	// float dt = glfwGetTime() - this->last_time_capture;
+	this->time = 0;
 }
 
 void Renderer::addRenderingStep(std::shared_ptr<RenderingStep> renderingStep)
@@ -1204,10 +1203,10 @@ float Renderer::initFrame()
 	glClearColor(this->bgColor.x, this->bgColor.y, this->bgColor.z, 1.0f);
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT );
 
-	float real_dt =  glfwGetTime() - this->frameOlderTimeThanThePublicOne;
-    this->dt = real_dt*animSpeed(this->time);
-	this->time += dt;
-	this->frameOlderTimeThanThePublicOne = glfwGetTime();
+	float real_dt =  glfwGetTime() - last_time_capture;
+    dt = real_dt*animSpeed(time);
+	time += dt;
+	last_time_capture = glfwGetTime();
 	return this->time;
 }
 
@@ -1265,8 +1264,8 @@ void Renderer::initRendering()
     glBindVertexArray(vao);
     // glBindFramebuffer(GL_DRAW_FRAMEBUFFER, 0);
 
-    // glShadeModel(GL_SMOOTH);
-	glShadeModel(GL_FLAT);
+    glShadeModel(GL_SMOOTH);
+	// glShadeModel(GL_FLAT);
 
 	glEnable(GL_DEPTH_TEST);
 	glDepthFunc(GL_LESS);

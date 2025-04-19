@@ -8,11 +8,12 @@ protected:
 	float k, t_max;
 	int t_res;
 	DiscreteRealFunction green(float t, float x) const;
-
 public:
 	HeatRealLineHomoDiscrete (DiscreteRealFunction u0, float k, float t_max, int t_res) : u0(std::move(u0)), k(k), t_max(t_max), t_res(t_res) {}
 	virtual DiscreteRealFunctionR2 solution() const;
 	virtual ~HeatRealLineHomoDiscrete() = default;
+
+	float t_step() const {return t_max/t_res;}
 };
 
 

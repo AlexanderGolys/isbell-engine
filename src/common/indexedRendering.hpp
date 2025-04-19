@@ -82,6 +82,8 @@ public:
     vec2 getUV(int index) const { return stds->uvs[index]; }
     vec4 getColor(int index) const { return stds->colors[index]; }
     vec4 getExtra(int index, int slot = 1) const;
+	vec4 getExtra0(int index) const { return (*extra0)[index]; }
+
     float getExtraSlot(int index, int slot = 1, int component = 3) const { return getExtra(index, slot)[component]; }
     ivec3 getFaceIndices(int index) const { return (*indices)[index]; }
     Vertex getVertex(int index) const { return Vertex(getPosition(index), getUV(index), getNormal(index), getColor(index)); }
@@ -94,10 +96,11 @@ public:
     void setMaterial(int index, mat4 value);
 	void setFaceIndices(int index, const ivec3 &in) { indices->at(index) = in; }
 
-
-    void setExtra(int index, vec4 value, int slot = 1);
-    void setExtra(int index, vec3 value, int slot = 1);
-    void setExtra(int index, float value, int slot = 1, int component = 3);
+	void setExtra0(int index, vec4 v) {(*extra0)[index] = v; }
+	void setExtra0(int index, float value, int component = 0) {(*extra0)[index][component] = value; }
+    void setExtra(int index, vec4 value, int slot = 0);
+    void setExtra(int index, vec3 value, int slot = 0);
+    void setExtra(int index, float value, int slot = 0, int component = 3);
 	bool hasExtra0() const {return activeBuffers.contains(EXTRA0); }
 	bool hasExtra1() const {return activeBuffers.contains(EXTRA1); }
 	bool hasExtra2() const {return activeBuffers.contains(EXTRA2); }
@@ -124,8 +127,10 @@ public:
   vec2 getUV() const { return bufferBoss.getUV(index); }
   vec4 getColor() const { return bufferBoss.getColor(index); }
   vec4 getExtra(int slot = 1) const { return bufferBoss.getExtra(index, slot); }
+  vec4 getExtra0() const { return bufferBoss.getExtra0(index); }
+
   Vertex getVertex() const { return Vertex(getPosition(), getUV(), getNormal(), getColor()); }
-	vec2 getSurfaceParams() const {return vec2(getColor());}
+  vec2 getSurfaceParams() const {return vec2(getColor());}
 
   void setPosition(vec3 value) { bufferBoss.setPosition(index, value); }
   void setNormal(vec3 value) { bufferBoss.setNormal(index, value); }
@@ -134,6 +139,8 @@ public:
   void setColor(float value, int i) { bufferBoss.setColor(index, value, i); }
   void setMaterial(const mat4 &value) { bufferBoss.setMaterial(index, value); }
   void setExtra(vec4 value, int slot = 1) { bufferBoss.setExtra(index, value, slot); }
+  void setExtra0(vec4 value) { bufferBoss.setExtra0(index, value); }
+
   void setExtra(vec3 value, int slot = 1) { bufferBoss.setExtra(index, value, slot); }
   void setExtra(float value, int slot = 1, int component = 3) { bufferBoss.setExtra(index, value, slot, component); }
   void applyFunction(const SpaceEndomorphism &f);
@@ -236,7 +243,7 @@ public:
   void merge (const WeakSuperMesh &other);
   void mergeAndKeepID(const WeakSuperMesh &other);
   void copyPolygroup(const WeakSuperMesh &other, const PolyGroupID &id, const PolyGroupID &newId);
-	void copyPolygroup(const PolyGroupID &id, const PolyGroupID &newId);
+  void copyPolygroup(const PolyGroupID &id, PolyGroupID newId);
 
   bool hasExtra0() const;
   bool hasExtra1() const;
@@ -452,16 +459,25 @@ public:
 
 class PipeCurveVertexShader : public WeakSuperMesh {
 	float r;
+	PolyGroupID id;
 public:
 	PipeCurveVertexShader(const SmoothParametricCurve &curve, float r, int horRes, int radialRes);
 	PipeCurveVertexShader(const RealFunction &plot, vec2 dom, float r, int horRes, int radialRes);
 	PipeCurveVertexShader(const DiscreteRealFunction &plot, float r, int radialRes);
 
 	void updateCurve(const SmoothParametricCurve &curve);
+
+	void duplicateCurve(const PolyGroupID &copy_id);
 	void updateCurve(const DiscreteRealFunction &plot);
+	void updateCurve(const DiscreteRealFunction &plot, const DiscreteRealFunction &df_precomputed);
 
 	void updateRadius(const HOM(float, float) &r);
 };
+
+
+
+
+
 
 class SurfacePlotDiscretisedMesh : public WeakSuperMesh {
 public:
@@ -470,6 +486,11 @@ public:
 
 
 
+
+class SurfacePolarPlotDiscretisedMesh : public WeakSuperMesh {
+public:
+	explicit SurfacePolarPlotDiscretisedMesh(const DiscreteRealFunctionR2 &plot, float r=1, float rot_speed=0);
+};
 
 
 

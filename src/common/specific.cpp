@@ -772,6 +772,10 @@ SmoothParametricCurve PLCurve(std::vector<vec3> points) {
 	}, "PL", 0, points.size()-1, points[0]==points[points.size()-1], .01);
 }
 
+SmoothParametricCurve segment(vec3 p0, vec3 p1, float t0, float t1) {
+	return SmoothParametricCurve([p0, p1, t0, t1](float t) { return (p1*(t-t0) + p0*(t1-t))/(t1-t0); }, "seg", t0, t1, false, .01);
+}
+
 SmoothParametricPlaneCurve GernsterWave(float a, float b, float k, float c) {
 	return SmoothParametricPlaneCurve([a, b, k, c](float t) {
 		return vec2(a + ::exp(b*k)/k* ::sin(a*k + t*k*c),

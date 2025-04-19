@@ -1,8 +1,8 @@
 //#pragma clang diagnostic push
 //#pragma ide diagnostic ignored "HidingNonVirtualFunction"
 #pragma once
-#include <io.h>
 
+// #include "func.hpp"
 #include "metaUtils.hpp"
 
 const string DEFAULT_CONFIG_PATH = "C:\\Users\\PC\\Desktop\\ogl-master\\src";
@@ -242,7 +242,9 @@ public:
 
 	friend ShaderRealFunctionR3 operator&(const string &f1Name, const ShaderRealFunctionR3 &f2);
 	ShaderRealFunctionR3 composeReturnWith(const ShaderMethodTemplate &f2) const;
-
 };
+
+
+
 
 #pragma clang diagnostic pop

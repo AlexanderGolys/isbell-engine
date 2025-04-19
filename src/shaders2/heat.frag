@@ -4,6 +4,8 @@ in vec3 v_position;
 in vec3 v_normal;
 in vec2 v_uv;
 in vec4 v_color;
+in vec4 v_extra;
+
 
 layout(location = 0) out vec4 color;
 
@@ -81,9 +83,9 @@ void main()
 //    }
 	vec3 normal = v_normal/length(v_normal);
     vec4 c = texture(texture_diffuse,  v_uv);
-    c.r = mix(0.3, .7, smoothstep(0, 0.5, v_position.z));
+    c.r = mix(0.25, .7, smoothstep(0, 0.5, v_position.z));
     c.b = mix(0.3, .7, smoothstep(0, -0.5, v_position.z));
-    c.g = .3;
+    c.g = .2;
 	color = saturate(saturate(colorFromPointlight(light1, camPosition, v_position, normal, c)) +
 			saturate(colorFromPointlight(light2, camPosition, v_position, normal, c)) +
 			saturate(colorFromPointlight(light3, camPosition, v_position, normal, c)));
@@ -91,6 +93,10 @@ void main()
 
 //    color.a = max(0.0, pow(1-v_position.y/5.0, 1));
     float good = smoothstep(.3, 1.0, v_position.z);
-    color = saturate(color + vec4(1, .6, .3, 1)*mix(0, 1.0, good));
-    color.a = 1.0-good;
+    float great = smoothstep(.45, 1.5, v_position.z);
+    color = saturate(color + vec4(.7, .5, .3, 1)*mix(0.0, 0.7, pow(great, 2))+vec4(1, .5, .2, 1)*mix(0, 1, good));
+    float near = (.2+.8*smoothstep(15, 0, abs(v_position.y)));
+    float far = mix(exp(-abs(v_position.y-15)), 1, smoothstep(18, 15, abs(v_position.y)));
+    color = color*near*far;
+//    color.a -= v_extra.x*v_extra.y;
 }
