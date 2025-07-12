@@ -20,69 +20,70 @@ misc-*
 misc*
 out
 src/.vscode
-src/textures
+res/textures
 .hgignore
 BUILDING.txt
 CMakeLists.txt
 CMakeSettings.json
 Makefile
 .idea
-src/.tests/experimentalTests.cpp
-/src/.tests/
-!/main_renders/actOnPoint.cpp
+src/tests/experimentalTests.cpp
+/src/tests/
+!/src/render-projects/older/actOnPoint.cpp
 
-!/main_renders/bezier.cpp
+!/src/render-projects/older/bezier.cpp
 
-!/src/config.txt
+!/config/config.txt
 
-!/main_renders/coons.cpp
+!/src/render-projects/older/coons.cpp
 
-!/main_renders/curvatureFlow.cpp
+!/src/render-projects/older/curvatureFlow.cpp
 
-!/main_renders/curvatures.cpp
+!/src/render-projects/older/curvatures.cpp
 
-!/main_renders/curvesDemo.cpp
+!/src/render-projects/older/curvesDemo.cpp
 
-!/main_renders/differentHyperbolic.cpp
+!/src/render-projects/older/differentHyperbolic.cpp
 
-!/main_renders/flowArt.cpp
+!/src/render-projects/older/flowArt.cpp
 
-!/main_renders/flowArt2.cpp
+!/src/render-projects/older/flowArt2.cpp
 
-!/main_renders/flows.cpp
+!/src/render-projects/older/flows.cpp
 
-!/main_renders/geoDisplace.cpp
+!/src/render-projects/older/geoDisplace.cpp
 
-!/main_renders/geoDisplaceVert.cpp
+!/src/render-projects/older/geoDisplaceVert.cpp
 
-!/src/guitar.cpp
+!/src/render-projects/guitar.cpp
 
-!/src/harmonicCompletion.cpp
+!/src/render-projects/harmonicCompletion.cpp
 
-!/main_renders/heatFlow.cpp
+!/src/render-projects/older/heatFlow.cpp
 
-!/main_renders/hyperbolicAut.cpp
+!/src/render-projects/older/hyperbolicAut.cpp
 
-!/main_renders/hyperbolicTesselation.cpp
+!/src/render-projects/older/hyperbolicTesselation.cpp
 
-!/main_renders/implicitGallery.cpp
+!/src/render-projects/older/implicitGallery.cpp
 
-!/main_renders/indCurves.cpp
+!/src/render-projects/older/indCurves.cpp
 
-!/main_renders/marchingCubes.cpp
+!/src/render-projects/older/marchingCubes.cpp
 
-!/main_renders/oscilatingCircle.cpp
+!/src/render-projects/older/oscilatingCircle.cpp
 
-!/main_renders/pdeSolving.cpp
+!/src/render-projects/older/pdeSolving.cpp
 
-!/main_renders/polygons.cpp
+!/src/render-projects/older/polygons.cpp
 
-!/main_renders/revolution.cpp
+!/src/render-projects/older/revolution.cpp
 
-!/main_renders/rolling.cpp
+!/src/render-projects/older/rolling.cpp
 
-!/src/stringCyg.cpp
+!/src/render-projects/stringCyg.cpp
 
-!/main_renders/vaoTest.cpp
+!/src/render-projects/older/vaoTest.cpp
 
-!/main_renders/VFarrows.cpp
+!/src/render-projects/older/VFarrows.cpp
+!/external/

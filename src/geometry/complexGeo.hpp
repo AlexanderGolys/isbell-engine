@@ -53,7 +53,7 @@ public:
 	Meromorphism & operator=(Meromorphism &&other) noexcept;
 	Meromorphism() : _f([](Complex){return Complex(0.f);}), _df([](Complex){return Complex(0.f);}) {}
 	Meromorphism(endC f, endC df) : _f(std::move(f)), _df(std::move(df)) {}
-	explicit Meromorphism(endC f, float eps=.01) : _f(std::move(f)), _df([F=f, e=eps](Complex z){return (F(z + Complex(e)) - F(z))/e;}) {}
+	explicit Meromorphism(endC f, float eps=.01f) : _f(std::move(f)), _df([F=f, e=eps](Complex z){return (F(z + Complex(e)) - F(z))/e;}) {}
 
 	Complex operator()(Complex z) const {return _f(z);}
 	Complex operator()(vec2 z) const { return _f(Complex(z)); }
@@ -98,19 +98,19 @@ public:
 
 
 inline Biholomorphism Biholomorphism::operator*(Complex a) const {
-	return linear(a, 0).compose(*this);
+	return linear(a, 0i).compose(*this);
 }
 
 inline Biholomorphism Biholomorphism::operator+(Complex a) const {
-	return linear(1, a).compose(*this);
+	return linear(1i, a).compose(*this);
 }
 
 inline Biholomorphism Biholomorphism::operator-(Complex a) const {
-	return linear(1, -a).compose(*this);
+	return linear(1i, -a).compose(*this);
 }
 
 inline Biholomorphism Biholomorphism::operator/(Complex a) const {
-	return linear(1/a, 0).compose(*this);
+	return linear(1/a, 0i).compose(*this);
 }
 
 

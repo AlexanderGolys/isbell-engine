@@ -180,8 +180,8 @@ SmoothParametricSurface SmoothParametricSurface::meanCurvatureFlow(float dt) con
 SmoothParametricSurface::SmoothParametricSurface(const Foo113 &f, vec2 t_range, vec2 u_range, bool t_periodic, bool u_periodic, float epsilon)
 	: _f(f), t0(t_range.x), t1(t_range.y), u0(u_range.x), u1(u_range.y), t_periodic(t_periodic), u_periodic(u_periodic), epsilon(epsilon)
 {
-	_df_t = [f, epsilon](float t, float u) {return f(t + epsilon, u) - (f(t - epsilon, u) / (2 * epsilon)); };
-	_df_u = [f, epsilon](float t, float u) {return f(t, u + epsilon) - (f(t, u - epsilon) / (2 * epsilon)); };
+	_df_t = [f, epsilon](float t, float u) {return (f(t + epsilon, u) - f(t - epsilon, u)) / (2 * epsilon); };
+	_df_u = [f, epsilon](float t, float u) {return (f(t, u + epsilon) - f(t, u - epsilon)) / (2 * epsilon); };
 }
 
 vec3 SmoothParametricSurface::operator()(float t, float s) const {
@@ -229,26 +229,28 @@ SmoothParametricSurface SmoothParametricSurface::rotate(vec3 axis, float angle, 
 }
 
 vec3 SmoothParametricSurface::normal(float t, float u) const {
-    vec3 vn = cross(_df_t(t, u), _df_u(t, u));
-    if (norm(vn) < .02) {
-        float e_t = (t1 - t0) / 40;
-        float e_u = (u1 - u0) / 40;
-        vec3 new_n = (cross(_df_t(t + e_t, u), _df_u(t + e_t, u)) + cross(_df_t(t, u + e_u), _df_u(t, u + e_u)) +
+    vec3 vn = -cross(_df_t(t, u), _df_u(t, u));
+	// return norm(vn) < .01 ? vec3(0, 0, 1) : normalise(vn);
+
+    if (norm(vn) < .0002) {
+        float e_t = (t1 - t0) / 400;
+        float e_u = (u1 - u0) / 400;
+        vec3 new_n = -(cross(_df_t(t + e_t, u), _df_u(t + e_t, u)) + cross(_df_t(t, u + e_u), _df_u(t, u + e_u)) +
                       cross(_df_t(t - e_t, u), _df_u(t - e_t, u)) + cross(_df_t(t, u - e_u), _df_u(t, u - e_u))) /
                      4.f;
 
-        if (norm(new_n) < .03) {
-            e_t = (t1 - t0) / 20;
-            e_u = (u1 - u0) / 20;
-            new_n = (cross(_df_t(t + e_t, u), _df_u(t + e_t, u)) + cross(_df_t(t, u + e_u), _df_u(t, u + e_u)) +
+        if (norm(new_n) < .0003) {
+            e_t = (t1 - t0) / 200;
+            e_u = (u1 - u0) / 200;
+            new_n = -(cross(_df_t(t + e_t, u), _df_u(t + e_t, u)) + cross(_df_t(t, u + e_u), _df_u(t, u + e_u)) +
                      cross(_df_t(t - e_t, u), _df_u(t - e_t, u)) + cross(_df_t(t, u - e_u), _df_u(t, u - e_u))) /
                     4.f;
-            return norm(new_n) < .001 ? vec3(0, 0, 1) : normalise(new_n);
+            return norm(new_n) < .01 ? vec3(0, 0, 1) : normalise(new_n);
         }
 
-        return normalise(new_n);
+        return -normalise(new_n);
     }
-    return normalize(vn);
+    return -normalize(vn);
 }
 void SmoothParametricSurface::normaliseDomainToI2() {
     _f = [f=_f, t0=t0, t1=t1, u0=u0, u1=u1](float t, float u) {return f(lerp(t0, t1, t), lerp(u0, u1, u)); };
@@ -275,15 +277,42 @@ SmoothParametricCurve::SmoothParametricCurve(const RealFunction& fx, const RealF
 
 
 vec3 SmoothParametricCurve::tangent(float t) const {
-	if (norm(_df(t)) < eps)
-		return normalise(_df(t+eps));
-	return normalise(_df(t));
+	vec3 dxdt = _df(t);
+	if (norm2(dxdt) < eps*eps) {
+		dxdt = _f(t + 2*eps) - _f(t - 2*eps);
+		if (norm(dxdt) < eps*eps) {
+			dxdt = _f(t + 5*eps) - _f(t - 1*eps);
+			if (norm(dxdt) < eps*eps)
+				return e1;
+		}
+	}
+		return normalise(dxdt);
 }
 
 vec3 SmoothParametricCurve::normal(float t) const {
 	vec3 v = tangent(t+eps) - tangent(t - eps);
-	if (norm(v) < eps*eps)
-		return normalise(tangent(t+2*eps) - tangent(t));
+	if (norm(v) < eps*eps) {
+		vec3 vv = tangent(t+2*eps) - tangent(t-2*eps);
+
+		if (norm(vv) < eps*eps) {
+			vec3 T = tangent(t);
+			if (norm(T) < eps)
+				T = tangent(t+eps*4);
+			if (norm(T) < eps)
+				T = tangent(t-eps*4);
+			if (norm(T) < eps)
+				return e3;
+
+			vec3 N = projectVectorToPlane(e3, T);
+			if (norm(N) < .1)
+				N = projectVectorToPlane(e2, T);
+			if (norm(N) < .1)
+				N = projectVectorToPlane(e1, T);
+
+			return normalise(N);
+		}
+		return normalise(vv);
+	}
 	return normalise(v);
 }
 
@@ -329,7 +358,7 @@ SmoothParametricSurface SmoothParametricCurve::pipe(float radius, float eps, boo
 	return SmoothParametricSurface(param, vec2(t0, t1), vec2(0, TAU), periodic, true, this->eps/3);
 }
 SmoothParametricSurface SmoothParametricCurve::pipe(float radius, bool useFrenetFrame) const {
-	return pipe(radius, eps, useFrenetFrame);
+	return canal([radius](float t) {return radius; });
 }
 
 
@@ -496,4 +525,34 @@ SmoothParametricSurface CoonsPatch(const SmoothParametricCurve &cDown, const Smo
 
 SmoothParametricSurface polarCone(const SmoothParametricCurve &r, vec3 center) {
 	return SmoothParametricSurface([r, center](float t, float s) { return (r(t)-center)*s+center; }, r.bounds(), vec2(0, 1), true, false, r.getEps());
+}
+
+SurfaceParametricPencil::SurfaceParametricPencil(const BIHOM(float, vec2, vec3) &foo, vec2 range_t, vec2 range_u, float eps)
+: pencil([foo, eps, range_t, range_u](float t) {
+	return SmoothParametricSurface([foo=foo, t](float u, float s) {
+		return foo(t, vec2(u, s));
+	}, range_t, range_u, false, false, eps);
+}) {}
+
+CurveParametricPencil::CurveParametricPencil(std::function<vec3(float, float)> foo, vec2 bounds, float eps)
+: pencil([foo, eps, bounds](float t) {
+	return SmoothParametricCurve([foo, t](float u ) {
+		return foo(t, u);
+	}, randomID(), bounds.x, bounds.y, false, eps);
+}) {}
+
+ParametricSurfaceFoliation::ParametricSurfaceFoliation( std::function<SmoothParametricCurve(float)> pencil, vec2 pencil_domain, bool periodic, const vector<SmoothParametricCurve> &special_leaves)
+: pencil_of_leaves(pencil), pencil_domain(pencil_domain), pencil_periodic(periodic), special_leaves(special_leaves) {}
+
+SmoothParametricSurface ParametricSurfaceFoliation::getFoliatedSurface() const {
+	auto leaf = pencil_of_leaves(pencil_domain.x);
+	return SmoothParametricSurface([p=pencil_of_leaves](float t, float u) { return p(t)(u); }, pencil_domain, leaf.bounds(), pencil_periodic, leaf.isPeriodic(), leaf.getEps());
+}
+
+vector<SmoothParametricCurve> ParametricSurfaceFoliation::sampleLeaves(int res) const {
+	vector<SmoothParametricCurve> leaves;
+	leaves.reserve(res);
+	for (float t: linspace(pencil_domain.x, pencil_domain.y, res))
+		leaves.emplace_back(pencil_of_leaves(t));
+	return leaves;
 }

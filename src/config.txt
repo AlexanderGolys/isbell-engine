@@ -1,6 +1,0 @@
-root:               C:\\Users\\PC\\Desktop\\ogl-master\\src
-templateShaders:    SDF\\templateShaders
-sdfTools:           SDF\\metashaders\\sdfTools.glsl
-mathTools:          SDF\\metashaders\\mathTools.glsl
-lightTools:         SDF\\metashaders\\lightToolsSS.glsl
-glslStructs:        SDF\\metashaders\\structs.glsl

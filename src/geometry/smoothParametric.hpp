@@ -29,6 +29,8 @@ public:
     SmoothParametricCurve(Foo13 f, Foo13 df, Foo13 ddf, PolyGroupID id=DFLT_CURV, float t0=0, float t1=TAU, bool periodic=true, float epsilon=0.01);
 	SmoothParametricCurve(Foo13 f, Foo13 df,PolyGroupID id=DFLT_CURV,  float t0=0, float t1=TAU, bool periodic=true, float epsilon=0.01);
     explicit SmoothParametricCurve(const Foo13 &f, PolyGroupID id=DFLT_CURV,  float t0=0, float t1=TAU, bool periodic=true, float epsilon=0.01) : SmoothParametricCurve(f, derivativeOperator(f, epsilon), std::move(id), t0, t1, periodic, epsilon) {}
+	SmoothParametricCurve(const Foo13 &f,   vec2 dom, PolyGroupID id=DFLT_CURV, bool periodic=false, float epsilon=0.01) : SmoothParametricCurve(f, derivativeOperator(f, epsilon), std::move(id), dom.x, dom.y, periodic, epsilon) {}
+
 	SmoothParametricCurve( const RealFunction& fx, const RealFunction& fy, const RealFunction& fz, PolyGroupID id=DFLT_CURV, float t0=0, float t1=TAU, bool periodic=true, float epsilon=0.01);
     SmoothParametricCurve(Foo13 f, std::function<Foo13(int)> derivativeOperator, PolyGroupID id=DFLT_CURV, float t0=0, RP1 t1=TAU, bool periodic=true, float epsilon=0.01);
     SmoothParametricCurve(Foo13 f, std::vector<Foo13> derivatives, PolyGroupID id=DFLT_CURV, float t0=0, float t1=TAU, bool periodic=true, float epsilon=0.01);
@@ -233,10 +235,10 @@ inline SmoothParametricSurface CoonsPatchDisjoint(const SmoothParametricCurve &c
 
 
 class SurfaceParametricPencil {
-    std::function<SmoothParametricSurface(float)> pencil;
-	public:
-	explicit SurfaceParametricPencil(const std::function<SmoothParametricSurface(float)> &pencil) : pencil(pencil) {}
-	explicit SurfaceParametricPencil(BIHOM(float, vec2, vec3) foo, vec2 range_t=vec2(0, TAU), vec2 range_u=vec2(0, TAU), float eps=.01) : pencil([foo, eps, range_t, range_u](float t) { return SmoothParametricSurface([foo, t](float u, float s) { return foo(t, vec2(u, s)); }, range_t, range_u, false, false, eps); }) {}
+    HOM(float, SmoothParametricSurface) pencil;
+public:
+	explicit SurfaceParametricPencil(const HOM(float, SmoothParametricSurface) &pencil) : pencil(pencil) {}
+	explicit SurfaceParametricPencil(const BIHOM(float, vec2, vec3) &foo, vec2 range_t=vec2(0, TAU), vec2 range_u=vec2(0, TAU), float eps=.01);
 
 	SmoothParametricSurface operator()(float t) const { return pencil(t); }
 	vec3 operator()(float t, float u, float s) const { return pencil(t)(u, s); }
@@ -245,13 +247,31 @@ class SurfaceParametricPencil {
 
 
 class CurveParametricPencil {
-	std::function<SmoothParametricCurve(float)> pencil;
+	HOM(float, SmoothParametricCurve) pencil;
 public:
-	explicit CurveParametricPencil(const std::function<SmoothParametricCurve(float)> &pencil) : pencil(pencil) {}
-	explicit CurveParametricPencil(BIHOM(float, float, vec3) foo, vec2 bounds=vec2(0, 1), float eps=.01) : pencil([foo, eps, bounds](float t) { return SmoothParametricCurve([foo, t](float u ) { return foo(t, u); }, randomID(), bounds.x, bounds.y, false, eps); }) {}
+	explicit CurveParametricPencil(const HOM(float, SmoothParametricCurve) &pencil) : pencil(pencil) {}
+	explicit CurveParametricPencil(BIHOM(float, float, vec3) foo, vec2 bounds=vec2(0, 1), float eps=.01);
 
 	SmoothParametricCurve operator()(float t) const { return pencil(t); }
 	vec3 operator()(float t, float u) const { return pencil(t)(u); }
+};
+
+
+class ParametricSurfaceFoliation {
+	HOM(float, SmoothParametricCurve) pencil_of_leaves;
+	vec2 pencil_domain;
+	bool pencil_periodic;
+	vector<SmoothParametricCurve> special_leaves;
+public:
+	explicit ParametricSurfaceFoliation(HOM(float, SmoothParametricCurve) pencil, vec2 pencil_domain=vec2(0, 1), bool periodic=true, const vector<SmoothParametricCurve> &special_leaves={});
+
+	SmoothParametricCurve getLeaf(float t) const { return pencil_of_leaves(t); }
+	SmoothParametricCurve getSpecialLeaf(int i) const { return special_leaves[i];}
+
+	SmoothParametricSurface getFoliatedSurface() const;
+	vector<SmoothParametricCurve> sampleLeaves(int res) const;
+	vector<SmoothParametricCurve> getSpecialLeaves() const { return special_leaves; }
+	vec2 getDomain() const { return pencil_domain; }
 };
 
 

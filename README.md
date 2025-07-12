@@ -14,11 +14,9 @@
 - Integral transforms (Fourier, Laplace)
 - Discrete transforms (DFT, generalised Fourier series, convolutions)
 - Initial surface deformation encoded in PDE solution (or any non-homogeneous flow field)
-- Symbolic operations on elementary functions with tablebased values for certain transforms 
-- Symbolic transform graph backtracking (e.g. symbolic differential operators can handle also something like sin(exp(t + 3))), not elementary itself
 
 
-In progress:
+# Next objectives:
 - Minimal surfaces with Neumann boundary condition 
 - Eulerian incompressible fluids
 - rigid body physics in 3D
@@ -29,3 +27,22 @@ In progress:
 - Hamiltonian formalism in physical dynamical system 
 - Group actions, principal bundles
 - Integral transforms (inverse Laplace, Fourier for general locally compact abelian group)
+- Symbolic operations on elementary functions with tablebased values for certain transforms 
+- Symbolic transform graph backtracking (e.g. symbolic differential operators can handle also something like sin(exp(t + 3))), not elementary itself
+- Render to texture flow information
+- Apply infinitesimal mesh transform in vertex shader 
+- Add shadow maps
+
+
+## Fixes and improvements TODO list:
+- improve features available by design during animations 
+- screenshots
+- pause
+- change speed
+- rotate view
+- better visual distinctions of directions and orientation of ambient space
+- distinguish light positions with meshes
+- add timer, and options for text base debugging areas
+- Display numerical parameters used to control the motions in the scene
+- Get some predefined environments of different general scene brightness and colors
+- improve the code structure

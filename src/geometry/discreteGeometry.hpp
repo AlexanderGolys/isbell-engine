@@ -1,6 +1,6 @@
 #pragma once
 
-#include "src/common/indexedRendering.hpp"
+#include "src/engine/indexedRendering.hpp"
 
 
 class TriangulatedManifold : public WeakSuperMesh {

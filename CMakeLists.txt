@@ -25,6 +25,7 @@ cmake_policy(SET CMP0026 OLD)
 list(APPEND CMAKE_MODULE_PATH "${CMAKE_SOURCE_DIR}/external/rpavlik-cmake-modules-fe2273")
 include(CreateLaunchers)
 include(MSVCMultipleProcessCompile) # /MP
+add_compile_options(-Wno-literal-suffix)
 
 if(INCLUDE_DISTRIB)
 	add_subdirectory(distrib)
@@ -67,15 +68,15 @@ add_definitions(
 
 
 add_executable(guitar
-        src/guitar.cpp
-		src/fundamentals/macros.hpp
-        src/fundamentals/filesUtils.cpp
-        src/fundamentals/mat.cpp
-        src/fundamentals/func.cpp
-        src/common/indexedRendering.cpp
-        src/common/specific.cpp
-        src/common/glsl_utils.cpp
-        src/common/renderingUtils.cpp
+		src/render-projects/guitar.cpp
+		src/utils/macros.hpp
+		src/utils/filesUtils.cpp
+		src/utils/mat.cpp
+		src/utils/func.cpp
+		src/engine/indexedRendering.cpp
+		src/engine/specific.cpp
+		src/engine/glsl_utils.cpp
+		src/engine/renderingUtils.cpp
         src/geometry/complexGeo.cpp
         src/geometry/discreteGeometry.cpp
 #        src/geometry/hyperbolic.cpp
@@ -84,17 +85,17 @@ add_executable(guitar
         src/geometry/smoothImplicit.cpp
         src/physics/solidMeshes.cpp
 		src/physics/rigid.cpp
-		src/fundamentals/flows.cpp
-		src/fundamentals/flows.hpp
-		src/fundamentals/modules.hpp
-        src/fundamentals/integralTransforms.hpp
-        src/fundamentals/integralTransforms.cpp
+		src/utils/flows.cpp
+		src/utils/flows.hpp
+		src/utils/modules.hpp
+		src/utils/integralTransforms.hpp
+		src/utils/integralTransforms.cpp
 		src/geometry/pde.hpp
 		src/geometry/pde.cpp
-		src/common/interface.cpp
-		src/common/dynamicalSystems.cpp
-		src/fundamentals/elemFunc.cpp
-		src/fundamentals/elemFunc.hpp
+		src/engine/interface.cpp
+		src/engine/dynamicalSystems.cpp
+		src/utils/elemFunc.cpp
+		src/utils/elemFunc.hpp
 )
 
 target_link_libraries(guitar
@@ -109,15 +110,15 @@ create_target_launcher(guitar WORKING_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}/src
 
 
 add_executable(guitarCyg
-        src/stringCyg.cpp
-		src/fundamentals/macros.hpp
-        src/fundamentals/filesUtils.cpp
-        src/fundamentals/mat.cpp
-        src/fundamentals/func.cpp
-        src/common/indexedRendering.cpp
-        src/common/specific.cpp
-        src/common/glsl_utils.cpp
-        src/common/renderingUtils.cpp
+		src/render-projects/stringCyg.cpp
+		src/utils/macros.hpp
+		src/utils/filesUtils.cpp
+		src/utils/mat.cpp
+		src/utils/func.cpp
+		src/engine/indexedRendering.cpp
+		src/engine/specific.cpp
+		src/engine/glsl_utils.cpp
+		src/engine/renderingUtils.cpp
         src/geometry/complexGeo.cpp
         src/geometry/discreteGeometry.cpp
 #        src/geometry/hyperbolic.cpp
@@ -126,19 +127,19 @@ add_executable(guitarCyg
         src/geometry/smoothImplicit.cpp
         src/physics/solidMeshes.cpp
 		src/physics/rigid.cpp
-		src/fundamentals/flows.cpp
-		src/fundamentals/flows.hpp
-		src/fundamentals/modules.hpp
-        src/fundamentals/integralTransforms.hpp
-        src/fundamentals/integralTransforms.cpp
+		src/utils/flows.cpp
+		src/utils/flows.hpp
+		src/utils/modules.hpp
+		src/utils/integralTransforms.hpp
+		src/utils/integralTransforms.cpp
 		src/geometry/pde.hpp
 		src/geometry/pde.cpp
 		src/geometry/pde_dicrete.hpp
 		src/geometry/pde_dicrete.cpp
-		src/common/interface.cpp
-		src/common/dynamicalSystems.cpp
-		src/fundamentals/elemFunc.cpp
-		src/fundamentals/elemFunc.hpp
+		src/engine/interface.cpp
+		src/engine/dynamicalSystems.cpp
+		src/utils/elemFunc.cpp
+		src/utils/elemFunc.hpp
 		src/geometry/pde_dicrete.cpp
 		src/geometry/pde_dicrete.hpp
 )
@@ -153,14 +154,14 @@ create_target_launcher(guitarCyg WORKING_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}/
 #
 #add_executable(harmonic
 #        src/harmonicCompletion.cpp
-#		src/fundamentals/macros.hpp
-#        src/fundamentals/filesUtils.cpp
-#        src/fundamentals/mat.cpp
-#        src/fundamentals/func.cpp
-#        src/common/indexedRendering.cpp
-#        src/common/specific.cpp
-#        src/common/glsl_utils.cpp
-#        src/common/renderingUtils.cpp
+#		src/utils/macros.hpp
+#        src/utils/filesUtils.cpp
+#        src/utils/mat.cpp
+#        src/utils/func.cpp
+#        src/engine/indexedRendering.cpp
+#        src/engine/specific.cpp
+#        src/engine/glsl_utils.cpp
+#        src/engine/renderingUtils.cpp
 #        src/geometry/complexGeo.cpp
 #        src/geometry/discreteGeometry.cpp
 ##        src/geometry/hyperbolic.cpp
@@ -169,18 +170,18 @@ create_target_launcher(guitarCyg WORKING_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}/
 #        src/geometry/smoothImplicit.cpp
 #        src/physics/solidMeshes.cpp
 #		src/physics/rigid.cpp
-#		src/fundamentals/flows.cpp
-#		src/fundamentals/flows.hpp
-#		src/fundamentals/modules.hpp
-#        src/fundamentals/integralTransforms.hpp
-#        src/fundamentals/integralTransforms.cpp
+#		src/utils/flows.cpp
+#		src/utils/flows.hpp
+#		src/utils/modules.hpp
+#        src/utils/integralTransforms.hpp
+#        src/utils/integralTransforms.cpp
 #		src/geometry/pde.hpp
 #		src/geometry/pde.cpp
 #
-#		src/common/interface.cpp
-#		src/common/dynamicalSystems.cpp
-#		src/fundamentals/elemFunc.cpp
-#		src/fundamentals/elemFunc.hpp
+#		src/engine/interface.cpp
+#		src/engine/dynamicalSystems.cpp
+#		src/utils/elemFunc.cpp
+#		src/utils/elemFunc.hpp
 #)
 #
 #target_link_libraries(harmonic
@@ -192,15 +193,15 @@ create_target_launcher(guitarCyg WORKING_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}/
 #
 #
 add_executable(tests1
-        src/.tests/discrete_func_tests.cpp
-		src/fundamentals/macros.hpp
-        src/fundamentals/filesUtils.cpp
-        src/fundamentals/mat.cpp
-        src/fundamentals/func.cpp
-        src/common/indexedRendering.cpp
-        src/common/specific.cpp
-        src/common/glsl_utils.cpp
-        src/common/renderingUtils.cpp
+		src/tests/discrete_func_tests.cpp
+		src/utils/macros.hpp
+		src/utils/filesUtils.cpp
+		src/utils/mat.cpp
+		src/utils/func.cpp
+		src/engine/indexedRendering.cpp
+		src/engine/specific.cpp
+		src/engine/glsl_utils.cpp
+		src/engine/renderingUtils.cpp
         src/geometry/complexGeo.cpp
         src/geometry/discreteGeometry.cpp
 #        src/geometry/hyperbolic.cpp
@@ -209,19 +210,19 @@ add_executable(tests1
         src/geometry/smoothImplicit.cpp
         src/physics/solidMeshes.cpp
 		src/physics/rigid.cpp
-		src/fundamentals/flows.cpp
-		src/fundamentals/flows.hpp
-		src/fundamentals/modules.hpp
-        src/fundamentals/integralTransforms.hpp
-        src/fundamentals/integralTransforms.cpp
+		src/utils/flows.cpp
+		src/utils/flows.hpp
+		src/utils/modules.hpp
+		src/utils/integralTransforms.hpp
+		src/utils/integralTransforms.cpp
 		src/geometry/pde.hpp
 		src/geometry/pde.cpp
 		src/geometry/pde_dicrete.hpp
 		src/geometry/pde_dicrete.cpp
-		src/common/interface.cpp
-		src/common/dynamicalSystems.cpp
-		src/fundamentals/elemFunc.cpp
-		src/fundamentals/elemFunc.hpp
+		src/engine/interface.cpp
+		src/engine/dynamicalSystems.cpp
+		src/utils/elemFunc.cpp
+		src/utils/elemFunc.hpp
 )
 
 target_link_libraries(tests1
@@ -235,15 +236,15 @@ create_target_launcher(tests1 WORKING_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}/src
 
 
 add_executable(gabor
-        src/gabor.cpp
-		src/fundamentals/macros.hpp
-        src/fundamentals/filesUtils.cpp
-        src/fundamentals/mat.cpp
-        src/fundamentals/func.cpp
-        src/common/indexedRendering.cpp
-        src/common/specific.cpp
-        src/common/glsl_utils.cpp
-        src/common/renderingUtils.cpp
+		src/render-projects/gabor.cpp
+		src/utils/macros.hpp
+		src/utils/filesUtils.cpp
+		src/utils/mat.cpp
+		src/utils/func.cpp
+		src/engine/indexedRendering.cpp
+		src/engine/specific.cpp
+		src/engine/glsl_utils.cpp
+		src/engine/renderingUtils.cpp
         src/geometry/complexGeo.cpp
         src/geometry/discreteGeometry.cpp
 #        src/geometry/hyperbolic.cpp
@@ -252,19 +253,19 @@ add_executable(gabor
         src/geometry/smoothImplicit.cpp
         src/physics/solidMeshes.cpp
 		src/physics/rigid.cpp
-		src/fundamentals/flows.cpp
-		src/fundamentals/flows.hpp
-		src/fundamentals/modules.hpp
-        src/fundamentals/integralTransforms.hpp
-        src/fundamentals/integralTransforms.cpp
+		src/utils/flows.cpp
+		src/utils/flows.hpp
+		src/utils/modules.hpp
+		src/utils/integralTransforms.hpp
+		src/utils/integralTransforms.cpp
 		src/geometry/pde.hpp
 		src/geometry/pde.cpp
 		src/geometry/pde_dicrete.hpp
 		src/geometry/pde_dicrete.cpp
-		src/common/interface.cpp
-		src/common/dynamicalSystems.cpp
-		src/fundamentals/elemFunc.cpp
-		src/fundamentals/elemFunc.hpp
+		src/engine/interface.cpp
+		src/engine/dynamicalSystems.cpp
+		src/utils/elemFunc.cpp
+		src/utils/elemFunc.hpp
 		src/geometry/pde_dicrete.cpp
 		src/geometry/pde_dicrete.hpp
 )
@@ -275,5 +276,230 @@ target_link_libraries(gabor
 # Xcode and Visual working directories
 set_target_properties(gabor PROPERTIES XCODE_ATTRIBUTE_CONFIGURATION_BUILD_DIR "${CMAKE_CURRENT_SOURCE_DIR}/src/")
 create_target_launcher(gabor WORKING_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}/src/")
+
+
+
+
+add_executable(zero
+		src/render-projects/zero.cpp
+		src/utils/macros.hpp
+		src/utils/filesUtils.cpp
+		src/utils/mat.cpp
+		src/utils/func.cpp
+		src/engine/indexedRendering.cpp
+		src/engine/specific.cpp
+		src/engine/glsl_utils.cpp
+		src/engine/renderingUtils.cpp
+        src/geometry/complexGeo.cpp
+        src/geometry/discreteGeometry.cpp
+#        src/geometry/hyperbolic.cpp
+        src/geometry/planarGeometry.cpp
+        src/geometry/smoothParametric.cpp
+        src/geometry/smoothImplicit.cpp
+        src/physics/solidMeshes.cpp
+		src/physics/rigid.cpp
+		src/utils/flows.cpp
+		src/utils/flows.hpp
+		src/utils/modules.hpp
+		src/utils/integralTransforms.hpp
+		src/utils/integralTransforms.cpp
+		src/geometry/pde.hpp
+		src/geometry/pde.cpp
+		src/geometry/pde_dicrete.hpp
+		src/geometry/pde_dicrete.cpp
+		src/engine/interface.cpp
+		src/engine/dynamicalSystems.cpp
+		src/utils/elemFunc.cpp
+		src/utils/elemFunc.hpp
+		src/geometry/pde_dicrete.cpp
+		src/geometry/pde_dicrete.hpp
+)
+
+target_link_libraries(zero
+        ${ALL_LIBS}
+)
+# Xcode and Visual working directories
+set_target_properties(zero PROPERTIES XCODE_ATTRIBUTE_CONFIGURATION_BUILD_DIR "${CMAKE_CURRENT_SOURCE_DIR}/src/")
+create_target_launcher(zero WORKING_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}/src/")
+
+#
+
+#
+
+
+add_executable(fluids
+		src/render-projects/fluids.cpp
+		src/utils/macros.hpp
+		src/utils/filesUtils.cpp
+		src/utils/mat.cpp
+		src/utils/func.cpp
+		src/engine/indexedRendering.cpp
+		src/engine/specific.cpp
+		src/engine/glsl_utils.cpp
+		src/engine/renderingUtils.cpp
+        src/geometry/complexGeo.cpp
+        src/geometry/discreteGeometry.cpp
+        src/geometry/sph.cpp
+        src/geometry/planarGeometry.cpp
+        src/geometry/smoothParametric.cpp
+        src/geometry/smoothImplicit.cpp
+        src/physics/solidMeshes.cpp
+		src/physics/rigid.cpp
+		src/utils/flows.cpp
+		src/utils/flows.hpp
+		src/utils/modules.hpp
+		src/utils/integralTransforms.hpp
+		src/utils/integralTransforms.cpp
+		src/geometry/pde.hpp
+		src/geometry/pde.cpp
+		src/geometry/pde_dicrete.hpp
+		src/geometry/pde_dicrete.cpp
+		src/engine/interface.cpp
+		src/engine/dynamicalSystems.cpp
+		src/utils/elemFunc.cpp
+		src/utils/elemFunc.hpp
+		src/geometry/pde_dicrete.cpp
+		src/geometry/pde_dicrete.hpp
+)
+
+target_link_libraries(fluids
+        ${ALL_LIBS}
+)
+# Xcode and Visual working directories
+set_target_properties(fluids PROPERTIES XCODE_ATTRIBUTE_CONFIGURATION_BUILD_DIR "${CMAKE_CURRENT_SOURCE_DIR}/src/")
+create_target_launcher(fluids WORKING_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}/src/")
+
+#
+
+#
+
+add_executable(foliatedTorus
+		src/render-projects/foliatedTorus.cpp
+		src/utils/macros.hpp
+		src/utils/filesUtils.cpp
+		src/utils/mat.cpp
+		src/utils/func.cpp
+		src/engine/indexedRendering.cpp
+		src/engine/specific.cpp
+		src/engine/glsl_utils.cpp
+		src/engine/renderingUtils.cpp
+        src/geometry/complexGeo.cpp
+        src/geometry/discreteGeometry.cpp
+#        src/geometry/hyperbolic.cpp
+        src/geometry/planarGeometry.cpp
+        src/geometry/smoothParametric.cpp
+        src/geometry/smoothImplicit.cpp
+        src/physics/solidMeshes.cpp
+		src/physics/rigid.cpp
+		src/utils/flows.cpp
+		src/utils/flows.hpp
+		src/utils/modules.hpp
+		src/utils/integralTransforms.hpp
+		src/utils/integralTransforms.cpp
+		src/geometry/pde.hpp
+		src/geometry/pde.cpp
+		src/geometry/pde_dicrete.hpp
+		src/geometry/pde_dicrete.cpp
+		src/engine/interface.cpp
+		src/engine/dynamicalSystems.cpp
+		src/utils/elemFunc.cpp
+		src/utils/elemFunc.hpp
+		src/geometry/pde_dicrete.cpp
+		src/geometry/pde_dicrete.hpp
+)
+
+target_link_libraries(foliatedTorus
+        ${ALL_LIBS}
+)
+# Xcode and Visual working directories
+set_target_properties(foliatedTorus PROPERTIES XCODE_ATTRIBUTE_CONFIGURATION_BUILD_DIR "${CMAKE_CURRENT_SOURCE_DIR}/src/")
+create_target_launcher(foliatedTorus WORKING_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}/src/")
+
+#
+
+add_executable(zerodiv
+		src/render-projects/zerodiv.cpp
+		src/utils/macros.hpp
+		src/utils/filesUtils.cpp
+		src/utils/mat.cpp
+		src/utils/func.cpp
+		src/engine/indexedRendering.cpp
+		src/engine/specific.cpp
+		src/engine/glsl_utils.cpp
+		src/engine/renderingUtils.cpp
+        src/geometry/complexGeo.cpp
+        src/geometry/discreteGeometry.cpp
+#        src/geometry/hyperbolic.cpp
+        src/geometry/planarGeometry.cpp
+        src/geometry/smoothParametric.cpp
+        src/geometry/smoothImplicit.cpp
+        src/physics/solidMeshes.cpp
+		src/physics/rigid.cpp
+		src/utils/flows.cpp
+		src/utils/flows.hpp
+		src/utils/modules.hpp
+		src/utils/integralTransforms.hpp
+		src/utils/integralTransforms.cpp
+		src/geometry/pde.hpp
+		src/geometry/pde.cpp
+		src/geometry/pde_dicrete.hpp
+		src/geometry/pde_dicrete.cpp
+		src/engine/interface.cpp
+		src/engine/dynamicalSystems.cpp
+		src/utils/elemFunc.cpp
+		src/utils/elemFunc.hpp
+		src/geometry/pde_dicrete.cpp
+		src/geometry/pde_dicrete.hpp
+)
+
+target_link_libraries(zerodiv
+        ${ALL_LIBS}
+)
+# Xcode and Visual working directories
+set_target_properties(zerodiv PROPERTIES XCODE_ATTRIBUTE_CONFIGURATION_BUILD_DIR "${CMAKE_CURRENT_SOURCE_DIR}/src/")
+create_target_launcher(zerodiv WORKING_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}/src/")
+
+
+add_executable(pallettes
+		src/render-projects/palettes.cpp
+		src/utils/macros.hpp
+		src/utils/filesUtils.cpp
+		src/utils/mat.cpp
+		src/utils/func.cpp
+		src/engine/indexedRendering.cpp
+		src/engine/specific.cpp
+		src/engine/glsl_utils.cpp
+		src/engine/renderingUtils.cpp
+        src/geometry/complexGeo.cpp
+        src/geometry/discreteGeometry.cpp
+#        src/geometry/hyperbolic.cpp
+        src/geometry/planarGeometry.cpp
+        src/geometry/smoothParametric.cpp
+        src/geometry/smoothImplicit.cpp
+        src/physics/solidMeshes.cpp
+		src/physics/rigid.cpp
+		src/utils/flows.cpp
+		src/utils/flows.hpp
+		src/utils/modules.hpp
+		src/utils/integralTransforms.hpp
+		src/utils/integralTransforms.cpp
+		src/geometry/pde.hpp
+		src/geometry/pde.cpp
+		src/geometry/pde_dicrete.hpp
+		src/geometry/pde_dicrete.cpp
+		src/engine/interface.cpp
+		src/engine/dynamicalSystems.cpp
+		src/utils/elemFunc.cpp
+		src/utils/elemFunc.hpp
+		src/geometry/pde_dicrete.cpp
+		src/geometry/pde_dicrete.hpp
+)
+
+target_link_libraries(pallettes
+        ${ALL_LIBS}
+)
+# Xcode and Visual working directories
+set_target_properties(pallettes PROPERTIES XCODE_ATTRIBUTE_CONFIGURATION_BUILD_DIR "${CMAKE_CURRENT_SOURCE_DIR}/src/")
+create_target_launcher(pallettes WORKING_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}/src/")
 
 #
