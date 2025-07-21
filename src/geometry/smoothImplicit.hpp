@@ -5,7 +5,7 @@
 #include <utility>
 #include <vector>
 
-//#include "src/common/indexedRendering.hpp"
+//#include "src/engine/indexedRendering.hpp"
 
 #include "smoothParametric.hpp"
 
@@ -102,6 +102,32 @@ public:
 	bool needsRecalculation() const { return requiresRecalculation; }
 	float getAngle() const { return angle; }
 	void setAngle(float a) { angle = a; requiresRecalculation = false; }
+};
+
+class ImplicitVolume {
+	RealFunctionR3 _F; // F(x) >= 0 inside, F(x) < 0 outside
+	vec3 x_min, x_max; // bounding box for the volume
+public:
+	ImplicitVolume(const RealFunctionR3 &F, vec3 bound_min, vec3 bound_max) : _F(F), x_min(bound_min), x_max(bound_max) {}
+	bool contains(vec3 p) const { return _F(p) >= 0; }
+	float separating_function(vec3 p) const { return _F(p); }
+	vec3 inside_normal(vec3 p) const { return normalise(_F.df(p)); }
+	SmoothImplicitSurface isoSurface(float level) const { return SmoothImplicitSurface(_F - level); }
+	SmoothImplicitSurface boundary_surface() const { return isoSurface(0); }
+
+	vec3 uniform_random_sample(int rec_limit=10000, int it=0) const;
+	pair<vec3, vec3> bounding_box() const { return {x_min, x_max}; }
+
+	ImplicitVolume set_union(const ImplicitVolume &other) const {
+		return ImplicitVolume(max(_F, other._F), vec3(std::min(x_min.x, other.x_min.x), std::min(x_min.y, other.x_min.y), std::min(x_min.z, other.x_min.z)),
+							  vec3(std::max(x_max.x, other.x_max.x), std::max(x_max.y, other.x_max.y), std::max(x_max.z, other.x_max.z)));
+	}
+	ImplicitVolume intersect(const ImplicitVolume &other) const {
+		return ImplicitVolume(min(_F, other._F), vec3(std::max(x_min.x, other.x_min.x), std::max(x_min.y, other.x_min.y), std::max(x_min.z, other.x_min.z)),
+							  vec3(std::min(x_max.x, other.x_max.x), std::min(x_max.y, other.x_max.y), std::min(x_max.z, other.x_max.z)));
+	}
+
+
 };
 
 
@@ -215,6 +241,7 @@ public:
 	vec3 edgeCenter(ivec3 cube, CubeCorner corner1, CubeCorner corner2) const;
 	static ivec3 cornerVertex(ivec3 cube, CubeCorner corner) ;
 	static ivec3 edgeCenterVertex(ivec3 cube, CubeCorner corner1, CubeCorner corner2);
+	PolyGroupID getID() const { return id; }
 
 	void generate();
 	void generateCube(ivec3 ind);

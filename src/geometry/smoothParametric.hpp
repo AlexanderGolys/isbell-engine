@@ -3,7 +3,6 @@
 // #include <utility>
 
 #include <utility>
-
 #include "complexGeo.hpp"
 
 
@@ -20,8 +19,7 @@ protected:
     Foo13 _f;
 	Foo13 _df;
 	Foo13 _ddf;
-	std::function<Foo13(int)> _der_higher =
-		[this](int n){return n == 1 ? _df : n == 2 ? _ddf : derivativeOperator(_der_higher(n-1), this->eps);};
+	std::function<Foo13(int)> _der_higher = [this](int n){return n == 1 ? _df : n == 2 ? _ddf : derivativeOperator(_der_higher(n-1), this->eps);};
 	float eps;
     float t0;
     float t1;
@@ -31,6 +29,8 @@ public:
     SmoothParametricCurve(Foo13 f, Foo13 df, Foo13 ddf, PolyGroupID id=DFLT_CURV, float t0=0, float t1=TAU, bool periodic=true, float epsilon=0.01);
 	SmoothParametricCurve(Foo13 f, Foo13 df,PolyGroupID id=DFLT_CURV,  float t0=0, float t1=TAU, bool periodic=true, float epsilon=0.01);
     explicit SmoothParametricCurve(const Foo13 &f, PolyGroupID id=DFLT_CURV,  float t0=0, float t1=TAU, bool periodic=true, float epsilon=0.01) : SmoothParametricCurve(f, derivativeOperator(f, epsilon), std::move(id), t0, t1, periodic, epsilon) {}
+	SmoothParametricCurve(const Foo13 &f,   vec2 dom, PolyGroupID id=DFLT_CURV, bool periodic=false, float epsilon=0.01) : SmoothParametricCurve(f, derivativeOperator(f, epsilon), std::move(id), dom.x, dom.y, periodic, epsilon) {}
+
 	SmoothParametricCurve( const RealFunction& fx, const RealFunction& fy, const RealFunction& fz, PolyGroupID id=DFLT_CURV, float t0=0, float t1=TAU, bool periodic=true, float epsilon=0.01);
     SmoothParametricCurve(Foo13 f, std::function<Foo13(int)> derivativeOperator, PolyGroupID id=DFLT_CURV, float t0=0, RP1 t1=TAU, bool periodic=true, float epsilon=0.01);
     SmoothParametricCurve(Foo13 f, std::vector<Foo13> derivatives, PolyGroupID id=DFLT_CURV, float t0=0, float t1=TAU, bool periodic=true, float epsilon=0.01);
@@ -210,10 +210,7 @@ public:
 	vec3 Laplacian(float t, float s) const;
 
 	float meanCurvature(vec2 tu) const { return meanCurvature(tu.x, tu.y); }
-
-
 	float globalAreaIntegral(const RealFunctionPS &f) const;
-
 	float DirichletFunctional() const;
 	float biharmonicFunctional() const;
 
@@ -238,10 +235,10 @@ inline SmoothParametricSurface CoonsPatchDisjoint(const SmoothParametricCurve &c
 
 
 class SurfaceParametricPencil {
-    std::function<SmoothParametricSurface(float)> pencil;
-	public:
-	explicit SurfaceParametricPencil(const std::function<SmoothParametricSurface(float)> &pencil) : pencil(pencil) {}
-	explicit SurfaceParametricPencil(BIHOM(float, vec2, vec3) foo, vec2 range_t=vec2(0, TAU), vec2 range_u=vec2(0, TAU), float eps=.01) : pencil([foo, eps, range_t, range_u](float t) { return SmoothParametricSurface([foo, t](float u, float s) { return foo(t, vec2(u, s)); }, range_t, range_u, false, false, eps); }) {}
+    HOM(float, SmoothParametricSurface) pencil;
+public:
+	explicit SurfaceParametricPencil(const HOM(float, SmoothParametricSurface) &pencil) : pencil(pencil) {}
+	explicit SurfaceParametricPencil(const BIHOM(float, vec2, vec3) &foo, vec2 range_t=vec2(0, TAU), vec2 range_u=vec2(0, TAU), float eps=.01);
 
 	SmoothParametricSurface operator()(float t) const { return pencil(t); }
 	vec3 operator()(float t, float u, float s) const { return pencil(t)(u, s); }
@@ -250,13 +247,31 @@ class SurfaceParametricPencil {
 
 
 class CurveParametricPencil {
-	std::function<SmoothParametricCurve(float)> pencil;
+	HOM(float, SmoothParametricCurve) pencil;
 public:
-	explicit CurveParametricPencil(const std::function<SmoothParametricCurve(float)> &pencil) : pencil(pencil) {}
-	explicit CurveParametricPencil(BIHOM(float, float, vec3) foo, vec2 bounds=vec2(0, 1), float eps=.01) : pencil([foo, eps, bounds](float t) { return SmoothParametricCurve([foo, t](float u ) { return foo(t, u); }, randomID(), bounds.x, bounds.y, false, eps); }) {}
+	explicit CurveParametricPencil(const HOM(float, SmoothParametricCurve) &pencil) : pencil(pencil) {}
+	explicit CurveParametricPencil(BIHOM(float, float, vec3) foo, vec2 bounds=vec2(0, 1), float eps=.01);
 
 	SmoothParametricCurve operator()(float t) const { return pencil(t); }
 	vec3 operator()(float t, float u) const { return pencil(t)(u); }
+};
+
+
+class ParametricSurfaceFoliation {
+	HOM(float, SmoothParametricCurve) pencil_of_leaves;
+	vec2 pencil_domain;
+	bool pencil_periodic;
+	vector<SmoothParametricCurve> special_leaves;
+public:
+	explicit ParametricSurfaceFoliation(HOM(float, SmoothParametricCurve) pencil, vec2 pencil_domain=vec2(0, 1), bool periodic=true, const vector<SmoothParametricCurve> &special_leaves={});
+
+	SmoothParametricCurve getLeaf(float t) const { return pencil_of_leaves(t); }
+	SmoothParametricCurve getSpecialLeaf(int i) const { return special_leaves[i];}
+
+	SmoothParametricSurface getFoliatedSurface() const;
+	vector<SmoothParametricCurve> sampleLeaves(int res) const;
+	vector<SmoothParametricCurve> getSpecialLeaves() const { return special_leaves; }
+	vec2 getDomain() const { return pencil_domain; }
 };
 
 
@@ -265,14 +280,14 @@ class Differential1FormPS;
 class RealFunctionPS {
     Foo111 _f;
     Foo112 _df;
-    std::shared_ptr<SmoothParametricSurface> surface;
+    shared_ptr<SmoothParametricSurface> surface;
 public:
-    RealFunctionPS(const std::function<float(float, float)> &f, const std::shared_ptr<SmoothParametricSurface> &surface) : _f(f), surface(surface) {}
-    RealFunctionPS(const Foo21 &f, const std::shared_ptr<SmoothParametricSurface> &surface) : surface(surface), _f( pack(f, f, vec2, float)), _df(pack(f, derivativeOperator(f, .01), vec2, float)) {}
-    RealFunctionPS(const Foo31 &emb_pullback, const std::shared_ptr<SmoothParametricSurface> &surface);
+    RealFunctionPS(const std::function<float(float, float)> &f, const shared_ptr<SmoothParametricSurface> &surface) : _f(f), surface(surface) {}
+    RealFunctionPS(const Foo21 &f, const shared_ptr<SmoothParametricSurface> &surface) : surface(surface), _f( pack(f, f, vec2, float)), _df(pack(f, derivativeOperator(f, .01), vec2, float)) {}
+    RealFunctionPS(const Foo31 &emb_pullback, const shared_ptr<SmoothParametricSurface> &surface);
     float operator()(float t, float s) const;
 
-    static RealFunctionPS constant(float c, const std::shared_ptr<SmoothParametricSurface> &surface) { return RealFunctionPS([c](float, float) { return c; }, surface); }
+    static RealFunctionPS constant(float c, const shared_ptr<SmoothParametricSurface> &surface) { return RealFunctionPS([c](float, float) { return c; }, surface); }
     RealFunctionPS constant(float c) const { return constant(c, surface); }
 
     RealFunctionPS operator*(float a) const { return RealFunctionPS([f=_f, a](float t, float s) { return f(t, s)*a; }, surface); }
@@ -330,11 +345,11 @@ class Differential2FormPS;
 
 class Differential1FormPS {
     std::function<Linear1Form2D<vec3>(float, float)> _omega;
-    std::shared_ptr<SmoothParametricSurface> surface;
+    shared_ptr<SmoothParametricSurface> surface;
 public:
-    Differential1FormPS(const std::function<Linear1Form2D<vec3>(float, float)> &omega, const std::shared_ptr<SmoothParametricSurface> &surface) : _omega(omega), surface(surface) {}
-    Differential1FormPS(const std::function<Linear1Form2D<vec3>(vec2)> &omega, const std::shared_ptr<SmoothParametricSurface> &surface) : _omega(pack(omega, omega, vec2, float)), surface(surface) {}
-    Differential1FormPS(const std::function<Linear1Form2D<vec3>(vec3)> &emb_pullback, const std::shared_ptr<SmoothParametricSurface> &surface);
+    Differential1FormPS(const std::function<Linear1Form2D<vec3>(float, float)> &omega, const shared_ptr<SmoothParametricSurface> &surface) : _omega(omega), surface(surface) {}
+    Differential1FormPS(const std::function<Linear1Form2D<vec3>(vec2)> &omega, const shared_ptr<SmoothParametricSurface> &surface) : _omega(pack(omega, omega, vec2, float)), surface(surface) {}
+    Differential1FormPS(const std::function<Linear1Form2D<vec3>(vec3)> &emb_pullback, const shared_ptr<SmoothParametricSurface> &surface);
     Linear1Form2D<vec3> operator()(float t, float s) const { return _omega(t, s); }
     Linear1Form2D<vec3> operator()(vec2 tu) const { return _omega(tu.x, tu.y); }
     float operator()(float t, float s, vec3 v) const { return _omega(t, s)(v); }
@@ -351,12 +366,12 @@ public:
 };
 
 class Differential2FormPS {
-    std::function<Linear2Form2D<vec3>(float, float)> _omega;
-    std::shared_ptr<SmoothParametricSurface> surface;
+    BIHOM(float, float, Linear2Form2D<vec3>) _omega;
+    shared_ptr<SmoothParametricSurface> surface;
 public:
-    Differential2FormPS(const std::function<Linear2Form2D<vec3>(float, float)> &omega, const std::shared_ptr<SmoothParametricSurface> &surface) : _omega(omega), surface(surface) {}
-    Differential2FormPS(const std::function<Linear2Form2D<vec3>(vec2)> &omega, const std::shared_ptr<SmoothParametricSurface> &surface) : _omega([omega](float t, float s) { return omega(vec2(t, s)); }), surface(surface) {}
-    Differential2FormPS(const std::function<Linear2Form2D<vec3>(vec3)> &emb_pullback, const std::shared_ptr<SmoothParametricSurface> &surface);
+    Differential2FormPS(const BIHOM(float, float, Linear2Form2D<vec3>) &omega, const shared_ptr<SmoothParametricSurface> &surface) : _omega(omega), surface(surface) {}
+    Differential2FormPS(const HOM(vec2, Linear2Form2D<vec3>) &omega, const shared_ptr<SmoothParametricSurface> &surface) : _omega([omega](float t, float s) { return omega(vec2(t, s)); }), surface(surface) {}
+    Differential2FormPS(const HOM(vec3, Linear2Form2D<vec3>) &emb_pullback, const shared_ptr<SmoothParametricSurface> &surface);
     Linear2Form2D<vec3> operator()(float t, float s) const;
     Linear2Form2D<vec3> operator()(vec2 tu) const;
 
@@ -375,9 +390,9 @@ public:
 class VectorFieldPS {
 	std::function<vec3(float, float)> _f_dt;
 	std::function<vec3(float, float)> _f_ds;
-	std::shared_ptr<SmoothParametricSurface> surface;
+	shared_ptr<SmoothParametricSurface> surface;
 	public:
-	VectorFieldPS(const std::function<vec3(float, float)> &f_dt, const std::function<vec3(float, float)> &f_du, const std::shared_ptr<SmoothParametricSurface> &surface) : _f_dt(f_dt), _f_ds(f_du), surface(surface) {}
+	VectorFieldPS(const std::function<vec3(float, float)> &f_dt, const std::function<vec3(float, float)> &f_du, const shared_ptr<SmoothParametricSurface> &surface) : _f_dt(f_dt), _f_ds(f_du), surface(surface) {}
 	vec3 operator()(float t, float s) const { return surface->tangentStandardBasis(t, s)[0]*_f_dt(t, s) + surface->tangentStandardBasis(t, s)[1]*_f_ds(t, s); }
 	VectorFieldPS operator*(float a) const { return VectorFieldPS([f=_f_dt, a](float t, float s) { return f(t, s)*a; }, [f=_f_ds, a](float t, float s) { return f(t, s)*a; }, surface); }
 	VectorFieldPS operator/(float a) const { return (*this)*(1/a); }
@@ -417,8 +432,6 @@ inline Fooo BSpline(int i, int k, const std::vector<float>& knots);
 FunctionalPartitionOfUnity BSplineBasis(int n, int k, const std::vector<float>& knots);
 vector<float> uniformKnots(int n, int k);
 
-
-
 SmoothParametricCurve freeFormCurve(const FunctionalPartitionOfUnity& family, const std::vector<vec3>& controlPts, vec2 domain, float eps=0.0001);
 
 inline SmoothParametricCurve BezierCurve(const std::vector<vec3>& controlPoints, float t0=0, float t1=1, float eps=.001) {
@@ -430,10 +443,6 @@ SmoothParametricCurve BSplineCurve(const std::vector<vec3>& controlPoints, const
 inline SmoothParametricCurve BSplineCurve(const std::vector<vec3>& controlPoints, float t0, float t1, int k, float eps=.001) {
 	return BSplineCurve(controlPoints, uniformKnots(controlPoints.size()-1, k), k, eps);
 }
-
-
-
-
 
 SmoothParametricSurface freeFormSurface(const FunctionalPartitionOfUnity &F_i, const FunctionalPartitionOfUnity &G_i, const std::vector<std::vector<vec3>> &controlPts, vec2 range_t, vec2 range_u, float eps=0.01);
 

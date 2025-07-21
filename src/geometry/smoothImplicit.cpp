@@ -1,6 +1,6 @@
 #include "smoothImplicit.hpp"
-#include "src/fundamentals/func.hpp"
-#include "src/common/indexedRendering.hpp"
+#include "src/utils/func.hpp"
+#include "src/engine/indexedRendering.hpp"
 
 using std::vector, std::string, std::shared_ptr, std::unique_ptr, std::pair, std::make_unique, std::make_shared, std::function;
 
@@ -278,6 +278,15 @@ vec3 ImplicitSurfacePoint::projectOnTangentPlane(vec3 q) const {
 vec3 ImplicitSurfacePoint::rotateAroundNormal(vec3 q, float angle) const {
 	vec3 projected = projectOnTangentPlane(q);
 	return projected*cos(angle) + cross(projected, getNormal())*sin(angle);
+}
+
+vec3 ImplicitVolume::uniform_random_sample(int rec_limit, int it) const {
+	if (it > rec_limit) 
+		throw RecursionLimitExceeded(rec_limit, "uniform sampling from implicit volume");
+	vec3 x = random_vec3(x_min, x_max);
+	if (!contains(x))
+		return uniform_random_sample(rec_limit, it+1);
+	return x;
 }
 
 float TriangulatedImplicitSurface::angle(int i) { return points[i].getAngle(); }

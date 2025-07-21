@@ -3,19 +3,23 @@
 #include "complexGeo.hpp"
 
 
+#include "../engine/specific.hpp"
+#include "../utils/macros.hpp"
+
+
 Complex planeToDisk(Complex z);
 Complex diskToPlane(Complex z);
 
 
 const Biholomorphism EXP = Biholomorphism::_EXP();
 const Biholomorphism LOG = Biholomorphism::_LOG();
-const Biholomorphism IdC = Biholomorphism::linear(1, 0);
-const Biholomorphism ADD1 = Biholomorphism::linear(1, 1);
+const Biholomorphism IdC = Biholomorphism::linear(Complex(1), Complex(0));
+const Biholomorphism ADD1 = Biholomorphism::linear(Complex(1), Complex(1));
 const Biholomorphism SQUARE = Biholomorphism::power(2);
 const Biholomorphism SQRT = Biholomorphism::power(.5f);
-const Matrix<Complex> CAYLEY_MAT = Matrix<Complex>(0.0i+1.f, -1.0i, 1, 1.0i);
+const Matrix<Complex> CAYLEY_MAT = Matrix<Complex>(Complex(1), -1.0i, Complex(1), 1.0i);
 const Matrix<Complex> CAYLEY_MAT_INV = CAYLEY_MAT.inv();
-const Biholomorphism CAYLEY = Biholomorphism::mobius(Matrix<Complex>(0.0i+1.f, -1.0i, 1, 1.0i));
+const Biholomorphism CAYLEY = Biholomorphism::mobius(Matrix<Complex>(Complex(1), -1.0i, Complex(1), 1.0i));
 
 class PlanarMeshWithBoundary;
 class SuperMesh;

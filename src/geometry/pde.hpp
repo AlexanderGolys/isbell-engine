@@ -2,7 +2,7 @@
 #include <utility>
 
 #include "smoothParametric.hpp"
-#include "../fundamentals/integralTransforms.hpp"
+#include "../utils/integralTransforms.hpp"
 
 using std::move;
 

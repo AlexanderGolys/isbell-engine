@@ -3,7 +3,6 @@
 #include <chrono>
 #include <functional>
 #include <iostream>
-#include <src/common/specific.hpp>
 
 using namespace glm;
 using std::vector, std::string, std::shared_ptr, std::unique_ptr, std::pair, std::make_unique, std::make_shared;
@@ -21,10 +20,10 @@ Complex diskToPlane(Complex z)
     return CAYLEY.inv(z);
 }
 
-const Matrix<Complex> Imob = Matrix<Complex>(1, 0, 0, 1);
+const Matrix<Complex> Imob = Matrix<Complex>(ONE, ZERO, ZERO, ONE);
 
 
-HyperbolicPlane::HyperbolicPlane() : _toH(Biholomorphism::linear(1, 0))
+HyperbolicPlane::HyperbolicPlane() : _toH(Biholomorphism::linear(ONE, ZERO))
 {
     _center = 1.0i;
 }
@@ -47,7 +46,7 @@ vec2 HyperbolicPlane::geodesicEndsH(Complex z0, Complex z1)
 Mob HyperbolicPlane::geodesicToVerticalH(Complex z0, Complex z1)
 {
     if (z0.re() == z1.re())
-        return Mob(1, -z0.re(), 0, 1);
+        return Mob(ONE, -z0.re()+0.0i, ZERO, ONE);
     vec2 ends = geodesicEndsH(z0, z1);
     return Mob(Complex(1, 0), Complex(-ends.y, 0), Complex(1, 0), Complex(-ends.x, 0));
 }
@@ -66,7 +65,7 @@ ComplexCurve HyperbolicPlane::geodesic(Complex z0, Complex z1)
 
 ComplexCurve HyperbolicPlane::boundary()
 {
-    return ComplexCurve([this](float t) {return fromH(Complex(t, .01)); }, -5, 5);
+    return ComplexCurve([this](float t) {return fromH(Complex(t, .01f)); }, -5, 5);
 }
 
 Complex HyperbolicPlane::toH(Complex z)
@@ -425,7 +424,7 @@ SchwarzPolygon SchwarzPolygon::halfRingH(float a, float b, int rad, int hor, flo
 }
 
 SchwarzPolygon SchwarzPolygon::pizzaSlice(float angle, int rad, int hor, float cut_bd) {
-    vector<Complex> vert = {0, 1, Complex(cos(angle), sin(angle))};
+    vector<Complex> vert = {ZERO, ONE, Complex(cos(angle), sin(angle))};
 
     std::vector<TriangleComplex> triangulation = {};
     triangulation.reserve(rad*hor*2);
@@ -462,10 +461,10 @@ SchwarzPolygon SchwarzPolygon::stripH(float a, float b, float shift, float h0, f
     vector<Complex> vert = {Complex(a, 0), Complex(b, 0), Complex(b, h0), Complex(b+shift, h1), Complex(b+shift, h_max), Complex(a+shift, h_max), Complex(a+shift, h1), Complex(a, h0)};
     float h2 = h1 + h1 - h0;
     std::vector<TriangleComplex> triangulation = {};
-    triangulation.push_back(TriangleComplex({Complex(a, 0.001), Complex(.66*a+.34*b, 0.001), Complex(b, h0)}));
-    triangulation.push_back(TriangleComplex({Complex(.66*a+.34*b, 0.001), Complex(.34*a+.66*b, 0.001), Complex(b, h0)}));
-    triangulation.push_back(TriangleComplex({Complex(.34*a+.66*b, 0.001),Complex(b, 0.001),  Complex(b, h0)}));
-    triangulation.push_back(TriangleComplex({Complex(a, 0.001), Complex(b, h0), Complex(a, h0)}));
+    triangulation.push_back(TriangleComplex({Complex(a, 0.001f), Complex(.66f*a+.34f*b, 0.001f), Complex(b, h0)}));
+    triangulation.push_back(TriangleComplex({Complex(.66f*a+.34f*b, 0.001f), Complex(.34f*a+.66f*b, 0.001f), Complex(b, h0)}));
+    triangulation.push_back(TriangleComplex({Complex(.34f*a+.66f*b, 0.001f),Complex(b, 0.001f),  Complex(b, h0)}));
+    triangulation.push_back(TriangleComplex({Complex(a, 0.001f), Complex(b, h0), Complex(a, h0)}));
     triangulation.push_back(TriangleComplex({Complex(a, h0), Complex(b, h0), Complex(a+shift, h1)}));
     triangulation.push_back(TriangleComplex({Complex(b, h0), Complex(a+shift, h1), Complex(b+shift, h1)}));
     triangulation.push_back(TriangleComplex({Complex(a+shift, h1), Complex(b+shift, h1), Complex(b, h2)}));
@@ -481,15 +480,15 @@ SchwarzPolygon SchwarzPolygon::stripD(float a, float b, float shift, float h0, f
     vector<Complex> vert = {planeToDisk(Complex(a, 0)), planeToDisk(Complex(b, 0)), planeToDisk(Complex(b, h0)), planeToDisk(Complex(b+shift, h1)), -I, planeToDisk(Complex(a+shift, h1)), planeToDisk(Complex(a, h0))};
     float h2 = h1 + h1 - h0;
     std::vector<TriangleComplex> triangulation = {};
-    triangulation.push_back(TriangleComplex({planeToDisk(Complex(a, 0))*cutbd,    cutbd*planeToDisk(Complex(.66*a+.34*b, 0)),    planeToDisk(Complex(b, h0))}));
-    triangulation.push_back(TriangleComplex({planeToDisk(Complex(.66*a+.34*b, 0))*cutbd,   cutbd*planeToDisk(Complex(.34*a+.66*b, 0)),    planeToDisk(Complex(b, h0))}));
-    triangulation.push_back(TriangleComplex({planeToDisk(Complex(.34*a+.66*b, 0))*cutbd,   cutbd*planeToDisk(Complex(b, 0)),              planeToDisk(Complex(b, h0))}));
+    triangulation.push_back(TriangleComplex({planeToDisk(Complex(a, 0))*cutbd,    cutbd*planeToDisk(Complex(.66f*a+.34f*b, 0)),    planeToDisk(Complex(b, h0))}));
+    triangulation.push_back(TriangleComplex({planeToDisk(Complex(.66f*a+.34f*b, 0))*cutbd,   cutbd*planeToDisk(Complex(.34f*a+.66f*b, 0)),    planeToDisk(Complex(b, h0))}));
+    triangulation.push_back(TriangleComplex({planeToDisk(Complex(.34f*a+.66f*b, 0))*cutbd,   cutbd*planeToDisk(Complex(b, 0)),              planeToDisk(Complex(b, h0))}));
     triangulation.push_back(TriangleComplex({planeToDisk(Complex(a, 0))*cutbd,    planeToDisk(Complex(b, h0)),                 planeToDisk(Complex(a, h0))}));
     triangulation.push_back(TriangleComplex({planeToDisk(Complex(a, h0)),                planeToDisk(Complex(b, h0)),                 planeToDisk(Complex(a+shift, h1))}));
     triangulation.push_back(TriangleComplex({planeToDisk(Complex(b, h0)),                planeToDisk(Complex(a+shift, h1)),           planeToDisk(Complex(b+shift, h1))}));
     triangulation.push_back(TriangleComplex({planeToDisk(Complex(a+shift, h1)),          planeToDisk(Complex(b+shift, h1)),           planeToDisk(Complex(b, h2))}));
     triangulation.push_back(TriangleComplex({planeToDisk(Complex(a+shift, h1)),          planeToDisk(Complex(b, h2)),                 planeToDisk(Complex(a, h2))}));
-    triangulation.push_back(TriangleComplex({planeToDisk(Complex(a, h2)),                planeToDisk(Complex(b, h2)),                 cutbd}));
+    triangulation.push_back(TriangleComplex({planeToDisk(Complex(a, h2)),                planeToDisk(Complex(b, h2)),                 0.0i+cutbd}));
     vector<TriangleComplex> subdivision = TriangleComplex::subdivideTriangulation(TriangleComplex::subdivideTriangulation(TriangleComplex::subdivideTriangulation(triangulation)));
 
     return SchwarzPolygon(vert, Imob, make_shared<HyperbolicPlane>(PoincareDisk()), subdivision);
@@ -606,14 +605,14 @@ SchwarzPolygon::SchwarzPolygon(std::vector<Complex> vertices, Matrix<Complex> mo
     this->mobiusToFDDisk = mobiusToFDDisk;
 }
 
-SchwarzPolygon::SchwarzPolygon(HyperbolicTriangleH t, float max_len, int n): mobiusToFDDisk(1, 0, 0, 1) {
+SchwarzPolygon::SchwarzPolygon(HyperbolicTriangleH t, float max_len, int n): mobiusToFDDisk(1+.0i, 0+.0i, 0+.0i, 1+.0i) {
     this->vertices = {t.getVertices()[0], t.getVertices()[1], t.getVertices()[2]};
     this->plane = make_shared<HyperbolicPlane>(HyperbolicPlane());
     this->triangulation = t.triangulation(max_len, n);
     this->mobiusToFDDisk = Imob;
 }
 
-SchwarzPolygon::SchwarzPolygon(std::vector<Complex> vertices, std::vector<HyperbolicTriangleH> trs, float max_len, int n): mobiusToFDDisk(1, 0, 0, 1) {
+SchwarzPolygon::SchwarzPolygon(std::vector<Complex> vertices, std::vector<HyperbolicTriangleH> trs, float max_len, int n): mobiusToFDDisk(1+.0i, 0+.0i, 0+.0i, 1+.0i) {
     this->vertices = vertices;
     this->plane = make_shared<HyperbolicPlane>(HyperbolicPlane());
     this->triangulation = {};
@@ -768,19 +767,19 @@ std::vector<Matrix<Complex>> FuchsianGroup::getGeneratorsAndInverses() {
 }
 
 FuchsianGroup FuchsianGroup::Zn(int n) {
-    return FuchsianGroup({Mob(Complex (cos(2*PI/n), sin(2*PI/n)), 0, 0, 1)}, [n](vector<Mob> v) { return v.size() >= n;});
+    return FuchsianGroup({Mob(Complex (cos(2*PI/n), sin(2*PI/n)), 0+.0i, 0+.0i, 1+.0i)}, [n](vector<Mob> v) { return v.size() >= n;});
 }
 
 FuchsianGroup FuchsianGroup::Gm(float a, float b) {
-    return FuchsianGroup(  {Mob(b, 0, 0, a)}, false);
+    return FuchsianGroup(  {Mob(b+.0i, 0+.0i, 0+.0i, a+.0i)}, false);
 }
 
 FuchsianGroup FuchsianGroup::Ga(float a, float b) {
-    return FuchsianGroup({Mob(1, b - a, 0, 1)}, false);
+    return FuchsianGroup({Mob(1+.0i, b - a+.0i, 0+.0i, 1+.0i)}, false);
 }
 
 FuchsianGroup FuchsianGroup::modular() {
-    return FuchsianGroup({Mob(0, 1, -1, 0), Mob(0, 1, -1, 0)*Mob(1, 1, 0, 1)}, [](vector<Mob> v) {
+    return FuchsianGroup({Mob(0+.0i, 1+.0i, -1+.0i, 0+.0i), Mob(0+.0i, 1+.0i, -1+.0i, 0+.0i)*Mob(1+.0i, 1+.0i, 0+.0i, 1+.0i)}, [](vector<Mob> v) {
         return v.size() >= 3 && nearlyEqual_mat(v[v.size() - 1]*v[v.size() - 2], v[v.size() - 3].inv()) ||
             v.size() >= 3 && nearlyEqual_mat(v[v.size() - 1]*v[v.size() - 2], -v[v.size() - 3].inv()) ||
                 v.size() >= 2 && nearlyEqual_mat(v[v.size() - 1], -v[v.size() - 2].inv());
@@ -845,7 +844,7 @@ HyperbolicTesselation HyperbolicTesselation::cyclicD(int n, int radial, int hori
 }
 
 HyperbolicTesselation HyperbolicTesselation::modular(float max_len, float bd_up, int subdivisions) {
-    HyperbolicTriangleH t = HyperbolicTriangleH(Complex(0, bd_up), Complex(-.5, sqrt(3)/2), Complex(.5, sqrt(3)/2));
+    HyperbolicTriangleH t = HyperbolicTriangleH(Complex(0, bd_up), Complex(-.5f, (float)sqrt(3)/2), Complex(.5f, (float)sqrt(3)/2));
     return HyperbolicTesselation(FuchsianGroup::modular(), SchwarzPolygon(t, max_len, subdivisions));
 }
 
