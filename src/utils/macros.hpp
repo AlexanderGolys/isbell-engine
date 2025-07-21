@@ -1,18 +1,20 @@
 #pragma once
-// #include <glm/glm.hpp>
+
 #include <variant>
 #include <string>
 #include <optional>
 #include <functional>
-#include <ranges>
-#include <GL/glew.h>
-#include <GLFW/glfw3.h>
+#include <vector>
+#include <iostream>
 #include "../../external/glm-0.9.7.1/glm/glm.hpp"
 #include <format>
-
+#include <map>
+#include <memory>
 
 using glm::vec2, glm::vec3, glm::vec4, glm::mat3, glm::mat4, glm::mat2, glm::mat2x3, glm::ivec2, glm::ivec3, glm::ivec4;
-using std::vector, std::variant, std::string, std::optional, std::shared_ptr, std::unique_ptr, std::make_unique, std::make_shared, std::cout, std::endl, std::array;
+
+using std::vector, std::variant, std::string, std::optional, std::shared_ptr, std::unique_ptr, std::make_unique;
+using std::make_shared, std::endl, std::array, std::format, std::to_string, std::cout, std::printf, std::pair, std::unordered_map;
 
 
 

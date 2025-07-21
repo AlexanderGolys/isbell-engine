@@ -1,5 +1,7 @@
 #include "func.hpp"
-#include "mat.hpp"
+#include "randomUtils.hpp"
+#include "monads.hpp"
+
 
 #include <chrono>
 #include <functional>
@@ -10,6 +12,9 @@
 #include <utility>
 #include <vector>
 #include <glm/gtx/transform.hpp>
+
+#include "filesUtils.hpp"
+
 
 using namespace glm;
 using std::vector, std::shared_ptr, std::make_shared, std::max, std::min;

@@ -1,5 +1,5 @@
 
-#include "glsl_utils.hpp"
+#include "glslUtils.hpp"
 #include <stdio.h>
 #include <string>
 #include <map>
@@ -8,6 +8,7 @@
 #include <fstream>
 #include <algorithm>
 #include <chrono>
+#include <ranges>
 #include <sstream>
 
 #include <stdlib.h>
@@ -18,7 +19,6 @@
 #include "specific.hpp"
 
 using namespace glm;
-using std::vector, std::string, std::shared_ptr, std::unique_ptr, std::make_shared, std::make_unique;
 
 
 void setUniformTextureSampler(GLuint programID, Texture *texture, int textureSlot)
@@ -36,10 +36,8 @@ int predefinedWidth(Resolution res) {
 			return 3840;
 		case HD2K:
 			return 2560;
-		default:
-		throw std::invalid_argument("Resolution not recognized");
 	}
-	return -1;
+	throw UnknownVariantError("Resolution not recognized");
 }
 
 int predefinedHeight(Resolution res) {
@@ -50,10 +48,9 @@ int predefinedHeight(Resolution res) {
 			return 2160;
 		case HD2K:
 			return 1440;
-		default:
-		throw std::invalid_argument("Resolution not recognized");
 	}
-	return -1;
+	throw UnknownVariantError("Resolution not recognized");
+
 }
 
 size_t sizeOfGLSLType(GLSLType type)
@@ -81,8 +78,7 @@ size_t sizeOfGLSLType(GLSLType type)
 	case SAMPLER3D:
 		return sizeof(GLuint);
 	}
-	std::cout << "Error: unknown GLSLType" << std::endl;
-	return -1;
+	throw UnknownVariantError("GLSL type not recognized");
 }
 
 int lengthOfGLSLType(GLSLType type)
@@ -175,8 +171,10 @@ void Shader::compile() {
 
 string Shader::getCode() const { return code; }
 
-Shader::Shader(const string &code, GLenum shaderType) : shaderType(shaderType), code(code) {
-
+Shader::Shader(const string &code, GLenum shaderType)
+: shaderType(shaderType), code(code)
+{
+	shaderID = glCreateShader(shaderType);
 }
 
 
@@ -255,7 +253,7 @@ void key_callback(GLFWwindow *window, int key, int scancode, int action, int mod
 		glfwSetWindowShouldClose(window, 1);
 }
 
-mat4 generateMVP(vec3 camPosition, vec3 camLookAt, vec3 upVector, float fov, float aspectRatio, float clippingRangeMin, float clippingRangeMax, mat4 modelTransform)
+mat4 generateMVP(vec3 camPosition, vec3 camLookAt, vec3 upVector, float fov, float aspectRatio, float clippingRangeMin, float clippingRangeMax, const mat4 &modelTransform)
 {
 	mat4 ViewMatrix = lookAt(camPosition, camLookAt, upVector);
 	mat4 ProjectionMatrix = perspective(fov, aspectRatio, clippingRangeMin, clippingRangeMax);
@@ -273,7 +271,7 @@ Window::Window(int width, int height, const char *title)
 	this->width = width;
 	this->height = height;
 	this->aspectRatio = (float)width / (float)height;
-	this->window = glfwCreateWindow(width, height, title, NULL, NULL);
+	this->window = glfwCreateWindow(width, height, title, nullptr, nullptr);
 	if (!this->window)
 	{
 		glfwTerminate();
@@ -289,25 +287,16 @@ Window::Window(Resolution resolution, const char *title)
 	glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 3);
 	glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 3);
 	glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
-	switch (resolution)
-	{
-	case FHD:
-		this->width = 1920;
-		this->height = 1080;
-		break;
-	case UHD:
-		this->width = 3840;
-		this->height = 2160;
-		break;
-	}
-	this->aspectRatio = (float)width / (float)height;
-	this->window = glfwCreateWindow(width, height, title, NULL, NULL);
-	if (!this->window)
+	width = predefinedWidth(resolution);
+	height = predefinedHeight(resolution);
+	aspectRatio = (float)width / height;
+	window = glfwCreateWindow(width, height, title, nullptr, nullptr);
+	if (!window)
 	{
 		glfwTerminate();
-		exit(2136);
+		throw SystemError("GLFW window creation failed");
 	}
-	glfwMakeContextCurrent(this->window);
+	glfwMakeContextCurrent(window);
 }
 
 Window::~Window()
@@ -380,7 +369,6 @@ bool Window::isOpen()
 int Window::destroy() {
     glfwDestroyWindow(this->window);
     glfwTerminate();
-    exit(EXIT_SUCCESS);
     return 0;
 }
 void Window::initViewport() {
@@ -394,41 +382,42 @@ void ShaderProgram::linkShaders() {
 
 	vertexShader.compile();
 	fragmentShader.compile();
-	if (geometryShader) geometryShader->compile();
+	if (geometryShader)
+		geometryShader->compile();
 
 
-		GLuint VertexShaderID =  vertexShader.getID();
-		GLuint FragmentShaderID =  fragmentShader.getID();
-		GLuint GeometryShaderID = geometryShader ? geometryShader->getID() : 0;
+	GLuint VertexShaderID =  vertexShader.getID();
+	GLuint FragmentShaderID =  fragmentShader.getID();
+	GLuint GeometryShaderID = geometryShader ? geometryShader->getID() : 0;
 
+	programID = glCreateProgram();
 
-		programID = glCreateProgram();
+	glAttachShader(programID, VertexShaderID);
+	glAttachShader(programID, FragmentShaderID);
+	if (geometryShader)
+		glAttachShader(programID, GeometryShaderID);
 
-		glAttachShader(programID, VertexShaderID);
-		glAttachShader(programID, FragmentShaderID);
-		if (geometryShader) glAttachShader(programID, GeometryShaderID);
+	glLinkProgram(programID);
+	glGetProgramiv(programID, GL_LINK_STATUS, &Result);
+	glGetProgramiv(programID, GL_INFO_LOG_LENGTH, &InfoLogLength);
 
-		glLinkProgram(programID);
-
-		glGetProgramiv(programID, GL_LINK_STATUS, &Result);
-		glGetProgramiv(programID, GL_INFO_LOG_LENGTH, &InfoLogLength);
-		if (InfoLogLength > 0)
-		{
-			vector<char> ProgramErrorMessage(InfoLogLength + 1);
-			glGetProgramInfoLog(programID, InfoLogLength, NULL, &ProgramErrorMessage[0]);
-			throw SystemError(&ProgramErrorMessage[0]);
-		}
-
-		glDetachShader(programID, VertexShaderID);
-		if (geometryShader) glDetachShader(programID, GeometryShaderID);
-		glDetachShader(programID, FragmentShaderID);
-
-		glDeleteShader(VertexShaderID);
-		if (geometryShader) glDeleteShader(GeometryShaderID);
-		glDeleteShader(FragmentShaderID);
-
-		shaderType = geometryShader ? GEOMETRY1 : CLASSIC;
+	if (InfoLogLength > 0)
+	{
+		vector<char> ProgramErrorMessage(InfoLogLength + 1);
+		glGetProgramInfoLog(programID, InfoLogLength, NULL, &ProgramErrorMessage[0]);
+		throw SystemError(&ProgramErrorMessage[0]);
 	}
+
+	glDetachShader(programID, VertexShaderID);
+	if (geometryShader) glDetachShader(programID, GeometryShaderID);
+	glDetachShader(programID, FragmentShaderID);
+
+	glDeleteShader(VertexShaderID);
+	if (geometryShader) glDeleteShader(GeometryShaderID);
+	glDeleteShader(FragmentShaderID);
+
+	shaderType = geometryShader ? GEOMETRY1 : CLASSIC;
+}
 
 
 ShaderProgram::ShaderProgram(const Shader &vertexShader, const Shader &fragmentShader, const Shader &geometryShader) :
@@ -465,14 +454,14 @@ void ShaderProgram::use()
 	glUseProgram(this->programID);
 }
 
-void ShaderProgram::initUniforms(const std::map<std::string, GLSLType> &uniforms)
+void ShaderProgram::initUniforms(const std::map<string, GLSLType> &uniforms)
 {
 	for (auto uni : uniforms)
 		this->uniformTypes[uni.first] = uni.second;
-	for (auto const &uniform : uniforms)
+	for (const auto &key: uniforms | std::views::keys)
 	{
-		GLuint uniformLocation = glGetUniformLocation(this->programID, uniform.first.c_str());
-		this->uniformLocations[uniform.first] = uniformLocation;
+		GLuint uniformLocation = glGetUniformLocation(this->programID, key.c_str());
+		this->uniformLocations[key] = uniformLocation;
 	}
 }
 
@@ -485,10 +474,8 @@ void ShaderProgram::setTextureSampler(const Texture *texture, int textureSlot) c
 void ShaderProgram::setUniforms(const std::map<string, const GLfloat *> &uniformValues)
 {
 	for (auto const &uniform : uniformValues)
-	{
-		GLSLType uniformType = this->uniformTypes[uniform.first];
 		setUniform(uniform.first, uniform.second);
-	}
+	
 }
 
 void ShaderProgram::setUniform(const string &uniformName, const GLfloat *uniformValue)
@@ -708,7 +695,7 @@ mat4 Camera::mvp(float t, const mat4 &modelTransform)
 }
 
 
-Attribute::Attribute(std::string name, GLSLType type, int inputNumber)
+Attribute::Attribute(const string &name, GLSLType type, int inputNumber)
 {
 	this->name = name;
 	this->type = type;
@@ -721,10 +708,8 @@ Attribute::Attribute(std::string name, GLSLType type, int inputNumber)
 
 Attribute::~Attribute()
 {
-	if (enabled)
-		disable();
-	if (bufferInitialized)
-		freeBuffer();
+	if (enabled) Attribute::disable();
+	if (bufferInitialized) Attribute::freeBuffer();
 }
 
 void Attribute::initBuffer()
@@ -818,7 +803,7 @@ void RenderingStep::setWeakSuperMesh(const std::shared_ptr<WeakSuperMesh> &super
     this-> weak_super = super;
 }
 
-int RenderingStep::findAttributeByName(const std::string &name) {
+int RenderingStep::findAttributeByName(const string &name) {
 	for (int i = 0; i < attributes.size(); i++)
 		if (attributes[i]->name == name)
 			return i;
@@ -957,7 +942,7 @@ void RenderingStep::addUniform(string uniformName, GLSLType uniformType, shared_
 	this->shader->initUniforms({{uniformName, uniformType}});
 }
 
-void RenderingStep::addConstFloats(const std::map<std::string, float>& uniforms)
+void RenderingStep::addConstFloats(const std::map<string, float>& uniforms)
 {
 	for (auto uniform : uniforms)
 		addUniform(uniform.first, FLOAT, std::make_shared<std::function<void(float, shared_ptr<ShaderProgram>)>>
@@ -967,7 +952,7 @@ void RenderingStep::addConstFloats(const std::map<std::string, float>& uniforms)
 				   }));
 }
 
-void RenderingStep::addConstVec4(const std::string& uniformName, vec4 value)
+void RenderingStep::addConstVec4(const string& uniformName, vec4 value)
 {
 	auto uniformSetter = [value, uniformName](float t, const shared_ptr<ShaderProgram> &shader) {
 		shader->setUniform(uniformName, value);
@@ -1073,7 +1058,7 @@ void RenderingStep::bindTextures() {
     weak_super->getMaterial().texture_specular->bind();
 }
 
-void RenderingStep::addUniforms(const std::map<std::string, GLSLType> &uniforms, std::map<string, shared_ptr<std::function<void(float, shared_ptr<ShaderProgram>)>>> setters)
+void RenderingStep::addUniforms(const std::map<string, GLSLType> &uniforms, std::map<string, shared_ptr<std::function<void(float, shared_ptr<ShaderProgram>)>>> setters)
 {
 	for (const auto& uniform : uniforms)
 		addUniform(uniform.first, uniform.second, setters[uniform.first]);
@@ -1126,7 +1111,7 @@ void RenderingStep::renderStep(float t)
         modelRenderStep(t);
 }
 
-RenderSettings::RenderSettings(vec4 bgColor, bool alphaBlending, bool depthTest, bool timeUniform, float speed, int maxFPS, bool takeScreenshots, Resolution resolution, float screenshotFrequency, string windowTitle):
+RenderSettings::RenderSettings(vec4 bgColor, bool alphaBlending, bool depthTest, bool timeUniform, float speed, int maxFPS, bool takeScreenshots, Resolution resolution, float screenshotFrequency, const string &windowTitle):
 bgColor(bgColor),
 alphaBlending(alphaBlending),
 depthTest(depthTest),
@@ -1267,42 +1252,17 @@ float Renderer::lastDeltaTime() const {
     return this->dt;
 }
 
-void Renderer::addPerFrameUniforms(const std::map<std::string, GLSLType> &uniforms, std::map<std::string, shared_ptr<std::function<void(float, std::shared_ptr<ShaderProgram>)>>> setters)
+void Renderer::addPerFrameUniforms(const std::map<string, GLSLType> &uniforms, const std::map<string, shared_ptr<std::function<void(float, std::shared_ptr<ShaderProgram>)>>> &setters)
 {
 	for (const auto& renderingStep : renderingSteps)
 		renderingStep->addUniforms(uniforms, setters);
 
 }
 
-void Renderer::addPerFrameUniform(const std::string &uniformName, GLSLType uniformType, shared_ptr<std::function<void(float, std::shared_ptr<ShaderProgram>)>> setter)
+void Renderer::addPerFrameUniform(const string &uniformName, GLSLType uniformType, const shared_ptr<std::function<void(float, std::shared_ptr<ShaderProgram>)>> &setter)
 {
 	for (const auto& renderingStep : renderingSteps)
 		renderingStep->addUniform(uniformName, uniformType, setter);
-}
-
-void Renderer::screenshot(const std::string &filename) const {
-	std::string path = settings.screenshotDirectory.to_str() + filename;
-	std::cout << "Screenshot saved to " << path << std::endl;
-	const int numberOfPixels = window->width * window->height * 3;
-	unsigned char pixels[numberOfPixels];
-
-	glPixelStorei(GL_PACK_ALIGNMENT, 1);
-	glReadBuffer(GL_FRONT);
-	glReadPixels(0, 0,  window->width, window->height, GL_BGR_EXT, GL_UNSIGNED_BYTE, pixels);
-
-	FILE *outputFile = fopen(path.c_str(), "w");
-	short header[] = {0, 2, 0, 0, 0, 0, (short)  window->width, (short) window->height, 24};
-
-	fwrite(&header, sizeof(header), 1, outputFile);
-	fwrite(pixels, numberOfPixels, 1, outputFile);
-	fclose(outputFile);
- }
-
-void Renderer::screenshot() const {
-	auto timestamp = std::chrono::system_clock::now();
-	auto timestamp_str = std::to_string(std::chrono::duration_cast<std::chrono::milliseconds>(timestamp.time_since_epoch()).count());
-
-	screenshot(timestamp_str + ".tga");
 }
 
 void Renderer::addSurfaceFamilyDeformer(SurfaceParametricPencil &pencil, WeakSuperMesh &surface) {
@@ -1349,7 +1309,7 @@ void Renderer::initRendering()
 	}
 }
 
-void Renderer::addConstUniform(const std::string &uniformName, GLSLType uniformType, shared_ptr<std::function<void(std::shared_ptr<ShaderProgram>)>> setter)
+void Renderer::addConstUniform(const string &uniformName, GLSLType uniformType, shared_ptr<std::function<void(std::shared_ptr<ShaderProgram>)>> setter)
 {
 	std::function<void(float, std::shared_ptr<ShaderProgram>)> setterWrapper = [setter](float t, const std::shared_ptr<ShaderProgram> &shader) { (*setter)(shader); };
 	for (const auto& renderingStep : renderingSteps)
@@ -1364,7 +1324,7 @@ void Renderer::addTimeUniform()
 	}));
 }
 
-void Renderer::addConstFloats(const std::map<std::string, float> &uniforms)
+void Renderer::addConstFloats(const std::map<string, float> &uniforms)
 {
 	for (const auto& renderingStep : renderingSteps)
 		renderingStep->addConstFloats(uniforms);
@@ -1387,7 +1347,9 @@ void Renderer::addCustomAction(std::function<void(float, float)> action)
     });
 }
 
-void Renderer::addConstUniforms(const std::map<std::string, GLSLType>& uniforms, std::map<std::string, shared_ptr<std::function<void(std::shared_ptr<ShaderProgram>)>>> setters)
+void Renderer::nonlinearSpeed(const std::function<float(float)> &speed) { animSpeed = speed; }
+
+void Renderer::addConstUniforms(const std::map<string, GLSLType>& uniforms, std::map<string, shared_ptr<std::function<void(std::shared_ptr<ShaderProgram>)>>> setters)
 {	
 	for (const auto& uniform : uniforms)
 		addConstUniform(uniform.first, uniform.second,  setters[uniform.first]);

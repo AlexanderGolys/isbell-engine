@@ -1,7 +1,7 @@
 #include <cassert>
 #include <iostream>
 #include "../engine/specific.hpp"
-#include "../geometry/pde_dicrete.hpp"
+#include "../geometry/pdeDiscrete.hpp"
 
 using namespace glm;
 
@@ -17,7 +17,8 @@ void fftInverseTest()
   assert(fn.samples() == 16);
   assert(nearlyEqual(fn.sampling_step(), fn_back.sampling_step()));
   assert((fn-fn_back).L2_norm() < 0.01);
-  std::cout << "OK: FFT inverse test passed" << std::endl;
+
+  printf("OK: FFT inverse test passed");
 }
 
 
@@ -33,7 +34,7 @@ void fftRealDomainSymmetryDFTTest()
     assert(c.nearlyEqual(c_conj));
   }
 
-  std::cout << "OK: FFT real symmetry test passed" << std::endl;
+  printf("OK: FFT real symmetry test passed");
 }
 
 void paddingTest()
@@ -42,16 +43,17 @@ void paddingTest()
   auto padded = fn.two_sided_zero_padding(64);
 
   assert(padded.samples() == 64);
+
   for (int i = 0; i < 7; ++i)
   {
     assert(nearlyEqual(padded[i], 0.f));
     assert(nearlyEqual(padded[63-i], 0.f));
   }
+
   for (int i = 0; i < 50; ++i)
-  {
     assert(nearlyEqual(padded[i+7], fn[i]));
-  }
-  std::cout << "OK: zero padding" << std::endl;
+
+  printf("OK: zero padding");
 }
 
 
@@ -61,7 +63,7 @@ void gaborTest()
   auto fn = DiscreteRealFunction(X_R*X_R-1, vec2(0, 1), 100);
   auto gab = DiscreteGaborTransform(10).transform(fn);
 
-  std::cout << "OK: Gabor transform" << std::endl;
+  printf("OK: Gabor transform");
 
 }
 
@@ -76,16 +78,17 @@ void quaternionTest() {
   assert(nearlyEqual(i*i, j*j));
   assert(nearlyEqual(i*i, -one));
   assert(nearlyEqual(i*j, -j*i));
-  std::cout << "OK: Quaternions arithmetic" << std::endl;
+
+  printf("OK: Quaternions arithmetic");
 
 }
 
   int main()
   {
-    // fftInverseTest();
-    // fftRealDomainSymmetryDFTTest();
-    // paddingTest();
-    // gaborTest();
+    fftInverseTest();
+    fftRealDomainSymmetryDFTTest();
+    paddingTest();
+    gaborTest();
     quaternionTest();
     return 0;
   }

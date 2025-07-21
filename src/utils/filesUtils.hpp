@@ -2,7 +2,7 @@
 //#pragma ide diagnostic ignored "HidingNonVirtualFunction"
 #pragma once
 
-#include "metaUtils.hpp"
+#include "macros.hpp"
 
 const string DEFAULT_CONFIG_PATH = "C:\\Users\\PC\\Desktop\\ogl-master\\config";
 
@@ -10,14 +10,17 @@ const string DEFAULT_CONFIG_PATH = "C:\\Users\\PC\\Desktop\\ogl-master\\config";
 
 
 class Path {
-public:
 	string path;
+
+public:
 	Path();
 	explicit Path(const string &path);
+
 	Path(const Path &other);
 	Path(Path &&other) noexcept;
 	Path &operator=(const Path &other);
 	Path &operator=(Path &&other) noexcept;
+
 	bool unixStyle() const;
 	string slash() const;
 	string wrongSlash() const;
@@ -30,12 +33,13 @@ public:
 	Path pureDirectory() const;
 	string filename() const;
 	string fileExtension() const;
+
 	Path makeRelative(const Path &other) const;
 	Path makeAbsolute(const Path &root) const;
 	Path makeRelative(const string &other) const;
 	Path makeAbsolute(const string &root) const;
 	Path goUp() const;
-	string to_str() const { return path; }
+	string to_str() const;
 };
 
 

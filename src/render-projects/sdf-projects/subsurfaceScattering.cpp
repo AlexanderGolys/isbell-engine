@@ -1,7 +1,6 @@
-#include "common/SDFRendering.hpp"
+#include "src/engine/sdf-rendering/SDFRendering.hpp"
 
 using namespace glm;
-using std::vector, std::string, std::shared_ptr, std::unique_ptr, std::pair, std::make_unique, std::make_shared;
 
 
 
@@ -15,9 +14,6 @@ int main() {
 
 	shared_ptr<Camera> camera = make_shared<Camera>(vec3(0, -9, 5), vec3(0, 0, 0));
 	renderer.setCamera(camera);
-
-
-
 
 
 

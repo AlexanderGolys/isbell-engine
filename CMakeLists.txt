@@ -75,7 +75,7 @@ add_executable(guitar
 		src/utils/func.cpp
 		src/engine/indexedRendering.cpp
 		src/engine/specific.cpp
-		src/engine/glsl_utils.cpp
+		src/engine/glslUtils.cpp
 		src/engine/renderingUtils.cpp
         src/geometry/complexGeo.cpp
         src/geometry/discreteGeometry.cpp
@@ -117,7 +117,7 @@ add_executable(guitarCyg
 		src/utils/func.cpp
 		src/engine/indexedRendering.cpp
 		src/engine/specific.cpp
-		src/engine/glsl_utils.cpp
+		src/engine/glslUtils.cpp
 		src/engine/renderingUtils.cpp
         src/geometry/complexGeo.cpp
         src/geometry/discreteGeometry.cpp
@@ -134,14 +134,14 @@ add_executable(guitarCyg
 		src/utils/integralTransforms.cpp
 		src/geometry/pde.hpp
 		src/geometry/pde.cpp
-		src/geometry/pde_dicrete.hpp
-		src/geometry/pde_dicrete.cpp
+		src/geometry/pdeDiscrete.hpp
+		src/geometry/pdeDiscrete.cpp
 		src/engine/interface.cpp
 		src/engine/dynamicalSystems.cpp
 		src/utils/elemFunc.cpp
 		src/utils/elemFunc.hpp
-		src/geometry/pde_dicrete.cpp
-		src/geometry/pde_dicrete.hpp
+		src/geometry/pdeDiscrete.cpp
+		src/geometry/pdeDiscrete.hpp
 )
 
 target_link_libraries(guitarCyg
@@ -160,7 +160,7 @@ create_target_launcher(guitarCyg WORKING_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}/
 #        src/utils/func.cpp
 #        src/engine/indexedRendering.cpp
 #        src/engine/specific.cpp
-#        src/engine/glsl_utils.cpp
+#        src/engine/glslUtils.cpp
 #        src/engine/renderingUtils.cpp
 #        src/geometry/complexGeo.cpp
 #        src/geometry/discreteGeometry.cpp
@@ -193,14 +193,14 @@ create_target_launcher(guitarCyg WORKING_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}/
 #
 #
 add_executable(tests1
-		src/tests/discrete_func_tests.cpp
+		src/tests/discreteFuncTests.cpp
 		src/utils/macros.hpp
 		src/utils/filesUtils.cpp
 		src/utils/mat.cpp
 		src/utils/func.cpp
 		src/engine/indexedRendering.cpp
 		src/engine/specific.cpp
-		src/engine/glsl_utils.cpp
+		src/engine/glslUtils.cpp
 		src/engine/renderingUtils.cpp
         src/geometry/complexGeo.cpp
         src/geometry/discreteGeometry.cpp
@@ -217,8 +217,8 @@ add_executable(tests1
 		src/utils/integralTransforms.cpp
 		src/geometry/pde.hpp
 		src/geometry/pde.cpp
-		src/geometry/pde_dicrete.hpp
-		src/geometry/pde_dicrete.cpp
+		src/geometry/pdeDiscrete.hpp
+		src/geometry/pdeDiscrete.cpp
 		src/engine/interface.cpp
 		src/engine/dynamicalSystems.cpp
 		src/utils/elemFunc.cpp
@@ -243,7 +243,7 @@ add_executable(gabor
 		src/utils/func.cpp
 		src/engine/indexedRendering.cpp
 		src/engine/specific.cpp
-		src/engine/glsl_utils.cpp
+		src/engine/glslUtils.cpp
 		src/engine/renderingUtils.cpp
         src/geometry/complexGeo.cpp
         src/geometry/discreteGeometry.cpp
@@ -260,14 +260,14 @@ add_executable(gabor
 		src/utils/integralTransforms.cpp
 		src/geometry/pde.hpp
 		src/geometry/pde.cpp
-		src/geometry/pde_dicrete.hpp
-		src/geometry/pde_dicrete.cpp
+		src/geometry/pdeDiscrete.hpp
+		src/geometry/pdeDiscrete.cpp
 		src/engine/interface.cpp
 		src/engine/dynamicalSystems.cpp
 		src/utils/elemFunc.cpp
 		src/utils/elemFunc.hpp
-		src/geometry/pde_dicrete.cpp
-		src/geometry/pde_dicrete.hpp
+		src/geometry/pdeDiscrete.cpp
+		src/geometry/pdeDiscrete.hpp
 )
 
 target_link_libraries(gabor
@@ -288,7 +288,7 @@ add_executable(zero
 		src/utils/func.cpp
 		src/engine/indexedRendering.cpp
 		src/engine/specific.cpp
-		src/engine/glsl_utils.cpp
+		src/engine/glslUtils.cpp
 		src/engine/renderingUtils.cpp
         src/geometry/complexGeo.cpp
         src/geometry/discreteGeometry.cpp
@@ -305,14 +305,14 @@ add_executable(zero
 		src/utils/integralTransforms.cpp
 		src/geometry/pde.hpp
 		src/geometry/pde.cpp
-		src/geometry/pde_dicrete.hpp
-		src/geometry/pde_dicrete.cpp
+		src/geometry/pdeDiscrete.hpp
+		src/geometry/pdeDiscrete.cpp
 		src/engine/interface.cpp
 		src/engine/dynamicalSystems.cpp
 		src/utils/elemFunc.cpp
 		src/utils/elemFunc.hpp
-		src/geometry/pde_dicrete.cpp
-		src/geometry/pde_dicrete.hpp
+		src/geometry/pdeDiscrete.cpp
+		src/geometry/pdeDiscrete.hpp
 )
 
 target_link_libraries(zero
@@ -335,7 +335,7 @@ add_executable(fluids
 		src/utils/func.cpp
 		src/engine/indexedRendering.cpp
 		src/engine/specific.cpp
-		src/engine/glsl_utils.cpp
+		src/engine/glslUtils.cpp
 		src/engine/renderingUtils.cpp
         src/geometry/complexGeo.cpp
         src/geometry/discreteGeometry.cpp
@@ -352,14 +352,14 @@ add_executable(fluids
 		src/utils/integralTransforms.cpp
 		src/geometry/pde.hpp
 		src/geometry/pde.cpp
-		src/geometry/pde_dicrete.hpp
-		src/geometry/pde_dicrete.cpp
+		src/geometry/pdeDiscrete.hpp
+		src/geometry/pdeDiscrete.cpp
 		src/engine/interface.cpp
 		src/engine/dynamicalSystems.cpp
 		src/utils/elemFunc.cpp
 		src/utils/elemFunc.hpp
-		src/geometry/pde_dicrete.cpp
-		src/geometry/pde_dicrete.hpp
+		src/geometry/pdeDiscrete.cpp
+		src/geometry/pdeDiscrete.hpp
 )
 
 target_link_libraries(fluids
@@ -381,7 +381,7 @@ add_executable(foliatedTorus
 		src/utils/func.cpp
 		src/engine/indexedRendering.cpp
 		src/engine/specific.cpp
-		src/engine/glsl_utils.cpp
+		src/engine/glslUtils.cpp
 		src/engine/renderingUtils.cpp
         src/geometry/complexGeo.cpp
         src/geometry/discreteGeometry.cpp
@@ -398,14 +398,14 @@ add_executable(foliatedTorus
 		src/utils/integralTransforms.cpp
 		src/geometry/pde.hpp
 		src/geometry/pde.cpp
-		src/geometry/pde_dicrete.hpp
-		src/geometry/pde_dicrete.cpp
+		src/geometry/pdeDiscrete.hpp
+		src/geometry/pdeDiscrete.cpp
 		src/engine/interface.cpp
 		src/engine/dynamicalSystems.cpp
 		src/utils/elemFunc.cpp
 		src/utils/elemFunc.hpp
-		src/geometry/pde_dicrete.cpp
-		src/geometry/pde_dicrete.hpp
+		src/geometry/pdeDiscrete.cpp
+		src/geometry/pdeDiscrete.hpp
 )
 
 target_link_libraries(foliatedTorus
@@ -425,7 +425,7 @@ add_executable(zerodiv
 		src/utils/func.cpp
 		src/engine/indexedRendering.cpp
 		src/engine/specific.cpp
-		src/engine/glsl_utils.cpp
+		src/engine/glslUtils.cpp
 		src/engine/renderingUtils.cpp
         src/geometry/complexGeo.cpp
         src/geometry/discreteGeometry.cpp
@@ -442,14 +442,14 @@ add_executable(zerodiv
 		src/utils/integralTransforms.cpp
 		src/geometry/pde.hpp
 		src/geometry/pde.cpp
-		src/geometry/pde_dicrete.hpp
-		src/geometry/pde_dicrete.cpp
+		src/geometry/pdeDiscrete.hpp
+		src/geometry/pdeDiscrete.cpp
 		src/engine/interface.cpp
 		src/engine/dynamicalSystems.cpp
 		src/utils/elemFunc.cpp
 		src/utils/elemFunc.hpp
-		src/geometry/pde_dicrete.cpp
-		src/geometry/pde_dicrete.hpp
+		src/geometry/pdeDiscrete.cpp
+		src/geometry/pdeDiscrete.hpp
 )
 
 target_link_libraries(zerodiv
@@ -468,7 +468,7 @@ add_executable(pallettes
 		src/utils/func.cpp
 		src/engine/indexedRendering.cpp
 		src/engine/specific.cpp
-		src/engine/glsl_utils.cpp
+		src/engine/glslUtils.cpp
 		src/engine/renderingUtils.cpp
         src/geometry/complexGeo.cpp
         src/geometry/discreteGeometry.cpp
@@ -485,14 +485,14 @@ add_executable(pallettes
 		src/utils/integralTransforms.cpp
 		src/geometry/pde.hpp
 		src/geometry/pde.cpp
-		src/geometry/pde_dicrete.hpp
-		src/geometry/pde_dicrete.cpp
+		src/geometry/pdeDiscrete.hpp
+		src/geometry/pdeDiscrete.cpp
 		src/engine/interface.cpp
 		src/engine/dynamicalSystems.cpp
 		src/utils/elemFunc.cpp
 		src/utils/elemFunc.hpp
-		src/geometry/pde_dicrete.cpp
-		src/geometry/pde_dicrete.hpp
+		src/geometry/pdeDiscrete.cpp
+		src/geometry/pdeDiscrete.hpp
 )
 
 target_link_libraries(pallettes

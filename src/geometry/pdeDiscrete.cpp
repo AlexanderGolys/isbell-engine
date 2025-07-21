@@ -2,7 +2,7 @@
 // Created by PC on 03.04.2025.
 //
 
-#include "pde_dicrete.hpp"
+#include "pdeDiscrete.hpp"
 
 DiscreteRealFunction HeatRealLineHomoDiscrete::green(float t, float x) const {
 	return DiscreteRealFunction([k=k, t, x](float y) {

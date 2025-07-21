@@ -5,6 +5,10 @@
 #include <iostream>
 #include <sstream>
 
+#include "exceptions.hpp"
+#include "metaUtils.hpp"
+#include "randomUtils.hpp"
+
 using namespace glm;
 
 
@@ -35,7 +39,9 @@ Path CodeFileDescriptor::getDirectory() const { return directory; }
 
 Path::Path() {
 	char cwd[1024];
-	if (getcwd(cwd, sizeof(cwd)) != nullptr) path = string(cwd);
+	if (getcwd(cwd, sizeof(cwd)) != nullptr)
+		path = string(cwd);
+
 	else throw SystemError("Current directory not found");
 }
 
@@ -70,13 +76,33 @@ Path &Path::operator=(Path &&other) noexcept {
 	return *this;
 }
 
-string Path::slash() const { return unixStyle() ? "/" : "\\"; }
-string Path::wrongSlash() const { return unixStyle() ? "\\" : "/"; }
-Path::operator string() const { return path; }
-Path Path::operator+(const string &other) const { return Path(path + slash() + other); }
-Path Path::operator+(const Path &other) const { return Path(path + slash() + other.path); }
-void Path::switchStyle() { path.replace(path.begin(), path.end(), slash()[0], wrongSlash()[0]); }
-void Path::setStyle(bool newStyle) { if (newStyle != unixStyle()) switchStyle(); }
+string Path::slash() const {
+	return unixStyle() ? "/" : "\\";
+}
+
+string Path::wrongSlash() const {
+	return unixStyle() ? "\\" : "/";
+}
+
+Path::operator string() const {
+	return path;
+}
+
+Path Path::operator+(const string &other) const {
+	return Path(path + slash() + other);
+}
+Path Path::operator+(const Path &other) const {
+	return Path(path + slash() + other.path);
+}
+
+void Path::switchStyle() {
+	path.replace(path.begin(), path.end(), slash()[0], wrongSlash()[0]);
+}
+
+void Path::setStyle(bool newStyle) {
+	if (newStyle != unixStyle())
+		switchStyle();
+}
 
 
 bool Path::endsWithFile(const string &filename) const {
@@ -114,11 +140,16 @@ Path Path::makeRelative(const Path &other) const {
 	return Path(path.substr(other.path.size()));
 }
 
-Path Path::makeAbsolute(const Path &root) const { return root + *this; }
+Path Path::makeAbsolute(const Path &root) const {
+	return root + *this;
+}
 Path Path::makeRelative(const string &other) const { return makeRelative(Path(other)); }
 
 Path Path::makeAbsolute(const string &root) const { return makeAbsolute(Path(root)); }
 Path Path::goUp() const { return Path(path.substr(0, path.find_last_of(slash()))); }
+
+string Path::to_str() const { return path; }
+
 // Path::operator string() const { return path; }
 
 
@@ -168,7 +199,7 @@ string CodeMacro::getKey() const { return replacementKey; }
 
 
 void CodeFileDescriptor::changeLine(const string &line, int lineNumber) {
-	std::ifstream file(getPath().path);
+	std::ifstream file(getPath().to_str());
 	if (!exists()) throw FileNotFoundError(getFilename());
 	std::string code;
 	int i = 0;
@@ -184,7 +215,7 @@ void CodeFileDescriptor::changeLine(const string &line, int lineNumber) {
 }
 
 string CodeFileDescriptor::readLine(int lineNumber) const {
-	std::ifstream file(getPath().path);
+	std::ifstream file(getPath().to_str());
 	if (!exists()) throw FileNotFoundError(getFilename());
 	std::string code;
 	int i = 0;
@@ -263,12 +294,12 @@ void CodeFileDescriptor::modifyCode(const string &code) const {
 
 void CodeFileDescriptor::saveNewCode(const string &code) const {
 	if (exists())
-		throw SystemError("File " + getFilename() + " already exists in " + getDirectory().path + ".");
+		throw SystemError("File " + getFilename() + " already exists in " + getDirectory().to_str() + ".");
 	writeCode(code);
 }
 
 bool CodeFileDescriptor::recogniseDirectoryNamingStyle() {
-	return directory.path.find('/') != string::npos;
+	return directory.to_str().find('/') != string::npos;
 }
 
 

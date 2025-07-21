@@ -1,8 +1,6 @@
 #pragma once
-#include <functional>
 
 #include "mat.hpp"
-#include "metaUtils.hpp"
 
 
 class Finset {

@@ -8,146 +8,33 @@
 #include <iostream>
 #include <stack>
 
-#include "randomUtils.hpp"
+#include "exceptions.hpp"
+#include "concepts.hpp"
 
 
-inline std::string vecToString(vec2 v) {
-	return "(" + std::to_string(v.x) + ", " + std::to_string(v.y) + ")"; }
-
-inline std::string vecToString(vec3 v) {
-	return "(" + std::to_string(v.x) + ", " + std::to_string(v.y) + ", " + std::to_string(v.z) + ")"; }
-
-inline std::string vecToString(vec4 v) {
-	return  "(" + std::to_string(v.x) + ", " + std::to_string(v.y) + ", " + std::to_string(v.z) + ", " + std::to_string(v.w) + ")"; }
-
-inline std::string vecToString(ivec2 v) {
-	return "(" + std::to_string(v.x) + ", " + std::to_string(v.y) + ")"; }
-
-inline std::string vecToString(ivec3 v) {
-	return "(" + std::to_string(v.x) + ", " + std::to_string(v.y) + ", " + std::to_string(v.z) + ")"; }
-
-inline std::string vecToString(ivec4 v) {
-	return  "(" + std::to_string(v.x) + ", " + std::to_string(v.y) + ", " + std::to_string(v.z) + ", " + std::to_string(v.w) + ")"; }
 
 
-inline std::string plural (std::string word) {
-    if (word.size() == 0)
-      return word;
-    bool caps = word.back() >= 'A' && word.back() <= 'Z' && word.size() > 1;
-    bool es = word.back() == 's'||
-              word.back() == 'x' ||
-              word.back() == 'z' ||
-              (word.size() > 1 && word[word.size()-2] == 'c' && word.back() == 'h') ||
-              (word.size() > 1 && word[word.size()-2] == 's' && word.back() == 'h') ||
-              word.back() == 'S'||
-              word.back() == 'X' ||
-              word.back() == 'Z' ||
-              (word.size() > 1 && word[word.size()-2] == 'C' && word.back() == 'H') ||
-              (word.size() > 1 && word[word.size()-2] == 'S' && word.back() == 'H');
-    if (es && !caps)
-      return word + "es";
-    if (es)
-      return word + "ES";
-    if (caps)
-      return word + "S";
-    return word + "s";
-}
 
-class ErrorClassWrapper : public std::exception {
-	std::string msg_;
-public:
-	explicit ErrorClassWrapper(const std::string& msg) : msg_(msg) {}
-	const char* what() const noexcept override {
-		return msg_.c_str();
-	}
-	string message() const { return msg_; }
-};
+inline string vecToString(vec2 v) {
+	return "(" + to_string(v.x) + ", " + to_string(v.y) + ")"; }
 
-class NotImplementedError : public ErrorClassWrapper {
-public:
-    explicit NotImplementedError(const std::string& notImplementedMethodName, const std::string& lackingType="Method")
-        : ErrorClassWrapper(lackingType + " " + notImplementedMethodName + " is not implemented yet.") {}
-};
+inline string vecToString(vec3 v) {
+	return "(" + to_string(v.x) + ", " + to_string(v.y) + ", " + to_string(v.z) + ")"; }
 
-class RecursionLimitExceeded : public ErrorClassWrapper {
-public:
-	explicit RecursionLimitExceeded(int limit, const string &where)
-		: ErrorClassWrapper("Recursion limit (" + std::to_string(limit) + "levels) exceeded during " + where) {}
-};
+inline string vecToString(vec4 v) {
+	return  "(" + to_string(v.x) + ", " + to_string(v.y) + ", " + to_string(v.z) + ", " + to_string(v.w) + ")"; }
 
-class IndexOutOfBounds : public ErrorClassWrapper {
-public:
-	IndexOutOfBounds(int index, int size, const std::string &indexName="i")
-		: ErrorClassWrapper("Index " + indexName + " is out of bounds [" + std::to_string(index) + "/" + std::to_string(size) + "].") {}
-	IndexOutOfBounds(const std::string &index, const std::string &size, const std::string &indexName="i")
-		: ErrorClassWrapper("Index " + indexName + " is out of bounds [" + index + "/" + size + "].") {}
-	IndexOutOfBounds(const ivec2 &index, const ivec2 &size, const std::string &indexName="i")
-		: ErrorClassWrapper("Index " + indexName + " is out of bounds [" + vecToString(index) + "/" + vecToString(size) + "].") {}
-	IndexOutOfBounds(const ivec3 &index, const ivec3 &size, const std::string &indexName="i")
-	: ErrorClassWrapper("Index " + indexName + " is out of bounds [" + vecToString(index) + "/" + vecToString(size) + "].") {}
-	IndexOutOfBounds(const ivec4 &index, const ivec4 &size, const std::string &indexName="i")
-	: ErrorClassWrapper("Index " + indexName + " is out of bounds [" + vecToString(index) + "/" + vecToString(size) + "].") {}
-};
+inline string vecToString(ivec2 v) {
+	return "(" + to_string(v.x) + ", " + to_string(v.y) + ")"; }
 
-class NotImplementedMethodError : public NotImplementedError {
-public:
-  explicit NotImplementedMethodError(const std::string& methodName)
-      :NotImplementedError(methodName, "Method") {}
-};
+inline string vecToString(ivec3 v) {
+	return "(" + to_string(v.x) + ", " + to_string(v.y) + ", " + to_string(v.z) + ")"; }
 
-class NotImplementedFunctionError : public NotImplementedError {
-public:
-  explicit NotImplementedFunctionError(const std::string& name)
-      :NotImplementedError(name, "Function") {}
-};
+inline string vecToString(ivec4 v) {
+	return  "(" + to_string(v.x) + ", " + to_string(v.y) + ", " + to_string(v.z) + ", " + to_string(v.w) + ")"; }
 
-class NotImplementedVariantError : public NotImplementedError {
-public:
-  NotImplementedVariantError(const std::string& variant, const std::string& ofWhat)
-      :NotImplementedError(variant + " of " + ofWhat, "Variant") {}
-};
 
-class UnknownVariantError : public ErrorClassWrapper {
-public:
-  UnknownVariantError(const std::string& variant, const std::string& ofWhat)
-      : ErrorClassWrapper("Variant " + variant + " of  " + ofWhat + " is an unknown type in this context.") {}
-  explicit UnknownVariantError(const std::string& msg) : ErrorClassWrapper(msg) {}
 
-};
-
-class IllegalVariantError : public ErrorClassWrapper {
-public:
-  IllegalVariantError(const std::string& variant, const std::string& ofWhat, const std::string& rejectingMethod)
-      : ErrorClassWrapper(plural(ofWhat) + " in variant " + variant + " are considered invalid by method " + rejectingMethod + ".") {}
-  explicit IllegalVariantError(const std::string& msg) : ErrorClassWrapper(msg) {}
-
-};
-
-class IllegalArgumentError : public ErrorClassWrapper {
-public:
-	explicit IllegalArgumentError(const std::string& msg) : ErrorClassWrapper(msg) {}
-};
-
-class ValueError : public ErrorClassWrapper {
-public:
-	explicit ValueError(const std::string& msg) : ErrorClassWrapper(msg) {}
-};
-
-class SystemError : public ErrorClassWrapper {
-public:
-	explicit SystemError(const std::string& msg) : ErrorClassWrapper(msg) {}
-};
-
-class FileNotFoundError : public SystemError {
-public:
-	explicit FileNotFoundError(const std::string& filename) : SystemError("File " + filename + " not found.") {}
-	FileNotFoundError(const std::string& filename, const std::string& dir) : SystemError("File " + filename + " not found in " + dir) {}
-};
-
-class ZeroDivisionError : public ValueError {
-public:
-	explicit ZeroDivisionError(const std::string& msg="") : ValueError(msg) {}
-};
 
 template<typename X>
 void add_all(vector<X> a, vector<X> b) {
@@ -179,9 +66,9 @@ public:
 
 class COLOR_PALETTE10 {
 public:
-    std::array<vec4, 10> cls;
+    array<vec4, 10> cls;
 
-    explicit COLOR_PALETTE10(std::array<vec4, 10> colors) : cls(colors) {}
+    explicit COLOR_PALETTE10(const array<vec4, 10> &colors) : cls(colors) {}
     COLOR_PALETTE10(COLOR_PALETTE p1, COLOR_PALETTE p2) : cls({p1[0], p1[1], p1[2], p1[3], p1[4], p2[0], p2[1], p2[2], p2[3], p2[4]}) {}
     COLOR_PALETTE10(ivec3 c1, ivec3 c2, ivec3 c3, ivec3 c4, ivec3 c5, ivec3 c6, ivec3 c7, ivec3 c8, ivec3 c9, ivec3 c10);
     std::vector<vec4> colors() const { return std::vector<vec4>(cls.begin(), cls.end()); }
@@ -246,7 +133,7 @@ inline int binom(int a, int b) {
 }
 
     template<typename T>
-    void printVector(std::vector<T> v, std::string title="vector")
+    void printVector(std::vector<T> v, string title="vector")
     {
         std::cout << title << " [" << v.size() << "]: ";
         for (int i = 0; i < v.size(); i++)
@@ -506,16 +393,16 @@ std::vector<T> setToVector(const std::set<T> &s) {
 }
 
 template<typename T, int n>
-std::array<T, n> vectorToArray(const std::vector<T> &s) {
-	std::array<T, n> res;
+array<T, n> vectorToArray(const std::vector<T> &s) {
+	array<T, n> res;
 	for (int i = 0; i < n; i++)
 		res[i] = s[i];
 	return res;
 }
 
 template<typename T, int n, int m=n>
-std::array<std::array<T, n>, m> vecVecToArray(const std::vector<T> &s) {
-	std::array<std::array<T, n>, m> res;
+array<array<T, n>, m> vecVecToArray(const std::vector<T> &s) {
+	array<array<T, n>, m> res;
 	for (int i = 0; i < m; i++)
 		for (int j = 0; j < n; j++)
 			res[i][j] = s[i * n + j];
@@ -523,7 +410,7 @@ std::array<std::array<T, n>, m> vecVecToArray(const std::vector<T> &s) {
 }
 
 template<typename T, int n, int m=n>
-std::vector<std::vector<T>> arrayToVecVec(const std::array<std::array<T, n>, m> &s) {
+std::vector<std::vector<T>> arrayToVecVec(const array<array<T, n>, m> &s) {
 	std::vector<std::vector<T>> res;
 	res.reserve(m);
 	for (int i = 0; i < m; i++)
@@ -532,7 +419,7 @@ std::vector<std::vector<T>> arrayToVecVec(const std::array<std::array<T, n>, m> 
 }
 
 template<typename T, int n>
-std::array<T, n> setToArray(const std::set<T> &s) {
+array<T, n> setToArray(const std::set<T> &s) {
 	return vectorToArray<T, n>(setToVector(s));
 }
 
@@ -543,18 +430,20 @@ float norm2(V v) {
 	return dot(v, v);
 }
 
-inline float norm2(mat2 m) { return m[0][0]*m[0][0] + m[0][1]*m[0][1] + m[1][0]*m[1][0] + m[1][1]*m[1][1]; }
+inline float norm2(mat2 m) { return
+	m[0][0]*m[0][0] + m[0][1]*m[0][1] + m[1][0]*m[1][0] + m[1][1]*m[1][1];
+}
 
 template <typename  T>
 float norm(T v) { return sqrt(norm2(v)); }
 
-inline std::array<std::array<float, 2>, 2> mat2ToArray(mat2 m) {
-	return vectorToArray<std::array<float, 2>, 2>({{m[0][0], m[0][1]}, {m[1][0], m[1][1]} }); }
+inline array<array<float, 2>, 2> mat2ToArray(mat2 m) {
+	return vectorToArray<array<float, 2>, 2>({{m[0][0], m[0][1]}, {m[1][0], m[1][1]} }); }
 
-inline std::array<std::array<float, 3>, 3> mat3ToArray(mat3 m) {
-	return vectorToArray<std::array<float, 3>, 3>({{m[0][0], m[0][1], m[0][2]}, {m[1][0], m[1][1], m[1][2]}, {m[2][0], m[2][1], m[2][2]} }); }
+inline array<array<float, 3>, 3> mat3ToArray(mat3 m) {
+	return vectorToArray<array<float, 3>, 3>({{m[0][0], m[0][1], m[0][2]}, {m[1][0], m[1][1], m[1][2]}, {m[2][0], m[2][1], m[2][2]} }); }
 
-//inline std::array<std::array<float, 4>, 4> mat4ToArray(mat4 m) {
+//inline array<array<float, 4>, 4> mat4ToArray(mat4 m) {
 //	return {{{m[0][0], m[0][1], m[0][2], m[0][3]}, {m[1][0], m[1][1], m[1][2], m[1][3]}, {m[2][0], m[2][1], m[2][2], m[2][3]}, {m[3][0], m[3][1], m[3][2], m[3][3]} }};}
 
 
@@ -660,8 +549,8 @@ inline ivec2 setMinus(ivec4 x, ivec2 y) {
 	return ivec2(x.x, x.y);
 }
 
-inline std::string hash_ivec3(ivec3 v) {
-	return std::to_string(v.x) + "--" + std::to_string(v.y) + "--" + std::to_string(v.z);
+inline string hash_ivec3(ivec3 v) {
+	return to_string(v.x) + "--" + to_string(v.y) + "--" + to_string(v.z);
 }
 
 inline string replaceAll(const string &target, const string &old, const string &new_)
@@ -710,7 +599,7 @@ inline int timestampNowTruncated() {
 //}
 //
 //inline string smallestUniqueNumberStr() {
-//	return std::to_string(SmallestUniqueNumber::generate());
+//	return to_string(SmallestUniqueNumber::generate());
 //}
 
 template<typename T>
@@ -722,8 +611,8 @@ int indexOf(T x, const std::vector<T> &v) {
 }
 
 template<typename T>
-std::string str(T x) {
-	return std::to_string(x);
+string str(T x) {
+	return to_string(x);
 }
 
 
@@ -847,8 +736,8 @@ template<Semigroup A, typename container>
 A mult(container arr) {return combine<container, A>(arr, [](A a, A b) { return a * b; }); }
 
 template<typename A, int k, typename homspace>
-std::array<A, k> arrayComprehension(const homspace &f) {
-	std::array<A, k> res = {f(0)};
+array<A, k> arrayComprehension(const homspace &f) {
+	array<A, k> res = {f(0)};
 	for (int i = 1; i < k; i++) res[i] = f(i);
 	return res;
 }
@@ -884,8 +773,8 @@ vector<Cod> map(vector<Dom> v, const HOM(Dom, Cod) &f) {
 }
 
 template<typename Dom, typename Cod, int k>
-std::array<Cod, k> map(std::array<Dom, k> v, const std::function<Cod(const Dom &)> &f) {
-	std::array<Cod, k> res;
+array<Cod, k> map(array<Dom, k> v, const std::function<Cod(const Dom &)> &f) {
+	array<Cod, k> res;
 	for (int i = 0; i < k; i++) res[i] = f(v[i]);
 	return res;
 }
@@ -924,8 +813,8 @@ vector<Cod> mapLinspace(Dom a, Dom b, int steps, const HOM(const Dom&, Cod) &f, 
 }
 
 template<typename Dom, typename Cod, int k>
-std::array<Cod, k> mapByVal(std::array<Dom, k> v, const std::function<Cod(Dom)> &f) {
-	std::array<Cod, k> res;
+array<Cod, k> mapByVal(array<Dom, k> v, const std::function<Cod(Dom)> &f) {
+	array<Cod, k> res;
 	for (int i = 0; i < k; i++) res[i] = f(v[i]);
 	return res;
 }

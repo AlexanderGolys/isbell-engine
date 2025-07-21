@@ -10,7 +10,7 @@
 #include <glm/gtc/matrix_transform.hpp>
 #include <glm/gtx/transform.hpp>
 
-#include "glsl_utils.hpp"
+#include "glslUtils.hpp"
 
 #include <map>
 #include <string>
@@ -140,7 +140,7 @@ public:
 
 
 
-class RENDER_SETTINGS {
+struct RENDER_SETTINGS {
 public:
   int width, height;
   const char* title;

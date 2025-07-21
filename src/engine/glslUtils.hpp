@@ -20,6 +20,8 @@
 #include <memory>
 #include <sstream>
 
+#include "src/utils/filesUtils.hpp"
+
 class Texture;
 
 void error_callback(int error, const char* description);
@@ -27,7 +29,7 @@ void key_callback(GLFWwindow* window, int key, int scancode, int action, int mod
 
 GLuint bindVAO();
 void disableAttributeArrays(int how_many=4);
-mat4 generateMVP(vec3 camPosition, vec3 camLookAt, vec3 upVector, float fov, float aspectRatio, float clippingRangeMin, float clippingRangeMax, mat4 modelTransform);
+mat4 generateMVP(vec3 camPosition, vec3 camLookAt, vec3 upVector, float fov, float aspectRatio, float clippingRangeMin, float clippingRangeMax, const mat4 &modelTransform);
 GLuint LoadShaders(const char* vertex_file_path, const char* fragment_file_path);
 void setUniformTextureSampler(GLuint programID, Texture* texture, int textureSlot);
 
@@ -130,25 +132,25 @@ public:
 	void linkShaders();
 
 //	ShaderProgram(const string &vertexShaderCode, const string &fragmentShaderCode, const string &geometryShaderCode="");
-	explicit ShaderProgram(const std::string &standard_file_path);
+	explicit ShaderProgram(const string &standard_file_path);
 	~ShaderProgram();
 	void use();
-	void initUniforms(const std::map<std::string, GLSLType> &uniforms);
+	void initUniforms(const std::map<string, GLSLType> &uniforms);
 
 	void setTextureSampler(const Texture* texture, int textureSlot) const;
-	void setUniforms(const std::map<std::string, const GLfloat*> &uniformValues);
-	void setUniform(const std::string &uniformName, const GLfloat* uniformValue);
-	void setUniform(const std::string &uniformName, float uniformValue);
-	void setUniform(const std::string &uniformName, int uniformValue);
-	void setUniform(const std::string &uniformName, vec2 uniformValue);
-	void setUniform(const std::string &uniformName, vec3 uniformValue);
-	void setUniform(const std::string &uniformName, vec4 uniformValue);
-	void setUniform(const std::string &uniformName, mat2 uniformValue);
-	void setUniform(const std::string &uniformName, mat3 uniformValue);
-	void setUniform(const std::string& uniformName, mat4 uniformValue);
-	void setUniform(const std::string& uniformName, float x, float y);
-	void setUniform(const std::string &uniformName, float x, float y, float z);
-	void setUniform(const std::string &uniformName, float x, float y, float z, float w);
+	void setUniforms(const std::map<string, const GLfloat*> &uniformValues);
+	void setUniform(const string &uniformName, const GLfloat* uniformValue);
+	void setUniform(const string &uniformName, float uniformValue);
+	void setUniform(const string &uniformName, int uniformValue);
+	void setUniform(const string &uniformName, vec2 uniformValue);
+	void setUniform(const string &uniformName, vec3 uniformValue);
+	void setUniform(const string &uniformName, vec4 uniformValue);
+	void setUniform(const string &uniformName, mat2 uniformValue);
+	void setUniform(const string &uniformName, mat3 uniformValue);
+	void setUniform(const string& uniformName, mat4 uniformValue);
+	void setUniform(const string& uniformName, float x, float y);
+	void setUniform(const string &uniformName, float x, float y, float z);
+	void setUniform(const string &uniformName, float x, float y, float z, float w);
 };
 
 class Camera {
@@ -190,7 +192,7 @@ public:
 
 class Attribute {
 public:
-	std::string name;
+	string name;
 	GLuint bufferAddress;
 	size_t size;
 	GLSLType type;
@@ -198,7 +200,7 @@ public:
 	bool enabled;
 	bool bufferInitialized;
 
-	Attribute(std::string name, GLSLType type, int inputNumber);
+	Attribute(const string &name, GLSLType type, int inputNumber);
 	virtual ~Attribute();
 
 	virtual void initBuffer();
@@ -230,15 +232,15 @@ public:
     shared_ptr<WeakSuperMesh> weak_super = nullptr;
     GLuint elementBufferLoc = 0;
 
-	std::map<std::string, GLSLType> uniforms;
-	std::map<std::string, shared_ptr<std::function<void(float, shared_ptr<ShaderProgram>)>>> uniformSetters;
+	std::map<string, GLSLType> uniforms;
+	std::map<string, shared_ptr<std::function<void(float, shared_ptr<ShaderProgram>)>>> uniformSetters;
 	std::function<void(float)> customStep;
 
 	void setModel(const shared_ptr<Model3D> &model);
 	void setSuperMesh(const shared_ptr<SuperMesh> &super);
     void setWeakSuperMesh(const shared_ptr<WeakSuperMesh> &super);
 
-	int findAttributeByName(const std::string &name);
+	int findAttributeByName(const string &name);
 	void initStdAttributes();
 	void initMaterialAttributes();
     void initElementBuffer();
@@ -258,11 +260,11 @@ public:
     void initTextures();
     void bindTextures();
 
-	void addUniforms(const std::map<std::string, GLSLType> &uniforms, std::map<std::string, shared_ptr<std::function<void(float, shared_ptr<ShaderProgram>)>>> setters);
-	void addUniform(std::string uniformName, GLSLType uniformType, shared_ptr<std::function<void(float, shared_ptr<ShaderProgram>)>> setter);
-	void addConstFloats(const std::map<std::string, float>& uniforms);
-	void addConstVec4(const std::string& name, vec4 value);
-	void addConstColor(const std::string &name, vec4 value) { addConstVec4(name, value); }
+	void addUniforms(const std::map<string, GLSLType> &uniforms, std::map<string, shared_ptr<std::function<void(float, shared_ptr<ShaderProgram>)>>> setters);
+	void addUniform(string uniformName, GLSLType uniformType, shared_ptr<std::function<void(float, shared_ptr<ShaderProgram>)>> setter);
+	void addConstFloats(const std::map<string, float>& uniforms);
+	void addConstVec4(const string& name, vec4 value);
+	void addConstColor(const string &name, vec4 value) { addConstVec4(name, value); }
 	void setUniforms(float t);
 
     virtual void addCameraUniforms(const shared_ptr<Camera>& camera);
@@ -290,7 +292,7 @@ public:
 	float screenshotFrequency;
 	Path screenshotDirectory;
 
-	RenderSettings(vec4 bgColor, bool alphaBlending, bool depthTest, bool timeUniform, float speed, int maxFPS, bool takeScreenshots, Resolution resolution, float screenshotFrequency=0.f, string windowTitle="window");
+	RenderSettings(vec4 bgColor, bool alphaBlending, bool depthTest, bool timeUniform, float speed, int maxFPS, bool takeScreenshots, Resolution resolution, float screenshotFrequency=0.f, const string &windowTitle="window");
 };
 
 
@@ -302,7 +304,6 @@ class Renderer {
 	float last_time_capture = 0;
 	float since_last_scr = 0;
 
-public:
 	unique_ptr<Window> window;
 	GLuint vao;
 	vector<shared_ptr<RenderingStep>> renderingSteps;
@@ -314,7 +315,8 @@ public:
 	unique_ptr<std::function<void(float, float)>> perFrameFunction;
 	RenderSettings settings;
 
-	explicit Renderer(float animSpeed=1.f, vec4 bgColor=BLACK, const std::string &screenshotDirectory="screenshots/", float screenshotFrequency=-1);
+public:
+	explicit Renderer(float animSpeed=1.f, vec4 bgColor=BLACK, const string &screenshotDirectory="screenshots/", float screenshotFrequency=-1);
 	explicit Renderer(const RenderSettings &settings);
 	virtual ~Renderer();
 	
@@ -322,9 +324,6 @@ public:
 	void initMainWindow(Resolution resolution, const char* title);
 	void initMainWindow();
 	void resetTimer();
-
-
-
 
 	void setCamera(const shared_ptr<Camera> &camera);
 	void setLights(const vector<Light> &lights);
@@ -339,17 +338,15 @@ public:
 	float initFrame();
 	float lastDeltaTime() const;
 
-	void addPerFrameUniforms(const std::map<std::string, GLSLType> &uniforms, std::map<std::string, shared_ptr<std::function<void(float, shared_ptr<ShaderProgram>)>>> setters);
-	void addPerFrameUniform(const std::string &uniformName, GLSLType uniformType, shared_ptr<std::function<void(float, shared_ptr<ShaderProgram>)>> setter);
-	void addConstUniforms(const std::map<std::string, GLSLType>& uniforms, std::map<std::string, shared_ptr<std::function<void(shared_ptr<ShaderProgram>)>>> setters);
-	void addConstUniform(const std::string &uniformName, GLSLType uniformType, shared_ptr<std::function<void(shared_ptr<ShaderProgram>)>> setter);
+	void addPerFrameUniforms(const std::map<string, GLSLType> &uniforms, const std::map<string, shared_ptr<std::function<void(float, shared_ptr<ShaderProgram>)>>> &setters);
+	void addPerFrameUniform(const string &uniformName, GLSLType uniformType, const shared_ptr<std::function<void(float, shared_ptr<ShaderProgram>)>> &setter);
+	void addConstUniforms(const std::map<string, GLSLType>& uniforms, std::map<string, shared_ptr<std::function<void(shared_ptr<ShaderProgram>)>>> setters);
+	void addConstUniform(const string &uniformName, GLSLType uniformType, shared_ptr<std::function<void(shared_ptr<ShaderProgram>)>> setter);
 	void addTimeUniform();
-	void addConstFloats(const std::map<std::string, float> &uniforms);
+	void addConstFloats(const std::map<string, float> &uniforms);
 	void addCustomAction(std::function<void(float)> action);
     void addCustomAction(std::function<void(float, float)> action);
-	void nonlinearSpeed(const Fooo &speed) { animSpeed = speed; }
-	void screenshot(const std::string &filename) const;
-	void screenshot() const;
+	void nonlinearSpeed(const Fooo &speed);
 	void addSurfaceFamilyDeformer(SurfaceParametricPencil &pencil, WeakSuperMesh &surface);
 	void addFloorWorkingArea(vec3 corner1, vec3 corner2, vec3 corner3, vec3 corner4, const MaterialPhong &material, float height, float pyramid_height);
 

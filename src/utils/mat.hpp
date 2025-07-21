@@ -8,7 +8,6 @@
 #include <memory>
 
 #include "metaUtils.hpp"
-// #include "func.hpp"
 
 
 
@@ -1048,11 +1047,11 @@ class Quaternion {
 
 public:
 	explicit Quaternion(vec4 q) : q(q) {}
+	Quaternion(Complex z) : q(vec4(z.re(), z.im(), 0, 0)) {}
+
 
 	Quaternion(float x, float y, float z, float w) : q(vec4(x, y, z, w)) {}
-
 	explicit Quaternion(float x) : q(vec4(x, 0, 0, 0)) {}
-
 	explicit Quaternion(vec3 im) : q(vec4(0, im)) {}
 
 	Quaternion operator*(Quaternion r) const;
@@ -1114,22 +1113,31 @@ int binomial(int n, int k);
 
 
 template<typename M>
-float det(const M &m) { return determinant(m); }
+float det(const M &m) {
+	return determinant(m);
+}
 
 template<typename T>
-T normalise(T v) { return norm(v) < 1e-6 ? v * 0.f : v / norm(v); }
+T normalise(T v) {
+	return norm(v) < 1e-6 ? v * 0.f : v / norm(v);
+}
 
-template<typename T>
-bool nearlyEqual(T a, T b) { return norm(a - b) < 1e-6; }
+template<typename T, typename U=T>
+bool nearlyEqual(T a, U b) {
+	return norm(a - b) < 1e-6;
+}
 
 template<typename M>
-bool nearlyEqual_mat(M a, M b) { return a.nearly_equal(b); }
+bool nearlyEqual_mat(M a, M b) {
+	return a.nearly_equal(b);
+}
 
 
 
-inline bool nearlyEqual(float a, float b) { return norm(a - b) < 1e-6; }
-inline bool nearlyEqual(float a, int b) { return norm(a - b) < 1e-6; }
-inline bool nearlyEqual(int a, float b) { return norm(a - b) < 1e-6; }
+
+
+// inline bool nearlyEqual(float a, int b) { return norm(a - b) < 1e-6; }
+// inline bool nearlyEqual(int a, float b) { return norm(a - b) < 1e-6; }
 
 template<typename T>
 bool nearlyEqual(T a) { return norm(a) < 1e-6; }
@@ -1142,11 +1150,21 @@ vec barycenter(vec a, vec b, vec c) { return (a + b + c) / 3.f; };
 
 
 vec2 intersectLines(vec2 p1, vec2 p2, vec2 q1, vec2 q2);
-inline vec2 projectVectorToVector(vec2 v, vec2 n) { return v - dot(v, n) * n; }
-inline mat2 scaleMatrix2(vec2 s) { return mat2(s.x, 0, 0, s.y); }
-inline mat2 scaleMatrix2(float s) { return scaleMatrix2(vec2(s)); }
-inline mat2 changeOfBasis(vec2 t1, vec2 t2) { return inverse(mat2(t1, t2)); }
-inline mat2 changeOfBasis(vec2 s1, vec2 s2, vec2 t1, vec2 t2) { return changeOfBasis(t1, t2) * mat2(s1, s2); }
+inline vec2 projectVectorToVector(vec2 v, vec2 n) {
+	return v - dot(v, n) * n;
+}
+inline mat2 scaleMatrix2(vec2 s) {
+	return mat2(s.x, 0, 0, s.y);
+}
+inline mat2 scaleMatrix2(float s) {
+	return scaleMatrix2(vec2(s));
+}
+inline mat2 changeOfBasis(vec2 t1, vec2 t2) {
+	return inverse(mat2(t1, t2));
+}
+inline mat2 changeOfBasis(vec2 s1, vec2 s2, vec2 t1, vec2 t2) {
+	return changeOfBasis(t1, t2) * mat2(s1, s2);
+}
 mat2 rotationMatrix2(float angle);
 mat2 rotationBetween(vec2 v0, vec2 v1);
 
@@ -1281,9 +1299,10 @@ inline float cos2(float x) { return cos(x) * cos(x); }
 
 
 class vec5 {
+public:
 	float x, y, z, w, v;
 
-public:
+
 	vec5();
 	explicit vec5(float x);
 	vec5(float x, float y, float z, float w, float v);

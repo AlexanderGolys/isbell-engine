@@ -1,7 +1,5 @@
 #include "../engine/specific.hpp"
-#include "../utils/macros.hpp"
-#include "../utils/randomUtils.hpp"
-#include "../geometry/pde_dicrete.hpp"
+#include "../geometry/pdeDiscrete.hpp"
 #include "../engine/interface.hpp"
 
 using namespace glm;

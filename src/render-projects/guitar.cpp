@@ -1,6 +1,4 @@
 #include "../engine/specific.hpp"
-#include "../utils/macros.hpp"
-#include "../utils/randomUtils.hpp"
 #include "../geometry/pde.hpp"
 #include "../engine/interface.hpp"
 
