@@ -232,15 +232,15 @@ SmoothParametricCurve circle(float r, vec3 center, vec3 v1, vec3 v2, float eps) 
     return circle(r, PLANE_ORIGIN, eps).embedding(v1, v2, center);
 }
 
-WeakSuperMesh singleTrig(vec3 v0, vec3 v1, vec3 v2, std::variant<int, std::string> id) {
+IndexedMesh singleTrig(vec3 v0, vec3 v1, vec3 v2, std::variant<int, std::string> id) {
 	vec3 normal          = normalize(cross(v1 - v0, v2 - v0));
 	vector<Vertex> nodes = {Vertex(v0, vec2(0, 0), normal),
 							Vertex(v1, vec2(1, 0), normal),
 							Vertex(v2, vec2(0, 1), normal)};
-	return WeakSuperMesh(nodes, {{0, 1, 2}}, id);
+	return IndexedMesh(nodes, {{0, 1, 2}}, id);
 }
 
-WeakSuperMesh singleQuadShadeSmooth(vec3 outer1, vec3 inner1, vec3 inner2, vec3 outer2, std::variant<int, std::string> id) {
+IndexedMesh singleQuadShadeSmooth(vec3 outer1, vec3 inner1, vec3 inner2, vec3 outer2, std::variant<int, std::string> id) {
 	auto n1 = normalize(cross(inner1 - outer1, inner2 - outer1));
 	auto n2 = normalize(normalize(cross(inner2 - inner1, outer1 - inner1)) + normalize(cross(inner2 - inner1, outer2 - inner1)));
 	auto n3 = normalize(normalize(cross(inner1 - inner2, outer1 - inner2)) + normalize(cross(inner1 - inner2, outer2 - inner2)));
@@ -258,7 +258,7 @@ WeakSuperMesh singleQuadShadeSmooth(vec3 outer1, vec3 inner1, vec3 inner2, vec3 
 	ivec3(0, 1, 2),
 	ivec3(0, 2, 3),
 	};
-	return WeakSuperMesh(verts, tris, id);
+	return IndexedMesh(verts, tris, id);
 }
 
 SmoothParametricCurve VivaniCurve(float r, float eps) {
@@ -291,23 +291,23 @@ SmoothParametricCurve sphericalSpiral(float a, float r, float t_max, PolyGroupID
     return SmoothParametricCurve([a, r](float t) {return vec3(cos(t), sin(t), -a*t)*r/sqrt(1+a*a*t*t); },id,  -t_max, t_max, false, eps);
 }
 
-WeakSuperMesh singleTrig(vec3 v0, vec3 v1, vec3 v2, MaterialPhongConstColor &material, PolyGroupID id) {
+IndexedMesh singleTrig(vec3 v0, vec3 v1, vec3 v2, MaterialPhongConstColor &material, PolyGroupID id) {
     vec3 n = normalize(cross(v1 - v0, v2 - v0));
     vector nodes = {Vertex(v0, vec2(0, 0), n, BLACK, {}, material),
                     Vertex(v1, vec2(0, 1), n, BLACK, {}, material),
                     Vertex(v2, vec2(1, 1), n, BLACK, {}, material)};
-    return WeakSuperMesh(nodes, {ivec3(0, 1, 2)}, id);
+    return IndexedMesh(nodes, {ivec3(0, 1, 2)}, id);
 }
 
 
-WeakSuperMesh singleTrig(vec3 v0, vec3 v1, vec3 v2, MaterialPhongConstColor &material1, MaterialPhongConstColor &material2, MaterialPhongConstColor &material3, PolyGroupID id) {
+IndexedMesh singleTrig(vec3 v0, vec3 v1, vec3 v2, MaterialPhongConstColor &material1, MaterialPhongConstColor &material2, MaterialPhongConstColor &material3, PolyGroupID id) {
     vec3 n = normalize(cross(v1 - v0, v2 - v0));
     vector nodes = {Vertex(v0, vec2(0, 0), n, BLACK, {}, material1),
                     Vertex(v1, vec2(0, 1), n, BLACK, {}, material2),
                     Vertex(v2, vec2(1, 1), n, BLACK, {}, material3)};
-    return WeakSuperMesh(nodes, {ivec3(0, 1, 2)}, id);
+    return IndexedMesh(nodes, {ivec3(0, 1, 2)}, id);
 }
-WeakSuperMesh singleQuadShadeSmooth(vec3 outer1, vec3 inner1, vec3 inner2, vec3 outer2, MaterialPhongConstColor &material,
+IndexedMesh singleQuadShadeSmooth(vec3 outer1, vec3 inner1, vec3 inner2, vec3 outer2, MaterialPhongConstColor &material,
                                     std::variant<int, std::string> id) {
     vec3 n1out = normalize(cross(outer1 - inner1, outer1 - inner2));
     vec3 n2out = normalize(cross(outer2 - inner2, outer2 - inner1));
@@ -319,10 +319,10 @@ WeakSuperMesh singleQuadShadeSmooth(vec3 outer1, vec3 inner1, vec3 inner2, vec3 
                     Vertex(inner1, vec2(0, 1), nin, BLACK, {}, material),
                     Vertex(inner2, vec2(1, 0), nin, BLACK, {}, material),
                     Vertex(outer2, vec2(1, 1), n2out, BLACK, {}, material)};
-    return WeakSuperMesh(nodes, {ivec3(0, 1, 2), ivec3(3, 1, 2)}, id);
+    return IndexedMesh(nodes, {ivec3(0, 1, 2), ivec3(3, 1, 2)}, id);
 }
 
-WeakSuperMesh singleQuadShadeFlat(vec3 outer1, vec3 inner1, vec3 inner2, vec3 outer2, MaterialPhongConstColor &material,
+IndexedMesh singleQuadShadeFlat(vec3 outer1, vec3 inner1, vec3 inner2, vec3 outer2, MaterialPhongConstColor &material,
                                   std::variant<int, std::string> id) {
     vec3 n1 = normalize(cross(outer1 - inner1, outer1 - inner2));
     vec3 n2 = normalize(cross(outer2 - inner2, outer2 - inner1));
@@ -333,10 +333,10 @@ WeakSuperMesh singleQuadShadeFlat(vec3 outer1, vec3 inner1, vec3 inner2, vec3 ou
                     Vertex(inner1, vec2(0, 1), n2, BLACK, {}, material),
                     Vertex(inner2, vec2(1, 1), n2, BLACK, {}, material),
                     Vertex(outer2, vec2(1, 1), n2, BLACK, {}, material)};
-    return WeakSuperMesh(nodes, {ivec3(0, 1, 2), ivec3(3, 4, 5)}, id);
+    return IndexedMesh(nodes, {ivec3(0, 1, 2), ivec3(3, 4, 5)}, id);
 }
 
-WeakSuperMesh singleQuadShadeFlat(vec3 outer1, vec3 inner1, vec3 inner2, vec3 outer2, MaterialPhongConstColor &material1,
+IndexedMesh singleQuadShadeFlat(vec3 outer1, vec3 inner1, vec3 inner2, vec3 outer2, MaterialPhongConstColor &material1,
                                   MaterialPhongConstColor &material2, std::variant<int, std::string> id) {
     vec3 n1 = normalize(cross(outer1 - inner1, outer1 - inner2));
     vec3 n2 = normalize(cross(outer2 - inner2, outer2 - inner1));
@@ -344,12 +344,12 @@ WeakSuperMesh singleQuadShadeFlat(vec3 outer1, vec3 inner1, vec3 inner2, vec3 ou
     vector nodes = {Vertex(outer1, vec2(0, 0), n1, BLACK, {}, material1), Vertex(inner1, vec2(0, 1), n1, BLACK, {}, material1),
                     Vertex(inner2, vec2(1, 1), n1, BLACK, {}, material1), Vertex(inner1, vec2(0, 1), n2, BLACK, {}, material2),
                     Vertex(inner2, vec2(1, 1), n2, BLACK, {}, material2), Vertex(outer2, vec2(1, 1), n2, BLACK, {}, material2)};
-    return WeakSuperMesh(nodes, {ivec3(0, 1, 2), ivec3(3, 4, 5)}, id);
+    return IndexedMesh(nodes, {ivec3(0, 1, 2), ivec3(3, 4, 5)}, id);
 }
 
 
 
-WeakSuperMesh pyramid(const vector<vec3> &cornersDown, vec3 apex, std::variant<int, std::string> id) {
+IndexedMesh pyramid(const vector<vec3> &cornersDown, vec3 apex, std::variant<int, std::string> id) {
 	auto m = singleQuadShadeFlat(cornersDown, id);
 	m.merge(singleTrig(cornersDown[0], cornersDown[1], apex, id));
 	m.merge(singleTrig(cornersDown[1], cornersDown[2], apex, id));
@@ -437,9 +437,9 @@ SmoothParametricSurface twistedTorus(float a, float m, float n, int dommul1, int
 	}, vec2(0, TAU*dommul1), vec2(0, TAU*dommul2), true, true, eps);
 }
 
-inline WeakSuperMesh icosahedron(float r, vec3 center, std::variant<int, std::string> id) {
+inline IndexedMesh icosahedron(float r, vec3 center, std::variant<int, std::string> id) {
     float phi = (1.f + sqrt(5)) / 2;
-    vector verts = {
+    vector verts_ = {
         Vertex(vec3(1, phi, 0),  vec2(1, 0),  normalise(vec3(1, phi, 0)),     BLACK     ),
         Vertex(vec3(-1, phi, 0), vec2(-1, 0), normalise(vec3(-1, phi, 0)),   BLACK   ),
         Vertex(vec3(1, -phi, 0), vec2(1, 0), normalise(vec3(1, -phi, 0)),   BLACK   ),
@@ -453,28 +453,34 @@ inline WeakSuperMesh icosahedron(float r, vec3 center, std::variant<int, std::st
         Vertex(vec3(phi, 0, -1), vec2(phi, -1), normalise(vec3(phi, 0, -1)),   BLACK   ),
         Vertex(vec3(-phi, 0, -1),vec2(-phi, -1), normalise(vec3(-phi, 0, -1)), BLACK )
         };
+	vector<Vertex> verts = {};
     vector<ivec3> faceInds = {};
-    for (int i = 0; i < verts.size()-2; i++) {
-        for (int j = i+1; j < verts.size()-1; j++) {
-            for (int k = j+1; k < verts.size(); k++) {
-                vec3 a = verts[i].getPosition();
-                vec3 b = verts[j].getPosition();
-                vec3 c = verts[k].getPosition();
+    for (int i = 0; i < verts_.size()-2; i++) {
+        for (int j = i+1; j < verts_.size()-1; j++) {
+            for (int k = j+1; k < verts_.size(); k++) {
+                vec3 a = verts_[i].getPosition();
+                vec3 b = verts_[j].getPosition();
+                vec3 c = verts_[k].getPosition();
                 if (norm(a-b) < 2.1 && norm(b-c) < 2.1 && norm(c-a) < 2.1) {
-                    faceInds.push_back(ivec3(i, j, k));
+                	vec3 normal = normalise(cross(b - a, c - a));
+                	if (dot(normal, a) > 0) normal = -normal;
+                	verts.emplace_back(a, verts_[i].getUV(), normal, BLACK);
+                	verts.emplace_back(b, verts_[j].getUV(), normal, BLACK);
+                	verts.emplace_back(c, verts_[k].getUV(), normal, BLACK);
+                	int l = verts.size();
+                    faceInds.push_back(ivec3(l-3, l-2, l-1));
                 }
             }
         }
     }
     for (int i = 0; i < verts.size(); i++) {
         verts[i].setPosition(normalise(verts[i].getPosition())*r + center);
-        verts[i].setUV(vec2(verts[i].getPosition().y, verts[i].getPosition().z));
     }
-    return WeakSuperMesh(verts, faceInds, id);
+    return IndexedMesh(verts, faceInds, id);
 }
 
-WeakSuperMesh icosphere(float r, int n, vec3 center, PolyGroupID id, vec4 color) {
-    WeakSuperMesh unitSphere = icosahedron(1, vec3(0, 0, 0), id);
+IndexedMesh icosphere(float r, int n, vec3 center, PolyGroupID id, vec4 color) {
+    IndexedMesh unitSphere = icosahedron(1, vec3(0, 0, 0), id);
     while (n > 0) {
         unitSphere = unitSphere.subdivideEdgecentric(id);
         n--;
@@ -491,7 +497,7 @@ WeakSuperMesh icosphere(float r, int n, vec3 center, PolyGroupID id, vec4 color)
     return unitSphere;
 }
 
-WeakSuperMesh disk3d(float r, vec3 center, vec3 v1, vec3 v2, int radial_res, int vertical_res, const std::variant<int, std::string> &id) {
+IndexedMesh disk3d(float r, vec3 center, vec3 v1, vec3 v2, int radial_res, int vertical_res, const std::variant<int, std::string> &id) {
     auto vert = vector<Vertex>();
     vector<ivec3> inds = {};
     vec3 n = normalise(cross(v1, v2));
@@ -512,42 +518,42 @@ WeakSuperMesh disk3d(float r, vec3 center, vec3 v1, vec3 v2, int radial_res, int
             inds.emplace_back(i + 1 + (h - 1) * radial_res, i + 1 + h * radial_res, (i + 1) % radial_res + 1 + h * radial_res);
             inds.emplace_back(i + 1 + (h - 1) * radial_res, (i + 1) % radial_res + 1 + h * radial_res, (i + 1) % radial_res + 1 + (h - 1) * radial_res);
         }
-    return WeakSuperMesh(vert, inds, id);
+    return IndexedMesh(vert, inds, id);
 }
 
-WeakSuperMesh singleQuadShadeFlat(vec3 inner1, vec3 outer1, vec3 inner2, vec3 outer2, std::variant<int, std::string> id) {
+IndexedMesh singleQuadShadeFlat(vec3 inner1, vec3 outer1, vec3 inner2, vec3 outer2, std::variant<int, std::string> id) {
 	return singleQuadShadeFlat(inner1, outer1, inner2, outer2, BLACK, id);
 }
 
-WeakSuperMesh singleQuadShadeFlat(vec3 inner1, vec3 outer1, vec3 inner2, vec3 outer2, vec4 color, std::variant<int, std::string> id) {
+IndexedMesh singleQuadShadeFlat(vec3 inner1, vec3 outer1, vec3 inner2, vec3 outer2, vec4 color, std::variant<int, std::string> id) {
 	vec3 normal          = normalize(cross(outer1 - inner1, inner2 - inner1));
 	vector<Vertex> nodes = {Vertex(inner1, vec2(0, 0), normal, color),
 							Vertex(outer1, vec2(1, 0), normal, color),
 							Vertex(inner2, vec2(1, 1), normal, color),
 							Vertex(outer2, vec2(0, 1), normal, color)};
-	return WeakSuperMesh(nodes, {{0, 1, 2}, {0, 3, 2}}, id);
+	return IndexedMesh(nodes, {{0, 1, 2}, {0, 3, 2}}, id);
 }
 
-WeakSuperMesh singleQuadShadeFlat(const vector<vec3> &corners, std::variant<int, std::string> id) {
+IndexedMesh singleQuadShadeFlat(const vector<vec3> &corners, std::variant<int, std::string> id) {
 	return singleQuadShadeFlat(corners[0], corners[1], corners[2], corners[3], id);
 }
 
 Disk3D::Disk3D(const std::vector<Vertex> &nodes, const std::vector<ivec3> &faceInds, vec3 center, vec3 forward, vec3 down, std::variant<int, std::string> id) :
-    WeakSuperMesh(nodes, faceInds, id), center(center), forward(forward), down(down), normal(normalise(cross(forward, down))), radius(0) , id(id){
+    IndexedMesh(nodes, faceInds, id), center(center), forward(forward), down(down), normal(normalise(cross(forward, down))), radius(0) , id(id){
 
     setEmpiricalRadius();
     setColorInfo();
     }
 
 Disk3D::Disk3D(const char *filename, vec3 center, vec3 forward, vec3 down, std::variant<int, std::string> id)
-    : WeakSuperMesh(filename, id), center(center), forward(forward), down(down), normal(normalise(cross(forward, down))), radius(0), id(id) {
+    : IndexedMesh(filename, id), center(center), forward(forward), down(down), normal(normalise(cross(forward, down))), radius(0), id(id) {
 
     setEmpiricalRadius();
     setColorInfo();
 
 }
 
-Disk3D::Disk3D(float r, vec3 center, vec3 forward, vec3 down, int radial_res, int vertical_res, const std::variant<int, std::string> &id) : WeakSuperMesh(disk3d(r, center, forward, down, radial_res, vertical_res, id)) {
+Disk3D::Disk3D(float r, vec3 center, vec3 forward, vec3 down, int radial_res, int vertical_res, const std::variant<int, std::string> &id) : IndexedMesh(disk3d(r, center, forward, down, radial_res, vertical_res, id)) {
     this->center = center;
     this->forward = forward;
     this->down = down;
@@ -756,13 +762,13 @@ SmoothImplicitSurface planeImplicit(vec3 normal, float d, vec3 center, float eps
 	}, eps);
 }
 
-WeakSuperMesh arrow(vec3 start, vec3 head, float radius, float head_len, float head_radius, int radial, int straight, float eps, std::variant<int, std::string> id) {
+IndexedMesh arrow(vec3 start, vec3 head, float radius, float head_len, float head_radius, int radial, int straight, float eps, std::variant<int, std::string> id) {
 	vec3 direction     = normalise(head - start);
 	auto w  = orthogonalComplementBasis(direction);
 	vec3 w1  = w.first;
 	vec3 w2  = w.second;
 	auto id1 = randomID();
-	WeakSuperMesh mesh = WeakSuperMesh(WeakSuperMesh(cylinder(radius, start, head, w1, w2, eps), radial, straight, id1));
+	IndexedMesh mesh = IndexedMesh(IndexedMesh(cylinder(radius, start, head, w1, w2, eps), radial, straight, id1));
 	mesh.deformPerVertex(id1, [start, head](BufferedVertex &v) {
 		v.setColor(vec4(start, head.z));
 		v.setUV(vec2(head.x, head.y));
@@ -782,17 +788,17 @@ WeakSuperMesh arrow(vec3 start, vec3 head, float radius, float head_len, float h
 	return mesh;
 }
 
-WeakSuperMesh drawArrows(const vector<vec3> &points, const vector<vec3> &directions, float radius, float head_len, float head_radius, int radial, int straight, float eps,
+IndexedMesh drawArrows(const vector<vec3> &points, const vector<vec3> &directions, float radius, float head_len, float head_radius, int radial, int straight, float eps,
 						 const std::variant<int, std::string> &id) {
-	WeakSuperMesh mesh;
+	IndexedMesh mesh;
 	for (int i = 0; i < points.size(); i++)
 		mesh.merge(arrow(points[i], directions[i], radius, head_len, head_radius, radial, straight, eps,  randomID()));
 	return mesh;
 }
 
-WeakSuperMesh drawArrows(const vector<vec3> &points, const VectorField &field, const std::function<float(float)>& radius,const std::function<float(float)>& len, const std::function<float(float)> &head_len, const std::function<float(float)> &head_radius,
+IndexedMesh drawArrows(const vector<vec3> &points, const VectorField &field, const std::function<float(float)>& radius,const std::function<float(float)>& len, const std::function<float(float)> &head_len, const std::function<float(float)> &head_radius,
 		int radial, int straight, float eps, const std::variant<int, std::string> &id) {
-	WeakSuperMesh mesh;
+	IndexedMesh mesh;
 	for (int i = 0; i < points.size(); i++) {
 		float size = length(field(points[i]));
 		mesh.merge(arrow(points[i], points[i]+field(points[i])*len(size), radius(size), head_len(size), head_radius(size), radial, straight, eps, randomID()));
@@ -800,9 +806,9 @@ WeakSuperMesh drawArrows(const vector<vec3> &points, const VectorField &field, c
 	return mesh;
 }
 
-WeakSuperMesh drawVectorFieldArrows(const VectorField &field, const vector<vec3> &points, const std::function<float(float)>& len, const std::function<float(float)> &radius, const std::function<float(float)>& head_len,
+IndexedMesh drawVectorFieldArrows(const VectorField &field, const vector<vec3> &points, const std::function<float(float)>& len, const std::function<float(float)> &radius, const std::function<float(float)>& head_len,
 		const std::function<float(float)>& head_radius, int radial, int straight, float eps, const std::variant<int, std::string> &id) {
-	WeakSuperMesh mesh;
+	IndexedMesh mesh;
 	for (auto point : points) {
 		float s = norm(field(point));
 		mesh.merge(arrow(point, point + normalise(field(point))*len(s), radius(s), head_len(s), head_radius(s), radial, straight, eps, randomID()));
@@ -822,9 +828,9 @@ vec3 getArrayDirection(const BufferedVertex &v) {
 	return getArrayHead(v) - getArrayStart(v);
 }
 
-vec3 getArrayHead(const std::variant<int, std::string>& id, WeakSuperMesh &mesh) {return getArrayHead(mesh.getAnyVertexFromPolyGroup(id));}
-vec3 getArrayStart(const std::variant<int, std::string>& id, WeakSuperMesh &mesh) {return getArrayStart(mesh.getAnyVertexFromPolyGroup(id));}
-vec3 getArrayDirection(const std::variant<int, std::string>& id, WeakSuperMesh &mesh) {return getArrayDirection(mesh.getAnyVertexFromPolyGroup(id));}
+vec3 getArrayHead(const std::variant<int, std::string>& id, IndexedMesh &mesh) {return getArrayHead(mesh.getAnyVertexFromPolyGroup(id));}
+vec3 getArrayStart(const std::variant<int, std::string>& id, IndexedMesh &mesh) {return getArrayStart(mesh.getAnyVertexFromPolyGroup(id));}
+vec3 getArrayDirection(const std::variant<int, std::string>& id, IndexedMesh &mesh) {return getArrayDirection(mesh.getAnyVertexFromPolyGroup(id));}
 
 
 SmoothParametricCurve PLCurve(std::vector<vec3> points) {
@@ -888,8 +894,8 @@ ImplicitVolume implicitVolumeEllipsoid(float rx, float ry, float rz, vec3 center
 	}, eps), center-vec3(rx, ry, rz)*1.5, center+vec3(rx, ry, rz)*1.5);
 }
 
-WeakSuperMesh generate_random_particle_mesh(int n, vec3 bound1, vec3 bound2, float radius) {
-	WeakSuperMesh mesh = WeakSuperMesh();
+IndexedMesh generate_random_particle_mesh(int n, vec3 bound1, vec3 bound2, float radius) {
+	IndexedMesh mesh = IndexedMesh();
 	for (int i = 0; i < n; i++) {
 		vec3 pos  = randomUniform(bound1, bound2);
 		auto part = icosphere(radius, 1, pos, randomID(), vec4(pos, 0));
@@ -898,22 +904,22 @@ WeakSuperMesh generate_random_particle_mesh(int n, vec3 bound1, vec3 bound2, flo
 	return mesh;
 }
 
-WeakSuperMesh box(vec3 size, vec3 center, vec4 color, std::variant<int, std::string> id) {
+IndexedMesh box(vec3 size, vec3 center, vec4 color, std::variant<int, std::string> id) {
 	vec3 dx = vec3(size.x/2, 0, 0);
 	vec3 dy = vec3(0, size.y/2, 0);
 	vec3 dz = vec3(0, 0, size.z/2);
 	vec3 c = center;
 	vector<vec3> cornersUp = {c - dx - dy + dz, c + dx - dy + dz, c + dx + dy + dz, c - dx + dy + dz};
 	vector<vec3> cornersDown = {c - dx - dy - dz, c + dx - dy - dz, c + dx + dy - dz, c - dx + dy - dz};
-	WeakSuperMesh b = box(cornersUp, cornersDown, color);
+	IndexedMesh b = box(cornersUp, cornersDown, color);
 	return b;
 }
 
-WeakSuperMesh box(vec3 size, vec3 center, std::variant<int, std::string> id) {
+IndexedMesh box(vec3 size, vec3 center, std::variant<int, std::string> id) {
 	return box(size, center, vec4(0, 0, 0, 0), id);
 }
 
-WeakSuperMesh box(vector<vec3> cornersUp, vector<vec3> cornersDown, vec4 color) {
+IndexedMesh box(vector<vec3> cornersUp, vector<vec3> cornersDown, vec4 color) {
 	vec3 a000 = cornersUp[0];
 	vec3 a001 = cornersUp[1];
 	vec3 a010 = cornersUp[3];
@@ -931,7 +937,7 @@ WeakSuperMesh box(vector<vec3> cornersUp, vector<vec3> cornersDown, vec4 color) 
 	return m;
 }
 
-WeakSuperMesh paraleblahblapid(vec3 corner, vec3 dir1, vec3 dir2, vec3 dir3) {
+IndexedMesh paraleblahblapid(vec3 corner, vec3 dir1, vec3 dir2, vec3 dir3) {
 	vector<vec3> cornersUp = {corner, corner + dir1, corner + dir2 + dir1, corner + dir2 , };
 	vector<vec3> cornersDown = {corner + dir3, corner + dir1 + dir3, corner + dir1 + dir2+ dir3, corner + dir2+ dir3,  };
 	return box(cornersUp, cornersDown);

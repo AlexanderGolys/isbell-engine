@@ -201,8 +201,8 @@ public:
 	MeanValueMultiplier(){}
 
 	DiscreteComplexFunction kernel(int n) const override {
-		return DiscreteComplexFunction(Vector<Complex>(n, [n=n](int k) {
-		return Complex(k==0);
+		return DiscreteComplexFunction(Vector<Complex>(n, [](int k) {
+			return Complex(k==0);
 		}), vec2(-1, 1));
 	}
 };

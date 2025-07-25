@@ -659,7 +659,7 @@ float CompactlySupportedRealFunction::improper_integral(optional<float> a, optio
 }
 
 float CompactlySupportedRealFunction::full_domain_integral(int prec) const {
-	return improper_integral(INF_FLOAT, INF_FLOAT, prec);
+	return improper_integral(UNDEFINED, UNDEFINED, prec);
 }
 
 CompactlySupportedRealFunction CompactlySupportedRealFunction::antiderivative(float a, int prec) const {

@@ -11,7 +11,7 @@
 
 class AffineLine;
 class TriangulatedImplicitSurface;
-class WeakSuperMesh;
+class IndexedMesh;
 // R3 -> R
 class SmoothImplicitSurface {
     RealFunctionR3 _F;
@@ -25,7 +25,7 @@ public:
     float operator()(vec3 p) const { return _F(p); }
 	vec3 normal(vec3 p) const { return normalise(_F.df(p)); }
 	vec3 newtonStepProject(vec3 p, float tolerance, int maxIter) const;
-	void projectPoints(WeakSuperMesh &mesh, float tolerance, int maxIter);
+	void projectPoints(IndexedMesh &mesh, float tolerance, int maxIter);
 	RealFunctionR3 getF() const {return _F;}
 
 	SmoothImplicitSurface operator& (const SpaceEndomorphism &g) const;
@@ -41,7 +41,7 @@ public:
 	explicit SmoothImplicitSurfacePencil(HOM(float, RealFunctionR3) F_t) : _F_t(std::move(F_t)) {}
 	explicit SmoothImplicitSurfacePencil(HOM(float, SmoothImplicitSurface) F_t) : _F_t([F_t](float t) { return F_t(t).getF(); }) {}
 	SmoothImplicitSurface operator()(float t) const { return SmoothImplicitSurface(_F_t(t)); }
-	void deformMesh(float t, WeakSuperMesh &mesh, float tolerance, int maxIter);\
+	void deformMesh(float t, IndexedMesh &mesh, float tolerance, int maxIter);\
 };
 
 SmoothImplicitSurfacePencil interpolate(const SmoothImplicitSurface &s1, const SmoothImplicitSurface &s2);
@@ -263,8 +263,8 @@ public:
 
 
 
-	void addToMesh(WeakSuperMesh &mesh);
-	void addToMesh(WeakSuperMesh &mesh,  float tolerance, int maxIter);
-	WeakSuperMesh generateMesh(bool tetra);
-	WeakSuperMesh generateMesh(bool tetra, float tolerance, int maxIter);
+	void addToMesh(IndexedMesh &mesh);
+	void addToMesh(IndexedMesh &mesh,  float tolerance, int maxIter);
+	IndexedMesh generateMesh(bool tetra);
+	IndexedMesh generateMesh(bool tetra, float tolerance, int maxIter);
 };

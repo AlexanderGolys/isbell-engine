@@ -63,24 +63,24 @@ SmoothParametricCurve segment(vec3 p0, vec3 p1, float t0, float t1);
  * \brief Primitive meshes
  * (triangles, quads, disks, icospheres, icosahedra, boxes, particles)
  */
-WeakSuperMesh singleTrig(vec3 v0, vec3 v1, vec3 v2, PolyGroupID id=randomID());
-WeakSuperMesh singleQuadShadeSmooth(vec3 outer1, vec3 inner1, vec3 inner2, vec3 outer2, PolyGroupID id);
-WeakSuperMesh singleQuadShadeFlat(vec3 outer1, vec3 inner1, vec3 inner2, vec3 outer2, MaterialPhong &material, PolyGroupID id);
-WeakSuperMesh singleQuadShadeFlat(vec3 outer1, vec3 inner1, vec3 inner2, vec3 outer2, MaterialPhong &material1, MaterialPhong &material2, PolyGroupID id);
-WeakSuperMesh singleQuad(vec3 outer1, vec3 inner1, vec3 inner2, vec3 outer2, MaterialPhong &materiaInner1, MaterialPhong &materialInner2, MaterialPhong &materialOuter1, MaterialPhong &materialOuter2, bool shadeSmooth, PolyGroupID id);
-WeakSuperMesh singleQuadShadeFlat(vec3 inner1, vec3 outer1, vec3 inner2, vec3 outer2, PolyGroupID id=randomID());
-WeakSuperMesh singleQuadShadeFlat(vec3 inner1, vec3 outer1, vec3 inner2, vec3 outer2, vec4 color, PolyGroupID id=randomID());
-WeakSuperMesh singleQuadShadeFlat(const vector<vec3> &corners, PolyGroupID id=randomID());
-WeakSuperMesh icosahedron(float r, vec3 center, PolyGroupID id);
-WeakSuperMesh icosphere(float r, int n, vec3 center, PolyGroupID id, vec4 color=BLACK);
-WeakSuperMesh disk3d(float r, vec3 center, vec3 v1, vec3 v2, int radial_res, int vertical_res, const PolyGroupID &id);
-WeakSuperMesh generate_random_particle_mesh(int n, vec3 bound1, vec3 bound2, float radius);
-WeakSuperMesh box(vec3 size, vec3 center, PolyGroupID id);
-WeakSuperMesh box(vec3 size, vec3 center, vec4 color, PolyGroupID id);
+IndexedMesh singleTrig(vec3 v0, vec3 v1, vec3 v2, PolyGroupID id=randomID());
+IndexedMesh singleQuadShadeSmooth(vec3 outer1, vec3 inner1, vec3 inner2, vec3 outer2, PolyGroupID id);
+IndexedMesh singleQuadShadeFlat(vec3 outer1, vec3 inner1, vec3 inner2, vec3 outer2, MaterialPhong &material, PolyGroupID id);
+IndexedMesh singleQuadShadeFlat(vec3 outer1, vec3 inner1, vec3 inner2, vec3 outer2, MaterialPhong &material1, MaterialPhong &material2, PolyGroupID id);
+IndexedMesh singleQuad(vec3 outer1, vec3 inner1, vec3 inner2, vec3 outer2, MaterialPhong &materiaInner1, MaterialPhong &materialInner2, MaterialPhong &materialOuter1, MaterialPhong &materialOuter2, bool shadeSmooth, PolyGroupID id);
+IndexedMesh singleQuadShadeFlat(vec3 inner1, vec3 outer1, vec3 inner2, vec3 outer2, PolyGroupID id=randomID());
+IndexedMesh singleQuadShadeFlat(vec3 inner1, vec3 outer1, vec3 inner2, vec3 outer2, vec4 color, PolyGroupID id=randomID());
+IndexedMesh singleQuadShadeFlat(const vector<vec3> &corners, PolyGroupID id=randomID());
+IndexedMesh icosahedron(float r, vec3 center, PolyGroupID id);
+IndexedMesh icosphere(float r, int n, vec3 center, PolyGroupID id, vec4 color=BLACK);
+IndexedMesh disk3d(float r, vec3 center, vec3 v1, vec3 v2, int radial_res, int vertical_res, const PolyGroupID &id);
+IndexedMesh generate_random_particle_mesh(int n, vec3 bound1, vec3 bound2, float radius);
+IndexedMesh box(vec3 size, vec3 center, PolyGroupID id);
+IndexedMesh box(vec3 size, vec3 center, vec4 color, PolyGroupID id);
 
-WeakSuperMesh box(vector<vec3> cornersUp, vector<vec3> cornersDown, vec4 color=BLACK);
-WeakSuperMesh paraleblahblapid(vec3 corner, vec3 dir1, vec3 dir2, vec3 dir3);
-WeakSuperMesh pyramid(const vector<vec3> &cornersDown, vec3 apex, PolyGroupID id=randomID());
+IndexedMesh box(vector<vec3> cornersUp, vector<vec3> cornersDown, vec4 color=BLACK);
+IndexedMesh paraleblahblapid(vec3 corner, vec3 dir1, vec3 dir2, vec3 dir3);
+IndexedMesh pyramid(const vector<vec3> &cornersDown, vec3 apex, PolyGroupID id=randomID());
 
 
 /**
@@ -144,9 +144,9 @@ SmoothImplicitSurface planeImplicit(vec3 normal, float d, vec3 center=ORIGIN, fl
 /**
  * \brief Non-geometric meshes
  */
-WeakSuperMesh arrow(vec3 start, vec3 head, float radius, float head_len, float head_radius, int radial, int straight, float eps, std::variant<int, std::string> id);
-WeakSuperMesh drawArrows(const vector<vec3> &points, const vector<vec3> &directions, float radius, float head_len, float head_radius, int radial, int straight, float eps, const std::variant<int, std::string> &id);
-WeakSuperMesh drawVectorFieldArrows(const VectorField &field, const vector<vec3> &points, const HOM(float, float)& len, const HOM(float, float) &radius, const HOM(float, float) &head_len, const HOM(float, float)& head_radius, int radial, int straight, float eps, const std::variant<int, std::string> &id);
+IndexedMesh arrow(vec3 start, vec3 head, float radius, float head_len, float head_radius, int radial, int straight, float eps, std::variant<int, std::string> id);
+IndexedMesh drawArrows(const vector<vec3> &points, const vector<vec3> &directions, float radius, float head_len, float head_radius, int radial, int straight, float eps, const std::variant<int, std::string> &id);
+IndexedMesh drawVectorFieldArrows(const VectorField &field, const vector<vec3> &points, const HOM(float, float)& len, const HOM(float, float) &radius, const HOM(float, float) &head_len, const HOM(float, float)& head_radius, int radial, int straight, float eps, const std::variant<int, std::string> &id);
 
 
 /**
@@ -179,7 +179,7 @@ ImplicitVolume implicitVolumeEllipsoid(float rx, float ry, float rz, vec3 center
  */
 SuperCurve circle(float r, std::function<float(float)> w, const std::function<MaterialPhong(float)> &mat, int n, vec3 center=ORIGIN, vec3 v1=e1, vec3 v2=e2, float eps=.01);
 
-class Disk3D : public WeakSuperMesh {
+class Disk3D : public IndexedMesh {
 	vec3 center;
 	vec3 forward;
 	vec3 down;

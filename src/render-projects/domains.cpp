@@ -60,49 +60,10 @@ int main() {
 	renderer.initMainWindow();
 
 
-	auto f = [](float t){
-		return (t*t)/(t*t-1)*(t*t-4)/(t*t-6);
-	};
 
-	auto projcurve = SmoothParametricCurve([f=f](float t){
-		vec2 p = stereoProjectionInverse(f(t));
-		return vec3(t, p.x, p.y);
-	}, "p1", -5, 5, false, 0.01f);
+	auto ico = make_shared<IndexedMesh>(icosahedron(1.f, e3*2.f, randomID()));
+	auto floor = make_shared<IndexedMesh>(paraleblahblapid(vec3(-8, -5, -.1), e1*16, e2*10, e3*1));
 
-
-	auto projsurf = SmoothParametricSurface([](float t, float u){
-		vec2 p = stereoProjectionInverse(u);
-		return vec3(t, p.x, p.y);
-	}, vec2(-5, 5), vec2(-40, 40), false, false, 0.01f);
-
-
-	auto flatcurve = SmoothParametricCurve([f=f](float t){
-		return vec3(t, f(t), 0);
-	}, "p1", -5, 5, false, 0.01f);
-
-
-	auto infline = SmoothParametricCurve([](float t){
-		return vec3(t, 0, 1);
-	}, "p1", -5, 5, false, 0.01f);
-
-	auto zeroline = SmoothParametricCurve([](float t){
-		return vec3(t, 0, 0);
-	}, "p1", -5, 5, false, 0.01f);
-
-
-	auto flatsurf = SmoothParametricSurface([](float t, float u){
-		return vec3(t, u, 0);
-	}, vec2(-5, 5), vec2(-10, 10), false, false, 0.01f);
-
-
-	auto floor = make_shared<IndexedMesh>(flatsurf, 100, 300);
-	auto floor2 = make_shared<IndexedMesh>(projsurf, 100, 300);
-
-	auto proj = make_shared<IndexedMesh>(PipeCurveVertexShader(projcurve, pipe_settings_comp));
-	auto flat = make_shared<IndexedMesh>(PipeCurveVertexShader(flatcurve, pipe_settings));
-
-	auto infaxis = make_shared<IndexedMesh>(PipeCurveVertexShader(infline, pipe_infaxis));
-	infaxis->merge(PipeCurveVertexShader(zeroline, pipe_infaxis));
 
 	PointLight light1 = PointLight(vec3(5,-1, 2), .003, .005);
 	PointLight light2 = PointLight(vec3(-4,-10, -2), .003, .005, BLUE_PALLETTE[0]);
@@ -118,8 +79,8 @@ int main() {
 
 
 	auto shader_curve = ShaderProgram(
-		R"(C:\Users\PC\Desktop\ogl-master\src\shaders\shaders2\curve.vert)",
-		R"(C:\Users\PC\Desktop\ogl-master\src\shaders\shaders_curves\curv_basic.frag)");
+		R"(C:\Users\PC\Desktop\ogl-master\src\shaders\shaders2\basic.vert)",
+		R"(C:\Users\PC\Desktop\ogl-master\src\shaders\shaders2\basic.frag)");
 
 
 	auto shader_floor_back = ShaderProgram(
@@ -138,15 +99,13 @@ int main() {
 	renderer.setCamera(camera);
 	renderer.setLights(lights);
 
-	renderer.addMeshStep(shader_curve, proj, projmat);
-	renderer.addMeshStep(shader_curve, flat, flatmat);
-	renderer.addMeshStep(shader_curve, infaxis, inflinemat);
+	renderer.addMeshStep(shader_curve, ico, projmat);
+
 
 	renderer.addMeshStep(shader_floor_front, floor, floormat);
 	renderer.addMeshStep(shader_floor_back, floor, floormat);
 
-	renderer.addMeshStep(shader_floor_front, floor2, floormat);
-	renderer.addMeshStep(shader_floor_back, floor2, floormat);
+
 
 	return renderer.mainLoop();
 }

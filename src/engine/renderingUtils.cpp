@@ -18,6 +18,8 @@
 
 #include "renderingUtils.hpp"
 
+#include "src/utils/randomUtils.hpp"
+
 
 using namespace glm;
 using std::vector, std::array, std::string, std::set, std::pair, std::unique_ptr, std::shared_ptr, std::make_shared, std::make_unique, std::to_string;
@@ -210,6 +212,10 @@ void TriangleR3::addExtraData(const string &name, const array<vec4, 3> &data) {
 	extraData[name] = data;
 }
 
+void TriangleR3::setExtraData(const string &name, int i, vec4 data) {
+	extraData[name][i] = data;
+}
+
 array<vec4, 3> TriangleR3::getExtraData(const string &name) {
 	return extraData[name];
 }
@@ -222,11 +228,21 @@ TriangleR3 TriangleR3::operator+(vec3 v) const {
 
 
 
-Vertex::Vertex(vec3 position, vec2 uv, vec3 normal, vec4 color, std::map<string, vec4> extraData, std::optional<MaterialPhongConstColor> material) { this->position = position; this->normal = normal; this->uv = uv;
-	this->color = color; this->material = material; this->extraData = extraData; }
+Vertex::Vertex(vec3 position, vec2 uv, vec3 normal, vec4 color, std::map<string, vec4> extraData, std::optional<MaterialPhongConstColor> material) {
+	this->position = position;
+	this->normal = normal;
+	this->uv = uv;
+	this->color = color;
+	this->material = material;
+	this->extraData = extraData; }
 
-Vertex::Vertex(vec3 position, vec3 normal, vec4 color, std::map<string, vec4> extraData, std::optional<MaterialPhongConstColor> material) { this->position = position; this->normal = normal; this->uv = vec2(position.x, position.y);
-	this->color = color; this->material = material; this->extraData = extraData; }
+Vertex::Vertex(vec3 position, vec3 normal, vec4 color, std::map<string, vec4> extraData, std::optional<MaterialPhongConstColor> material) {
+	this->position = position;
+	this->normal = normal;
+	this->uv = vec2(position.x, position.y);
+	this->color = color;
+	this->material = material;
+	this->extraData = extraData; }
 
 string Vertex::hash() const {
     return to_string(this->position.x) + to_string(this->position.y) + to_string(this->position.z) +
@@ -255,9 +271,39 @@ bool Vertex::operator==(const Vertex &v) const {
     return this->position == v.position && this->normal == v.normal && this->uv == v.uv && this->color == v.color;
 }
 
+void Vertex::setIndex(int i) { index = i; }
+
+int Vertex::getIndex() const { return index; }
+
+bool Vertex::hasIndex() const { return index != -1; }
+
 void Vertex::gotAddedAsVertex(std::weak_ptr<IndexedTriangle> triangle, int i) { triangles.push_back({triangle, i}); }
 
 vector<std::pair<std::weak_ptr<IndexedTriangle>, int>> Vertex::getTriangles() const { return triangles; }
+
+vec3 Vertex::getPosition() const { return position; }
+
+vec3 Vertex::getNormal() const { return normal; }
+
+vec2 Vertex::getUV() const { return uv; }
+
+vec4 Vertex::getColor() const { return color; }
+
+MaterialPhong Vertex::getMaterial() const { return material.value(); }
+
+mat4 Vertex::getMaterialMat() const { return material.value().compressToMatrix(); }
+
+vec4 Vertex::getExtraData(const string &name) const { return extraData.at(name); }
+
+vec3 Vertex::getExtraData_xyz(const string &name) const { return vec3(extraData.at(name)); }
+
+float Vertex::getExtraData(const string &name, int i) const { return extraData.at(name)[i]; }
+
+float Vertex::getExtraLast(const string &name) const { return extraData.at(name)[3]; }
+
+bool Vertex::hasExtraData() const { return !extraData.empty(); }
+
+bool Vertex::hasExtraData(const string &name) const { return extraData.contains(name); }
 
 void Vertex::addExtraData(const string &name, vec4 data) {
 	if (!extraData.contains(name)) extraData.insert({name, data});
@@ -280,12 +326,16 @@ void Vertex::addExtraData(const string &name, float data, int i) {
     extraData[name][i] = data;
 }
 
+void Vertex::translate(vec3 v) { this->position += v; }
+
 vector<string> Vertex::getExtraDataNames() {
 	vector<string> names;
 	for (const auto &pair : extraData)
 		names.emplace_back(pair.first);
 	return names;
 }
+
+bool Vertex::hasMaterial() const { return material.has_value(); }
 
 void Vertex::transform(const SpaceEndomorphism &M) {
 	this->normal = M.df(this->position)*this->normal;
@@ -296,6 +346,18 @@ void Vertex::transform(const SpaceEndomorphism &M) {
 Vertex Vertex::operator+(vec3 v) const {
     return Vertex(this->position + v, this->uv, this->normal, this->color, this->extraData, this->material );
 }
+
+void Vertex::operator+=(vec3 v) { this->translate(v); }
+
+void Vertex::setMaterial(MaterialPhongConstColor material) { this->material = material; }
+
+void Vertex::setPosition(vec3 position) { this->position = position; }
+
+void Vertex::setNormal(vec3 normal) { this->normal = normal; }
+
+void Vertex::setUV(vec2 uv) { this->uv = uv; }
+
+void Vertex::setColor(vec4 color) { this->color = color; }
 
 
 //void Vertex::appendToBuffers(StdAttributeBuffers &buffers, MaterialBuffers &materialBuffers) {
@@ -792,24 +854,47 @@ void TriangularMesh::applyMap(std::function<vec3(vec3)> f,
 
 
 
-std::shared_ptr<Texture> MaterialPhong::constAmbientTexture(vec4 color) {
+MaterialPhong::MaterialPhong(): MaterialPhong(vec4(0), vec4(0), vec4(0), 0, 0, 0, 0) {}
+
+shared_ptr<Texture> MaterialPhong::constAmbientTexture(vec4 color) {
 	return make_shared<Texture>(color, 0, "texture_ambient");
 }
 
-std::shared_ptr<Texture> MaterialPhong::constDiffuseTexture(vec4 color) {
+shared_ptr<Texture> MaterialPhong::constDiffuseTexture(vec4 color) {
 	return make_shared<Texture>(color, 1, "texture_diffuse");
 }
 
-std::shared_ptr<Texture> MaterialPhong::constSpecularTexture(vec4 color) {
+shared_ptr<Texture> MaterialPhong::constSpecularTexture(vec4 color) {
 	return make_shared<Texture>(color, 2, "texture_specular");
 }
 
-MaterialPhong::MaterialPhong(const std::shared_ptr<Texture> &texture_ambient, const std::shared_ptr<Texture> &texture_diffuse,
-							 const std::shared_ptr<Texture> &texture_specular, float ambientIntensity, float diffuseIntensity,
+shared_ptr<Texture> MaterialPhong::constAmbientTexture(vec3 color) {
+	return constAmbientTexture(vec4(color, 1));
+}
+
+shared_ptr<Texture> MaterialPhong::constDiffuseTexture(vec3 color) {
+	return constDiffuseTexture(vec4(color, 1));
+}
+
+shared_ptr<Texture> MaterialPhong::constSpecularTexture(vec3 color) {
+	return constSpecularTexture(vec4(color, 1));
+}
+
+shared_ptr<Texture> MaterialPhong::makeAmbientTexture(const string &filename, bool alpha) {
+	return std::make_shared<Texture>(filename, 0, "texture_ambient", alpha);
+}
+
+shared_ptr<Texture> MaterialPhong::makeDiffuseTexture(const string &filename, bool alpha) {
+	return std::make_shared<Texture>(filename, 1, "texture_diffuse", alpha);
+}
+
+MaterialPhong::MaterialPhong(const shared_ptr<Texture> &texture_ambient, const shared_ptr<Texture> &texture_diffuse,
+							 const shared_ptr<Texture> &texture_specular, float ambientIntensity, float diffuseIntensity,
 							 float specularIntensity, float shininess) {
     this->texture_ambient = texture_ambient;
     this->texture_diffuse = texture_diffuse;
     this->texture_specular = texture_specular;
+
     this->ambientIntensity = ambientIntensity;
     this->diffuseIntensity = diffuseIntensity;
     this->specularIntensity = specularIntensity;
@@ -818,6 +903,15 @@ MaterialPhong::MaterialPhong(const std::shared_ptr<Texture> &texture_ambient, co
 	initTextures();
 }
 
+MaterialPhong::MaterialPhong(const string &textureFilenameAmbient, const string &textureFilenameDiffuse, const string &textureFilenameSpecular, float ambientIntensity, float diffuseIntensity, float specularIntensity, float shininess, bool alphaAmbient, bool alphaDiffuse, bool alphaSpecular):  MaterialPhong(makeAmbientTexture(textureFilenameAmbient, alphaAmbient),
+																																																																													makeDiffuseTexture(textureFilenameDiffuse, alphaDiffuse),
+																																																																													makeSpecularTexture(textureFilenameSpecular, alphaSpecular),
+																																																																													ambientIntensity, diffuseIntensity, specularIntensity, shininess) {}
+
+MaterialPhong::MaterialPhong(vec4 ambient, vec4 diffuse, vec4 specular, float ambientIntensity, float diffuseIntensity, float specularIntensity, float shininess): MaterialPhong(constAmbientTexture(ambient), constDiffuseTexture(diffuse), constSpecularTexture(specular), ambientIntensity, diffuseIntensity, specularIntensity, shininess) {}
+
+MaterialPhong::MaterialPhong(vec4 ambient, float ambientIntensity, float diffuseIntensity, float specularIntensity, float shininess): MaterialPhong(ambient, ambient, ambient, ambientIntensity, diffuseIntensity, specularIntensity, shininess) {}
+
 
 
 vec4 MaterialPhong::compressIntencities() const
@@ -825,7 +919,52 @@ vec4 MaterialPhong::compressIntencities() const
 	return vec4(ambientIntensity, diffuseIntensity, specularIntensity, shininess);
 }
 
+void MaterialPhong::initTextures() { texture_ambient->load(); texture_diffuse->load(); texture_specular->load(); }
 
+bool MaterialPhong::textured() const {return true;}
+
+void MaterialPhong::setAmbientTexture(const shared_ptr<Texture> &texture) {
+	texture_ambient->deleteTexture();
+	texture_ambient = texture;
+	texture_ambient->load();
+}
+
+void MaterialPhong::setDiffuseTexture(const shared_ptr<Texture> &texture) {
+	texture_diffuse->deleteTexture();
+	texture_diffuse = texture;
+	texture_diffuse->load();
+}
+
+void MaterialPhong::setSpecularTexture(const shared_ptr<Texture> &texture) {
+	texture_specular->deleteTexture();
+	texture_specular = texture;
+	texture_specular->load();
+}
+
+void MaterialPhong::addAmbientTexture(const string &filename, bool alpha) {
+	setAmbientTexture(makeAmbientTexture(filename, alpha));
+}
+
+void MaterialPhong::addDiffuseTexture(const string &filename, bool alpha) { setDiffuseTexture(makeDiffuseTexture(filename, alpha));}
+
+void MaterialPhong::addSpecularTexture(const string &filename, bool alpha) { setSpecularTexture(makeSpecularTexture(filename, alpha));}
+
+void MaterialPhong::addAmbientTexture(vec4 color) { setAmbientTexture(constAmbientTexture(color)); }
+
+void MaterialPhong::addDiffuseTexture(vec4 color) { setDiffuseTexture(constDiffuseTexture(color)); }
+
+void MaterialPhong::addSpecularTexture(vec4 color) { setSpecularTexture(constSpecularTexture(color)); }
+
+MaterialPhongConstColor::MaterialPhongConstColor(vec4 ambient, vec4 diffuse, vec4 specular, float ambientIntensity, float diffuseIntensity, float specularIntensity, float shininess): MaterialPhong(ambient, diffuse, specular, ambientIntensity, diffuseIntensity, specularIntensity, shininess),
+																																													   ambientColor(ambient), diffuseColor(diffuse), specularColor(specular) {}
+
+MaterialPhongConstColor::MaterialPhongConstColor(mat4 mat): MaterialPhongConstColor(mat[0], mat[1], mat[2], mat[3][0], mat[3][1], mat[3][2], mat[3][3]) {}
+
+MaterialPhongConstColor::MaterialPhongConstColor(): MaterialPhongConstColor(vec4(0), vec4(0), vec4(0), 0, 0, 0, 0) {}
+
+mat4 MaterialPhongConstColor::compressToMatrix() const {return mat4(ambientColor, diffuseColor, specularColor, compressIntencities());}
+
+bool MaterialPhongConstColor::textured() const {return false;}
 
 
 
@@ -1284,7 +1423,7 @@ vector<TriangularMesh> PlanarMeshWithBoundary::stylisedBoundaryEmbedding(const B
 	return kerbBoundaryEmbedding(style.width, style.height, style.outerMargin, style.skewness); // todo more styles
 }
 
-MeshFamily1P::MeshFamily1P(const std::shared_ptr<TriangularMesh> &mesh,
+MeshFamily1P::MeshFamily1P(const shared_ptr<TriangularMesh> &mesh,
                            const std::function<std::function<vec3(vec3)>(float, float)> &time_operator,
                            const std::function<std::function<vec3(vec3, vec3)>(float, float)> &time_operator_normal, float t) {
 	this->mesh = mesh;
@@ -1293,7 +1432,7 @@ MeshFamily1P::MeshFamily1P(const std::shared_ptr<TriangularMesh> &mesh,
 	this->_t = t;
 }
 
-MeshFamily1P::MeshFamily1P(const std::shared_ptr<TriangularMesh> &embedded_mesh, std::function<PlaneSmoothEndomorphism(float, float)> time_operator, vec3 embedding_shift, float t) {
+MeshFamily1P::MeshFamily1P(const shared_ptr<TriangularMesh> &embedded_mesh, std::function<PlaneSmoothEndomorphism(float, float)> time_operator, vec3 embedding_shift, float t) {
 	this->mesh = embedded_mesh;
 	this->time_operator = [time_operator, embedding_shift](float t, float s) {
 		return [time_operator, embedding_shift, t, s](vec3 w) {
@@ -1312,7 +1451,7 @@ MeshFamily1P::MeshFamily1P(const std::shared_ptr<TriangularMesh> &embedded_mesh,
 	this->_t = t;
 }
 
-MeshFamily1P::MeshFamily1P(const std::shared_ptr<TriangularMesh> &embedded_mesh, std::function<PlaneAutomorphism(float)> time_operator_from0, vec3 embedding_shift) {
+MeshFamily1P::MeshFamily1P(const shared_ptr<TriangularMesh> &embedded_mesh, std::function<PlaneAutomorphism(float)> time_operator_from0, vec3 embedding_shift) {
 	this->mesh = embedded_mesh;
 	this->time_operator = [time_operator_from0, embedding_shift](float t, float s) {
 		return [time_operator_from0, embedding_shift, t, s](vec3 w) {
@@ -1348,20 +1487,20 @@ void MeshFamily1P::meshDeformation(float dt) {
 	transformMesh(_t + dt);
 }
 
-MeshFamily1PExtraDomain::MeshFamily1PExtraDomain(const std::shared_ptr<TriangularMesh> &mesh, const string &domain,
+MeshFamily1PExtraDomain::MeshFamily1PExtraDomain(const shared_ptr<TriangularMesh> &mesh, const string &domain,
 	const std::function<std::function<vec3(vec3)>(float, float)> &time_operator,
 	const std::function<std::function<vec3(vec3, vec3)>(float, float)> &time_operator_normal, float t) :
  MeshFamily1P(mesh,  time_operator, time_operator_normal, t) {
 	this->domain = domain;
 }
 
-MeshFamily1PExtraDomain::MeshFamily1PExtraDomain(const std::shared_ptr<TriangularMesh> &embedded_mesh, const string &domain,
+MeshFamily1PExtraDomain::MeshFamily1PExtraDomain(const shared_ptr<TriangularMesh> &embedded_mesh, const string &domain,
 	const std::function<PlaneSmoothEndomorphism(float, float)> &time_operator, vec3 embedding_shift, float t) :
 	MeshFamily1P(embedded_mesh, time_operator, embedding_shift, t) {
 	this->domain = domain;
 }
 
-MeshFamily1PExtraDomain::MeshFamily1PExtraDomain(const std::shared_ptr<TriangularMesh> &embedded_mesh, const string &domain,
+MeshFamily1PExtraDomain::MeshFamily1PExtraDomain(const shared_ptr<TriangularMesh> &embedded_mesh, const string &domain,
 	const std::function<PlaneAutomorphism(float)> &time_operator_from0, vec3 embedding_shift) : MeshFamily1P(embedded_mesh, time_operator_from0, embedding_shift) {
 	this->domain = domain;
 }
@@ -1819,34 +1958,31 @@ Texture::Texture(vec4 color, int slot, const char *sampler) {
 Texture::Texture(const char* filename, int slot, const char* sampler, bool alpha)
 {
 	unsigned char header[54];
-
 	FILE* file = fopen(filename, "rb");
-	if (!file) {
-		printf("Image could not be opened\n");
-		return;
-	}
-	if (fread(header, 1, 54, file) != 54) { // If not 54 bytes read : problem
-		printf("Not a correct BMP file\n");
-		return;
-	}
-	if (header[0] != 'B' || header[1] != 'M') {
-		printf("Not a correct BMP file\n");
-		return;
-	}
+
+	if (!file)
+		throw FileNotFoundError(filename);
+
+	if (fread(header, 1, 54, file) != 54)
+		throw InvalidFileError(filename, "Not a correct BMP file (54 bytes header not found)");
+
+	if (header[0] != 'B' || header[1] != 'M')
+		throw InvalidFileError(filename, "Not a correct BMP file (first two bytes of header invalid)");
+
+
     this->alpha = alpha;
 	unsigned int dataPos = *(int*)&(header[0x0A]);
-	this->size = *(int*)&(header[0x22]);
-	this->width = *(int*)&(header[0x12]);
-	this->height = *(int*)&(header[0x16]);
+	size = *(int*)&(header[0x22]);
+	width = *(int*)&(header[0x12]);
+	height = *(int*)&(header[0x16]);
 	if (size == 0)
-		size = width * height * 3;
+		size = alpha ? width * height * 4 : width * height * 3;
 	if (dataPos == 0)
 		dataPos = 54;
 
 	this->data = new unsigned char[size];
 	fread(this->data, 1, size, file);
 	fclose(file);
-
 
 	this->textureSlot = GL_TEXTURE0 + slot;
 	this->samplerName = sampler;
@@ -1865,11 +2001,12 @@ void Texture::deleteTexture()
 	glDeleteTextures(1, &this->textureID);
 }
 
+Texture::~Texture() { deleteTexture(); }
+
 void Texture::addFilters(GLenum minFilter, GLenum magFilter, GLenum wrapS, GLenum wrapT) {
 	if (minFilter == GL_LINEAR_MIPMAP_LINEAR)
-	{
 		glGenerateMipmap(GL_TEXTURE_2D);
-	}
+
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, minFilter);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, magFilter);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, wrapS);

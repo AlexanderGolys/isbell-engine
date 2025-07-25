@@ -166,7 +166,7 @@ class HexVolumetricMeshWithBoundary{
 public:
 	IndexedHexahedralVolumetricMesh mesh;
 	std::vector<int> bdVertices;
-	std::shared_ptr<WeakSuperMesh> boundary;
+	std::shared_ptr<IndexedMesh> boundary;
 	std::map<int, std::vector<int>> bdVerticesCells;
 	PolyGroupID boundaryPolygroup = 0;
 
@@ -254,11 +254,11 @@ public:
 	Cell* cellNeighbour(const Cell &c, FACE f) { return c.getNeighbour(f, cells); }
 	float gradientOnFace(const Cell &c, const std::string &attr, FACE i) { return c.gradientOnFace(attr, i, cells); }
 	float Laplacian(const Cell &c, const std::string &attr);
-	WeakSuperMesh bdMesh(const std::vector<std::string>& attrSavedAsColor) const;
+	IndexedMesh bdMesh(const std::vector<std::string>& attrSavedAsColor) const;
 	static vec4 colorFromAttributes(const Cell &c, const std::vector<std::string>& attrSavedAsColor) ;
 
-	static void updateBdMeshAtCell(const Cell &c, const std::vector<std::string>& attrSavedAsColor, WeakSuperMesh &mesh);
-	void updateBdMesh(const std::vector<std::string>& attrSavedAsColor, WeakSuperMesh &mesh) const;
+	static void updateBdMeshAtCell(const Cell &c, const std::vector<std::string>& attrSavedAsColor, IndexedMesh &mesh);
+	void updateBdMesh(const std::vector<std::string>& attrSavedAsColor, IndexedMesh &mesh) const;
 
 	void removeCell(int i);
 };

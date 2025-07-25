@@ -3,7 +3,7 @@
 #include "src/engine/indexedRendering.hpp"
 
 
-class TriangulatedManifold : public WeakSuperMesh {
+class TriangulatedManifold : public IndexedMesh {
 	vector<ivec2> edgesVert;
 	vector<ivec3> facesEdg;
 	PolyGroupID id;

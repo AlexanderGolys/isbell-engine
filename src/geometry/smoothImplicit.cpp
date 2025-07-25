@@ -18,7 +18,7 @@ vec3 SmoothImplicitSurface::newtonStepProject(vec3 p, float tolerance, int maxIt
 	return last_q;
 }
 
-void SmoothImplicitSurface::projectPoints(WeakSuperMesh &mesh, float tolerance, int maxIter) {
+void SmoothImplicitSurface::projectPoints(IndexedMesh &mesh, float tolerance, int maxIter) {
 	mesh.deformPerVertex([this, tolerance, maxIter](BufferedVertex &v) {
 		v.setPosition(newtonStepProject(v.getPosition(), tolerance, maxIter));
 		v.setNormal(normal(v.getPosition()));
@@ -35,7 +35,7 @@ SmoothImplicitSurface SmoothImplicitSurface::isoSurface(float level) const {
 	return SmoothImplicitSurface(_F - level);
 }
 
-void SmoothImplicitSurfacePencil::deformMesh(float t, WeakSuperMesh &mesh, float tolerance, int maxIter) {
+void SmoothImplicitSurfacePencil::deformMesh(float t, IndexedMesh &mesh, float tolerance, int maxIter) {
 	(*this)(t).projectPoints(mesh, tolerance, maxIter);
 }
 
@@ -905,12 +905,12 @@ vector<CubeCorner> MarchingCubeChunk::complementaryCorners(const vector<CubeCorn
 }
 
 
-WeakSuperMesh MarchingCubeChunk::generateMesh(bool tetra) {
+IndexedMesh MarchingCubeChunk::generateMesh(bool tetra) {
 	vertices = {};
 	triangles = {};
 	addedVertices = {};
 
-	WeakSuperMesh mesh = WeakSuperMesh();
+	IndexedMesh mesh = IndexedMesh();
 	if (tetra)
 		generateTetra();
 	else
@@ -920,12 +920,12 @@ WeakSuperMesh MarchingCubeChunk::generateMesh(bool tetra) {
 	return mesh;
 }
 
-WeakSuperMesh MarchingCubeChunk::generateMesh(bool tetra, float tolerance, int maxIter) {
+IndexedMesh MarchingCubeChunk::generateMesh(bool tetra, float tolerance, int maxIter) {
 	vertices = {};
 	triangles = {};
 	addedVertices = {};
 
-	WeakSuperMesh mesh = WeakSuperMesh();
+	IndexedMesh mesh = IndexedMesh();
 	if (tetra)
 		generateTetra();
 	else
@@ -936,14 +936,14 @@ WeakSuperMesh MarchingCubeChunk::generateMesh(bool tetra, float tolerance, int m
 }
 
 
-void MarchingCubeChunk::addToMesh(WeakSuperMesh &mesh) {
+void MarchingCubeChunk::addToMesh(IndexedMesh &mesh) {
 	vector<Vertex> vertices_hard = {};
 	for (ivec3 v: this->vertices)
 		vertices_hard.emplace_back(vertexPosition(v), vec2(1.f*v.x/res.x, 1.f*v.y/res.y), surface->normal(vertexPosition(v)));
 	mesh.addNewPolygroup(vertices_hard, triangles, id);
 }
 
-void MarchingCubeChunk::addToMesh(WeakSuperMesh &mesh,  float tolerance, int maxIter){
+void MarchingCubeChunk::addToMesh(IndexedMesh &mesh,  float tolerance, int maxIter){
 	vector<Vertex> vertices_hard = {};
 	for (ivec3 v: this->vertices) {
 		vec3 p = surface->newtonStepProject(vertexPosition(v), tolerance, maxIter);

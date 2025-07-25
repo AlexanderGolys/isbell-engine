@@ -83,7 +83,7 @@ int main() {
 
 	auto lights = vector<Light>({light1, light2, light3});
 
-	auto floor = make_shared<WeakSuperMesh>(paraleblahblapid(vec3(-5, -5, -2), e1*10, e2*10, e3*.1));
+	auto floor = make_shared<IndexedMesh>(paraleblahblapid(vec3(-5, -5, -2), e1*10, e2*10, e3*.1));
 
 
 	auto shader_curve = ShaderProgram(

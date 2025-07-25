@@ -44,7 +44,7 @@ int main() {
 	PointLight light1 = PointLight(vec3(1,-3, 15), .003, .0005);
 	auto lights = vector<Light>({light1, light1, light1});
 
-	auto floor = make_shared<WeakSuperMesh>(paraleblahblapid(vec3(-8, -5, -.1), e1*16, e2*10, -e3*1));
+	auto floor = make_shared<IndexedMesh>(paraleblahblapid(vec3(-8, -5, -.1), e1*16, e2*10, -e3*1));
 
 
 	auto shader_curve = ShaderProgram(

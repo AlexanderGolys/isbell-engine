@@ -26,7 +26,7 @@ int main() {
 	auto s = LaplaceRectangleD0D0(ut0, ut1, 5, 2);
 	auto surf = SmoothParametricSurface([f=s.solution(10)](float x, float t) {
 		return vec3(x, t, f(x, t)); }, vec2(0.1, 1.9), vec2(0.1, 1.9));
-	auto m = make_shared<WeakSuperMesh>(surf, 10, 10, randomID());
+	auto m = make_shared<IndexedMesh>(surf, 10, 10, randomID());
 	// auto curv1 = std::make_shared<DevelopingSurface>(s.solution(10), vec2(-5, 5), 10, 0, .03, 13, 3);
 
 	PointLight light1 = PointLight(vec3(-1,3, 3), .01, .032);

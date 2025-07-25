@@ -25,33 +25,33 @@ int main() {
 
 //	auto torus = make_shared<SmoothImplicitSurface>(torusImplicit(.2, 1, ORIGIN, .01));
 //	auto chunkTorus = MarchingCubeChunk(vec3(-1.3, -1.3, -.25), vec3(1.3, 1.3, .25), ivec3(100, 100, 50), torus);
-//	auto meshTorus = make_shared<WeakSuperMesh>(chunkTorus.generateMesh(false, .0001, 30));
+//	auto meshTorus = make_shared<IndexedMesh>(chunkTorus.generateMesh(false, .0001, 30));
 //
 //	auto g2 = make_shared<SmoothImplicitSurface>(genus2Implicit(.001).scale(.7));
 //	auto chunkg2 = MarchingCubeChunk(vec3(-1.3, -1.3, -1), vec3(1.3, 1.3, 1), ivec3(100, 100, 100), g2);
-//	auto meshg2 = make_shared<WeakSuperMesh>(chunkg2.generateMesh(false, .0001, 30));
+//	auto meshg2 = make_shared<IndexedMesh>(chunkg2.generateMesh(false, .0001, 30));
 ////	meshg2->shift(vec3(0, -3, 0));
 //
 //	auto wine = make_shared<SmoothImplicitSurface>(wineGlass(.001).scale(.2));
 //	auto chunkWine = MarchingCubeChunk(vec3(-1, -1, -.58), vec3(1, 1, 1), ivec3(100, 100, 200), wine);
-//	auto meshWine = make_shared<WeakSuperMesh>(chunkWine.generateMesh(false, .0001, 30));
+//	auto meshWine = make_shared<IndexedMesh>(chunkWine.generateMesh(false, .0001, 30));
 ////	meshWine->shift(vec3(0, 3, 0));
 //
 //	auto equi = make_shared<SmoothImplicitSurface>(equipotentialSurface({vec3(0, .5, 0), vec3(0, -.6, 0), vec3(0, 0, 0)}, {1, 1, 1}, 7));
 //	auto chunkEqui = MarchingCubeChunk(vec3(-1, -1, -1), vec3(1, 1, 1), ivec3(100, 100, 100), equi);
-//	auto meshEqui = make_shared<WeakSuperMesh>(chunkEqui.generateMesh(false, .0001, 30));
+//	auto meshEqui = make_shared<IndexedMesh>(chunkEqui.generateMesh(false, .0001, 30));
 
 //	auto wine = make_shared<SmoothImplicitSurface>(chair().scale(.15));
 //	auto chunkWine = MarchingCubeChunk(vec3(-1, -1, -1), vec3(1, 1, 1), ivec3(300, 300, 300), wine);
-//	auto meshWine = make_shared<WeakSuperMesh>(chunkWine.generateMesh(false, .0001, 50));
+//	auto meshWine = make_shared<IndexedMesh>(chunkWine.generateMesh(false, .0001, 50));
 
 //	auto surf = make_shared<SmoothImplicitSurface>(gumdrop().scale(.5).rotate(e3, PI/2));
 //	auto chunkSurf = MarchingCubeChunk(vec3(-1, -1, -1), vec3(1, 1, 1), ivec3(200, 200, 200), surf);
-//	auto meshSurf = make_shared<WeakSuperMesh>(chunkSurf.generateMesh(false, .0001, 50));
+//	auto meshSurf = make_shared<IndexedMesh>(chunkSurf.generateMesh(false, .0001, 50));
 
 	auto surf = make_shared<SmoothImplicitSurface>(K3Surface222( .001).scale(.3));
 	auto chunkSurf = MarchingCubeChunk(vec3(1, 1, 1), ivec3(303, 303, 303), surf);
-	auto meshSurf = make_shared<WeakSuperMesh>(chunkSurf.generateMesh(false, .001, 50));
+	auto meshSurf = make_shared<IndexedMesh>(chunkSurf.generateMesh(false, .001, 50));
 
 
 	auto shader = ShaderProgram( R"(C:\Users\PC\Desktop\ogl-master\src\shaders2\shadingDemo.vert)",

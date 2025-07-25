@@ -2,7 +2,7 @@
 #include "indexedRendering.hpp"
 #include "../geometry/pde.hpp"
 
-class DynamicalInterface : public WeakSuperMesh {
+class DynamicalInterface : public IndexedMesh {
 public:
 	RealFunction time_reparam = X_R;
 	float t=0;

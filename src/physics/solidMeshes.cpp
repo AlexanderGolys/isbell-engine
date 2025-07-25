@@ -141,7 +141,7 @@ bdVertices(bdVertices)
 						bdVerticesCells[newBdIndices[kk]].push_back(i);
 			}
 
-	boundary = make_shared<WeakSuperMesh>(bdVerticesRealised, bdTrs, boundaryPolygroup);
+	boundary = make_shared<IndexedMesh>(bdVerticesRealised, bdTrs, boundaryPolygroup);
 }
 
 Cell::Cell(int index,
@@ -241,8 +241,8 @@ vec4 CellMesh::colorFromAttributes(const Cell &c, const std::vector<std::string>
 }
 
 
-WeakSuperMesh CellMesh::bdMesh(const std::vector<std::string>& attrSavedAsColor) const {
-	WeakSuperMesh mesh = WeakSuperMesh();
+IndexedMesh CellMesh::bdMesh(const std::vector<std::string>& attrSavedAsColor) const {
+	IndexedMesh mesh = IndexedMesh();
 	for (auto &cell : cells) {
 		auto bdVertices = cell.getBdVertices();
 		if (!bdVertices.empty()) {
@@ -263,13 +263,13 @@ WeakSuperMesh CellMesh::bdMesh(const std::vector<std::string>& attrSavedAsColor)
 	return mesh;
 }
 
-void CellMesh::updateBdMeshAtCell(const Cell &c, const std::vector<std::string> &attrSavedAsColor, WeakSuperMesh &mesh) {
+void CellMesh::updateBdMeshAtCell(const Cell &c, const std::vector<std::string> &attrSavedAsColor, IndexedMesh &mesh) {
 	vec4 color = colorFromAttributes(c, attrSavedAsColor);
 	auto def = [color](BufferedVertex &v) { v.setColor(color); };
 	mesh.deformPerVertex(c.getID(), def);
 }
 
-void CellMesh::updateBdMesh(const std::vector<std::string> &attrSavedAsColor, WeakSuperMesh &mesh) const {
+void CellMesh::updateBdMesh(const std::vector<std::string> &attrSavedAsColor, IndexedMesh &mesh) const {
 	for (auto &c : cells)
 		updateBdMeshAtCell(c, attrSavedAsColor, mesh);
 }
