@@ -22,7 +22,7 @@ int main() {
 	auto graymat = MaterialPhong(GRAY_PALLETTE[4], .13, .1, .01, 155.0);
 
 
-//	auto monkey = make_shared<WeakSuperMesh>("C:\\Users\\PC\\Desktop\\meshes\\monkLow.obj", 21);
+//	auto monkey = make_shared<IndexedMesh>("C:\\Users\\PC\\Desktop\\meshes\\monkLow.obj", 21);
 //	monkey->deformWithAmbientMap(SpaceAutomorphism::rotation(vec3(1, 0, 0), PI/2, vec3(0)));
 	auto surf =		SpaceAutomorphism::affine(mat3(1), vec3(0, 0, 0)) &
 										SpaceAutomorphism::scaling(vec3(1.3, 1, 2.2)) &
@@ -41,8 +41,8 @@ int main() {
 	surf.changeDomain(vec2(0, TAU), vec2(3*PI/8, PI + 7*PI/8), true, false);
 //	heli.changeDomain(vec2(0, PI/3), vec2(0, PI), true, false);
 
-	auto surfmesh = make_shared<WeakSuperMesh>(surf, 50, 60, 222) ;
-	auto helimesh = make_shared<WeakSuperMesh>(heli, 50, 60, 223) ;
+	auto surfmesh = make_shared<IndexedMesh>(surf, 50, 60, 222) ;
+	auto helimesh = make_shared<IndexedMesh>(heli, 50, 60, 223) ;
 
 	auto wire = make_shared<Wireframe>(surf, .01, 15, 15, 80, 7);
 	auto wire2 = make_shared<Wireframe>(heli, .01, 5, 5, 50, 7);

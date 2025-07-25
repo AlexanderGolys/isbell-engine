@@ -110,14 +110,14 @@ public:
 class VAORenderingObject {
   Shader *shader;
   VAO vao;
-  WeakSuperMesh *mesh;
+  IndexedMesh *mesh;
   VBO stdVBO, matVBO, ex0VBO, exVBO;
   EBO ebo;
   std::vector<std::function<void(float, Shader&)>> setters = {};
 
 public:
   mutable LOGGING logger = NOPE;
-  VAORenderingObject(Shader *shader, WeakSuperMesh *mesh);
+  VAORenderingObject(Shader *shader, IndexedMesh *mesh);
 
   void loadStdVBO(GLenum usage);
   void loadMatVBO(GLenum usage);

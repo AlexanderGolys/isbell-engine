@@ -54,7 +54,7 @@ int main() {
 
 	auto lights = vector<Light>({light1, light2, light3});
 
-	WeakSuperMesh b0 = disk3d(7, vec3(0, 0, -.6), e1, e2, 7, 4, randomID());
+	IndexedMesh b0 = disk3d(7, vec3(0, 0, -.6), e1, e2, 7, 4, randomID());
 
 	auto shader = ShaderProgram(
 		R"(C:\Users\PC\Desktop\ogl-master\src\shaders2\curve_heat.vert)",
@@ -69,7 +69,7 @@ int main() {
 		vec3(5, 0, 1),  vec3(0, 0, 1),  PI/4);
 	renderer.setCamera(camera);
 	renderer.setLights(lights);
-	// renderer.addMeshStep(shader_floor, make_shared<WeakSuperMesh>(b0), floormat);
+	// renderer.addMeshStep(shader_floor, make_shared<IndexedMesh>(b0), floormat);
 	renderer.addMeshStep(shader_floor, mesh, floormat);
 	// renderer.addMeshStep(shader, pip, floormat);
 

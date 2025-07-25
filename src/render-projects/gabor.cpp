@@ -41,7 +41,7 @@ int main() {
 
 
 	auto mesh = make_shared<SurfacePolarPlotDiscretisedMesh>(heat, 2.0, .35);
-	// auto m = WeakSuperMesh(torusImplicit())
+	// auto m = IndexedMesh(torusImplicit())
 
 	renderer.resetTimer();
 

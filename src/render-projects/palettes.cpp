@@ -39,7 +39,7 @@ int main() {
 	float dx = (x_max - x_min) / palettes.size();
 	float dy = (y_max - y_min) / 10.f;
 
-	auto floor = make_shared<WeakSuperMesh>(paraleblahblapid(vec3(-10, -10, -.1), e1*0, e2*0, -e3*0));
+	auto floor = make_shared<IndexedMesh>(paraleblahblapid(vec3(-10, -10, -.1), e1*0, e2*0, -e3*0));
 
 	for (int i = 0; i < palettes.size(); i++)
 		for (int j = 0; j < 10; j++)

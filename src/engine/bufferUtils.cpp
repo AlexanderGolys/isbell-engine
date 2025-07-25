@@ -46,7 +46,7 @@ void VAO::linkAttribute(VBO vbo, int layout, int len, GLenum type, int blockSize
     glEnableVertexAttribArray(layout);
     vbo.unbind();
 }
-VAORenderingObject::VAORenderingObject(Shader *shader, WeakSuperMesh *mesh) {
+VAORenderingObject::VAORenderingObject(Shader *shader, IndexedMesh *mesh) {
     this->shader = shader;
     this->mesh = mesh;
     vao = VAO();

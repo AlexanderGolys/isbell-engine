@@ -229,7 +229,7 @@ public:
 	vector<shared_ptr<Attribute>> attributes;
 	shared_ptr<Model3D> model;
 	shared_ptr<SuperMesh> super = nullptr;
-    shared_ptr<WeakSuperMesh> weak_super = nullptr;
+    shared_ptr<IndexedMesh> weak_super = nullptr;
     GLuint elementBufferLoc = 0;
 
 	std::map<string, GLSLType> uniforms;
@@ -238,7 +238,7 @@ public:
 
 	void setModel(const shared_ptr<Model3D> &model);
 	void setSuperMesh(const shared_ptr<SuperMesh> &super);
-    void setWeakSuperMesh(const shared_ptr<WeakSuperMesh> &super);
+    void setWeakSuperMesh(const shared_ptr<IndexedMesh> &super);
 
 	int findAttributeByName(const string &name);
 	void initStdAttributes();
@@ -333,7 +333,7 @@ public:
 	void setLightsWithMesh(const vector<Light> &lights, float ambient, float diff, float spec, float shine, const ShaderProgram &shader, float radius);
 
 	void addRenderingStep(shared_ptr<RenderingStep> renderingStep);
-	void addMeshStep(const ShaderProgram& shader, const shared_ptr<WeakSuperMesh> &model, const MaterialPhong& material);
+	void addMeshStep(const ShaderProgram& shader, const shared_ptr<IndexedMesh> &model, const MaterialPhong& material);
 
 	float initFrame();
 	float lastDeltaTime() const;
@@ -347,7 +347,7 @@ public:
 	void addCustomAction(std::function<void(float)> action);
     void addCustomAction(std::function<void(float, float)> action);
 	void nonlinearSpeed(const Fooo &speed);
-	void addSurfaceFamilyDeformer(SurfaceParametricPencil &pencil, WeakSuperMesh &surface);
+	void addSurfaceFamilyDeformer(SurfaceParametricPencil &pencil, IndexedMesh &surface);
 	void addFloorWorkingArea(vec3 corner1, vec3 corner2, vec3 corner3, vec3 corner4, const MaterialPhong &material, float height, float pyramid_height);
 
 	virtual void initRendering();

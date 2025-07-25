@@ -28,7 +28,7 @@ int main() {
 	auto floor = SmoothParametricCurve([](float t) { return vec3(-.1, -.5, 0) + vec3(5*t, -t, 0)/sqrt(26); }, randomID(), 0, 6, false, .01);
 	auto rolling = RollingBody(bd, floor, vec3(0, 0, 0), vec3(0, -0.098, 0), 100, 100, .03);
 
-	auto fl = make_shared<WeakSuperMesh>(icosphere(15, 4, vec3(0, -15, 0), randomID()));
+	auto fl = make_shared<IndexedMesh>(icosphere(15, 4, vec3(0, -15, 0), randomID()));
 
 
 
@@ -42,7 +42,7 @@ R"(C:\Users\PC\Desktop\ogl-master\src\shaders2\shadingDemo.frag)");
 		vec3(.1, -.1, 2.5),
 		vec3(0),  vec3(vec3(0, -.5, 0)), rotationMatrix(vec3(.1, .2, 0.2)));
 
-	auto boxmesh = make_shared<WeakSuperMesh>(box.second);
+	auto boxmesh = make_shared<IndexedMesh>(box.second);
 
 	renderer.addTimeUniform();
 	renderer.setLights(lights);

@@ -1,16 +1,20 @@
 #pragma once
 #include "../geometry/smoothImplicit.hpp"
+#include "src/utils/macros.hpp"
 
 #include <array>
 #include <map>
 #include <variant>
 #include <vector>
-
 #include <string>
 #include <glm/glm.hpp>
 
 #include <memory>
 #include <optional>
+
+#include <GL/glew.h>
+
+
 
 
 enum GLSLType {
@@ -38,14 +42,14 @@ public:
 	GLuint frameBufferID;
     bool alpha=false;
 
-	Texture(int width, int height, int slot = 0, const char* sampler = "tex");
-    explicit Texture(vec3 color, int slot = 0, const char* sampler = "tex");
-    explicit Texture(vec4 color, int slot = 0, const char* sampler = "tex");
+	Texture(int width, int height, int slot=0, const char* sampler = "tex");
+    explicit Texture(vec3 color, int slot=0, const char* sampler = "tex");
+    explicit Texture(vec4 color, int slot=0, const char* sampler = "tex");
 	explicit Texture(const char* filename, int slot, const char* sampler, bool alpha=false);
 	explicit Texture(const string& filename, int slot, const char* sampler, bool alpha=false);
 
 	void deleteTexture();
-	~Texture() { deleteTexture(); }
+	~Texture();
 
 	static void addFilters(GLenum minFilter, GLenum magFilter, GLenum wrapS, GLenum wrapT);
 	void bind() const;
@@ -61,90 +65,67 @@ class MaterialPhong {
 	float specularIntensity;
 	float shininess;
 
-
 public:
-	std::shared_ptr<Texture> texture_ambient;
-	std::shared_ptr<Texture> texture_diffuse;
-	std::shared_ptr<Texture> texture_specular;
+	shared_ptr<Texture> texture_ambient;
+	shared_ptr<Texture> texture_diffuse;
+	shared_ptr<Texture> texture_specular;
 
 	virtual ~MaterialPhong() = default;
 
-	MaterialPhong() : MaterialPhong(vec4(0), vec4(0), vec4(0), 0, 0, 0, 0) {}
+	MaterialPhong();
 
-	static std::shared_ptr<Texture> constAmbientTexture(vec4 color);
-	static std::shared_ptr<Texture> constDiffuseTexture(vec4 color);
-	static std::shared_ptr<Texture> constSpecularTexture(vec4 color);
-	static std::shared_ptr<Texture> constAmbientTexture(vec3 color) { return constAmbientTexture(vec4(color, 1)); }
-	static std::shared_ptr<Texture> constDiffuseTexture(vec3 color) { return constDiffuseTexture(vec4(color, 1)); }
-	static std::shared_ptr<Texture> constSpecularTexture(vec3 color) { return constSpecularTexture(vec4(color, 1)); }
-	static std::shared_ptr<Texture> makeAmbientTexture(const string &filename, bool alpha=false) { return std::make_shared<Texture>(filename, 0, "texture_ambient", alpha); }
-	static std::shared_ptr<Texture> makeDiffuseTexture(const string &filename, bool alpha=false) { return std::make_shared<Texture>(filename, 1, "texture_diffuse", alpha); }
-	static std::shared_ptr<Texture> makeSpecularTexture(const string &filename, bool alpha=false) { return std::make_shared<Texture>(filename, 2, "texture_specular", alpha); }
+	static shared_ptr<Texture> constAmbientTexture(vec4 color);
+	static shared_ptr<Texture> constDiffuseTexture(vec4 color);
+	static shared_ptr<Texture> constSpecularTexture(vec4 color);
+	static shared_ptr<Texture> constAmbientTexture(vec3 color);
+	static shared_ptr<Texture> constDiffuseTexture(vec3 color);
+	static shared_ptr<Texture> constSpecularTexture(vec3 color);
+	static shared_ptr<Texture> makeAmbientTexture(const string &filename, bool alpha=false);
+	static shared_ptr<Texture> makeDiffuseTexture(const string &filename, bool alpha=false);
+	static shared_ptr<Texture> makeSpecularTexture(const string &filename, bool alpha=false) { return std::make_shared<Texture>(filename, 2, "texture_specular", alpha); }
 
-  MaterialPhong(const std::shared_ptr<Texture> &texture_ambient, const std::shared_ptr<Texture> &texture_diffuse, const std::shared_ptr<Texture> &texture_specular,
+  MaterialPhong(const shared_ptr<Texture> &texture_ambient, const shared_ptr<Texture> &texture_diffuse, const shared_ptr<Texture> &texture_specular,
                 float ambientIntensity, float diffuseIntensity, float specularIntensity, float shininess);
 
 
 
 	MaterialPhong(const string& textureFilenameAmbient, const string& textureFilenameDiffuse, const string& textureFilenameSpecular,
 		float ambientIntensity, float diffuseIntensity, float specularIntensity, float shininess,
-		bool alphaAmbient=false, bool alphaDiffuse=false, bool alphaSpecular=false)
-						:  MaterialPhong(makeAmbientTexture(textureFilenameAmbient, alphaAmbient),
-								makeDiffuseTexture(textureFilenameDiffuse, alphaDiffuse),
-								makeSpecularTexture(textureFilenameSpecular, alphaSpecular),
-										ambientIntensity, diffuseIntensity, specularIntensity, shininess) {}
+		bool alphaAmbient=false, bool alphaDiffuse=false, bool alphaSpecular=false);
 
 
 
-	MaterialPhong(vec4 ambient, vec4 diffuse, vec4 specular, float ambientIntensity, float diffuseIntensity, float specularIntensity, float shininess)
-	: MaterialPhong(constAmbientTexture(ambient), constDiffuseTexture(diffuse), constSpecularTexture(specular), ambientIntensity, diffuseIntensity, specularIntensity, shininess) {}
-
-	MaterialPhong(vec4 ambient, float ambientIntensity, float diffuseIntensity, float specularIntensity, float shininess)
-		: MaterialPhong(ambient, ambient, ambient, ambientIntensity, diffuseIntensity, specularIntensity, shininess) {}
+	MaterialPhong(vec4 ambient, vec4 diffuse, vec4 specular, float ambientIntensity, float diffuseIntensity, float specularIntensity, float shininess);
+	MaterialPhong(vec4 ambient, float ambientIntensity, float diffuseIntensity, float specularIntensity, float shininess);
 
 	vec4 compressIntencities() const;
-    void initTextures() { texture_ambient->load(); texture_diffuse->load(); texture_specular->load(); }
+    void initTextures();
 
-	virtual bool textured() const {return true;}
+	virtual bool textured() const;
 
-	void setAmbientTexture(const std::shared_ptr<Texture> &texture) {
-	    texture_ambient->deleteTexture();
-    	texture_ambient = texture;
-    	texture_ambient->load();
-    }
-	void setDiffuseTexture(const std::shared_ptr<Texture> &texture) {
-	    texture_diffuse->deleteTexture();
-    	texture_diffuse = texture;
-    	texture_diffuse->load();
-    }
-	void setSpecularTexture(const std::shared_ptr<Texture> &texture) {
-	    texture_specular->deleteTexture();
-    	texture_specular = texture;
-    	texture_specular->load();
-    }
+	void setAmbientTexture(const shared_ptr<Texture> &texture);
+	void setDiffuseTexture(const shared_ptr<Texture> &texture);
+	void setSpecularTexture(const shared_ptr<Texture> &texture);
 
-	void addAmbientTexture (const string &filename, bool alpha=false) { setAmbientTexture(makeAmbientTexture(filename, alpha));}
-	void addDiffuseTexture (const string &filename, bool alpha=false) { setDiffuseTexture(makeDiffuseTexture(filename, alpha));}
-	void addSpecularTexture(const string &filename, bool alpha=false) { setSpecularTexture(makeSpecularTexture(filename, alpha));}
+	void addAmbientTexture(const string &filename, bool alpha=false);
+	void addDiffuseTexture(const string &filename, bool alpha=false);
+	void addSpecularTexture(const string &filename, bool alpha=false);
 
-	void addAmbientTexture (vec4 color) { setAmbientTexture(constAmbientTexture(color)); }
-	void addDiffuseTexture (vec4 color) { setDiffuseTexture(constDiffuseTexture(color)); }
-	void addSpecularTexture(vec4 color) { setSpecularTexture(constSpecularTexture(color)); }
+	void addAmbientTexture(vec4 color);
+	void addDiffuseTexture(vec4 color);
+	void addSpecularTexture(vec4 color);
 };
 
 class MaterialPhongConstColor : public MaterialPhong {
 public:
 	vec4 ambientColor, diffuseColor, specularColor;
-	MaterialPhongConstColor(vec4 ambient, vec4 diffuse, vec4 specular,
-		float ambientIntensity, float diffuseIntensity, float specularIntensity, float shininess)
-		: MaterialPhong(ambient, diffuse, specular, ambientIntensity, diffuseIntensity, specularIntensity, shininess),
-		ambientColor(ambient), diffuseColor(diffuse), specularColor(specular) {}
+	MaterialPhongConstColor(vec4 ambient, vec4 diffuse, vec4 specular, float ambientIntensity, float diffuseIntensity, float specularIntensity, float shininess);
 
-	explicit MaterialPhongConstColor(mat4 mat) : MaterialPhongConstColor(mat[0], mat[1], mat[2], mat[3][0], mat[3][1], mat[3][2], mat[3][3]) {}
-	MaterialPhongConstColor() : MaterialPhongConstColor(vec4(0), vec4(0), vec4(0), 0, 0, 0, 0) {}
+	explicit MaterialPhongConstColor(mat4 mat);
+	MaterialPhongConstColor();
 
-	mat4 compressToMatrix() const {return mat4(ambientColor, diffuseColor, specularColor, compressIntencities());}
-	bool textured() const override {return false;}
+	mat4 compressToMatrix() const;
+	bool textured() const override;
 };
 
 
@@ -191,7 +172,7 @@ public:
 	void flipNormals();
 
 	void addExtraData(const string &name, const array<vec4, 3> &data);
-    void setExtraData(string name, int i, vec4 data) { extraData[name][i] = data; }
+    void setExtraData(const string &name, int i, vec4 data);
 	array<vec4, 3> getExtraData(const string &name);
 	void addMaterial(MaterialPhong material);
 
@@ -283,47 +264,47 @@ public:
 	string hash() const;
 	bool operator<(const Vertex& v) const;
 	bool operator==(const Vertex& v) const;
-    void setIndex(int i) { index = i; }
-    int getIndex() const { return index; }
-    bool hasIndex() const { return index != -1; }
-    void gotAddedAsVertex (std::weak_ptr<IndexedTriangle> triangle, int i);
+    void setIndex(int i);
+	int getIndex() const;
+	bool hasIndex() const;
+	void gotAddedAsVertex (std::weak_ptr<IndexedTriangle> triangle, int i);
 	vector<std::pair<std::weak_ptr<IndexedTriangle>, int>> getTriangles() const;
 	vector<std::weak_ptr<Vertex>> getNeighbours() const;
     void recomputeNormals(bool weightByArea=true);
 
-	vec3 getPosition() const { return position; }
-	vec3 getNormal() const { return normal; }
-	vec2 getUV() const { return uv; }
-	vec4 getColor() const { return color; }
-    MaterialPhong getMaterial() const { return material.value(); }
-    mat4 getMaterialMat() const { return material.value().compressToMatrix(); }
-    vec4 getExtraData(const string &name) const { return extraData.at(name); }
-    vec3 getExtraData_xyz(const string &name) const { return vec3(extraData.at(name)); }
-    float getExtraData(const string &name, int i) const { return extraData.at(name)[i]; }
-    float getExtraLast(const string &name) const { return extraData.at(name)[3]; }
-    bool hasExtraData() const { return !extraData.empty(); }
-	bool hasExtraData(const string &name) const { return extraData.contains(name); }
-    vector<string> getExtraDataNames();
-    bool hasMaterial() const { return material.has_value(); }
+	vec3 getPosition() const;
+	vec3 getNormal() const;
+	vec2 getUV() const;
+	vec4 getColor() const;
+	MaterialPhong getMaterial() const;
+	mat4 getMaterialMat() const;
+	vec4 getExtraData(const string &name) const;
+	vec3 getExtraData_xyz(const string &name) const;
+	float getExtraData(const string &name, int i) const;
+	float getExtraLast(const string &name) const;
+	bool hasExtraData() const;
+	bool hasExtraData(const string &name) const;
+	vector<string> getExtraDataNames();
+    bool hasMaterial() const;
 
-    void addExtraData(const string &name, vec4 data);
+	void addExtraData(const string &name, vec4 data);
 	void addExtraData(const string &name, vec3 data);
     void addExtraData(const string &name, float data, int i=3);
-	void translate(vec3 v) { this->position += v; }
+	void translate(vec3 v);
 	void transform(const SpaceEndomorphism &M);
 	Vertex operator+(vec3 v) const;
-	void operator+=(vec3 v) { this->translate(v); }
-	void setMaterial(MaterialPhongConstColor material) { this->material = material; }
-	void setPosition(vec3 position) { this->position = position; };
-    void setNormal(vec3 normal) { this->normal = normal; }
-	void setUV(vec2 uv) { this->uv = uv; }
-	void setColor(vec4 color) { this->color = color; }
-    void appendToBuffers(StdAttributeBuffers &buffers, MaterialBuffers &materialBuffers);
+	void operator+=(vec3 v);
+	void setMaterial(MaterialPhongConstColor material);
+	void setPosition(vec3 position);;
+    void setNormal(vec3 normal);
+	void setUV(vec2 uv);
+	void setColor(vec4 color);
+	void appendToBuffers(StdAttributeBuffers &buffers, MaterialBuffers &materialBuffers);
     void appendToBuffers(StdAttributeBuffers &buffers);
     void appendExtraDataToBuffer(const string &name, vector<vec4> &buffer) const;
 
     void appendToList(vector<Vertex> &list);
-    void addTriangle(std::shared_ptr<IndexedTriangle> triangle, int i);
+    void addTriangle(shared_ptr<IndexedTriangle> triangle, int i);
 
     void setCurveParameter(float t) { addExtraData("curvePoint", t); }
     void setCurvePosition(vec3 pos) { addExtraData("curvePoint", pos); }
@@ -464,8 +445,8 @@ public:
 
 class Model3D {
 public:
-	std::shared_ptr<TriangularMesh> mesh;
-	std::shared_ptr<MaterialPhong> material;
+	shared_ptr<TriangularMesh> mesh;
+	shared_ptr<MaterialPhong> material;
 	mat4 transform;
 	Model3D();
 	Model3D(TriangularMesh &mesh, MaterialPhong &material, const mat4 &transform);
@@ -517,14 +498,15 @@ public:
 class MeshFamily1P{
 protected:
 	float _t=0;
-	std::shared_ptr<TriangularMesh> mesh;
+	shared_ptr<TriangularMesh> mesh;
 	std::function<std::function<vec3(vec3)>(float, float)> time_operator;
 	std::function<std::function<vec3(vec3, vec3)>(float, float)> time_operator_normal;
 	bool planar=false;
 public:
-	MeshFamily1P(const std::shared_ptr<TriangularMesh> &mesh, const std::function<std::function<vec3(vec3)>(float, float)> &time_operator, const std::function<std::function<vec3(vec3, vec3)>(float, float)> &time_operator_normal, float t=0);
-	MeshFamily1P(const std::shared_ptr<TriangularMesh> &embedded_mesh, std::function<PlaneSmoothEndomorphism(float, float)> time_operator, vec3 embedding_shift=vec3(0, 0, 0), float t=0);
-	MeshFamily1P(const std::shared_ptr<TriangularMesh> &embedded_mesh, std::function<PlaneAutomorphism(float)> time_operator_from0, vec3 embedding_shift=vec3(0, 0, 0));
+	virtual ~MeshFamily1P() = default;
+	MeshFamily1P(const shared_ptr<TriangularMesh> &mesh, const std::function<std::function<vec3(vec3)>(float, float)> &time_operator, const std::function<std::function<vec3(vec3, vec3)>(float, float)> &time_operator_normal, float t=0);
+	MeshFamily1P(const shared_ptr<TriangularMesh> &embedded_mesh, std::function<PlaneSmoothEndomorphism(float, float)> time_operator, vec3 embedding_shift=vec3(0, 0, 0), float t=0);
+	MeshFamily1P(const shared_ptr<TriangularMesh> &embedded_mesh, std::function<PlaneAutomorphism(float)> time_operator_from0, vec3 embedding_shift=vec3(0, 0, 0));
 
 	float time() const;
 	virtual void transformMesh(float new_t);
@@ -536,23 +518,17 @@ class MeshFamily1PExtraDomain : public MeshFamily1P {
 protected:
 	string domain;
 public:
-	MeshFamily1PExtraDomain(const std::shared_ptr<TriangularMesh> &mesh, const string &domain, const std::function<std::function<vec3(vec3)>(float, float)> &time_operator, const std::function<std::function<vec3(vec3, vec3)>(float, float)> &time_operator_normal, float t=0);
-	MeshFamily1PExtraDomain(const std::shared_ptr<TriangularMesh> &embedded_mesh, const string &domain, const std::function<PlaneSmoothEndomorphism(float, float)> &time_operator, vec3 embedding_shift=vec3(0, 0, 0), float t=0);
-	MeshFamily1PExtraDomain(const std::shared_ptr<TriangularMesh> &embedded_mesh, const string &domain, const std::function<PlaneAutomorphism(float)> &time_operator_from0, vec3 embedding_shift=vec3(0, 0, 0));
+	MeshFamily1PExtraDomain(const shared_ptr<TriangularMesh> &mesh, const string &domain, const std::function<std::function<vec3(vec3)>(float, float)> &time_operator, const std::function<std::function<vec3(vec3, vec3)>(float, float)> &time_operator_normal, float t=0);
+	MeshFamily1PExtraDomain(const shared_ptr<TriangularMesh> &embedded_mesh, const string &domain, const std::function<PlaneSmoothEndomorphism(float, float)> &time_operator, vec3 embedding_shift=vec3(0, 0, 0), float t=0);
+	MeshFamily1PExtraDomain(const shared_ptr<TriangularMesh> &embedded_mesh, const string &domain, const std::function<PlaneAutomorphism(float)> &time_operator_from0, vec3 embedding_shift=vec3(0, 0, 0));
 
 	void transformMesh(float new_t) override;
 	void meshDeformation(float dt) override;
 };
 
 
-
-
-
-
-
-
-const BoundaryEmbeddingStyle STD_KERB = BoundaryEmbeddingStyle{KERB, .01f, .02f, .01f, .2};
-const BoundaryEmbeddingStyle STD_CURVE = BoundaryEmbeddingStyle{CURVE, .0f, .0f, .0f, .0f, .005f, .005f, .005f};
+constexpr BoundaryEmbeddingStyle STD_KERB = BoundaryEmbeddingStyle{KERB, .01f, .02f, .01f, .2};
+constexpr BoundaryEmbeddingStyle STD_CURVE = BoundaryEmbeddingStyle{CURVE, .0f, .0f, .0f, .0f, .005f, .005f, .005f};
 
 
 class SuperMesh {
@@ -687,7 +663,7 @@ inline string embeddingTypeName(CurveEmbeddingTypeID type) {
 class SuperCurve{
   float t0, t1;
   vector<CurveSample> samples;
-  std::shared_ptr<SuperMesh> _mesh = nullptr;
+  shared_ptr<SuperMesh> _mesh = nullptr;
   PolyGroupID id;
   CurveEmbeddingTypeID embeddingType = NOT_EMBEDDED;
 

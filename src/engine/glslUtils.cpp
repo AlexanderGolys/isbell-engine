@@ -797,7 +797,7 @@ void RenderingStep::setSuperMesh(const std::shared_ptr<SuperMesh> &super) {
     this-> weak_super = nullptr;
 }
 
-void RenderingStep::setWeakSuperMesh(const std::shared_ptr<WeakSuperMesh> &super) {
+void RenderingStep::setWeakSuperMesh(const std::shared_ptr<IndexedMesh> &super) {
     this->super = nullptr;
     this-> model = nullptr;
     this-> weak_super = super;
@@ -1196,7 +1196,7 @@ void Renderer::addRenderingStep(std::shared_ptr<RenderingStep> renderingStep)
 	this->renderingSteps.push_back(std::move(renderingStep));
 }
 
-void Renderer::addMeshStep(const ShaderProgram &shader, const std::shared_ptr<WeakSuperMesh> &model, const MaterialPhong &material) {
+void Renderer::addMeshStep(const ShaderProgram &shader, const std::shared_ptr<IndexedMesh> &model, const MaterialPhong &material) {
 	auto renderingStep = std::make_shared<RenderingStep>(make_shared<ShaderProgram>(shader));
 	model->addGlobalMaterial(material);
 	renderingStep->setWeakSuperMesh(model);
@@ -1217,7 +1217,7 @@ void Renderer::setLights(const std::vector<Light> &lights)
 
 void Renderer::setLightWithMesh(const Light &light, const MaterialPhong &material, const ShaderProgram &shader, float radius) {
 	this->lights.push_back(light);
-	addMeshStep(shader, std::make_shared<WeakSuperMesh>(icosphere(radius, 2, light.getPosition(), randomID())), material);
+	addMeshStep(shader, std::make_shared<IndexedMesh>(icosphere(radius, 2, light.getPosition(), randomID())), material);
 }
 
 void Renderer::setLightsWithMesh(const std::vector<Light> &lights, const MaterialPhong &material, const ShaderProgram &shader, float radius) {
@@ -1265,7 +1265,7 @@ void Renderer::addPerFrameUniform(const string &uniformName, GLSLType uniformTyp
 		renderingStep->addUniform(uniformName, uniformType, setter);
 }
 
-void Renderer::addSurfaceFamilyDeformer(SurfaceParametricPencil &pencil, WeakSuperMesh &surface) {
+void Renderer::addSurfaceFamilyDeformer(SurfaceParametricPencil &pencil, IndexedMesh &surface) {
 	addCustomAction([&pencil, &surface](float t) { surface.adjustToNewSurface(pencil(t)); });
 }
 

@@ -29,8 +29,8 @@ class FluidParticle {
 	vec3 forces = vec3(0.0f);
 	vector<float> attributes;
 	float mass;
-	maybeFloat density = undefined;
-	maybeFloat pressure = undefined;
+	RP1 density = UNDEFINED;
+	RP1 pressure = UNDEFINED;
 	float viscosity;
 
 public:
@@ -102,7 +102,7 @@ public:
 	void update(float dt);
 
 	SmoothImplicitSurface density_surface(float level) const;
-	WeakSuperMesh particle_mesh(float r, int icosphere_res) const;
+	IndexedMesh particle_mesh(float r, int icosphere_res) const;
 	MarchingCubeChunk boundary_surface_march(const ivec3 &res) const;
 	MarchingCubeChunk free_surface_march(const ivec3 &res, float level) const;
 

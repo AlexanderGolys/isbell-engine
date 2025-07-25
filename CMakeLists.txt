@@ -1,6 +1,9 @@
-# CMake entry point
 cmake_minimum_required (VERSION 3.0)
-project (Tutorials)
+project (Engine)
+
+set(CMAKE_CXX_STANDARD 26)
+set(CMAKE_MSVC_RUNTIME_LIBRARY "MultiThreaded$<$<CONFIG:Debug>:Debug>")
+set(CMAKE_MSVC_RUNTIME_LIBRARY "MultiThreaded$<$<CONFIG:Release>:Release>")
 
 find_package(OpenGL REQUIRED)
 
@@ -31,18 +34,17 @@ if(INCLUDE_DISTRIB)
 	add_subdirectory(distrib)
 endif(INCLUDE_DISTRIB)
 
-# c++ 23
-set(CMAKE_CXX_STANDARD 23)
+# c++ 26
 
 
 
 include_directories(
-	external/AntTweakBar-1.16/include/
+#	external/AntTweakBar-1.16/include/
 	external/glfw-3.1.2/include/
 	external/glm-0.9.7.1/
 	external/glew-1.13.0/include/
-	external/assimp-3.0.1270/include/
-	external/bullet-2.81-rev2613/src/
+#	external/assimp-3.0.1270/include/
+#	external/bullet-2.81-rev2613/src/
 	.
 )
 
@@ -503,3 +505,45 @@ set_target_properties(pallettes PROPERTIES XCODE_ATTRIBUTE_CONFIGURATION_BUILD_D
 create_target_launcher(pallettes WORKING_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}/src/")
 
 #
+
+add_executable(dom
+		src/render-projects/domains.cpp
+		src/utils/macros.hpp
+		src/utils/filesUtils.cpp
+		src/utils/mat.cpp
+		src/utils/func.cpp
+		src/engine/indexedRendering.cpp
+		src/engine/specific.cpp
+		src/engine/glslUtils.cpp
+		src/engine/renderingUtils.cpp
+        src/geometry/complexGeo.cpp
+        src/geometry/discreteGeometry.cpp
+#        src/geometry/hyperbolic.cpp
+        src/geometry/planarGeometry.cpp
+        src/geometry/smoothParametric.cpp
+        src/geometry/smoothImplicit.cpp
+        src/physics/solidMeshes.cpp
+		src/physics/rigid.cpp
+		src/utils/flows.cpp
+		src/utils/flows.hpp
+		src/utils/modules.hpp
+		src/utils/integralTransforms.hpp
+		src/utils/integralTransforms.cpp
+		src/geometry/pde.hpp
+		src/geometry/pde.cpp
+		src/geometry/pdeDiscrete.hpp
+		src/geometry/pdeDiscrete.cpp
+		src/engine/interface.cpp
+		src/engine/dynamicalSystems.cpp
+		src/utils/elemFunc.cpp
+		src/utils/elemFunc.hpp
+		src/geometry/pdeDiscrete.cpp
+		src/geometry/pdeDiscrete.hpp
+)
+
+target_link_libraries(dom
+        ${ALL_LIBS}
+)
+# Xcode and Visual working directories
+set_target_properties(dom PROPERTIES XCODE_ATTRIBUTE_CONFIGURATION_BUILD_DIR "${CMAKE_CURRENT_SOURCE_DIR}/src/")
+create_target_launcher(dom WORKING_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}/src/")

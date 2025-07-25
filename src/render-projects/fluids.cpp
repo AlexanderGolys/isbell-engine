@@ -69,11 +69,11 @@ int main() {
 
 
 	float r = .045;
-	auto particle_mesh = make_shared<WeakSuperMesh>(fluid.particle_mesh(r, 1));
+	auto particle_mesh = make_shared<IndexedMesh>(fluid.particle_mesh(r, 1));
 	// auto march = fluid.boundary_surface_march(ivec3(50, 50, 50));
 	// auto march = fluid.free_surface_march(ivec3(50, 50, 50), 0.1f);
-	// auto bd_mesh = make_shared<WeakSuperMesh>(march, 100, 100);
-	auto bd_mesh = make_shared<WeakSuperMesh>(ellipsoid(1 + r, 1 + r, 2 + r), 100, 100);
+	// auto bd_mesh = make_shared<IndexedMesh>(march, 100, 100);
+	auto bd_mesh = make_shared<IndexedMesh>(ellipsoid(1 + r, 1 + r, 2 + r), 100, 100);
 
 
 	auto shader = ShaderProgram(

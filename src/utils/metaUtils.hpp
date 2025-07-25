@@ -48,34 +48,6 @@ vector<X> concat(vector<X> a, vector<X> b) {
 	return c;
 }
 
-class COLOR_PALETTE {
-public:
-    vec4 mainColor;
-    vec4 second;
-    vec4 third;
-    vec4 accent;
-    vec4 accent2;
-
-    COLOR_PALETTE(vec4 mainColor, vec4 second, vec4 third, vec4 accent, vec4 accent2);
-    COLOR_PALETTE(vec3 mainColor, vec3 second, vec3 third, vec3 accent, vec3 accent2);
-    COLOR_PALETTE(ivec3 mainColor, ivec3 second, ivec3 third, ivec3 accent, ivec3 accent2);
-    std::vector<vec4> colors();
-    vec4 operator[] (int i);
-
-};
-
-class COLOR_PALETTE10 {
-public:
-    array<vec4, 10> cls;
-
-    explicit COLOR_PALETTE10(const array<vec4, 10> &colors) : cls(colors) {}
-    COLOR_PALETTE10(COLOR_PALETTE p1, COLOR_PALETTE p2) : cls({p1[0], p1[1], p1[2], p1[3], p1[4], p2[0], p2[1], p2[2], p2[3], p2[4]}) {}
-    COLOR_PALETTE10(ivec3 c1, ivec3 c2, ivec3 c3, ivec3 c4, ivec3 c5, ivec3 c6, ivec3 c7, ivec3 c8, ivec3 c9, ivec3 c10);
-    std::vector<vec4> colors() const { return std::vector<vec4>(cls.begin(), cls.end()); }
-    vec4 operator[] (int i) const { return cls[i]; }
-};
-
-
 namespace glm {
     inline vec3 xyz(const vec4& v) {
         return vec3(v.x, v.y, v.z);
@@ -133,7 +105,7 @@ inline int binom(int a, int b) {
 }
 
     template<typename T>
-    void printVector(std::vector<T> v, string title="vector")
+    void printVector(vector<T> v, string title="vector")
     {
         std::cout << title << " [" << v.size() << "]: ";
         for (int i = 0; i < v.size(); i++)
@@ -143,8 +115,7 @@ inline int binom(int a, int b) {
         std::cout << std::endl;
     }
 
-
-const PolyGroupID DEFAULT_POLY_GROUP_ID = PolyGroupID(0);
+constexpr PolyGroupID DEFAULT_POLY_GROUP_ID = PolyGroupID(0);
 constexpr RP1 inf = std::nullopt;
 constexpr RP1 unbounded = std::nullopt;
 const vec3 e1 = vec3(1, 0, 0);
@@ -152,7 +123,7 @@ const vec3 e2 = vec3(0, 1, 0);
 const vec3 e3 = vec3(0, 0, 1);
 const vec3 ORIGIN = vec3(0, 0, 0);
 const vec2 PLANE_ORIGIN = vec2(0, 0);
-const PolyGroupID DFLT_CURV = PolyGroupID(420);
+constexpr PolyGroupID DFLT_CURV = PolyGroupID(420);
 const vector std_basis3 = {e1, e2, e3};
 
 class ivec8 {
@@ -225,7 +196,7 @@ public:
 	int t() const { return b.y; }
 	int u() const { return b.z; }
 
-	std::vector<int> toVec() const { return {a.x, a.y, a.z, b.x, b.y, b.z}; }
+	vector<int> toVec() const { return {a.x, a.y, a.z, b.x, b.y, b.z}; }
 };
 
 
@@ -252,7 +223,7 @@ inline vector<int> range(int b) {
 
 class Permutation {
 public:
-	std::vector<int> perm;
+	vector<int> perm;
 	explicit Permutation(const vector<int>& direct_img) : perm(direct_img) {}
 	explicit Permutation(const vector<int>& cycle, int size) : perm(range(size)) {
 		for (int i = 0; i < cycle.size(); i++)
@@ -275,9 +246,9 @@ public:
 
 
 template<typename T>
-std::vector<T> flattened2DVector(std::vector<std::vector<T>> v)
+vector<T> flattened2DVector(vector<vector<T>> v)
 {
-	std::vector<T> res;
+	vector<T> res;
 	for (auto& row : v)
 		res.insert(res.end(), row.begin(), row.end());
 	return res;
@@ -294,16 +265,16 @@ inline int flattened2DVectorIndex(int i, int j, ivec2 size) {
 
 
 template<typename T>
-T flattened2DVectorSample(std::vector<T> flattened, int i, int j, ivec2 size) {
+T flattened2DVectorSample(vector<T> flattened, int i, int j, ivec2 size) {
 	return flattened[flattened2DVectorIndex(i, j, size)];
 }
 
 
 
 template<typename T>
-std::vector<T> flattened3DVector(std::vector<std::vector<std::vector<T>>> v)
+vector<T> flattened3DVector(vector<vector<vector<T>>> v)
 {
-	std::vector<T> res;
+	vector<T> res;
 	for (auto& row : v)
 		for (auto& col : row)
 			res.insert(res.end(), col.begin(), col.end());
@@ -323,7 +294,7 @@ inline int flattened3DVectorIndex(int i, int j, int k,  ivec3 size) {
 
 
 template<typename T>
-T flattened3DVectorSample(std::vector<T> flattened, int i, int j, int k, ivec3 size) {
+T flattened3DVectorSample(vector<T> flattened, int i, int j, int k, ivec3 size) {
 	return flattened[flattened3DVectorIndex(i, j, k, size)];
 }
 
@@ -343,17 +314,17 @@ inline int flattened4DVectorIndex(int i, int j, int k, int m,  ivec4 size) {
 
 
 template<typename T>
-T flattened4DVectorSample(std::vector<T> flattened, int i, int j, int k, int m, ivec4 size) {
+T flattened4DVectorSample(vector<T> flattened, int i, int j, int k, int m, ivec4 size) {
 	return flattened[flattened4DVectorIndex(i, j, k, m, size)];
 }
 
 template<typename T>
-bool contains(const std::vector<T> &v, T x) {
+bool contains(const vector<T> &v, T x) {
 	return std::find(v.begin(), v.end(), x) != v.end();
 }
 
 template<typename T>
-bool containsAll(const std::vector<T> &big, const std::vector<T> &subset) {
+bool containsAll(const vector<T> &big, const vector<T> &subset) {
 	for (auto& x : subset)
 		if (!contains(big, x))
 			return false;
@@ -361,8 +332,8 @@ bool containsAll(const std::vector<T> &big, const std::vector<T> &subset) {
 }
 
 template<typename T, typename U>
-std::vector<T> keys(const std::map<T, U> &m) {
-	std::vector<T> res;
+vector<T> keys(const std::map<T, U> &m) {
+	vector<T> res;
 	for (auto& [k, v] : m)
 		res.push_back(k);
 	return res;
@@ -377,23 +348,23 @@ std::set<U> values(const std::map<T, U> &m) {
 }
 
 template<typename T, typename U>
-std::vector<U> valuesVec(const std::map<T, U> &m) {
-	std::vector<U> res;
+vector<U> valuesVec(const std::map<T, U> &m) {
+	vector<U> res;
 	for (auto& [k, v] : m)
 		res.push_back(v);
 	return res;
 }
 
 template<typename T>
-std::vector<T> setToVector(const std::set<T> &s) {
-	std::vector<T> res;
+vector<T> setToVector(const std::set<T> &s) {
+	vector<T> res;
 	for (auto& x : s)
 		res.push_back(x);
 	return res;
 }
 
 template<typename T, int n>
-array<T, n> vectorToArray(const std::vector<T> &s) {
+array<T, n> vectorToArray(const vector<T> &s) {
 	array<T, n> res;
 	for (int i = 0; i < n; i++)
 		res[i] = s[i];
@@ -401,7 +372,7 @@ array<T, n> vectorToArray(const std::vector<T> &s) {
 }
 
 template<typename T, int n, int m=n>
-array<array<T, n>, m> vecVecToArray(const std::vector<T> &s) {
+array<array<T, n>, m> vecVecToArray(const vector<T> &s) {
 	array<array<T, n>, m> res;
 	for (int i = 0; i < m; i++)
 		for (int j = 0; j < n; j++)
@@ -410,8 +381,8 @@ array<array<T, n>, m> vecVecToArray(const std::vector<T> &s) {
 }
 
 template<typename T, int n, int m=n>
-std::vector<std::vector<T>> arrayToVecVec(const array<array<T, n>, m> &s) {
-	std::vector<std::vector<T>> res;
+vector<vector<T>> arrayToVecVec(const array<array<T, n>, m> &s) {
+	vector<vector<T>> res;
 	res.reserve(m);
 	for (int i = 0; i < m; i++)
 		res.emplace_back(s[i].begin(), s[i].end());
@@ -501,8 +472,8 @@ inline int setMinus(ivec3 x, ivec2 y) {
 }
 
 template<typename T>
-std::vector<T> setMinus(std::vector<T> x, T y) {
-	std::vector<T> res;
+vector<T> setMinus(vector<T> x, T y) {
+	vector<T> res;
 	res.reserve(x.size()-1);
 	for (auto& z : x)
 		if (z != y)
@@ -511,8 +482,8 @@ std::vector<T> setMinus(std::vector<T> x, T y) {
 }
 
 template<typename T>
-std::vector<T> setMinus(std::vector<T> x, std::vector<T> y) {
-	std::vector<T> res;
+vector<T> setMinus(vector<T> x, vector<T> y) {
+	vector<T> res;
 	for (auto& z : x)
 		if (!contains<T>(y, z))
 			res.push_back(z);
@@ -565,14 +536,14 @@ inline string replaceAll(const string &target, const string &old, const string &
 }
 
 template<typename T>
-std::vector<T> concat(const std::vector<T> &a, const std::vector<T> &b) {
-    std::vector<T> res = a;
+vector<T> concat(const vector<T> &a, const vector<T> &b) {
+    vector<T> res = a;
     res.insert(res.end(), b.begin(), b.end());
     return res;
 }
 
 template<typename T>
-void addAll(std::vector<T> &target, const std::vector<T> &addition) {
+void addAll(vector<T> &target, const vector<T> &addition) {
     target.insert(target.end(), addition.begin(), addition.end());
 }
 
@@ -603,7 +574,7 @@ inline int timestampNowTruncated() {
 //}
 
 template<typename T>
-int indexOf(T x, const std::vector<T> &v) {
+int indexOf(T x, const vector<T> &v) {
 	for (int i = 0; i < v.size(); i++)
 		if (v[i] == x)
 			return i;
@@ -662,7 +633,7 @@ template<typename V>
 V lerpClamp(V a, V b, float t, V max_v = V(1), V min_v = V(0)) { return lerp(a, b, clamp(min_v, max_v, t)); }
 
 template<typename V>
-V mean(std::vector<V> points) {
+V mean(vector<V> points) {
 	V m = V(0);
 	for (V p: points)
 		m = m + p;
@@ -828,7 +799,7 @@ public:
     using pointer           = T*;
     using reference         = T&;
 
-    FlatteningIterator(std::vector<std::vector<T>>& nestedVec) {
+    FlatteningIterator(vector<vector<T>>& nestedVec) {
         for (auto it = nestedVec.rbegin(); it != nestedVec.rend(); ++it) {
             if (!it->empty()) {
                 stack.push({it->begin(), it->end()});
@@ -837,7 +808,7 @@ public:
         advanceToNext();
     }
 
-	FlatteningIterator() : FlatteningIterator(std::vector<std::vector<T>>()) {}
+	FlatteningIterator() : FlatteningIterator(vector<vector<T>>()) {}
 
     reference operator*() const { return *stack.top().first; }
     pointer operator->() { return &(*stack.top().first); }
@@ -865,7 +836,7 @@ public:
     }
 
 private:
-    std::stack<std::pair<typename std::vector<T>::iterator, typename std::vector<T>::iterator>> stack;
+    std::stack<pair<typename vector<T>::iterator, typename vector<T>::iterator>> stack;
 
     void advanceToNext() {
         while (!stack.empty() && stack.top().first == stack.top().second) {
