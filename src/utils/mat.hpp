@@ -103,7 +103,6 @@ class Vector {
 
 public:
 	explicit Vector(vector<T> c);
-
 	explicit Vector(T scalar) : Vector(vector<T>({scalar})) { n = 1; }
 
 	explicit Vector(int n, HOM(int, T) f)
@@ -618,60 +617,42 @@ FiniteSequence<R> FiniteSequence<T>::base_change(const std::function<R(T)> &phi)
 
 template<typename R=float>
 class Matrix {
-	vector<vector<R> > coefs;
+	vector<R> coefs;
 	int rows, cols;
 
 public:
 	Matrix(int rows, int cols);
 
 	explicit Matrix(vector<vector<R> > c);
-	explicit Matrix(vector<Vector<R> > c);
+	explicit Matrix(vector<R> c, int rows, int cols);
+	explicit Matrix(vector<Vector<R>> c);
 	explicit Matrix(int rows, int cols, BIHOM(int, int, R) c);
 	explicit Matrix(int n = 3, R diag = R(0));
 	explicit Matrix(Vector<R> v);
 	Matrix(R a, R b, R c, R d);
 	Matrix(R a, R b, R c, R d, R e, R f, R g, R h, R i);
 
-	explicit Matrix(mat2 m)
-	: Matrix(R(m[0][0]), R(m[0][1]), R(m[1][0]), R(m[1][1])) {
-		rows = 2;
-		cols = 2;
-	}
+	explicit Matrix(mat2 m) : Matrix(R(m[0][0]), R(m[0][1]), R(m[1][0]), R(m[1][1])) {}
+	explicit Matrix(mat3 m) : Matrix(R(m[0][0]), R(m[0][1]), R(m[0][2]), R(m[1][0]), R(m[1][1]), R(m[1][2]), R(m[2][0]), R(m[2][1]), R(m[2][2])) {}
+	explicit Matrix(mat4 m);
 
-	explicit Matrix(mat3 m)
-	: Matrix(vector<vector<R> >{{R(m[0][0]), R(m[0][1]), R(m[0][2])}, {R(m[1][0]), R(m[1][1]), R(m[1][2])}, {R(m[2][0]), R(m[2][1]), R(m[2][2])}}) {
-		rows = 3;
-		cols = 3;
-	}
-
-	explicit Matrix(mat4 m)
-	: Matrix(vector<vector<R> >{{R(m[0][0]), R(m[0][1]), R(m[0][2]), R(m[0][3])}, {R(m[1][0]), R(m[1][1]), R(m[1][2]), R(m[1][3])}, {R(m[2][0]), R(m[2][1]), R(m[2][2]), R(m[2][3])}, {R(m[3][0]), R(m[3][1]), R(m[3][2]), R(m[3][3])}}) {
-		rows = 4;
-		cols = 4;
-	}
-
-	ivec2 size() const { return ivec2(rows, cols); }
-	Matrix operator*(const R &c) const { return Matrix(rows, cols, [co=coefs, c](int i, int j){ return co[i][j] * c; }); }
-	Matrix operator/(const R &c) const { return Matrix(rows, cols, [this, c](int i, int j){ return coefs[i][j] / c; }); }
+	ivec2 size() const;
+	Matrix operator*(const R &c) const;
+	Matrix operator/(const R &c) const;
 	Matrix operator+(const Matrix &M) const;
 	Matrix operator*(const Matrix &M) const;
-	Matrix pointwise_product(const Matrix &M) const { return Matrix(rows, cols, [this, M](int i, int j){ return coefs[i][j] * M[i][j]; }); }
-	Matrix pointwise_division(const Matrix &M) const { return Matrix(rows, cols, [this, M](int i, int j){ return coefs[i][j] / M[i][j]; }); }
-	Matrix operator-(const Matrix &M) const { return *this + M * -1; }
-	Matrix transpose() const { return Matrix(cols, rows, [this](int i, int j){ return coefs[j][i]; }); }
-	Matrix operator-() const { return *this * -1; }
+	Matrix pointwise_product(const Matrix &M) const;
+	Matrix pointwise_division(const Matrix &M) const;
+	Matrix operator-(const Matrix &M) const;
+	Matrix transpose() const;
+	Matrix operator-() const;
 
-	Matrix operator~() const {
-		if (rows != cols) throw std::format_error("Matrix must be square");
-		if (rows == 1) return Matrix(1, 1, [this](int i, int j){ return 1.f / coefs[0][0]; });
-		if (rows == 2) return Matrix(coefs[1][1], -coefs[0][1], -coefs[1][0], coefs[0][0]) / det();
-		return adjugate() / det();
-	}
+	Matrix operator~() const;
 
-	bool operator==(const Matrix &M) const { return coefs == M.coefs; }
-	bool operator!=(const Matrix &M) const { return !(*this == M); }
-	bool square() const { return rows == cols; }
-	bool symmetric() const { return square() and *this == transpose(); }
+	bool operator==(const Matrix &M) const;
+	bool operator!=(const Matrix &M) const;
+	bool square() const;
+	bool symmetric() const;
 
 	R det() const;
 	R minor(int i, int j) const;
@@ -680,25 +661,17 @@ public:
 	Matrix inv() const;
 	Matrix pow(int p) const;
 
-	float normL_inf() const {
-		float res = 0;
-		for (int i = 0; i < rows; i++) res = std::max(res, abs(coefs[i][0]));
-		return res;
-	}
+	float normL_inf() const;
 
-	bool nearly_equal(const Matrix &M) const {
-		return abs(normL_inf() - M.normL_inf()) < 1e-6;;
-	}
+	bool nearly_equal(const Matrix &M) const;
 
 	explicit operator string() const { return std::format("({})", coefs); }
-	R at(int i, int j) const { return coefs[i][j]; }
 	R operator[](const int i, const int j) const { return at(i, j); }
 
-	Vector<R> column(int j) const { return Vector<R>(rows, [this, j](int i){ return coefs[i][j]; }); }
-	Vector<R> row(int i) const { return Vector<R>(coefs[i]); }
-	Vector<R> operator[](const int col) const { return column(col); }
-	Vector<R> operator*(const Vector<R> &v) const { return Vector<R>([this, v](const int i){ return dot(row(i), v); }); }
-	FiniteSequence<R> operator*(const FiniteSequence<R> &v) const { return FiniteSequence<R>([this, v](int i){ return v.dot(row(i)); }); }
+	Vector<R> column(int j) const;
+	Vector<R> row(int i) const;
+	R at(int i, int j) const;
+	Vector<R> operator*(const Vector<R> &v) const;
 
 	R a() const;
 	R b() const;
@@ -1409,12 +1382,11 @@ Vector<T> &Vector<T>::operator=(Vector &&other) noexcept {
 
 template<typename T>
 ::Matrix<T>::Matrix(int rows, int cols, std::function<T(int, int)> c)
-: rows(rows),
-  cols(cols) {
-	coefs = vector<vector<T> >(rows, vector<T>(cols));
+: rows(rows), cols(cols), coefs()
+{
 	for (int i = 0; i < rows; i++)
 		for (int j = 0; j < cols; j++)
-			coefs[i][j] = c(i, j);
+			coefs.emplace_back(c(i, j));
 }
 
 template<typename R>
@@ -1425,17 +1397,11 @@ Matrix<R>::Matrix(Vector<R> v): Matrix(v.size(), 1, [v](int i, int j){ return v[
 
 template<typename R>
 Matrix<R>::Matrix(R a, R b, R c, R d)
-: Matrix(vector<vector<R> >{{a, b}, {c, d}}) {
-	rows = 2;
-	cols = 2;
-}
+: Matrix(vector<vector<R> >{{a, b}, {c, d}}) {}
 
 template<typename R>
 Matrix<R>::Matrix(R a, R b, R c, R d, R e, R f, R g, R h, R i)
-: Matrix(vector<vector<R> >{{a, b, c}, {d, e, f}, {g, h, i}}) {
-	rows = 3;
-	cols = 3;
-}
+: Matrix(vector<vector<R> >{{a, b, c}, {d, e, f}, {g, h, i}}) {}
 
 
 
@@ -1518,6 +1484,48 @@ vector<T> smartRange(vector<T> v, int a, int b, int step = 1) {
 
 
 
+template<typename R>
+Matrix<R> Matrix<R>::transpose() const {
+	vector<R> transposed_coefs = vector<R>(rows * cols);
+	for (int i = 0; i < rows; i++) {
+		for (int j = 0; j < cols; j++) {
+			transposed_coefs[j * rows + i] = coefs[i * cols + j];
+		}
+	}
+	return Matrix(transposed_coefs, cols, rows);
+}
+
+template<typename R>
+Matrix<R> Matrix<R>::operator-() const { return *this * -1; }
+
+template<typename R>
+Matrix<R> Matrix<R>::operator~() const {
+	if (rows != cols) throw std::format_error("Matrix must be square");
+	if (rows == 1) return Matrix(1, 1, [this](int i, int j){ return 1.f / coefs[0][0]; });
+	if (rows == 2) return Matrix(coefs[1][1], -coefs[0][1], -coefs[1][0], coefs[0][0]) / det();
+	return adjugate() / det();
+}
+
+template<typename R>
+bool Matrix<R>::operator==(const Matrix &M) const {
+	if (rows != M.rows || cols != M.cols)
+		return false;
+	for (int i = 0; i < coefs.size(); i++)
+		if (coefs[i] != M.coefs[i])
+			return false;
+	return true;
+
+}
+
+template<typename R>
+bool Matrix<R>::operator!=(const Matrix &M) const { return !(*this == M); }
+
+template<typename R>
+bool Matrix<R>::square() const { return rows == cols; }
+
+template<typename R>
+bool Matrix<R>::symmetric() const { return square() and *this == transpose(); }
+
 template<typename T>
 T Matrix<T>::det() const {
 	if (rows != cols) throw std::invalid_argument("Matrix must be square");
@@ -1541,6 +1549,26 @@ R Matrix<R>::minor(int i, int j) const {
 
 
 template<typename R>
+Matrix<R>::Matrix(mat4 m): Matrix(vector<vector<R> >{{R(m[0][0]), R(m[0][1]), R(m[0][2]), R(m[0][3])}, {R(m[1][0]), R(m[1][1]), R(m[1][2]), R(m[1][3])}, {R(m[2][0]), R(m[2][1]), R(m[2][2]), R(m[2][3])}, {R(m[3][0]), R(m[3][1]), R(m[3][2]), R(m[3][3])}}) {}
+
+template<typename R>
+ivec2 Matrix<R>::size() const { return ivec2(rows, cols); }
+
+template<typename R>
+Matrix<R> Matrix<R>::operator*(const R &c) const {
+	vector<R> new_coefs = coefs;
+	for (int i = 0; i < new_coefs.size(); i++)
+		new_coefs[i] = new_coefs[i] * c;
+	return Matrix(std::move(new_coefs), rows, cols);
+}
+template<typename R>
+Matrix<R> Matrix<R>::operator/(const R &c) const {
+	vector<R> new_coefs = coefs;
+	for (int i = 0; i < new_coefs.size(); i++)
+		new_coefs[i] = new_coefs[i] / c;
+	return Matrix(std::move(new_coefs), rows, cols);
+}
+template<typename R>
 Matrix<R> Matrix<R>::operator+(const Matrix &M) const {
 	return Matrix(rows, cols, [this, M](int i, int j){
 		if (M.size() != size()) throw std::invalid_argument("Matrix dimensions must agree");
@@ -1559,9 +1587,18 @@ Matrix<R> Matrix<R>::operator*(const Matrix &M) const {
 	});
 }
 
+template<typename R>
+Matrix<R> Matrix<R>::pointwise_product(const Matrix &M) const { return Matrix(rows, cols, [this, M](int i, int j){ return at(i, j) * M.at(i, j); }); }
+
+template<typename R>
+Matrix<R> Matrix<R>::pointwise_division(const Matrix &M) const { return Matrix(rows, cols, [this, M](int i, int j){ return at(i, j) / M.at(i, j); }); }
+
+template<typename R>
+Matrix<R> Matrix<R>::operator-(const Matrix &M) const { return *this + M * -1; }
+
 template<typename T>
 Matrix<T>::Matrix(int rows, int cols)
-: coefs(vector<vector<T> >(rows, vector<T>(cols))),
+: coefs(vector<T>(rows * cols, T(0))),
   rows(rows),
   cols(cols) {}
 
@@ -1570,15 +1607,19 @@ template<typename T>
 Matrix<T>::Matrix(vector<vector<T> > c)
 : rows(c.size()),
   cols(c[0].size()),
-  coefs(c) {}
+  coefs(flatten<T>(c)) {}
+
+template<typename R>
+Matrix<R>::Matrix(vector<R> c, int rows, int cols): rows(rows), cols(cols), coefs(std::move(c)) {}
 
 template<typename T>
 Matrix<T>::Matrix(vector<Vector<T> > c)
 : rows(c.size()),
   cols(c[0].size()) {
-	coefs = vector<vector<T> >();
+	coefs = vector<T>();
 	for (int i = 0; i < rows; i++)
-		coefs.push_back(c[i].vec());
+		for (int j = 0; j < cols; j++)
+			coefs.push_back(c[i][j]);
 }
 
 
@@ -1605,6 +1646,57 @@ Matrix<R> Matrix<R>::pow(int p) const {
 	return p == 0 ? Matrix(rows, R(1)) : p == 1 ? *this : p % 2 == 0 ? pow(p / 2) * pow(p / 2) : *this * pow(p / 2) * pow(p / 2);
 }
 
+template<typename R>
+float Matrix<R>::normL_inf() const {
+	float res = 0;
+	for (int i = 0; i < rows; i++) res = std::max(res, abs(coefs[i][0]));
+	return res;
+}
+
+template<typename R>
+bool Matrix<R>::nearly_equal(const Matrix &M) const {
+	return abs(normL_inf() - M.normL_inf()) < 1e-6;;
+}
+
+
+template<typename R>
+Vector<R> Matrix<R>::column(int j) const {
+	vector<R> c = vector<R>();
+	for (int i = 0; i < rows; i++)
+		c.emplace_back(coefs[j + i * cols]);
+	return Vector<R>(c);
+}
+
+template<typename R>
+Vector<R> Matrix<R>::row(int i) const {
+	vector<R> c = vector<R>();
+	for (int j = 0; j < rows; j++)
+		c.emplace_back(coefs[i * cols + j]);
+	return Vector<R>(c);
+}
+
+template<typename R>
+R Matrix<R>::at(int i, int j) const {
+	if (i < 0) i = rows + i;
+	if (j < 0) j = cols + j;
+	if (i < 0 || i >= rows || j < 0 || j >= cols)
+		throw IndexOutOfBounds(ivec2(i, j), ivec2(rows, cols));
+	return coefs[i * cols + j];
+}
+
+template<typename R>
+Vector<R> Matrix<R>::operator*(const Vector<R> &v) const {
+	if (v.size() != cols)
+		throw ValueError("Matrix sizes do not match for multiplication");
+	Vector<R> res = Vector(rows);
+	for (int i = 0; i < rows; i++) {
+		R sum = R(0);
+		for (int j = 0; j < cols; j++)
+			sum += at(i, j) * v[j];
+		res.set(i, sum);
+	}
+	return res;
+}
 
 template<typename R>
 R Matrix<R>::a() const {

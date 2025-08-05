@@ -52,10 +52,10 @@ int main() {
 	surfmesh->paintMeanCurvature();
 	helimesh->paintMeanCurvature();
 
-	surfmesh->deformPerVertex([&surf](BufferedVertex &v) {
-		v.setColor(surf.meanCurvature(v.getSurfaceParams()), 3); });
-	helimesh->deformPerVertex([&heli](BufferedVertex &v) {
-		v.setColor(heli.meanCurvature(-v.getSurfaceParams()), 3); });
+	// surfmesh->deformPerVertex([&surf](BufferedVertex &v) {
+	// 	v.setColor(surf.meanCurvature(v.getSurfaceParams()), 3); });
+	// helimesh->deformPerVertex([&heli](BufferedVertex &v) {
+	// 	v.setColor(heli.meanCurvature(-v.getSurfaceParams()), 3); });
 
 
 	auto shader = ShaderProgram( R"(C:\Users\PC\Desktop\ogl-master\src\shaders2\shadingDemo.vert)",

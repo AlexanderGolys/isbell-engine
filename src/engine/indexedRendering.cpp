@@ -3,6 +3,7 @@
 #include <stdio.h>
 #include <vector>
 #include<fstream>
+#include <ranges>
 #include<sstream>
 
 #include "src/utils/randomUtils.hpp"
@@ -143,6 +144,22 @@ BufferedVertex::BufferedVertex(BufferManager &bufferBoss, const Vertex &v) : buf
     index = this->bufferBoss.addFullVertexData(v);
 }
 
+BufferedVertex & BufferedVertex::operator=(const BufferedVertex &other) {
+	if (this == &other)
+		return *this;
+	bufferBoss = other.bufferBoss;
+	index = other.index;
+	return *this;
+}
+
+BufferedVertex & BufferedVertex::operator=(BufferedVertex &&other) noexcept {
+	if (this == &other)
+		return *this;
+	bufferBoss = other.bufferBoss;
+	index = other.index;
+	return *this;
+}
+
 int BufferedVertex::getIndex() const {
 	return index;
 }
@@ -180,10 +197,6 @@ Vertex BufferedVertex::getVertex() const {
 	if (bufferBoss.isActive(EXTRA4)) extraData[bufferBoss.getExtraBufferName(4)] = getExtra(4);
 
 	return Vertex(getPosition(), getUV(), getNormal(), getColor(), extraData);
-}
-
-vec2 BufferedVertex::getSurfaceParams() const {
-	return vec2(getColor());
 }
 
 void BufferedVertex::setPosition(vec3 value) {
@@ -250,6 +263,22 @@ IndexedTriangle::IndexedTriangle(IndexedTriangle &&other) noexcept: index(other.
 
 IndexedTriangle::IndexedTriangle(BufferManager &bufferBoss, ivec3 index, int shift)
 : index(bufferBoss.addTriangleVertexIndices(index, shift)), bufferBoss(bufferBoss) {}
+
+IndexedTriangle & IndexedTriangle::operator=(const IndexedTriangle &other) {
+	if (this == &other)
+		return *this;
+	index = other.index;
+	bufferBoss = other.bufferBoss;
+	return *this;
+}
+
+IndexedTriangle & IndexedTriangle::operator=(IndexedTriangle &&other) noexcept {
+	if (this == &other)
+		return *this;
+	index = other.index;
+	bufferBoss = other.bufferBoss;
+	return *this;
+}
 
 ivec3 IndexedTriangle::getVertexIndices() const {
 	return bufferBoss.getFaceIndices(index);
@@ -339,21 +368,26 @@ void IndexedTriangle::changeOrientation() { bufferBoss.setFaceIndices(index, ive
 
 IndexedMesh::IndexedMesh(IndexedMesh &&other) noexcept: boss(std::move(other.boss)),
 														vertices(std::move(other.vertices)),
-														triangles(std::move(other.triangles))
-														// ,material(std::move(other.material)
+														triangles(std::move(other.triangles)),
+														polygroupIndexOrder(std::move(other.polygroupIndexOrder))
 														{}
 
 IndexedMesh & IndexedMesh::operator=(IndexedMesh &&other) noexcept {
     if (this == &other)
         return *this;
     boss = std::move(other.boss);
+	polygroupIndexOrder = std::move(other.polygroupIndexOrder);
     vertices = std::move(other.vertices);
     triangles = std::move(other.triangles);
-    // material = std::move(other.material);
     return *this;
 }
 
-IndexedMesh::IndexedMesh() {boss = make_unique<BufferManager>();}
+IndexedMesh::IndexedMesh() {
+	boss = make_unique<BufferManager>();
+	vertices = vector<vector<BufferedVertex>>();
+	triangles = vector<vector<IndexedTriangle>>();
+	polygroupIndexOrder = unordered_map<PolyGroupID, int>();
+}
 
 IndexedMesh::IndexedMesh(const vector<Vertex> &hardVertices, const vector<ivec3> &faceIndices,const PolyGroupID &id) : IndexedMesh() {
     addNewPolygroup(hardVertices, faceIndices, id);
@@ -365,8 +399,12 @@ IndexedMesh::IndexedMesh(const char *filename, const PolyGroupID &id) : IndexedM
 
 void IndexedMesh::addNewPolygroup(const char *filename, const PolyGroupID &id) {
 	int shift = boss->bufferLength(POSITION);
-    vertices[id] = vector<BufferedVertex>();
-    triangles[id] = vector<IndexedTriangle>();
+	int index = polygroupIndexOrder.size();
+	if (polygroupIndexOrder.contains(id))
+		throw IllegalVariantError("Polygroup ID already exists in mesh. ");
+	polygroupIndexOrder[id] = index;
+    vertices.emplace_back(vector<BufferedVertex>());
+    triangles.emplace_back(vector<IndexedTriangle>());
     vector<vec3> norms = {};
     vector<vec2> uvs = {};
     vector<vec3> pos = {};
@@ -399,7 +437,7 @@ void IndexedMesh::addNewPolygroup(const char *filename, const PolyGroupID &id) {
         	s >> vert.y;
         	s >> vert.z;
             pos.emplace_back(vert);
-        	vertices[id].emplace_back(*boss, Vertex(vert, UV_DEFAULT, NORM_DEFAULT));
+        	vertices[index].emplace_back(*boss, Vertex(vert, UV_DEFAULT, NORM_DEFAULT));
         }
         if (line.substr(0,3) == "vt ")
         {
@@ -436,20 +474,20 @@ void IndexedMesh::addNewPolygroup(const char *filename, const PolyGroupID &id) {
             for (int i = 0; i < 3; i++)
 				if (!vertexIndicesFilled.contains(vertexIndex[i])) {
 					face[i] = vertexIndex[i];
-					vertices[id][vertexIndex[i]].setNormal(normsVec[i]);
-					vertices[id][vertexIndex[i]].setUV(uvsVec[i]);
+					vertices[index][vertexIndex[i]].setNormal(normsVec[i]);
+					vertices[index][vertexIndex[i]].setUV(uvsVec[i]);
 					vertexIndicesFilled.insert(vertexIndex[i]);
 				}
 
-				else if (vertices[id][vertexIndex[i]].getNormal() == normsVec[i] && vertices[id][vertexIndex[i]].getUV() == uvsVec[i])
+				else if (vertices[index][vertexIndex[i]].getNormal() == normsVec[i] && vertices[index][vertexIndex[i]].getUV() == uvsVec[i])
 					face[i] = vertexIndex[i];
 
 				else {
-					vertices[id].emplace_back(*boss, Vertex(pos[vertexIndex[i]], uvsVec[i], normsVec[i]));
-					face[i] = vertices[id].back().getIndex();
+					vertices[index].emplace_back(*boss, Vertex(pos[vertexIndex[i]], uvsVec[i], normsVec[i]));
+					face[i] = vertices[index].back().getIndex();
 				}
 
-			triangles[id].emplace_back(*boss, face, shift);
+			triangles[index].emplace_back(*boss, face, shift);
         }
     }
 }
@@ -461,7 +499,7 @@ IndexedMesh & IndexedMesh::operator=(const IndexedMesh &other) {
     boss = std::make_unique<BufferManager>(*other.boss);
     vertices = other.vertices;
     triangles = other.triangles;
-    // material = other.material;
+	polygroupIndexOrder = other.polygroupIndexOrder;
     return *this;
 }
 
@@ -473,26 +511,28 @@ IndexedMesh::IndexedMesh(const SmoothParametricSurface &surf, int tRes, int uRes
 
 void IndexedMesh::addNewPolygroup(const vector<Vertex> &hardVertices, const vector<ivec3> &faceIndices, const PolyGroupID &id) {
 
-    if (vertices.contains(id) || triangles.contains(id))
+    if (polygroupIndexOrder.contains(id))
         throw IllegalVariantError("Polygroup ID already exists in mesh. ");
 
 	int shift = boss->bufferLength(POSITION);
-    vertices[id] = vector<BufferedVertex>();
-    triangles[id] = vector<IndexedTriangle>();
-    vertices[id].reserve(hardVertices.size());
-    triangles[id].reserve(faceIndices.size());
+	int index = polygroupIndexOrder.size();
+	polygroupIndexOrder[id] = index;
+    vertices.emplace_back(vector<BufferedVertex>());
+    triangles.emplace_back(vector<IndexedTriangle>());
+    vertices[index].reserve(hardVertices.size());
+    triangles[index].reserve(faceIndices.size());
 
     for (const Vertex &v: hardVertices)
-		vertices[id].emplace_back(*boss, v);
+		vertices[index].emplace_back(*boss, v);
 
 	for (const ivec3 &ind: faceIndices)
-        triangles[id].emplace_back(*boss, ind, shift);
+        triangles[index].emplace_back(*boss, ind, shift);
 }
 
 IndexedMesh::IndexedMesh(const IndexedMesh &other): boss(&*other.boss),
 													vertices(other.vertices),
+													polygroupIndexOrder(other.polygroupIndexOrder),
 													triangles(other.triangles) {}
-													// material(other.material) {}
 
 
 void IndexedMesh::addUniformSurface(const SmoothParametricSurface &surf, int tRes, int uRes, const PolyGroupID &id) {
@@ -642,10 +682,11 @@ size_t IndexedMesh::getBufferSize(CommonBufferType type) const {
 
 
 vector<PolyGroupID> IndexedMesh::getPolyGroupIDs() const {
-    vector<PolyGroupID> ids = {};
-    for (const pair<PolyGroupID, vector<BufferedVertex>> &p: vertices)
-        ids.push_back(p.first);
-    return ids;
+    	vector<PolyGroupID> ids;
+	ids.reserve(polygroupIndexOrder.size());
+	for (const auto &key: polygroupIndexOrder | std::views::keys)
+		ids.emplace_back(key);
+	return ids;
 }
 
 BufferManager& IndexedMesh::getBufferBoss() const {
@@ -661,28 +702,28 @@ bool IndexedMesh::isActive(CommonBufferType type) const {
 // }
 
 BufferedVertex & IndexedMesh::getAnyVertexFromPolyGroup(const PolyGroupID &id) {
-	return vertices.at(id).front();
+	return vertices.at(polygroupIndexOrder[id]).front();
 }
 
 void IndexedMesh::deformPerVertex(const PolyGroupID &id, const HOM(BufferedVertex&, void) &deformation) {
-	for (auto &v : vertices.at(id))
+	for (auto &v : vertices.at(polygroupIndexOrder[id]))
 		deformation(v);
 }
 
 void IndexedMesh::deformPerVertex(const HOM(BufferedVertex&, void) &deformation) {
 	for (auto id: getPolyGroupIDs())
-		for (auto &v : vertices.at(id))
+		for (auto &v : vertices.at(polygroupIndexOrder[id]))
 			deformation(v);
 }
 
 void IndexedMesh::deformPerVertex(const PolyGroupID &id, const BIHOM(int, BufferedVertex&, void) &deformation) {
-	for (int i=0; i<vertices.at(id).size(); i++)
-		deformation(i, vertices.at(id)[i]);
+	for (int i=0; i<vertices.at(polygroupIndexOrder[id]).size(); i++)
+		deformation(i, vertices.at(polygroupIndexOrder[id])[i]);
 }
 
 void IndexedMesh::deformPerId(const BIHOM(BufferedVertex&, PolyGroupID, void) &deformation) {
 	for (auto id: getPolyGroupIDs())
-		for (auto &v : vertices.at(id))
+		for (auto &v : vertices.at(polygroupIndexOrder[id]))
 			deformation(v, id);
 }
 
@@ -711,12 +752,12 @@ void IndexedMesh::adjustToNewSurface(const SmoothParametricSurface &surf) {
 }
 
 void IndexedMesh::moveAlongVectorField(const PolyGroupID &id, const VectorField &X, float delta) {
-    for (BufferedVertex &v: vertices.at(id))
+    for (BufferedVertex &v: vertices.at(polygroupIndexOrder[id]))
         v.setPosition(X.moveAlong(v.getPosition(), delta));
 }
 
 void IndexedMesh::deformWithAmbientMap(const PolyGroupID &id, const SpaceEndomorphism &f) {
-    for (BufferedVertex &v: vertices.at(id))
+    for (BufferedVertex &v: vertices.at(polygroupIndexOrder[id]))
         v.applyFunction(f);
 }
 
@@ -753,27 +794,27 @@ void IndexedMesh::scale(float s) {
 
 vector<Vertex> IndexedMesh::getVertices(const PolyGroupID &id) const {
     vector<Vertex> verts = {};
-    verts.reserve(vertices.at(id).size());
-    for (const BufferedVertex &v: vertices.at(id))
+    verts.reserve(vertices.at(polygroupIndexOrder.at(id)).size());
+    for (const BufferedVertex &v: vertices.at(polygroupIndexOrder.at(id)))
         verts.push_back(v.getVertex());
     return verts;
 }
 
 vector<BufferedVertex> IndexedMesh::getBufferedVertices(const PolyGroupID &id) const {
-	return vertices.at(id);
+	return vertices.at(polygroupIndexOrder.at(id));
 }
 
 
 vector<ivec3> IndexedMesh::getIndices(const PolyGroupID &id) const {
     vector<ivec3> inds = {};
-    inds.reserve(triangles.at(id).size());
-    for (const IndexedTriangle &t: triangles.at(id))
+    inds.reserve(triangles.at(polygroupIndexOrder.at(id)).size());
+    for (const IndexedTriangle &t: triangles.at(polygroupIndexOrder.at(id)))
         inds.push_back(t.getVertexIndices());
     return inds;
 }
 
 vector<IndexedTriangle> IndexedMesh::getTriangles(const PolyGroupID &id) const {
-	return triangles.at(id);
+	return triangles.at(polygroupIndexOrder.at(id));
 }
 
 // vec4 IndexedMesh::getIntencities() const {
@@ -848,8 +889,8 @@ IndexedMesh IndexedMesh::subdivideEdgecentric(const PolyGroupID &id) const {
 }
 
 IndexedMesh IndexedMesh::wireframe(PolyGroupID id, PolyGroupID targetId, float width, float heightCenter, float heightSide) const {
-    vector<IndexedTriangle> trs = triangles.at(id);
-    vector<BufferedVertex> verts = vertices.at(id);
+    vector<IndexedTriangle> trs = triangles.at(polygroupIndexOrder.at(id));
+    vector<BufferedVertex> verts = vertices.at(polygroupIndexOrder.at(id));
     vector<Vertex> new_verts = getVertices(id);
     vector<ivec3> new_inds = {};
     for (const auto &v: verts) {
@@ -1170,7 +1211,7 @@ void BufferManager::reserveAdditionalSpace(int extraStorage) { reserveSpace(buff
 vec3 IndexedMesh::centerOfMass(PolyGroupID id) const {
 	vec3 sum        = vec3(0);
 	float totalArea = 0;
-	for (const IndexedTriangle &t: triangles.at(id)) {
+	for (const IndexedTriangle &t: triangles.at(polygroupIndexOrder.at(id))) {
 		sum += t.center()*t.area();
 		totalArea += t.area();
 	}
@@ -1181,7 +1222,7 @@ vec3 IndexedMesh::centerOfMass() const {
 	vec3 sum        = vec3(0);
 	float totalArea = 0;
 	for (const auto &id: getPolyGroupIDs())
-		for (const IndexedTriangle &t: triangles.at(id)) {
+		for (const IndexedTriangle &t: triangles.at(polygroupIndexOrder.at(id))) {
 			sum += t.center()*t.area();
 			totalArea += t.area();
 		}
@@ -1217,7 +1258,7 @@ Wireframe::Wireframe(const SmoothParametricSurface &surf, float width, int n, in
 
 void Wireframe::changeBaseSurface(const SmoothParametricSurface &newsurf) {
 	for (auto id: getPolyGroupIDs())
-		for (BufferedVertex &v: vertices.at(id)) {
+		for (BufferedVertex &v: vertices.at(polygroupIndexOrder.at(id))) {
 			vec2 tu     = getSurfaceParameters(v);
 			vec3 old_p0 = surf(tu);
 			vec3 new_p0 = newsurf(tu);
@@ -1744,7 +1785,7 @@ mat3 IndexedMesh::inertiaTensorCMAppBd(PolyGroupID id) const {
 
 vector<int> IndexedMesh::findVertexNeighbours(int i, const PolyGroupID &id) const {
 	std::set<int> neighbours = {};
-	for (const IndexedTriangle &t: triangles.at(id))
+	for (const IndexedTriangle &t: triangles.at(polygroupIndexOrder.at(id)))
 		if (contains(i, t.getVertexIndices())) {
 			neighbours.insert(setMinus(t.getVertexIndices(), i)[0]);
 			neighbours.insert(setMinus(t.getVertexIndices(), i)[1]);
@@ -1754,8 +1795,8 @@ vector<int> IndexedMesh::findVertexNeighbours(int i, const PolyGroupID &id) cons
 
 vector<int> IndexedMesh::findVertexParentTriangles(int i, const PolyGroupID &id) const {
 	std::set<int> parentTriangles = {};
-	for (int j = 0; j < triangles.at(id).size(); j++)
-		if (contains(i, triangles.at(id)[j].getVertexIndices()))
+	for (int j = 0; j < triangles.at(polygroupIndexOrder.at(id)).size(); j++)
+		if (contains(i, triangles.at(polygroupIndexOrder.at(id))[j].getVertexIndices()))
 			parentTriangles.insert(j);
 	return vector(parentTriangles.begin(), parentTriangles.end());
 }
@@ -1764,8 +1805,8 @@ void IndexedMesh::recalculateNormal(int i, const PolyGroupID &id) {
 	auto trs = findVertexParentTriangles(i, id);
 	vec3 n   = vec3(0);
 	for (int j: trs)
-		n += triangles.at(id)[j].faceNormal()*triangles.at(id)[j].area();
-	vertices.at(id)[i].setNormal(normalize(n));
+		n += triangles.at(polygroupIndexOrder.at(id))[j].faceNormal()*triangles.at(polygroupIndexOrder.at(id))[j].area();
+	vertices.at(polygroupIndexOrder.at(id))[i].setNormal(normalize(n));
 }
 
 void IndexedMesh::recalculateNormalsNearby(int i, const PolyGroupID &id) {
@@ -1774,7 +1815,7 @@ void IndexedMesh::recalculateNormalsNearby(int i, const PolyGroupID &id) {
 }
 
 void IndexedMesh::recalculateNormals(const PolyGroupID &id) {
-	for (int i = 0; i < vertices.at(id).size(); i++)
+	for (int i = 0; i < vertices.at(polygroupIndexOrder.at(id)).size(); i++)
 		recalculateNormal(i, id);
 }
 
@@ -1784,7 +1825,7 @@ void IndexedMesh::recalculateNormals() {
 }
 
 void IndexedMesh::orientFaces(const PolyGroupID &id) {
-	for (auto &t: triangles.at(id))
+	for (auto &t: triangles.at(polygroupIndexOrder.at(id)))
 		if (dot(t.faceNormal(), t.getVertex(0).getNormal()) < 0)
 			t.changeOrientation();
 }
@@ -1797,9 +1838,9 @@ void IndexedMesh::orientFaces() {
 vector<int> IndexedMesh::findNeighboursSorted(int i, const PolyGroupID &id) const {
 	vector<int> neighbours = findVertexNeighbours(i, id);
 	std::map<int, float> angles = {};
-	auto t = orthogonalComplementBasis(vertices.at(id)[i].getNormal());
+	auto t = orthogonalComplementBasis(vertices.at(polygroupIndexOrder.at(id))[i].getNormal());
 	for (int j = 0; j < neighbours.size(); j++)
-		angles[i] = polarAngle(vertices.at(id)[neighbours[j]].getPosition() - vertices.at(id)[i].getPosition(), vertices.at(id)[i].getNormal());
+		angles[i] = polarAngle(vertices.at(polygroupIndexOrder.at(id))[neighbours[j]].getPosition() - vertices.at(polygroupIndexOrder.at(id))[i].getPosition(), vertices.at(polygroupIndexOrder.at(id))[i].getNormal());
 	std::ranges::sort(neighbours, [&angles](int a, int b) { return angles[a] < angles[b]; });
 	return neighbours;
 }
@@ -1810,7 +1851,7 @@ bool IndexedMesh::checkIfHasCompleteNeighbourhood(int i, const PolyGroupID &id) 
 	for (int p: neighbours) {
 		int found = 0;
 		for (int t: trs)
-			if (triangles.at(id)[t].containsEdge(i, p))
+			if (triangles.at(polygroupIndexOrder.at(id))[t].containsEdge(i, p))
 				found++;
 		if (found < 2)
 			return false;
@@ -1823,11 +1864,11 @@ float IndexedMesh::meanCurvature(int i, const PolyGroupID &id) const {
 		return 0;
 	float sum = 0;
 	auto nbhd = findNeighboursSorted(i, id);
-	vec3 p = vertices.at(id)[i].getPosition();
+	vec3 p = vertices.at(polygroupIndexOrder.at(id))[i].getPosition();
 	for (int j=0; j<nbhd.size(); j++) {
-		vec3 prev = vertices.at(id)[nbhd[(j-1+nbhd.size())%nbhd.size()]].getPosition();
-		vec3 next = vertices.at(id)[nbhd[(j+1)%nbhd.size()]].getPosition();
-		vec3 current = vertices.at(id)[nbhd[j]].getPosition();
+		vec3 prev = vertices.at(polygroupIndexOrder.at(id))[nbhd[(j-1+nbhd.size())%nbhd.size()]].getPosition();
+		vec3 next = vertices.at(polygroupIndexOrder.at(id))[nbhd[(j+1)%nbhd.size()]].getPosition();
+		vec3 current = vertices.at(polygroupIndexOrder.at(id))[nbhd[j]].getPosition();
 		float angle1 = abs(angle(prev-p, prev-current));
 		float angle2 = abs(angle(next-p, next-current));
 		sum += 0.5f*(cot(angle1) + cot(angle2))*length(current-p);
@@ -1836,17 +1877,17 @@ float IndexedMesh::meanCurvature(int i, const PolyGroupID &id) const {
 }
 
 vec3 IndexedMesh::meanCurvatureVector(int i, const PolyGroupID &id) const {
-	return meanCurvature(i, id)*vertices.at(id)[i].getNormal();
+	return meanCurvature(i, id)*vertices.at(polygroupIndexOrder.at(id))[i].getNormal();
 }
 
 float IndexedMesh::GaussCurvature(int i, const PolyGroupID &id) const {
 	auto nbhd = findNeighboursSorted(i, id);
 	float sum = 0;
-	vec3 p = vertices.at(id)[i].getPosition();
+	vec3 p = vertices.at(polygroupIndexOrder.at(id))[i].getPosition();
 	for (int j=0; j<nbhd.size(); j++) {
-		vec3 prev = vertices.at(id)[nbhd[(j-1+nbhd.size())%nbhd.size()]].getPosition();
-		vec3 next = vertices.at(id)[nbhd[(j+1)%nbhd.size()]].getPosition();
-		vec3 current = vertices.at(id)[nbhd[j]].getPosition();
+		vec3 prev = vertices.at(polygroupIndexOrder.at(id))[nbhd[(j-1+nbhd.size())%nbhd.size()]].getPosition();
+		vec3 next = vertices.at(polygroupIndexOrder.at(id))[nbhd[(j+1)%nbhd.size()]].getPosition();
+		vec3 current = vertices.at(polygroupIndexOrder.at(id))[nbhd[j]].getPosition();
 		sum += angle(prev-current, next-current)/length(prev-next)*length(p-current)/2;
 	}
 	return sum;

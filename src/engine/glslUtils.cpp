@@ -762,7 +762,6 @@ RenderingStep::RenderingStep(const shared_ptr<ShaderProgram> &shader)
 {
 	this->shader = shader;
 	this->attributes = vector<shared_ptr<Attribute>>();
-	this->model = std::make_shared<Model3D>();
 	this->uniforms = std::map<string, GLSLType>();
 	this->uniformSetters = std::map<string, shared_ptr<std::function<void(float, shared_ptr<ShaderProgram>)>>>();
 	this->customStep = [](float t) {};
@@ -772,7 +771,6 @@ RenderingStep::RenderingStep(const RenderingStep& other)
 {
 	this->shader = other.shader;
 	this->attributes = other.attributes;
-	this->model = other.model;
 	this->uniforms = other.uniforms;
 	this->uniformSetters = other.uniformSetters;
 	this->customStep = other.customStep;
@@ -783,23 +781,9 @@ RenderingStep::~RenderingStep()
 	for (auto attribute : attributes)
 		attribute.reset();
 	shader.reset();
-	model.reset();
-}
-
-void RenderingStep::setModel(const std::shared_ptr<Model3D> &model)
-{
-	this->model = model;
-}
-
-void RenderingStep::setSuperMesh(const std::shared_ptr<SuperMesh> &super) {
-	this->super = super;
-	this-> model = nullptr;
-    this-> weak_super = nullptr;
 }
 
 void RenderingStep::setWeakSuperMesh(const std::shared_ptr<IndexedMesh> &super) {
-    this->super = nullptr;
-    this-> model = nullptr;
     this-> weak_super = super;
 }
 
@@ -905,15 +889,10 @@ void RenderingStep::loadMeshAttributes() {
     	return;
     }
 
-	if (superLoaded())
-	{
-		for (int i = 0; i < 8; i++)
-			attributes[i]->load(super->bufferLocations[i], super->bufferSizes[i]);
-		return;
-	}
 
-	for (int i = 0; i < 4; i++)
-		attributes[i]->load(model->mesh->bufferLocations[i], model->mesh->bufferSizes[i]);
+
+	// for (int i = 0; i < 4; i++)
+	// 	attributes[i]->load(model->mesh->bufferLocations[i], model->mesh->bufferSizes[i]);
 }
 
 void RenderingStep::initWeakMeshAttributes() {
@@ -960,6 +939,8 @@ void RenderingStep::addConstVec4(const string& uniformName, vec4 value)
 	addUniform(uniformName, VEC4,  std::make_shared<std::function<void(float, shared_ptr<ShaderProgram>)>>(uniformSetter));
 }
 
+void RenderingStep::addConstColor(const string &name, vec4 value) { addConstVec4(name, value); }
+
 void RenderingStep::setUniforms(float t)
 {
 	for (const auto &key: uniforms | std::views::keys)
@@ -973,16 +954,12 @@ void RenderingStep::addCameraUniforms(const std::shared_ptr<Camera>& camera)
 {
 	std::function<void(float, shared_ptr<ShaderProgram>)> MVPsetter;
 
-	if (superLoaded() || weakSuperLoaded())
+	if (weakSuperLoaded())
 		MVPsetter = [camera, this](float t, const shared_ptr<ShaderProgram> &shader) {
 			mat4 mvp = camera->mvp(t, mat4(mat3(1)));
 			shader->setUniform("mvp", mvp);
 		};
-	else
-		MVPsetter = [camera, this](float t, const shared_ptr<ShaderProgram> &shader) {
-			mat4 mvp = camera->mvp(t, model->transform);
-			shader->setUniform("mvp", mvp);
-		};
+
 	auto positionSetter = [camera, this](float t, const shared_ptr<ShaderProgram> &shader) {
 		vec3 camPos = camera->position(t);
 		shader->setUniform("camPosition", camPos);
@@ -1010,52 +987,17 @@ void RenderingStep::addLightsUniforms(const std::vector<Light> &lights)
 
 
 
-void RenderingStep::addTexturedMaterialUniforms() {
-    if (!weakSuperLoaded())
-        throw std::invalid_argument("Material uniform can only be added for super mesh");
-    vec4 intenc = weak_super->getMaterial().compressIntencities();
-    auto materialSetter = [intenc](float t, const shared_ptr<ShaderProgram> &s) { s->setUniform("intencities", intenc); };
-    addUniform("intencities", VEC4, std::make_shared<std::function<void(float, shared_ptr<ShaderProgram>)>>(materialSetter));
-
-    auto textureSetter = [m=weak_super->getMaterial().texture_ambient](float t, const shared_ptr<ShaderProgram> &s) {
-    	m->bind();
-        s->setTextureSampler(m.get(), 0);
-    };
-    addUniform("texture_ambient", SAMPLER2D, std::make_shared<std::function<void(float, shared_ptr<ShaderProgram>)>>(textureSetter));
-
-	auto textureSetter2 = [m=weak_super->getMaterial().texture_diffuse](float t, const shared_ptr<ShaderProgram> &s) {
-		m->bind();
-		s->setTextureSampler(m.get(), 1);
-	};
-	addUniform("texture_diffuse", SAMPLER2D, std::make_shared<std::function<void(float, shared_ptr<ShaderProgram>)>>(textureSetter2));
-
-	auto textureSetter3 = [m=weak_super->getMaterial().texture_specular](float t, const shared_ptr<ShaderProgram> &s) {
-		m->bind();
-		s->setTextureSampler(m.get(), 2);
-	};
-	addUniform("texture_specular", SAMPLER2D, std::make_shared<std::function<void(float, shared_ptr<ShaderProgram>)>>(textureSetter3));
-}
-
 void RenderingStep::init(const shared_ptr<Camera> &cam, const std::vector<Light> &lights) {
     if (weakSuperLoaded()) {
         shader->use();
         initElementBuffer();
         initWeakMeshAttributes();
-        initTextures();
-        addTexturedMaterialUniforms();
-    	addCameraUniforms(cam);
+		addCameraUniforms(cam);
     	addLightsUniforms(lights);
 
         loadMeshAttributes();
         loadElementBuffer();
     }
-}
-void RenderingStep::initTextures() { weak_super->initGlobalTextures(); }
-
-void RenderingStep::bindTextures() {
-    weak_super->getMaterial().texture_ambient->bind();
-    weak_super->getMaterial().texture_diffuse->bind();
-    weak_super->getMaterial().texture_specular->bind();
 }
 
 void RenderingStep::addUniforms(const std::map<string, GLSLType> &uniforms, std::map<string, shared_ptr<std::function<void(float, shared_ptr<ShaderProgram>)>>> setters)
@@ -1069,9 +1011,11 @@ void RenderingStep::addCustomAction(const std::function<void(float)> &action)
 	this->customStep = action;
 }
 
+bool RenderingStep::weakSuperLoaded() const { return weak_super != nullptr; }
+
 
 void RenderingStep::weakMeshRenderStep(float t) {
-    bindTextures();
+    // bindTextures();
     loadMeshAttributes();
     customStep(t);
     setUniforms(t);
@@ -1082,33 +1026,14 @@ void RenderingStep::weakMeshRenderStep(float t) {
     disableAttributes();
 }
 
-void RenderingStep::superMeshRenderStep(float t) {
-
-    loadMeshAttributes();
-    enableAttributes();
-    customStep(t);
-    setUniforms(t);
-    glDrawArrays(GL_TRIANGLES, 0, super->bufferSizes[0]*3);
-    disableAttributes();
-}
-void RenderingStep::modelRenderStep(float t) {
-    loadMeshAttributes();
-    enableAttributes();
-    customStep(t);
-    setUniforms(t);
-    glDrawArrays(GL_TRIANGLES, 0, model->mesh->bufferSizes[0]*3);
-    disableAttributes();
-}
 
 void RenderingStep::renderStep(float t)
 {
     shader->use();
     if (weakSuperLoaded())
         weakMeshRenderStep(t);
-    else if (superLoaded())
-        superMeshRenderStep(t);
     else
-        modelRenderStep(t);
+        throw ValueError("Mesh not loaded correctly");
 }
 
 RenderSettings::RenderSettings(vec4 bgColor, bool alphaBlending, bool depthTest, bool timeUniform, float speed, int maxFPS, bool takeScreenshots, Resolution resolution, float screenshotFrequency, const string &windowTitle):
@@ -1301,16 +1226,8 @@ void Renderer::initRendering()
 	    if (renderingStep->weakSuperLoaded())
 	        renderingStep->init(camera, lights);
 
-		else if (renderingStep->superLoaded()) {
-			renderingStep->initStdAttributes();
-			renderingStep->initMaterialAttributes();
-			renderingStep->addCameraUniforms(camera);
-			renderingStep->addLightsUniforms(lights);
-		}
 		else {
-			renderingStep->initStdAttributes();
-			renderingStep->addCameraUniforms(camera);
-			renderingStep->addLightsUniforms(lights);
+			throw ValueError("Rendering step does not have a weak super mesh set");
 		}
 	}
 }

@@ -115,10 +115,10 @@ inline Biholomorphism Biholomorphism::operator/(Complex a) const {
 
 
 inline Biholomorphism Biholomorphism::mobius(Matrix<Complex> m) {
-	Complex a = m[0][0];
-	Complex b = m[0][1];
-	Complex c = m[1][0];
-	Complex d = m[1][1];
+	Complex a = m.at(0, 0);
+	Complex b = m.at(0, 1);
+	Complex c = m.at(1, 0);
+	Complex d = m.at(1, 1);
 	return Biholomorphism([a, b, c, d](Complex z) {return (a * z + b) / (c * z + d); },
 		[a, b, c, d](Complex z) {return (a * d - b * c) / ((c * z + d) * (c * z + d)); },
 		[a, b, c, d](Complex z) {return (d * z - b) / (-c * z + a); });

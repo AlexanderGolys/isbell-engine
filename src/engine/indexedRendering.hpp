@@ -81,10 +81,9 @@ class BufferManager {
 	void insertDefaultValueToSingleBuffer(CommonBufferType type);
 
 public:
+	// BufferManager() = default;
 	BufferManager(const BufferManager &other);
 	BufferManager &operator=(const BufferManager &other);
-
-
 	BufferManager(BufferManager &&other) noexcept;
 	BufferManager &operator=(BufferManager &&other) noexcept;
 	explicit BufferManager(const std::set<CommonBufferType> &activeBuffers = DEFAULT_ACTIVE_BUFFERS, const vector<string> &extra_names = DEFAULT_EXTRA_BUFS);
@@ -150,11 +149,16 @@ class BufferedVertex {
 	int index;
 
 public:
+	BufferedVertex();
 	BufferedVertex(BufferManager &bufferBoss, int index);
-
-	BufferedVertex(const BufferedVertex &other) = default;
+	BufferedVertex(const BufferedVertex &other) : bufferBoss(other.bufferBoss), index(other.index) {}
 	BufferedVertex(BufferedVertex &&other) noexcept;
 	BufferedVertex(BufferManager &bufferBoss, const Vertex &v);
+
+
+	BufferedVertex & operator=(const BufferedVertex &other);
+
+	BufferedVertex & operator=(BufferedVertex &&other) noexcept;
 
 	int getIndex() const;
 	vec3 getPosition() const;
@@ -165,7 +169,6 @@ public:
 	vec4 getExtra0() const;
 
 	Vertex getVertex() const;
-	vec2 getSurfaceParams() const;
 
 	void setPosition(vec3 value);
 	void setNormal(vec3 value);
@@ -198,6 +201,8 @@ public:
 	IndexedTriangle(const IndexedTriangle &other);
 	IndexedTriangle(IndexedTriangle &&other) noexcept;
 	IndexedTriangle(BufferManager &bufferBoss, ivec3 index, int shift);
+	IndexedTriangle & operator=(const IndexedTriangle &other);
+	IndexedTriangle & operator=(IndexedTriangle &&other) noexcept;
 
 	ivec3 getVertexIndices() const;
 	Vertex getVertex(int i) const;
@@ -220,12 +225,13 @@ public:
 
 class SmoothParametricSurface;
 
-class IndexedMesh {
+
+class IndexedMesh{
 protected:
 	unique_ptr<BufferManager> boss;
-	std::map<PolyGroupID, vector<BufferedVertex>> vertices = {};
-	std::map<PolyGroupID, vector<IndexedTriangle>> triangles = {};
-	// shared_ptr<MaterialPhong> material = nullptr;
+	unordered_map<PolyGroupID, int> polygroupIndexOrder = {};
+	vector<vector<BufferedVertex>> vertices = {};
+	vector<vector<IndexedTriangle>> triangles = {};
 
 public:
 	virtual ~IndexedMesh() = default;
@@ -244,6 +250,7 @@ public:
 	IndexedMesh(const IndexedMesh &other);
 
 	void addUniformSurface(const SmoothParametricSurface &surf, int tRes, int uRes, const PolyGroupID &id = randomID());
+
 	void merge(const IndexedMesh &other);
 	void mergeAndKeepID(const IndexedMesh &other);
 	void copyPolygroup(const IndexedMesh &other, const PolyGroupID &id, const PolyGroupID &newId);
@@ -267,8 +274,6 @@ public:
 	BufferManager &getBufferBoss() const;
 	bool isActive(CommonBufferType type) const;
 
-	// bool hasGlobalTextures() const;
-
 	BufferedVertex &getAnyVertexFromPolyGroup(const PolyGroupID &id);
 
 	void deformPerVertex(const PolyGroupID &id, const HOM(BufferedVertex&, void) &deformation);
@@ -285,7 +290,6 @@ public:
 	void deformWithAmbientMap(const PolyGroupID &id, const SpaceEndomorphism &f);
 	void deformWithAmbientMap(const SpaceEndomorphism &f);
 
-	// void initGlobalTextures() const;
 
 	void affineTransform(const mat3 &M, vec3 v, const PolyGroupID &id);
 	void affineTransform(const mat3 &M, vec3 v);
@@ -293,7 +297,6 @@ public:
 	void shift(vec3 v);
 	void scale(float s, const PolyGroupID &id);
 	void scale(float s);
-	// void addGlobalMaterial(const MaterialPhong &mat);
 
 	void flipNormals(const PolyGroupID &id);
 	void flipNormals();
@@ -308,8 +311,7 @@ public:
 	vector<BufferedVertex> getBufferedVertices(const PolyGroupID &id) const;
 	vector<ivec3> getIndices(const PolyGroupID &id) const;
 	vector<IndexedTriangle> getTriangles(const PolyGroupID &id) const;
-	// vec4 getIntencities() const;
-	// MaterialPhong getMaterial() const;
+
 
 	vector<int> findVertexNeighbours(int i, const PolyGroupID &id) const;
 	vector<int> findVertexParentTriangles(int i, const PolyGroupID &id) const;
@@ -347,7 +349,7 @@ std::function<void(float, float)> moveAlongCurve(const SmoothParametricCurve &cu
 template<typename T>
 T IndexedMesh::integrateOverTriangles(const std::function<T(const IndexedTriangle &)> &f, PolyGroupID id) const {
 	T sum = T(0);
-	for (const IndexedTriangle &t: triangles.at(id))
+	for (const IndexedTriangle &t: triangles.at(polygroupIndexOrder.at(id)))
 		sum += f(t) * t.area();
 	return sum;
 }

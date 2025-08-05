@@ -217,8 +217,6 @@ public:
 
 class RenderingStep {
     void weakMeshRenderStep(float t);
-    void superMeshRenderStep(float t);
-    void modelRenderStep(float t);
 
 public:
 	explicit RenderingStep(const shared_ptr<ShaderProgram> &shader);
@@ -227,18 +225,14 @@ public:
 	virtual ~RenderingStep();
 	shared_ptr<ShaderProgram> shader;
 	vector<shared_ptr<Attribute>> attributes;
-	shared_ptr<Model3D> model;
-	shared_ptr<SuperMesh> super = nullptr;
-    shared_ptr<IndexedMesh> weak_super = nullptr;
+	shared_ptr<IndexedMesh> weak_super = nullptr;
     GLuint elementBufferLoc = 0;
 
 	std::map<string, GLSLType> uniforms;
 	std::map<string, shared_ptr<std::function<void(float, shared_ptr<ShaderProgram>)>>> uniformSetters;
 	std::function<void(float)> customStep;
 
-	void setModel(const shared_ptr<Model3D> &model);
-	void setSuperMesh(const shared_ptr<SuperMesh> &super);
-    void setWeakSuperMesh(const shared_ptr<IndexedMesh> &super);
+	void setWeakSuperMesh(const shared_ptr<IndexedMesh> &super);
 
 	int findAttributeByName(const string &name);
 	void initStdAttributes();
@@ -254,23 +248,19 @@ public:
 	void disableAttributes();
 
 	void addCustomAction(const std::function<void(float)> &action);
-	bool superLoaded() const { return super != nullptr; }
-    bool weakSuperLoaded() const { return weak_super != nullptr; }
-    virtual void init(const shared_ptr<Camera> &cam, const vector<Light> &lights);
-    void initTextures();
-    void bindTextures();
+    bool weakSuperLoaded() const;
+	virtual void init(const shared_ptr<Camera> &cam, const vector<Light> &lights);
 
 	void addUniforms(const std::map<string, GLSLType> &uniforms, std::map<string, shared_ptr<std::function<void(float, shared_ptr<ShaderProgram>)>>> setters);
 	void addUniform(string uniformName, GLSLType uniformType, shared_ptr<std::function<void(float, shared_ptr<ShaderProgram>)>> setter);
 	void addConstFloats(const std::map<string, float>& uniforms);
 	void addConstVec4(const string& name, vec4 value);
-	void addConstColor(const string &name, vec4 value) { addConstVec4(name, value); }
+	void addConstColor(const string &name, vec4 value);
 	void setUniforms(float t);
 
     virtual void addCameraUniforms(const shared_ptr<Camera>& camera);
 	void addLightUniform(const Light &pointLight, int lightIndex = 1);
 	void addLightsUniforms(const vector<Light> &lights);
-    void addTexturedMaterialUniforms();
 
 	virtual void renderStep(float t);
 
