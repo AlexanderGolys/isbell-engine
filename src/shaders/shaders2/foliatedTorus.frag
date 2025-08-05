@@ -76,8 +76,8 @@ float PI = 3.14159265358979323846;
 void main()
 {
     float t0= v_uv.x;
-    float t1 = v_extra1.x;
-    if (t0+t1*1.5 > 2*time-5+v_extra1.y/2) discard;
+    float t1 = v_color.x;
+    if (t0+t1*1.5 > -2+2*time) discard;
 	vec3 normal = v_normal/length(v_normal);
     vec4 c = v_extra0;
 	color = saturate(colorFromPointlight(light1, camPosition, v_position, normal, v_uv, c)) +

@@ -9,8 +9,8 @@ RenderSettings settings = RenderSettings(
 		true, 			// alpha blending
 		true, 			// depth test
 		true, 			// time uniform
-		0.1f, 			// animation speed
-		30,				// max FPS
+		0.02f, 			// animation speed
+		75,				// max FPS
 		false,			// take screenshots
 		HD2K,			// resolution
 		-1.0f,			// screenshot frequency
@@ -29,10 +29,14 @@ PIPE_SETTINGS pipe_settings = PIPE_SETTINGS{
 
 };
 PIPE_SETTINGS pipe_settings_comp = PIPE_SETTINGS{
-	.radius = 0.04f,
-	.horRes = 600,
-	.radialRes = 13,
-	.extra_defaults = {}
+	.radius = 0.02f,
+	.horRes = 3033,
+	.radialRes = 8,
+	.extra_defaults = {},
+	.bounding = true,
+	.bound_min = vec3(-10, -10, -10),
+	.bound_max = vec3(10, 10, 10),
+	.discontinuities = {-sqrt(6.f), -1, 1, sqrt(6.f)},
 };
 
 PIPE_SETTINGS pipe_infaxis = PIPE_SETTINGS{
@@ -64,41 +68,49 @@ int main() {
 		return (t*t)/(t*t-1)*(t*t-4)/(t*t-6);
 	};
 
-	auto projcurve = SmoothParametricCurve([f=f](float t){
-		vec2 p = stereoProjectionInverse(f(t));
-		return vec3(t, p.x, p.y);
-	}, "p1", -5, 5, false, 0.01f);
+	auto projcurve = [&f](float x){
+		return SmoothParametricCurve(
+			[&f, x](float t){
+				auto xx = saturate(x);
+				vec2 p = stereoProjectionInverse(f(t))*xx + vec2(f(t), 0)*(1-xx);
+				return vec3(t, p.x, p.y);
+		}, "p1", -10, 10, false, 0.001f);
+	};
 
 
-	auto projsurf = SmoothParametricSurface([](float t, float u){
-		vec2 p = stereoProjectionInverse(u);
-		return vec3(t, p.x, p.y);
-	}, vec2(-5, 5), vec2(-40, 40), false, false, 0.01f);
+
+	auto projsurf = [](float x){
+		return SmoothParametricSurface([x](float t, float u){
+			auto xx = saturate(x);
+			vec2 p = stereoProjectionInverse(u)*xx + vec2(u, 0)*(1-xx);
+			return vec3(t, p.x, p.y);
+		}, vec2(-10, 10), vec2(-10, 10), false, false, 0.01f);
+	};
 
 
 	auto flatcurve = SmoothParametricCurve([f=f](float t){
 		return vec3(t, f(t), 0);
-	}, "p1", -5, 5, false, 0.01f);
+	}, "p1", -10, 10, false, 0.01f);
 
 
 	auto infline = SmoothParametricCurve([](float t){
 		return vec3(t, 0, 1);
-	}, "p1", -5, 5, false, 0.01f);
+	}, "p1", -10, 10, false, 0.01f);
 
 	auto zeroline = SmoothParametricCurve([](float t){
 		return vec3(t, 0, 0);
-	}, "p1", -5, 5, false, 0.01f);
+	}, "p1", -10, 10, false, 0.01f);
 
 
 	auto flatsurf = SmoothParametricSurface([](float t, float u){
 		return vec3(t, u, 0);
-	}, vec2(-5, 5), vec2(-10, 10), false, false, 0.01f);
+	}, vec2(-10, 10), vec2(-10, 10), false, false, 0.01f);
 
 
 	auto floor = make_shared<IndexedMesh>(flatsurf, 100, 300);
-	auto floor2 = make_shared<IndexedMesh>(projsurf, 100, 300);
+	auto floor_proj = make_shared<IndexedMesh>(projsurf(0), 100, 300);
 
-	auto proj = make_shared<IndexedMesh>(PipeCurveVertexShader(projcurve, pipe_settings_comp));
+	auto proj = make_shared<PipeCurveVertexShader>(projcurve(0), pipe_settings_comp);
 	auto flat = make_shared<IndexedMesh>(PipeCurveVertexShader(flatcurve, pipe_settings));
 
 	auto infaxis = make_shared<IndexedMesh>(PipeCurveVertexShader(infline, pipe_infaxis));
@@ -139,14 +151,19 @@ int main() {
 	renderer.setLights(lights);
 
 	renderer.addMeshStep(shader_curve, proj, projmat);
-	renderer.addMeshStep(shader_curve, flat, flatmat);
+	// renderer.addMeshStep(shader_curve, flat, flatmat);
 	renderer.addMeshStep(shader_curve, infaxis, inflinemat);
 
-	renderer.addMeshStep(shader_floor_front, floor, floormat);
-	renderer.addMeshStep(shader_floor_back, floor, floormat);
+	// renderer.addMeshStep(shader_floor_front, floor, floormat);
+	// renderer.addMeshStep(shader_floor_back, floor, floormat);
 
-	renderer.addMeshStep(shader_floor_front, floor2, floormat);
-	renderer.addMeshStep(shader_floor_back, floor2, floormat);
+	renderer.addMeshStep(shader_floor_front, floor_proj, floormat);
+	renderer.addMeshStep(shader_floor_back, floor_proj, floormat);
+
+	renderer.addCustomAction([&floor_proj, &projsurf, &projcurve, &proj](float t){
+		floor_proj->adjustToNewSurface(projsurf(t));
+		proj->updateCurve(projcurve(t));
+	});
 
 	return renderer.mainLoop();
 }

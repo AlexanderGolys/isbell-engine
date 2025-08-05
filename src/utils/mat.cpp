@@ -722,7 +722,11 @@ float cot(float x) { return 1.f / tan(x); }
 Complex cot(Complex c) { return 1.f / tan(c); }
 
 vec3 stereoProjection(vec4 v) {
-	return vec3(v.x, v.y, v.z) / (.5f - v.w);
+	return vec3(v.x, v.y, v.z) / (1.f - v.w);
+}
+
+vec3 stereoProjection(Quaternion v) {
+	return stereoProjection((vec4)v);
 }
 
 vec2 stereoProjection(vec3 v) {

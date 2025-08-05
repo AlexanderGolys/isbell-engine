@@ -201,7 +201,3 @@ RealFunctionR2 HeatInhomogeneousHalfPlane::solution_homogeneous_bd() const {
 RealFunctionR2 HeatInhomogeneousHalfPlane::solution() const {
 	return solution_homogeneous() + solution_homogeneous_bd();
 }
-
-RealFunctionR2 LaplaceRectangleD0D0::solution(int precision) const {
-
-}

@@ -1,5 +1,4 @@
 #include "../engine/specific.hpp"
-// #include "../utils/macros.hpp"
 #include "../utils/randomUtils.hpp"
 #include "../engine/interface.hpp"
 
@@ -24,17 +23,6 @@ float r = 1.5;
 float R = 4;
 float k = 0;
 
-SmoothParametricCurve leavesTorus(float a) {
-	return SmoothParametricCurve(
-	[a=a](float u) {
-		float v = u*k+a*k;
-		return vec3(
-			(R + r * cos(v)) * cos(u),
-			(R + r * cos(v)) * sin(u),
-			r * sin(v)
-		);
-	}, randomID(), -PI, PI, true, 0.01f);
-}
 
 // auto dupin = DupinCyclide(4, 4, 2, 1);
 auto dupin = sudaneseMobius();
@@ -42,8 +30,7 @@ auto dupin = sudaneseMobius();
 SmoothParametricCurve leavesDupin(float a) {
 	return SmoothParametricCurve(
 	[dup=dupin, a](float u) {
-		float v = u*k+a;
-		return dup(u,v);
+		return dup(u, a);
 	}, randomID(), 0, TAU, true, 0.01f);
 }
 
@@ -54,15 +41,15 @@ int main() {
 	ParametricSurfaceFoliation foliation = ParametricSurfaceFoliation(leavesDupin, vec2(-PI, PI), true);
 
 	auto foliation_mesh = FoliatedParametricSurfaceMesh(
-		foliation, 0, 400, 8, 700,
+		foliation, 0, 150, 8, 400,
 		[](float t) {
-			return sin(t*8) >= 0 ? BLUE_PALLETTE[5] : BLUE_PALLETTE[2];
+			return sin(t*4) >= 0 ? BLUE_PALLETTE[5] : BLUE_PALLETTE[2];
 		}, {},
 		[](float t) {
-			return sin(t*8) >= 0 ? .009 : .002;
+			return sin(t*4) >= 0 ? .01 : .002;
 		}, {},
 		[](float t) {
-			return vec4(t,  0, 0, 1);
+			return vec4(t, 0, 0, 1);
 		}, {});
 
 	auto mesh = make_shared<FoliatedParametricSurfaceMesh>(foliation_mesh);
@@ -87,16 +74,18 @@ int main() {
 
 
 	auto shader_curve = ShaderProgram(
-		R"(C:\Users\PC\Desktop\ogl-master\src\shaders2\curve.vert)",
-		R"(C:\Users\PC\Desktop\ogl-master\src\shaders2\foliatedTorus.frag)");
+		R"(C:\Users\PC\Desktop\ogl-master\src\shaders\shaders2\curve.vert)",
+		R"(C:\Users\PC\Desktop\ogl-master\src\shaders\shaders2\foliatedTorus.frag)");
 
 
 	auto shader_floor = ShaderProgram(
-	R"(C:\Users\PC\Desktop\ogl-master\src\shaders2\basic.vert)",
-	R"(C:\Users\PC\Desktop\ogl-master\src\shaders2\basic.frag)");
+	R"(C:\Users\PC\Desktop\ogl-master\src\shaders\shaders2\basic.vert)",
+	R"(C:\Users\PC\Desktop\ogl-master\src\shaders\shaders2\basic.frag)");
 
 	shared_ptr<Camera> camera = make_shared<Camera>(
-		make_shared<SmoothParametricCurve>([](float t) { return vec3(sin(-2*t)*5, cos(-2*t)*5, 3); }),
+		make_shared<SmoothParametricCurve>([](float t){
+			return vec3(sin(-2*t)*10, cos(-2*t)*10, 3);
+		}),
 		vec3(0, 0, 0),  vec3(0, 0, 1),  PI/3);
 
 	renderer.setCamera(camera);

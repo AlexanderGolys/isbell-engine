@@ -31,6 +31,7 @@ enum GLSLType {
 	SAMPLER3D
 };
 
+// TODO: check if textures are not copied
 class Texture {
 public:
 	int width, height;

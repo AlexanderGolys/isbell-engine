@@ -281,12 +281,16 @@ vec3 SmoothParametricCurve::tangent(float t) const {
 	if (norm2(dxdt) < eps*eps) {
 		dxdt = _f(t + 2*eps) - _f(t - 2*eps);
 		if (norm(dxdt) < eps*eps) {
-			dxdt = _f(t + 5*eps) - _f(t - 1*eps);
+			dxdt = _f(t + 5*eps) - _f(t - 3*eps);
 			if (norm(dxdt) < eps*eps)
 				return e1;
 		}
 	}
 		return normalise(dxdt);
+}
+
+vec3 SmoothParametricCurve::binormal(float t) const {
+	return normalise(cross(tangent(t), normal(t)));
 }
 
 vec3 SmoothParametricCurve::normal(float t) const {

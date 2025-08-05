@@ -1148,7 +1148,7 @@ Renderer::Renderer(float animSpeed, vec4 bgColor, const string &screenshotDirect
 	if (!glfwInit())
 		exit(2137);
 	this->animSpeed = [animSpeed](float t) { return animSpeed; };
-	this->perFrameFunction = make_unique<std::function<void(float, float)> >([](float t, float delta) {});
+	this->perFrameFunction = [](float t, float delta) {};
 }
 
 Renderer::Renderer(const RenderSettings &settings)
@@ -1239,10 +1239,14 @@ float Renderer::initFrame()
 	glClearColor(settings.bgColor.x, settings.bgColor.y, settings.bgColor.z, 1.0f);
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT );
 
-	float real_dt =  glfwGetTime() - last_time_capture;
+	float real_dt = 0;
+	while (real_dt * settings.maxFPS < 1.0f) {
+		auto t = glfwGetTime();
+		real_dt += t - last_time_capture;
+		last_time_capture = t;
+	}
     dt = real_dt*animSpeed(time);
 	time += dt;
-	last_time_capture = glfwGetTime();
 	return this->time;
 }
 
@@ -1266,7 +1270,9 @@ void Renderer::addPerFrameUniform(const string &uniformName, GLSLType uniformTyp
 }
 
 void Renderer::addSurfaceFamilyDeformer(SurfaceParametricPencil &pencil, IndexedMesh &surface) {
-	addCustomAction([&pencil, &surface](float t) { surface.adjustToNewSurface(pencil(t)); });
+	addCustomAction([&pencil, &surface](float t){
+		surface.adjustToNewSurface(pencil(t));
+	});
 }
 
 void Renderer::initRendering()
@@ -1332,22 +1338,23 @@ void Renderer::addConstFloats(const std::map<string, float> &uniforms)
 
 void Renderer::addCustomAction(std::function<void(float)> action)
 {
-	perFrameFunction = make_unique<std::function<void(float, float)>>([a=*this->perFrameFunction, n=action](float t, float delta) {
+    perFrameFunction = [a=perFrameFunction, n=action](float t, float delta) {
 		a(t, delta);
 		n(t);
-	});
+	};
 }
 
 void Renderer::addCustomAction(std::function<void(float, float)> action)
 {
-	auto a = *perFrameFunction;
-    this->perFrameFunction = make_unique<std::function<void(float, float)>>([a, n=action](float t, float delta) {
+    perFrameFunction = [a=perFrameFunction, n=action](float t, float delta) {
         a(t, delta);
         n(t, delta);
-    });
+    };
 }
 
-void Renderer::nonlinearSpeed(const std::function<float(float)> &speed) { animSpeed = speed; }
+void Renderer::nonlinearSpeed(const std::function<float(float)> &speed) {
+	animSpeed = speed;
+}
 
 void Renderer::addConstUniforms(const std::map<string, GLSLType>& uniforms, std::map<string, shared_ptr<std::function<void(std::shared_ptr<ShaderProgram>)>>> setters)
 {	
@@ -1366,7 +1373,7 @@ int Renderer::mainLoop() {
 	resetTimer();
     while (window->isOpen()) {
     	initFrame();
-    	(*perFrameFunction)(time, dt);
+    	perFrameFunction(time, dt);
         renderAllSteps();
     	window->renderFramebufferToScreen();
     }

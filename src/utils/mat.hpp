@@ -1725,6 +1725,7 @@ float polarAngle(vec3 v, vec3 n);
 
 float cot(float x);
 vec3 stereoProjection(vec4 v);
+vec3 stereoProjection(Quaternion v);
 vec2 stereoProjection(vec3 v);
 float stereoProjection(vec2 v);
 vec4 stereoProjectionInverse(vec3 v);

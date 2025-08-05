@@ -25,26 +25,13 @@ add_subdirectory (external)
 
 # On Visual 2005 and above, this module can set the debug working directory
 cmake_policy(SET CMP0026 OLD)
-list(APPEND CMAKE_MODULE_PATH "${CMAKE_SOURCE_DIR}/external/rpavlik-cmake-modules-fe2273")
-include(CreateLaunchers)
-include(MSVCMultipleProcessCompile) # /MP
 add_compile_options(-Wno-literal-suffix)
-
-if(INCLUDE_DISTRIB)
-	add_subdirectory(distrib)
-endif(INCLUDE_DISTRIB)
-
-# c++ 26
-
 
 
 include_directories(
-#	external/AntTweakBar-1.16/include/
-	external/glfw-3.1.2/include/
+external/glfw-3.1.2/include/
 	external/glm-0.9.7.1/
 	external/glew-1.13.0/include/
-#	external/assimp-3.0.1270/include/
-#	external/bullet-2.81-rev2613/src/
 	.
 )
 
@@ -105,7 +92,6 @@ target_link_libraries(guitar
 )
 # Xcode and Visual working directories
 set_target_properties(guitar PROPERTIES XCODE_ATTRIBUTE_CONFIGURATION_BUILD_DIR "${CMAKE_CURRENT_SOURCE_DIR}/src/")
-create_target_launcher(guitar WORKING_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}/src/")
 
 
 
@@ -151,7 +137,7 @@ target_link_libraries(guitarCyg
 )
 # Xcode and Visual working directories
 set_target_properties(guitarCyg PROPERTIES XCODE_ATTRIBUTE_CONFIGURATION_BUILD_DIR "${CMAKE_CURRENT_SOURCE_DIR}/src/")
-create_target_launcher(guitarCyg WORKING_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}/src/")
+##create_target_launcher(guitarCyg WORKING_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}/src/")
 
 #
 #add_executable(harmonic
@@ -191,7 +177,7 @@ create_target_launcher(guitarCyg WORKING_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}/
 #)
 ## Xcode and Visual working directories
 #set_target_properties(harmonic PROPERTIES XCODE_ATTRIBUTE_CONFIGURATION_BUILD_DIR "${CMAKE_CURRENT_SOURCE_DIR}/src/")
-#create_target_launcher(harmonic WORKING_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}/src/")
+##create_target_launcher(harmonic WORKING_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}/src/")
 #
 #
 add_executable(tests1
@@ -232,7 +218,7 @@ target_link_libraries(tests1
 )
 # Xcode and Visual working directories
 set_target_properties(tests1 PROPERTIES XCODE_ATTRIBUTE_CONFIGURATION_BUILD_DIR "${CMAKE_CURRENT_SOURCE_DIR}/src/")
-create_target_launcher(tests1 WORKING_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}/src/")
+##create_target_launcher(tests1 WORKING_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}/src/")
 
 
 
@@ -277,7 +263,7 @@ target_link_libraries(gabor
 )
 # Xcode and Visual working directories
 set_target_properties(gabor PROPERTIES XCODE_ATTRIBUTE_CONFIGURATION_BUILD_DIR "${CMAKE_CURRENT_SOURCE_DIR}/src/")
-create_target_launcher(gabor WORKING_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}/src/")
+##create_target_launcher(gabor WORKING_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}/src/")
 
 
 
@@ -322,7 +308,7 @@ target_link_libraries(zero
 )
 # Xcode and Visual working directories
 set_target_properties(zero PROPERTIES XCODE_ATTRIBUTE_CONFIGURATION_BUILD_DIR "${CMAKE_CURRENT_SOURCE_DIR}/src/")
-create_target_launcher(zero WORKING_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}/src/")
+##create_target_launcher(zero WORKING_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}/src/")
 
 #
 
@@ -369,7 +355,7 @@ target_link_libraries(fluids
 )
 # Xcode and Visual working directories
 set_target_properties(fluids PROPERTIES XCODE_ATTRIBUTE_CONFIGURATION_BUILD_DIR "${CMAKE_CURRENT_SOURCE_DIR}/src/")
-create_target_launcher(fluids WORKING_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}/src/")
+##create_target_launcher(fluids WORKING_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}/src/")
 
 #
 
@@ -415,8 +401,8 @@ target_link_libraries(foliatedTorus
 )
 # Xcode and Visual working directories
 set_target_properties(foliatedTorus PROPERTIES XCODE_ATTRIBUTE_CONFIGURATION_BUILD_DIR "${CMAKE_CURRENT_SOURCE_DIR}/src/")
-create_target_launcher(foliatedTorus WORKING_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}/src/")
-
+##create_target_launcher(foliatedTorus WORKING_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}/src/")
+#
 #
 
 add_executable(zerodiv
@@ -459,7 +445,7 @@ target_link_libraries(zerodiv
 )
 # Xcode and Visual working directories
 set_target_properties(zerodiv PROPERTIES XCODE_ATTRIBUTE_CONFIGURATION_BUILD_DIR "${CMAKE_CURRENT_SOURCE_DIR}/src/")
-create_target_launcher(zerodiv WORKING_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}/src/")
+#create_target_launcher(zerodiv WORKING_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}/src/")
 
 
 add_executable(pallettes
@@ -502,7 +488,7 @@ target_link_libraries(pallettes
 )
 # Xcode and Visual working directories
 set_target_properties(pallettes PROPERTIES XCODE_ATTRIBUTE_CONFIGURATION_BUILD_DIR "${CMAKE_CURRENT_SOURCE_DIR}/src/")
-create_target_launcher(pallettes WORKING_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}/src/")
+#create_target_launcher(pallettes WORKING_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}/src/")
 
 #
 
@@ -546,4 +532,4 @@ target_link_libraries(dom
 )
 # Xcode and Visual working directories
 set_target_properties(dom PROPERTIES XCODE_ATTRIBUTE_CONFIGURATION_BUILD_DIR "${CMAKE_CURRENT_SOURCE_DIR}/src/")
-create_target_launcher(dom WORKING_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}/src/")
+#create_target_launcher(dom WORKING_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}/src/")

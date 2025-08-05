@@ -48,13 +48,13 @@ int main() {
 
 
 	auto shader_curve = ShaderProgram(
-		R"(C:\Users\PC\Desktop\ogl-master\src\shaders2\curve.vert)",
-		R"(C:\Users\PC\Desktop\ogl-master\src\shaders2\basic_alpha1.frag)");
+		R"(C:\Users\PC\Desktop\ogl-master\src\shaders\shaders2\curve.vert)",
+		R"(C:\Users\PC\Desktop\ogl-master\src\shaders\shaders2\basic_alpha1.frag)");
 
 
 	auto shader_floor = ShaderProgram(
-	R"(C:\Users\PC\Desktop\ogl-master\src\shaders2\basic.vert)",
-	R"(C:\Users\PC\Desktop\ogl-master\src\shaders2\basic.frag)");
+	R"(C:\Users\PC\Desktop\ogl-master\src\shaders\shaders2\basic.vert)",
+	R"(C:\Users\PC\Desktop\ogl-master\src\shaders\shaders2\basic.frag)");
 
 	shared_ptr<Camera> camera = make_shared<Camera>(
 		make_shared<SmoothParametricCurve>([](float t) { return vec3(8, -5, 9); }),

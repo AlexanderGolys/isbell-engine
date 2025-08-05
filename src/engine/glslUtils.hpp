@@ -311,8 +311,8 @@ class Renderer {
 	vector<Light> lights;
 	float time = 0;
     float dt = 0;
-	Fooo animSpeed;
-	unique_ptr<std::function<void(float, float)>> perFrameFunction;
+	END(float) animSpeed;
+	std::function<void(float, float)> perFrameFunction;
 	RenderSettings settings;
 
 public:
@@ -346,8 +346,9 @@ public:
 	void addConstFloats(const std::map<string, float> &uniforms);
 	void addCustomAction(std::function<void(float)> action);
     void addCustomAction(std::function<void(float, float)> action);
-	void nonlinearSpeed(const Fooo &speed);
+	void nonlinearSpeed(const END(float) &speed);
 	void addSurfaceFamilyDeformer(SurfaceParametricPencil &pencil, IndexedMesh &surface);
+
 	void addFloorWorkingArea(vec3 corner1, vec3 corner2, vec3 corner3, vec3 corner4, const MaterialPhong &material, float height, float pyramid_height);
 
 	virtual void initRendering();

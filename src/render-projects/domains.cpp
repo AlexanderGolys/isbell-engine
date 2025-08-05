@@ -60,7 +60,6 @@ int main() {
 	renderer.initMainWindow();
 
 
-
 	auto ico = make_shared<IndexedMesh>(icosahedron(1.f, e3*2.f, randomID()));
 	auto floor = make_shared<IndexedMesh>(paraleblahblapid(vec3(-8, -5, -.1), e1*16, e2*10, e3*1));
 
@@ -104,8 +103,6 @@ int main() {
 
 	renderer.addMeshStep(shader_floor_front, floor, floormat);
 	renderer.addMeshStep(shader_floor_back, floor, floormat);
-
-
 
 	return renderer.mainLoop();
 }

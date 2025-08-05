@@ -61,7 +61,7 @@ public:
 	vec3 higher_derivative(float t, int n) const { return _der_higher(n)(t); }
 	vec3 ddf(float t) const { return second_derivative(t); }
 	vec3 tangent(float t) const;
-	vec3 binormal(float t) const { return normalise(cross(tangent(t), normal(t))); }
+	vec3 binormal(float t) const;
 	vec3 normal(float t) const;
 	float length(float t0, float t1, int n) const;
 

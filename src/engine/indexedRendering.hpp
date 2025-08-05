@@ -225,7 +225,7 @@ protected:
 	unique_ptr<BufferManager> boss;
 	std::map<PolyGroupID, vector<BufferedVertex>> vertices = {};
 	std::map<PolyGroupID, vector<IndexedTriangle>> triangles = {};
-	shared_ptr<MaterialPhong> material = nullptr;
+	// shared_ptr<MaterialPhong> material = nullptr;
 
 public:
 	virtual ~IndexedMesh() = default;
@@ -247,7 +247,7 @@ public:
 	void merge(const IndexedMesh &other);
 	void mergeAndKeepID(const IndexedMesh &other);
 	void copyPolygroup(const IndexedMesh &other, const PolyGroupID &id, const PolyGroupID &newId);
-	void copyPolygroup(const PolyGroupID &id, PolyGroupID newId);
+	void copyPolygroup(const PolyGroupID &id, const PolyGroupID &newId);
 
 	bool hasExtra0() const;
 	bool hasExtra1() const;
@@ -263,14 +263,16 @@ public:
 	const void *getBufferLocation(CommonBufferType type) const;
 	unsigned int getBufferLength(CommonBufferType type) const;
 	size_t getBufferSize(CommonBufferType type) const;
-	vector<PolyGroupID > getPolyGroupIDs() const;
+	vector<PolyGroupID> getPolyGroupIDs() const;
 	BufferManager &getBufferBoss() const;
 	bool isActive(CommonBufferType type) const;
-	bool hasGlobalTextures() const;
+
+	// bool hasGlobalTextures() const;
+
 	BufferedVertex &getAnyVertexFromPolyGroup(const PolyGroupID &id);
 
-	void deformPerVertex(const PolyGroupID &id, const std::function<void(BufferedVertex &)> &deformation);
-	void deformPerVertex(const std::function<void(BufferedVertex &)> &deformation);
+	void deformPerVertex(const PolyGroupID &id, const HOM(BufferedVertex&, void) &deformation);
+	void deformPerVertex(const HOM(BufferedVertex&, void) &deformation);
 	void deformPerVertex(const PolyGroupID &id, const std::function<void(int, BufferedVertex &)> &deformation);
 	void deformPerId(const std::function<void(BufferedVertex &, PolyGroupID)> &deformation);
 
@@ -282,7 +284,8 @@ public:
 	void moveAlongVectorField(const PolyGroupID &id, const VectorField &X, float delta = 1);
 	void deformWithAmbientMap(const PolyGroupID &id, const SpaceEndomorphism &f);
 	void deformWithAmbientMap(const SpaceEndomorphism &f);
-	void initGlobalTextures() const;
+
+	// void initGlobalTextures() const;
 
 	void affineTransform(const mat3 &M, vec3 v, const PolyGroupID &id);
 	void affineTransform(const mat3 &M, vec3 v);
@@ -290,7 +293,7 @@ public:
 	void shift(vec3 v);
 	void scale(float s, const PolyGroupID &id);
 	void scale(float s);
-	void addGlobalMaterial(const MaterialPhong &mat);
+	// void addGlobalMaterial(const MaterialPhong &mat);
 
 	void flipNormals(const PolyGroupID &id);
 	void flipNormals();
@@ -305,8 +308,8 @@ public:
 	vector<BufferedVertex> getBufferedVertices(const PolyGroupID &id) const;
 	vector<ivec3> getIndices(const PolyGroupID &id) const;
 	vector<IndexedTriangle> getTriangles(const PolyGroupID &id) const;
-	vec4 getIntencities() const;
-	MaterialPhong getMaterial() const;
+	// vec4 getIntencities() const;
+	// MaterialPhong getMaterial() const;
 
 	vector<int> findVertexNeighbours(int i, const PolyGroupID &id) const;
 	vector<int> findVertexParentTriangles(int i, const PolyGroupID &id) const;
@@ -327,7 +330,7 @@ public:
 	void paintMeanCurvature();
 
 	template<typename T>
-	T integrateOverTriangles(const std::function<T(const IndexedTriangle &)> &f, PolyGroupID id) const;
+	T integrateOverTriangles(const HOM(const IndexedTriangle&, T) &f, PolyGroupID id) const;
 
 	vec3 centerOfMass(PolyGroupID id) const;
 	vec3 centerOfMass() const;

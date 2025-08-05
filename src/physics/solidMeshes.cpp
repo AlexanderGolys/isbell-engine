@@ -15,6 +15,7 @@ std::array<ivec3, 12> IndexedHexahedron::getTriangles() const {
 		res[2 * i] = tris[0];
 		res[2 * i + 1] = tris[1];
 	}
+	return res;
 }
 
 

@@ -147,25 +147,37 @@ int BufferedVertex::getIndex() const {
 	return index;
 }
 
-vec3 BufferedVertex::getPosition() const { return bufferBoss.getPosition(index); }
+vec3 BufferedVertex::getPosition() const {
+	return bufferBoss.getPosition(index);
+}
 
-vec3 BufferedVertex::getNormal() const { return bufferBoss.getNormal(index); }
+vec3 BufferedVertex::getNormal() const {
+	return bufferBoss.getNormal(index);
+}
 
-vec2 BufferedVertex::getUV() const { return bufferBoss.getUV(index); }
+vec2 BufferedVertex::getUV() const {
+	return bufferBoss.getUV(index);
+}
 
-vec4 BufferedVertex::getColor() const { return bufferBoss.getColor(index); }
+vec4 BufferedVertex::getColor() const {
+	return bufferBoss.getColor(index);
+}
 
-vec4 BufferedVertex::getExtra(int slot) const { return bufferBoss.getExtra(index, slot); }
+vec4 BufferedVertex::getExtra(int slot) const {
+	return bufferBoss.getExtra(index, slot);
+}
 
-vec4 BufferedVertex::getExtra0() const { return bufferBoss.getExtra0(index); }
+vec4 BufferedVertex::getExtra0() const {
+	return bufferBoss.getExtra0(index);
+}
 
 Vertex BufferedVertex::getVertex() const {
 	dict(string, vec4) extraData;
-	if (bufferBoss.isActive(EXTRA0))  extraData[bufferBoss.getExtraBufferName(0)] = getExtra0();
-	if (bufferBoss.isActive(EXTRA1))  extraData[bufferBoss.getExtraBufferName(1)] = getExtra(1);
-	if (bufferBoss.isActive(EXTRA2))  extraData[bufferBoss.getExtraBufferName(2)] = getExtra(2);
-	if (bufferBoss.isActive(EXTRA3))  extraData[bufferBoss.getExtraBufferName(3)] = getExtra(3);
-	if (bufferBoss.isActive(EXTRA4))  extraData[bufferBoss.getExtraBufferName(4)] = getExtra(4);
+	if (bufferBoss.isActive(EXTRA0)) extraData[bufferBoss.getExtraBufferName(0)] = getExtra0();
+	if (bufferBoss.isActive(EXTRA1)) extraData[bufferBoss.getExtraBufferName(1)] = getExtra(1);
+	if (bufferBoss.isActive(EXTRA2)) extraData[bufferBoss.getExtraBufferName(2)] = getExtra(2);
+	if (bufferBoss.isActive(EXTRA3)) extraData[bufferBoss.getExtraBufferName(3)] = getExtra(3);
+	if (bufferBoss.isActive(EXTRA4)) extraData[bufferBoss.getExtraBufferName(4)] = getExtra(4);
 
 	return Vertex(getPosition(), getUV(), getNormal(), getColor(), extraData);
 }
@@ -178,23 +190,39 @@ void BufferedVertex::setPosition(vec3 value) {
 	bufferBoss.setPosition(index, value);
 }
 
-void BufferedVertex::setNormal(vec3 value) { bufferBoss.setNormal(index, value); }
+void BufferedVertex::setNormal(vec3 value) {
+	bufferBoss.setNormal(index, value);
+}
 
-void BufferedVertex::setUV(vec2 value) { bufferBoss.setUV(index, value); }
+void BufferedVertex::setUV(vec2 value) {
+	bufferBoss.setUV(index, value);
+}
 
-void BufferedVertex::setUV(float value, int i) { bufferBoss.setUV(index, value, i); }
+void BufferedVertex::setUV(float value, int i) {
+	bufferBoss.setUV(index, value, i);
+}
 
-void BufferedVertex::setColor(vec4 value) { bufferBoss.setColor(index, value); }
+void BufferedVertex::setColor(vec4 value) {
+	bufferBoss.setColor(index, value);
+}
 
-void BufferedVertex::setColor(float value, int i) { bufferBoss.setColor(index, value, i); }
+void BufferedVertex::setColor(float value, int i) {
+	bufferBoss.setColor(index, value, i);
+}
 
-void BufferedVertex::setExtra(vec4 value, int slot) { bufferBoss.setExtra(index, value, slot); }
+void BufferedVertex::setExtra(vec4 value, int slot) {
+	bufferBoss.setExtra(index, value, slot);
+}
 
 void BufferedVertex::setExtra0(vec4 value) { bufferBoss.setExtra0(index, value); }
 
-void BufferedVertex::setExtra(vec3 value, int slot) { bufferBoss.setExtra(index, value, slot); }
+void BufferedVertex::setExtra(vec3 value, int slot) {
+	bufferBoss.setExtra(index, value, slot);
+}
 
-void BufferedVertex::setExtra(float value, int slot, int component) { bufferBoss.setExtra(index, value, slot, component); }
+void BufferedVertex::setExtra(float value, int slot, int component) {
+	bufferBoss.setExtra(index, value, slot, component);
+}
 
 void BufferedVertex::applyFunction(const SpaceEndomorphism &f) {
     vec3 p = getPosition();
@@ -208,6 +236,12 @@ void BufferedVertex::setVertex(const Vertex &v) {
 	setUV(v.getUV());
 	setNormal(v.getNormal());
 	setColor(v.getColor());
+	auto extras = bufferBoss.getExtraBufferNames();
+	for (int i=0; i < extras.size(); i++) {
+			string extraName = extras[i];
+			if (v.hasExtraData(extraName))
+				setExtra(v.getExtraData(extraName), i);
+	}
 }
 
 IndexedTriangle::IndexedTriangle(const IndexedTriangle &other): index(other.index), bufferBoss(other.bufferBoss) {}
@@ -305,8 +339,9 @@ void IndexedTriangle::changeOrientation() { bufferBoss.setFaceIndices(index, ive
 
 IndexedMesh::IndexedMesh(IndexedMesh &&other) noexcept: boss(std::move(other.boss)),
 														vertices(std::move(other.vertices)),
-														triangles(std::move(other.triangles)),
-														material(std::move(other.material)) {}
+														triangles(std::move(other.triangles))
+														// ,material(std::move(other.material)
+														{}
 
 IndexedMesh & IndexedMesh::operator=(IndexedMesh &&other) noexcept {
     if (this == &other)
@@ -314,7 +349,7 @@ IndexedMesh & IndexedMesh::operator=(IndexedMesh &&other) noexcept {
     boss = std::move(other.boss);
     vertices = std::move(other.vertices);
     triangles = std::move(other.triangles);
-    material = std::move(other.material);
+    // material = std::move(other.material);
     return *this;
 }
 
@@ -426,7 +461,7 @@ IndexedMesh & IndexedMesh::operator=(const IndexedMesh &other) {
     boss = std::make_unique<BufferManager>(*other.boss);
     vertices = other.vertices;
     triangles = other.triangles;
-    material = other.material;
+    // material = other.material;
     return *this;
 }
 
@@ -456,8 +491,8 @@ void IndexedMesh::addNewPolygroup(const vector<Vertex> &hardVertices, const vect
 
 IndexedMesh::IndexedMesh(const IndexedMesh &other): boss(&*other.boss),
 													vertices(other.vertices),
-													triangles(other.triangles),
-													material(other.material) {}
+													triangles(other.triangles) {}
+													// material(other.material) {}
 
 
 void IndexedMesh::addUniformSurface(const SmoothParametricSurface &surf, int tRes, int uRes, const PolyGroupID &id) {
@@ -471,10 +506,10 @@ void IndexedMesh::addUniformSurface(const SmoothParametricSurface &surf, int tRe
     for (int i = 0; i < tRes; i++)
         for (int j = 0; j < uRes; j++) {
 
-            float t_ = 1.f * i / (1.f * tRes - 1);
+            float t_ = 1.f * i / (tRes - 1);
         	if (surf.isPeriodicT()) t_ = 1.f * i / (1.f * tRes);
 
-            float u_ = 1.f * j / (1.f * uRes - 1);
+            float u_ = 1.f * j / (uRes - 1);
         	if (surf.isPeriodicU()) u_ = 1.f * j / (1.f * uRes);
 
             float t = lerp(surf.tMin(), surf.tMax(), t_);
@@ -544,7 +579,7 @@ void IndexedMesh::copyPolygroup(const IndexedMesh &other, const PolyGroupID &id,
 	vector<ivec3> indices = other.getIndices(id);
 	addNewPolygroup(vertices, indices, newId);}
 
-void IndexedMesh::copyPolygroup(const PolyGroupID &id, PolyGroupID newId) {
+void IndexedMesh::copyPolygroup(const PolyGroupID &id, const PolyGroupID &newId) {
 	vector<Vertex> vertices = getVertices(id);
 	vector<ivec3> indices = getIndices(id);
 	addNewPolygroup(vertices, indices, newId);
@@ -621,9 +656,9 @@ bool IndexedMesh::isActive(CommonBufferType type) const {
 	return boss->isActive(type);
 }
 
-bool IndexedMesh::hasGlobalTextures() const {
-	return !isActive(MATERIAL1) && material->textured();
-}
+// bool IndexedMesh::hasGlobalTextures() const {
+// 	return !isActive(MATERIAL1) && material->textured();
+// }
 
 BufferedVertex & IndexedMesh::getAnyVertexFromPolyGroup(const PolyGroupID &id) {
 	return vertices.at(id).front();
@@ -690,10 +725,6 @@ void IndexedMesh::deformWithAmbientMap(const SpaceEndomorphism &f) {
 		deformWithAmbientMap(id, f);
 }
 
-void IndexedMesh::initGlobalTextures() const {
-	if (hasGlobalTextures())
-		material->initTextures();
-}
 
 void IndexedMesh::affineTransform(const mat3 &M, vec3 v, const PolyGroupID &id) {
 	deformWithAmbientMap(id, SpaceEndomorphism::affine(M, v));
@@ -745,18 +776,18 @@ vector<IndexedTriangle> IndexedMesh::getTriangles(const PolyGroupID &id) const {
 	return triangles.at(id);
 }
 
-vec4 IndexedMesh::getIntencities() const {
-	return material->compressIntencities();
-}
-
-MaterialPhong IndexedMesh::getMaterial() const {
-	return *material;
-}
-
-
-void IndexedMesh::addGlobalMaterial(const MaterialPhong &mat) {
-	material = std::make_shared<MaterialPhong>(mat);
-}
+// vec4 IndexedMesh::getIntencities() const {
+// 	return material->compressIntencities();
+// }
+//
+// MaterialPhong IndexedMesh::getMaterial() const {
+// 	return *material;
+// }
+//
+//
+// void IndexedMesh::addGlobalMaterial(const MaterialPhong &mat) {
+// 	material = std::make_shared<MaterialPhong>(mat);
+// }
 
 void IndexedMesh::flipNormals(const PolyGroupID &id) {
 	deformPerVertex(id, [](BufferedVertex &v) {
@@ -1487,63 +1518,79 @@ PipeCurveVertexShader::PipeCurveVertexShader(const SmoothParametricCurve &curve,
  id(id), settings(s)
 {
 
-auto buffers = std::set({POSITION, NORMAL, UV, COLOR, INDEX});
-if (s.extra_defaults.contains("extra0")) buffers.insert(EXTRA0);
-if (s.extra_defaults.contains("extra1")) buffers.insert(EXTRA1);
-if (s.extra_defaults.contains("extra2")) buffers.insert(EXTRA2);
-if (s.extra_defaults.contains("extra3")) buffers.insert(EXTRA3);
-if (s.extra_defaults.contains("extra4")) buffers.insert(EXTRA4);
-boss = make_unique<BufferManager>(buffers);
+	auto buffers = std::set({POSITION, NORMAL, UV, COLOR, INDEX});
+	if (s.extra_defaults.contains("extra0")) buffers.insert(EXTRA0);
+	if (s.extra_defaults.contains("extra1")) buffers.insert(EXTRA1);
+	if (s.extra_defaults.contains("extra2")) buffers.insert(EXTRA2);
+	if (s.extra_defaults.contains("extra3")) buffers.insert(EXTRA3);
+	if (s.extra_defaults.contains("extra4")) buffers.insert(EXTRA4);
+	boss = make_unique<BufferManager>(buffers);
 
-auto params = linspace(curve.getT0(), curve.getT1(), s.horRes);
-vector<vec3> normals = vector<vec3>();
-vector<vec3> binormals = vector<vec3>();
+	auto params = linspace(curve.getT0(), curve.getT1(), s.horRes);
+	vector<vec3> normals = vector<vec3>();
+	vector<vec3> binormals = vector<vec3>();
+	vector<vec3> pts = vector<vec3>();
+	vector<float> realised_params = vector<float>();
 
-for (float t: params) {
-	vec3 b = curve.binormal(t);
-	vec3 n = curve.normal(t);
-	if (normals.size() > 0) {
-		if (dot(n, normals.back()) < 0)
-			n = -n;
-		if (dot(b, binormals.back()) < 0)
-			b = -b;
-	}
-	normals.push_back(n);
-	binormals.push_back(b);
-}
+	bool out_of_bounds = false;
 
-vector<Vertex> verts = vector<Vertex>();
-vector<ivec3> inds = vector<ivec3>();
-
-
-for (int i = 0; i < s.horRes; i++) {
-	float t = params[i];
-	vec3 p = curve(t);
-	vec3 b = binormals[i];
-	vec3 n = normals[i];
-	for (float theta: linspace(0.f, TAU, s.radialRes))
-		verts.emplace_back(p, vec2(t, theta), n, vec4(b.x, b.y, b.z, s.radius), s.extra_defaults);
-
-
-
-	if (i < s.horRes - 1) {
-		if (s.bounding)
-			if (p.x <= s.bound_min.x || p.x >= s.bound_max.x || p.y <= s.bound_min.y || p.y >= s.bound_max.y || p.z <= s.bound_min.z || p.z >= s.bound_max.z)
-				continue;
-
-		float t_next = params[i+1];
-		bool skip = false;
-		for (float d : s.discontinuities)
-			if (t_next >= d && t <= d)
-				skip = true;
-
-		if (skip) continue;
-
-		for (int j = 0; j < s.radialRes; j++) {
-			inds.emplace_back(i*s.radialRes+j, (i+1)*s.radialRes+j, i*s.radialRes+(j+1)%s.radialRes);
-			inds.emplace_back((i+1)*s.radialRes+j, (i+1)*s.radialRes+(j+1)%s.radialRes, i*s.radialRes+(j+1)%s.radialRes);
+	for (float t: params) {
+		vec3 p = curve(t);
+		if (s.bounding) {
+			if (p.x <= s.bound_min.x || p.x >= s.bound_max.x || p.y <= s.bound_min.y || p.y >= s.bound_max.y || p.z <= s.bound_min.z || p.z >= s.bound_max.z) {
+				if (out_of_bounds)
+					continue;
+				p = vec3(min(max(p.x, s.bound_min.x), s.bound_max.x),
+						 min(max(p.y, s.bound_min.y), s.bound_max.y),
+						 min(max(p.z, s.bound_min.z), s.bound_max.z));
+				out_of_bounds = true;
+			}
+			else
+				out_of_bounds = false;
 		}
+		vec3 b = curve.binormal(t);
+		vec3 n = curve.normal(t);
+
+		if (normals.size() > 0) {
+			if (dot(n, normals.back()) < 0)
+				n = -n;
+			if (dot(b, binormals.back()) < 0)
+				b = -b;
+		}
+		normals.push_back(n);
+		binormals.push_back(b);
+		pts.push_back(p);
+		realised_params.push_back(t);
 	}
+
+	vector<Vertex> verts = vector<Vertex>();
+	vector<ivec3> inds = vector<ivec3>();
+
+
+	for (int i = 0; i < realised_params.size(); i++) {
+		float t = realised_params[i];
+		vec3 p = pts[i];
+		vec3 b = binormals[i];
+		vec3 n = normals[i];
+		for (float theta: linspace(0.f, TAU, s.radialRes))
+			verts.emplace_back(p, vec2(t, theta), n, vec4(b.x, b.y, b.z, s.radius), s.extra_defaults);
+
+
+
+		if (i < realised_params.size() - 1) {
+			float t_next = realised_params[i+1];
+			bool skip = false;
+			for (float d : s.discontinuities)
+				if (t_next >= d && t <= d)
+					skip = true;
+
+			if (skip) continue;
+
+			for (int j = 0; j < s.radialRes; j++) {
+				inds.emplace_back(i*s.radialRes+j, (i+1)*s.radialRes+j, i*s.radialRes+(j+1)%s.radialRes);
+				inds.emplace_back((i+1)*s.radialRes+j, (i+1)*s.radialRes+(j+1)%s.radialRes, i*s.radialRes+(j+1)%s.radialRes);
+			}
+		}
 }
 addNewPolygroup(verts, inds, this->id);
 }
@@ -1557,12 +1604,15 @@ void PipeCurveVertexShader::updateCurve(const SmoothParametricCurve &curve) {
 	deformPerVertex(id, [this, &curve](BufferedVertex &v) {
 		float t = v.getUV().x;
 		vec3 p = curve(t);
+		p = vec3(min(max(p.x, settings.bound_min.x), settings.bound_max.x),
+		 min(max(p.y, settings.bound_min.y), settings.bound_max.y),
+		 min(max(p.z, settings.bound_min.z), settings.bound_max.z));
 		vec3 b = curve.binormal(t);
 		vec3 n = curve.normal(t);
-		if (dot(n, v.getNormal()) < 0)
-			n = -n;
-		if (dot(b, vec3(v.getColor())) < 0)
-			b = -b;
+		// if (dot(n, v.getNormal()) < 0)
+		// 	n = -n;
+		// if (dot(b, vec3(v.getColor())) < 0)
+		// 	b = -b;
 		v.setPosition(p);
 		v.setNormal(n);
 		v.setColor(b.x, 0);

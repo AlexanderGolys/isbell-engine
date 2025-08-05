@@ -407,12 +407,12 @@ SmoothParametricSurface hyperbolic_helicoid(float a, float eps) {
 
 SmoothParametricSurface LawsonTwist(float alpha, Quaternion q, vec2 range_u, float eps) {
 	auto L = [alpha](float t, float u) {
-		return vec4(::cos(u)*cos(t),
+		return vec4(cos(u)*cos(t),
 					cos(t)*sin(u),
 					sin(t)*cos(alpha*u),
 					sin(t)*sin(alpha*u)); };
 	return SmoothParametricSurface([L, q](float t, float u) {
-									   return stereoProjection(q.normalise().rotateS3(L(t, u))); },
+									   return stereoProjection(q.normalise()*Quaternion(L(t, u))); },
 								   vec2(0, TAU), range_u, false, false, eps);
 }
 
@@ -421,7 +421,7 @@ SmoothParametricSurface coolLawson(float eps) {
 }
 
 SmoothParametricSurface sudaneseMobius(float eps) {
-	return LawsonTwist(.5, Quaternion(.5, .5, .5, .1), vec2(-PI/2, PI/2), eps);
+	return LawsonTwist(.5, Quaternion(.5, .5, .5, .5f), vec2(-PI/2, PI/2), eps);
 }
 
 
@@ -938,8 +938,8 @@ IndexedMesh box(vector<vec3> cornersUp, vector<vec3> cornersDown, vec4 color) {
 }
 
 IndexedMesh paraleblahblapid(vec3 corner, vec3 dir1, vec3 dir2, vec3 dir3) {
-	vector<vec3> cornersUp = {corner, corner + dir1, corner + dir2 + dir1, corner + dir2 , };
-	vector<vec3> cornersDown = {corner + dir3, corner + dir1 + dir3, corner + dir1 + dir2+ dir3, corner + dir2+ dir3,  };
+	vector cornersUp = {corner, corner + dir1, corner + dir2 + dir1, corner + dir2 , };
+	vector cornersDown = {corner + dir3, corner + dir1 + dir3, corner + dir1 + dir2+ dir3, corner + dir2+ dir3,  };
 	return box(cornersUp, cornersDown);
 }
 
