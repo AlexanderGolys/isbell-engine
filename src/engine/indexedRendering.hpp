@@ -74,7 +74,7 @@ class BufferManager {
 	unique_ptr<BUFF4> extra2;
 	unique_ptr<BUFF4> extra3;
 	unique_ptr<BUFF4> extra4;
-	unique_ptr<IBUFF3 > indices;
+	unique_ptr<IBUFF3> indices;
 	std::set<CommonBufferType> activeBuffers;
 	vector<string> extraBufferNames;
 	void insertValueToSingleBuffer(CommonBufferType type, void *valueAddress);

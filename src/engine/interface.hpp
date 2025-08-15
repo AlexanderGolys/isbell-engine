@@ -24,7 +24,7 @@ public:
 	shared_ptr<DynamicalInterface> dynamicalSystem = nullptr;
 	SIM_STAGE stage = INITIALIZING;
 
-	void connect_system(const ShaderProgram& shader, const shared_ptr<DynamicalInterface> &system, const MaterialPhong &material);
+	void connect_system(const ShaderProgram& shader, const shared_ptr<DynamicalInterface> &system, const shared_ptr<MaterialPhong> &material);
 
 	void pause();
 	void play();

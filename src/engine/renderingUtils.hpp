@@ -36,15 +36,16 @@ class Texture {
 public:
 	int width, height;
 	unsigned char* data;
-	int size;
+	int bpp;
 	GLuint textureID;
 	GLenum textureSlot;
+	int abs_slot;
 	const char* samplerName;
 	GLuint frameBufferID;
-    bool alpha=false;
 
-	Texture(int width, int height, int slot=0, const char* sampler = "tex");
-	explicit Texture(vec4 color, int slot=0, const char* sampler = "tex");
+	Texture(int width, int height, int bpp, int slot, const char* sampler);
+    explicit Texture(vec3 color, int slot, const char* sampler);
+    explicit Texture(vec4 color, int slot, const char* sampler);
 	explicit Texture(const char* filename, int slot, const char* sampler, bool alpha=false);
 	explicit Texture(const string& filename, int slot, const char* sampler, bool alpha=false);
 
@@ -56,6 +57,7 @@ public:
 	void bindToFrameBuffer() const;
 	void calculateMipmap() const;
     void load();
+
 };
 
 
@@ -80,13 +82,12 @@ public:
 	static shared_ptr<Texture> constAmbientTexture(vec3 color);
 	static shared_ptr<Texture> constDiffuseTexture(vec3 color);
 	static shared_ptr<Texture> constSpecularTexture(vec3 color);
-
 	static shared_ptr<Texture> makeAmbientTexture(const string &filename, bool alpha=false);
 	static shared_ptr<Texture> makeDiffuseTexture(const string &filename, bool alpha=false);
 	static shared_ptr<Texture> makeSpecularTexture(const string &filename, bool alpha=false);
 
-	MaterialPhong(const shared_ptr<Texture> &texture_ambient, const shared_ptr<Texture> &texture_diffuse, const shared_ptr<Texture> &texture_specular,
-				  float ambientIntensity, float diffuseIntensity, float specularIntensity, float shininess);
+  MaterialPhong(const shared_ptr<Texture> &texture_ambient, const shared_ptr<Texture> &texture_diffuse, const shared_ptr<Texture> &texture_specular,
+                float ambientIntensity, float diffuseIntensity, float specularIntensity, float shininess);
 
 
 
@@ -101,6 +102,7 @@ public:
 
 	vec4 compressIntencities() const;
     void initTextures();
+	void bindTextures();
 
 	virtual bool textured() const;
 

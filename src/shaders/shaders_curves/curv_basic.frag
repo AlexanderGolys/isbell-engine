@@ -4,7 +4,8 @@ in vec3 v_position;
 in vec3 v_normal;
 in vec2 v_uv;
 in vec4 v_color;
-
+in vec4 v_extra0;
+in vec4 v_extra1;
 
 layout(location = 0) out vec4 color;
 
@@ -20,8 +21,8 @@ uniform sampler2D texture_specular;
 uniform float time;
 
 
-vec4 saturate(vec4 color) {
-    return clamp(color, 0., 1.);
+vec4 saturate(vec4 c) {
+    return clamp(c, 0., 1.);
 }
 
 float saturate(float x) {
@@ -42,13 +43,12 @@ vec3 lightIntencities(mat4 m) {
 vec4 lightFactor(mat4 light, vec3 position) {
     vec3 lightPos = lightPosition(light);
     float distance = length(lightPos - position);
-    vec4 color = light[1];
-
+    vec4 c = light[1];
 
     float constant = (light[2]).x;
     float linear = (light[2]).y;
     float quadratic = (light[2]).z;
-    return color / (1 + linear * distance + quadratic * distance * distance);
+    return c / (1 + linear * distance + quadratic * distance * distance);
 }
 
 
@@ -56,8 +56,8 @@ vec4 colorFromPointlight(mat4 light, vec3 camPos, vec3 pos, vec3 n, vec2 uv)
 {
     vec3 lightPos = lightPosition(light);
 	vec3 light_direction = normalize(lightPos - pos);
-//    float cosTheta = abs(dot(n, light_direction));
-    float cosTheta = max(dot(n, -light_direction), 0.);
+    float cosTheta = abs(dot(n, light_direction));
+//    float cosTheta = max(dot(n, -light_direction), 0.);
 
 	vec3 reflectDirection = normalize(reflect(-light_direction, n));
 	vec3 viewDirection = normalize(camPos - pos);
@@ -76,9 +76,11 @@ float PI = 3.14159265358979323846;
 void main()
 {
     vec3 normal = normalize(v_normal);
+
 	color = saturate(colorFromPointlight(light1, camPosition, v_position, normal, v_uv)) +
             saturate(colorFromPointlight(light2, camPosition, v_position, normal, v_uv)) +
             saturate(colorFromPointlight(light3, camPosition, v_position, normal, v_uv));
+
     color = saturate(color);
     color.a = 1.0;
 

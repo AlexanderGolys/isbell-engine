@@ -281,7 +281,7 @@ void SDFRenderingStep::init(const std::shared_ptr<Camera> &cam, const std::vecto
 	addCameraUniforms(cam);
 	addLightsUniforms(lights);
 	addSDFUniforms();
-	attributes = {std::make_shared<Attribute>("position", VEC3, 0)};
+	attributes = {std::make_shared<Attribute>("position", VEC3, 0, POSITION)};
 	attributes[0]->initBuffer();
 	attributes[0]->load(&trs[0][0], 6);
 	loadSDFUniforms();

@@ -81,6 +81,7 @@ void main()
 	color = saturate(colorFromPointlight(light1, camPosition, v_position, normal, v_uv)) +
             saturate(colorFromPointlight(light2, camPosition, v_position, normal, v_uv)) +
             saturate(colorFromPointlight(light3, camPosition, v_position, normal, v_uv));
+
     color.a = clamp(color.x*color.y*color.z+.25, 0, 1);
 
 }

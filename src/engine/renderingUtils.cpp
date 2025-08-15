@@ -888,7 +888,9 @@ shared_ptr<Texture> MaterialPhong::makeDiffuseTexture(const string &filename, bo
 	return std::make_shared<Texture>(filename, 1, "texture_diffuse", alpha);
 }
 
-shared_ptr<Texture> MaterialPhong::makeSpecularTexture(const string &filename, bool alpha) { return std::make_shared<Texture>(filename, 2, "texture_specular", alpha); }
+shared_ptr<Texture> MaterialPhong::makeSpecularTexture(const string &filename, bool alpha) {
+	return std::make_shared<Texture>(filename, 2, "texture_specular", alpha);
+}
 
 MaterialPhong::MaterialPhong(const shared_ptr<Texture> &texture_ambient, const shared_ptr<Texture> &texture_diffuse,
 							 const shared_ptr<Texture> &texture_specular, float ambientIntensity, float diffuseIntensity,
@@ -905,15 +907,17 @@ MaterialPhong::MaterialPhong(const shared_ptr<Texture> &texture_ambient, const s
 	initTextures();
 }
 
-MaterialPhong::MaterialPhong(const string &textureFilenameAmbient, const string &textureFilenameDiffuse, const string &textureFilenameSpecular, float ambientIntensity, float diffuseIntensity, float specularIntensity, float shininess, bool alphaAmbient, bool alphaDiffuse, bool alphaSpecular):  MaterialPhong(makeAmbientTexture(textureFilenameAmbient, alphaAmbient),
-																																																																													makeDiffuseTexture(textureFilenameDiffuse, alphaDiffuse),
-																																																																													makeSpecularTexture(textureFilenameSpecular, alphaSpecular),
-																																																																													ambientIntensity, diffuseIntensity, specularIntensity, shininess) {}
+MaterialPhong::MaterialPhong(const string &textureFilenameAmbient, const string &textureFilenameDiffuse, const string &textureFilenameSpecular, float ambientIntensity, float diffuseIntensity, float specularIntensity, float shininess, bool alphaAmbient, bool alphaDiffuse, bool alphaSpecular)
+:  MaterialPhong(makeAmbientTexture(textureFilenameAmbient, alphaAmbient),
+				makeDiffuseTexture(textureFilenameDiffuse, alphaDiffuse),
+				makeSpecularTexture(textureFilenameSpecular, alphaSpecular),
+				ambientIntensity, diffuseIntensity, specularIntensity, shininess) {}
 
 MaterialPhong::MaterialPhong(vec4 ambient, vec4 diffuse, vec4 specular, float ambientIntensity, float diffuseIntensity, float specularIntensity, float shininess)
 : MaterialPhong(constAmbientTexture(ambient), constDiffuseTexture(diffuse), constSpecularTexture(specular), ambientIntensity, diffuseIntensity, specularIntensity, shininess) {}
 
-MaterialPhong::MaterialPhong(vec4 ambient, float ambientIntensity, float diffuseIntensity, float specularIntensity, float shininess): MaterialPhong(ambient, ambient, ambient, ambientIntensity, diffuseIntensity, specularIntensity, shininess) {}
+MaterialPhong::MaterialPhong(vec4 ambient, float ambientIntensity, float diffuseIntensity, float specularIntensity, float shininess)
+: MaterialPhong(ambient, ambient, ambient, ambientIntensity, diffuseIntensity, specularIntensity, shininess) {}
 
 
 
@@ -922,9 +926,21 @@ vec4 MaterialPhong::compressIntencities() const
 	return vec4(ambientIntensity, diffuseIntensity, specularIntensity, shininess);
 }
 
-void MaterialPhong::initTextures() { texture_ambient->load(); texture_diffuse->load(); texture_specular->load(); }
+void MaterialPhong::initTextures() {
+	texture_ambient->load();
+	texture_diffuse->load();
+	texture_specular->load();
+}
 
-bool MaterialPhong::textured() const {return true;}
+void MaterialPhong::bindTextures() {
+	texture_ambient->bind();
+	texture_diffuse->bind();
+	texture_specular->bind();
+}
+
+bool MaterialPhong::textured() const {
+	return true;
+}
 
 void MaterialPhong::setAmbientTexture(const shared_ptr<Texture> &texture) {
 	texture_ambient->deleteTexture();
@@ -1906,16 +1922,18 @@ void SuperPencilPlanar::deformMesh(float dt) {
 }
 
 
-Texture::Texture(int width, int height, int slot, const char* sampler)
+Texture::Texture(int width, int height, int bpp, int slot, const char* sampler)
 {
 	this->width = width;
 	this->height = height;
-	this->size = width * height * 4;
 	this->data = nullptr;
+	this->bpp = bpp;
+
 	glGenTextures(1, &this->textureID);
 	glBindTexture(GL_TEXTURE_2D, this->textureID);
-	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, this->width, this->height, 0, GL_RGBA, GL_UNSIGNED_BYTE, 0);
+
 	this->textureSlot = GL_TEXTURE0 + slot;
+	abs_slot = slot;
 	this->samplerName = sampler;
 	this->frameBufferID = 0;
 	glGenFramebuffers(1, &frameBufferID);
@@ -1924,9 +1942,9 @@ Texture::Texture(int width, int height, int slot, const char* sampler)
 Texture::Texture(vec4 color, int slot, const char *sampler) {
     width = 1;
     height = 1;
-    size = 4;
-    this->alpha = true;
+    bpp = 4;
     this->textureSlot = GL_TEXTURE0 + slot;
+	abs_slot = slot;
     this->samplerName = sampler;
     this->frameBufferID = 0;
     this->textureID = 0;
@@ -1955,13 +1973,13 @@ Texture::Texture(const char* filename, int slot, const char* sampler, bool alpha
 		throw InvalidFileError(filename, "Not a correct BMP file (first two bytes of header invalid)");
 
 
-    this->alpha = alpha;
+    bpp = alpha ? 4 : 3;
 	unsigned int dataPos = *(int*)&(header[0x0A]);
-	size = *(int*)&(header[0x22]);
+	int size = *(int*)&(header[0x22]);
 	width = *(int*)&(header[0x12]);
 	height = *(int*)&(header[0x16]);
 	if (size == 0)
-		size = alpha ? width * height * 4 : width * height * 3;
+		size = width * height * bpp;
 	if (dataPos == 0)
 		dataPos = 54;
 
@@ -1970,6 +1988,7 @@ Texture::Texture(const char* filename, int slot, const char* sampler, bool alpha
 	fclose(file);
 
 	this->textureSlot = GL_TEXTURE0 + slot;
+	abs_slot = slot;
 	this->samplerName = sampler;
 	this->frameBufferID = 0;
     this->textureID = 0;
@@ -2019,15 +2038,16 @@ void Texture::calculateMipmap() const {
 }
 
 void Texture::load() {
+
     glGenTextures(1, &this->textureID);
 	glActiveTexture(this->textureSlot);
 	glBindTexture(GL_TEXTURE_2D, this->textureID);
 	addFilters( GL_LINEAR_MIPMAP_LINEAR, GL_LINEAR, GL_REPEAT, GL_REPEAT);
 
-    if (alpha)
-        glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, this->width, this->height, 0, GL_BGRA, GL_UNSIGNED_BYTE, this->data);
+    if (bpp == 4)
+        glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA8, this->width, this->height, 0, GL_BGRA, GL_UNSIGNED_BYTE, this->data);
     else
-        glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, this->width, this->height, 0, GL_BGR, GL_UNSIGNED_BYTE, this->data);
+        glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB8, this->width, this->height, 0, GL_BGR, GL_UNSIGNED_BYTE, this->data);
 
     glGenerateMipmap(GL_TEXTURE_2D);
 }
