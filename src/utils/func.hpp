@@ -594,25 +594,92 @@ template<typename A, typename B, typename C>
 
 class HolomorphicFunction {
 	HOM(Complex, Complex) _f, _df;
-	HolomorphicFunction(std::function<Complex(Complex)> f, std::function<Complex(Complex)> df, float epsilon);
-	HolomorphicFunction(std::function<Complex(Complex)> f, float epsilon);
+	float eps;
+
+public:
+	HolomorphicFunction(HOM(Complex, Complex) f, HOM(Complex, Complex) df, float epsilon);
+	HolomorphicFunction(HOM(Complex, Complex) f, float epsilon);
 	HolomorphicFunction(const PlaneSmoothEndomorphism &f, float epsilon);
 	HolomorphicFunction(const RealFunctionR2 &re, const RealFunctionR2 &im, float epsilon);
+	Complex operator()(Complex z) const { return _f(z); }
 	HolomorphicFunction df() const;
 	HolomorphicFunction d2f() const;
 	HolomorphicFunction dnf(int n) const;
-	Complex df(Complex z) const;
-	Complex d2f(Complex z) const;
-	Complex dnf(Complex z, int n) const;
-	HolomorphicFunction operator-() const;
+	Complex df(Complex z) const { return _df(z); }
+	Complex d2f(Complex z) const { return df().df(z); }
+	Complex dnf(Complex z, int n) const {return dnf(n)(z); }
+
+	HolomorphicFunction operator-() const { return HolomorphicFunction([f=_f](Complex z) { return -f(z); }, [df=_df](Complex z) { return -df(z); }, eps); }
+	HolomorphicFunction operator+(const HolomorphicFunction &g) const {return HolomorphicFunction([f=_f, g=g._f](Complex z) { return f(z) + g(z); }, [df=_df, dg=g._df](Complex z) { return df(z) + dg(z); }, eps); }
+	HolomorphicFunction operator+(Complex a) const {return HolomorphicFunction([f=_f, a](Complex z) { return f(z) + a; }, _df, eps); }
+	HolomorphicFunction operator+(float a) const {return *this + Complex(a); }
+	HolomorphicFunction operator+(int a) const {return *this + Complex(a); }
+	friend HolomorphicFunction operator+(Complex a, const HolomorphicFunction &f) { return f + a; }
+	friend HolomorphicFunction operator+(float a, const HolomorphicFunction &f) { return f + a; }
+	friend HolomorphicFunction operator+(int a, const HolomorphicFunction &f) { return f + a; }
+
+	HolomorphicFunction operator-(const HolomorphicFunction &g) const {return *this + (-g); }
+	HolomorphicFunction operator-(Complex a) const {return *this + (-a); }
+	HolomorphicFunction operator-(float a) const {return *this + (-a); }
+	HolomorphicFunction operator-(int a) const {return *this + (-a); }
+	friend HolomorphicFunction operator-(Complex a, const HolomorphicFunction &f) { return -f + a; }
+	friend HolomorphicFunction operator-(float a, const HolomorphicFunction &f) { return -f + a; }
+	friend HolomorphicFunction operator-(int a, const HolomorphicFunction &f) { return -f + a; }
+
+	HolomorphicFunction operator*(const HolomorphicFunction &g) const {return HolomorphicFunction([f=_f, g=g._f](Complex z) { return f(z) * g(z); }, [df=_df, dg=g._df, f=_f, g=g._f](Complex z) { return df(z) * g(z) + f(z) * dg(z); }, eps); }
+	HolomorphicFunction operator*(Complex a) const {return HolomorphicFunction([f=_f, a](Complex z) { return f(z) * a; }, [df=_df, a](Complex z) { return df(z) * a; }, eps); }
+	HolomorphicFunction operator*(float a) const {return *this * Complex(a); }
+	HolomorphicFunction operator*(int a) const {return *this * Complex(a); }
+	friend HolomorphicFunction operator*(Complex a, const HolomorphicFunction &f) { return f * a; }
+	friend HolomorphicFunction operator*(float a, const HolomorphicFunction &f) { return f * a; }
+	friend HolomorphicFunction operator*(int a, const HolomorphicFunction &f) { return f * a; }
+
+	HolomorphicFunction operator/(Complex a) const { return HolomorphicFunction([f=_f, a](Complex z) { return f(z) / a; }, [df=_df, a](Complex z) { return df(z) / a; }, eps); }
+	HolomorphicFunction operator/(float a) const { return *this / Complex(a); }
+	HolomorphicFunction operator/(int a) const { return *this / Complex(a); }
+	friend HolomorphicFunction operator/(Complex a, const HolomorphicFunction &f) { return HolomorphicFunction([a, f=f._f](Complex z) { return a / f(z); }, [a, df=f._df, f=f._f](Complex z) { return -a * df(z) / (f(z) * f(z)); }, f.eps); }
+	friend HolomorphicFunction operator/(float a, const HolomorphicFunction &f) { return Complex(a)/f; }
+	friend HolomorphicFunction operator/(int a, const HolomorphicFunction &f) { return Complex(a)/f; }
+	HolomorphicFunction operator/(const HolomorphicFunction &g) const {return *this * (1/ g);}
+
+	HolomorphicFunction operator& (const HolomorphicFunction &g) const;
+
+	HolomorphicFunction pow(int a) const;
 	HolomorphicFunction pow(float a) const;
-	HolomorphicFunction sqrt() const;
-	HolomorphicFunction sq() const;
-	HolomorphicFunction pow2() const;
-	HolomorphicFunction pow3() const;
-	HolomorphicFunction operator*(Complex a) const;
-	HolomorphicFunction operator+(Complex a) const;
-	Complex operator()(Complex z) const;
+	HolomorphicFunction sqrt() const { return pow(.5f); }
+	HolomorphicFunction sq() const { return pow(2); }
+	HolomorphicFunction pow2() const { return pow(2); }
+	HolomorphicFunction pow3() const { return pow(3); }
+};
+
+const auto ONE_C = HolomorphicFunction([](Complex z) { return Complex(1); }, [](Complex z) { return Complex(0); }, .001);
+const auto ZERO_C = HolomorphicFunction([](Complex z) { return Complex(0); }, [](Complex z) { return Complex(0); }, .001);
+const auto X_C = HolomorphicFunction([](Complex z) { return z; }, [](Complex z) { return Complex(1); }, .001);
+const auto X2_C = X_C * X_C;
+const auto EXP_C = HolomorphicFunction([](Complex z) { return exp(z); }, [](Complex z) { return exp(z); }, .001);
+const auto LOG_C = HolomorphicFunction([](Complex z) { return log(z); }, [](Complex z) { return 1/z; }, .001);
+const auto SIN_C = HolomorphicFunction([](Complex z) { return sin(z); }, [](Complex z) { return cos(z); }, .001);
+const auto COS_C = HolomorphicFunction([](Complex z) { return cos(z); }, [](Complex z) { return -sin(z); }, .001);
+const auto TAN_C = SIN_C / COS_C;
+const auto COT_C = 1/TAN_C;
+const auto SINH_C = HolomorphicFunction([](Complex z) { return sinh(z); }, [](Complex z) { return cosh(z); }, .001);
+const auto COSH_C = HolomorphicFunction([](Complex z) { return cosh(z); }, [](Complex z) { return sinh(z); }, .001);
+const auto TANH_C = SINH_C / COSH_C;
+const auto COTH_C = 1/TANH_C;
+
+class BiholomorphicFunction {
+	HolomorphicFunction _f, _f_inv;
+
+public:
+	BiholomorphicFunction(const HolomorphicFunction &f, const HolomorphicFunction &f_inv) : _f(f), _f_inv(f_inv) {}
+	Complex operator()(Complex z) const { return _f(z); }
+	Complex inv(Complex z) const { return _f_inv(z); }
+	Complex df(Complex z) const { return _f.df(z); }
+
+	BiholomorphicFunction operator~() const { return BiholomorphicFunction(_f_inv, _f);}
+	BiholomorphicFunction inv() const { return ~(*this); }
+	BiholomorphicFunction operator& (const BiholomorphicFunction &g) const { return BiholomorphicFunction(_f & g._f, g._f_inv & _f_inv); }
+	operator HolomorphicFunction() const { return _f; }
 };
 
 class ComplexValuedFunction {

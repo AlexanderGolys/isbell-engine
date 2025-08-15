@@ -41,12 +41,12 @@ void add_all(vector<X> a, vector<X> b) {
 	a.insert(a.end(), b.begin(), b.end());
 }
 
-template<typename X>
-vector<X> concat(vector<X> a, vector<X> b) {
-	auto c = a;
-	c.insert(c.end(), b.begin(), b.end());
-	return c;
-}
+// template<typename X>
+// vector<X> concat(vector<X> a, vector<X> b) {
+// 	auto c = a;
+// 	c.insert(c.end(), b.begin(), b.end());
+// 	return c;
+// }
 
 namespace glm {
     inline vec3 xyz(const vec4& v) {

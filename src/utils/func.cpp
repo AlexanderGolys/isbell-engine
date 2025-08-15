@@ -801,6 +801,47 @@ PlaneAutomorphism PlaneAutomorphism::inv() const {
 	return ~(*this);
 }
 
+HolomorphicFunction::HolomorphicFunction(std::function<Complex(Complex)> f, std::function<Complex(Complex)> df, float epsilon): _f(std::move(f)), _df(std::move(df)), eps(epsilon) {}
+
+HolomorphicFunction::HolomorphicFunction(std::function<Complex(Complex)> f, float epsilon): _f(std::move(f)), eps(epsilon) {
+	_df = [F=_f, eps=epsilon](Complex z) {
+		return (F(z + eps) - F(z - eps)) / (2.f * eps);
+	};
+}
+
+HolomorphicFunction::HolomorphicFunction(const PlaneSmoothEndomorphism &f, float epsilon): HolomorphicFunction([f=f](Complex z) { return Complex(f(vec2(z.real(), z.imag()))); }, epsilon) {}
+
+HolomorphicFunction::HolomorphicFunction(const RealFunctionR2 &re, const RealFunctionR2 &im, float epsilon): HolomorphicFunction([real=re, imag=im](Complex z) { return Complex(real(z.real(), z.imag()), imag(z.real(), z.imag())); }, epsilon) {}
+
+HolomorphicFunction HolomorphicFunction::df() const { return HolomorphicFunction(_df, eps); }
+
+HolomorphicFunction HolomorphicFunction::d2f() const { return df().df(); }
+
+HolomorphicFunction HolomorphicFunction::dnf(int n) const {
+	if (n == 0) return *this;
+	if (n == 1) return df();
+	if (n < 0) throw ValueError("Derivative order must be non-negative");
+	return df().dnf(n-1);
+}
+
+HolomorphicFunction HolomorphicFunction::operator&(const HolomorphicFunction &g) const {
+	return HolomorphicFunction([f=_f, g=g._f](Complex z) { return f(g(z)); }, [df=_df, dg=g._df,g=g._f](Complex z) { return df(g(z)) * dg(z); }, eps);
+}
+
+HolomorphicFunction HolomorphicFunction::pow(int a) const {
+	if (a < 0) return 1 / pow(-a);
+	if (a == 0) return HolomorphicFunction([](Complex z) { return 0.0i+1; }, [](Complex z) { return 0i; }, eps);
+	if (a == 1) return *this;
+	if (a == 2) return *this * *this;
+	if (a == 3) return *this * *this * *this;
+	return pow(a/2) * pow(a-a/2);
+}
+
+HolomorphicFunction HolomorphicFunction::pow(float a) const {
+	if (nearlyEqual(a, ::floor(a))) return pow((int)a);
+	return HolomorphicFunction([f=_f, a](Complex z) { return f(z).pow(a); }, [df=_df, f=_f, a](Complex z) { return df(z) * a * f(z).pow(a-1); }, eps);
+}
+
 ComplexValuedFunction::ComplexValuedFunction(HOM(float, Complex) f, float eps)
 : f(std::move(f)), eps(eps) {}
 

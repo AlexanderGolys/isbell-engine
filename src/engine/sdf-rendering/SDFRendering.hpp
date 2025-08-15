@@ -65,7 +65,7 @@ public:
     SDFObjectInstance(const SDFObject &obj, const SDFMaterialPlus &material, const vector<vec3> &parameters={});
 
 	SDFObject getObject() const;
-	vector<vec3> parameterBuffer() const;
+	vector<vec3> getParameters() const;
 	vector<vec4> materialBuffer() const;
 	void resolveName(const string &name);
 	SDFObjectInstance smoothUnion(const SDFObjectInstance &other, float k) const;

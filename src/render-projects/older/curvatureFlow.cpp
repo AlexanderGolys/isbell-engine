@@ -49,9 +49,6 @@ int main() {
 //
 	surfmesh->orientFaces();
 
-	surfmesh->paintMeanCurvature();
-	helimesh->paintMeanCurvature();
-
 	// surfmesh->deformPerVertex([&surf](BufferedVertex &v) {
 	// 	v.setColor(surf.meanCurvature(v.getSurfaceParams()), 3); });
 	// helimesh->deformPerVertex([&heli](BufferedVertex &v) {

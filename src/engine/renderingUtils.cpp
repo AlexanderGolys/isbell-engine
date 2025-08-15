@@ -888,6 +888,8 @@ shared_ptr<Texture> MaterialPhong::makeDiffuseTexture(const string &filename, bo
 	return std::make_shared<Texture>(filename, 1, "texture_diffuse", alpha);
 }
 
+shared_ptr<Texture> MaterialPhong::makeSpecularTexture(const string &filename, bool alpha) { return std::make_shared<Texture>(filename, 2, "texture_specular", alpha); }
+
 MaterialPhong::MaterialPhong(const shared_ptr<Texture> &texture_ambient, const shared_ptr<Texture> &texture_diffuse,
 							 const shared_ptr<Texture> &texture_specular, float ambientIntensity, float diffuseIntensity,
 							 float specularIntensity, float shininess) {
@@ -908,7 +910,8 @@ MaterialPhong::MaterialPhong(const string &textureFilenameAmbient, const string 
 																																																																													makeSpecularTexture(textureFilenameSpecular, alphaSpecular),
 																																																																													ambientIntensity, diffuseIntensity, specularIntensity, shininess) {}
 
-MaterialPhong::MaterialPhong(vec4 ambient, vec4 diffuse, vec4 specular, float ambientIntensity, float diffuseIntensity, float specularIntensity, float shininess): MaterialPhong(constAmbientTexture(ambient), constDiffuseTexture(diffuse), constSpecularTexture(specular), ambientIntensity, diffuseIntensity, specularIntensity, shininess) {}
+MaterialPhong::MaterialPhong(vec4 ambient, vec4 diffuse, vec4 specular, float ambientIntensity, float diffuseIntensity, float specularIntensity, float shininess)
+: MaterialPhong(constAmbientTexture(ambient), constDiffuseTexture(diffuse), constSpecularTexture(specular), ambientIntensity, diffuseIntensity, specularIntensity, shininess) {}
 
 MaterialPhong::MaterialPhong(vec4 ambient, float ambientIntensity, float diffuseIntensity, float specularIntensity, float shininess): MaterialPhong(ambient, ambient, ambient, ambientIntensity, diffuseIntensity, specularIntensity, shininess) {}
 
@@ -1918,24 +1921,6 @@ Texture::Texture(int width, int height, int slot, const char* sampler)
 	glGenFramebuffers(1, &frameBufferID);
 }
 
-Texture::Texture(vec3 color, int slot, const char *sampler) {
-    width = 1;
-    height = 1;
-    size = 3;
-    this->alpha = false;
-    this->textureSlot = GL_TEXTURE0 + slot;
-    this->samplerName = sampler;
-    this->frameBufferID = 0;
-    this->textureID = 0;
-
-    data = new unsigned char[3];
-    data[0] = (unsigned char) (color.z * 255);
-    data[1] = (unsigned char) (color.y * 255);
-    data[2] = (unsigned char) (color.x * 255);
-
-	load();
-}
-
 Texture::Texture(vec4 color, int slot, const char *sampler) {
     width = 1;
     height = 1;
@@ -2001,7 +1986,9 @@ void Texture::deleteTexture()
 	glDeleteTextures(1, &this->textureID);
 }
 
-Texture::~Texture() { deleteTexture(); }
+Texture::~Texture() {
+	deleteTexture();
+}
 
 void Texture::addFilters(GLenum minFilter, GLenum magFilter, GLenum wrapS, GLenum wrapT) {
 	if (minFilter == GL_LINEAR_MIPMAP_LINEAR)

@@ -71,7 +71,7 @@ public:
 class Biholomorphism : public Meromorphism {
 public:
 	Meromorphism f_inv;
-	Biholomorphism(endC f, endC df, endC f_inv) : Meromorphism(std::move(f), df), f_inv(std::move(f_inv)) {}
+	Biholomorphism(endC f, endC df, endC f_inv) : Meromorphism(std::move(f), std::move(df)), f_inv(std::move(f_inv)) {}
 	Biholomorphism(endC f, endC f_inv, float eps=.01) : Meromorphism(std::move(f), eps), f_inv(std::move(f_inv), eps) {}
 	Biholomorphism(Meromorphism f, Meromorphism f_inv) : Meromorphism(f), f_inv(f_inv) {}
 

@@ -145,7 +145,7 @@ SDFScene::SDFScene(const vector<SDFObjectInstance> &objectInstances, const strin
 		objects.push_back(obj.getObject());
 		objects.back().increaseParameters(ind);
 		objects.back().resolveConflictsWithName("sdf");
-		addAll(parameterBuffer, obj.parameterBuffer());
+		addAll(parameterBuffer, obj.getParameters());
 		addAll(materialBuffer, obj.materialBuffer());
 	}
 }
@@ -333,7 +333,7 @@ int SDFRenderer::mainLoop() {
 	initRendering();
 	while (window->isOpen()) {
 		initFrame();
-		(*perFrameFunction)(time, dt);
+		perFrameFunction(time, dt);
 		for (auto &step: sdfSteps)
 			step->renderStep(time);
 		window->renderFramebufferToScreen();
@@ -374,7 +374,7 @@ SDFObjectInstance::SDFObjectInstance(const SDFObject &obj, const vec3 &position,
 	addTranslationAndRotationParameters(position, rotation);
 }
 
-vector<vec3> SDFObjectInstance::parameterBuffer() const {
+vector<vec3> SDFObjectInstance::getParameters() const {
 	return parameters;
 }
 
@@ -399,7 +399,7 @@ void SDFObjectInstance::resolveName(const string &name) {
 }
 
 SDFObjectInstance SDFObjectInstance::smoothUnion(const SDFObjectInstance &other, float k) const {
-	return SDFObjectInstance(obj.smoothUnion(other.obj, k), vec3(0), mat3(1), material, concat(parameters, other.parameters));
+	return SDFObjectInstance(obj.smoothUnion(other.obj, k), vec3(0), mat3(1), material, concat<vec3>(getParameters(), other.getParameters()));
 }
 
 void SDFObjectInstance::addParameterToMain(const string &key, vec3 value) {

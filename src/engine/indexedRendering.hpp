@@ -322,14 +322,11 @@ public:
 	void orientFaces(const PolyGroupID &id);
 	void orientFaces();
 
-
 	vector<int> findNeighboursSorted(int i, const PolyGroupID &id) const;
 	bool checkIfHasCompleteNeighbourhood(int i, const PolyGroupID &id) const;
 	float meanCurvature(int i, const PolyGroupID &id) const;
 	vec3 meanCurvatureVector(int i, const PolyGroupID &id) const;
 	float GaussCurvature(int i, const PolyGroupID &id) const;
-	void paintMeanCurvature(const PolyGroupID &id);
-	void paintMeanCurvature();
 
 	template<typename T>
 	T integrateOverTriangles(const HOM(const IndexedTriangle&, T) &f, PolyGroupID id) const;
@@ -583,11 +580,3 @@ public:
 	FoliatedParametricSurfaceMesh &operator=(const FoliatedParametricSurfaceMesh &other);
 	FoliatedParametricSurfaceMesh &operator=(FoliatedParametricSurfaceMesh &&other) noexcept;
 };
-
-
-
-
-// uv = (t, t0)
-// pos = (x, y, 0)
-// n = (0, 0, 1)
-// col = (color)

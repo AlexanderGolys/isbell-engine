@@ -6,7 +6,7 @@ set(CMAKE_MSVC_RUNTIME_LIBRARY "MultiThreaded$<$<CONFIG:Debug>:Debug>")
 set(CMAKE_MSVC_RUNTIME_LIBRARY "MultiThreaded$<$<CONFIG:Release>:Release>")
 
 find_package(OpenGL REQUIRED)
-
+#find_package(spdlog REQUIRED)
 
 if( CMAKE_BINARY_DIR STREQUAL CMAKE_SOURCE_DIR )
     message( FATAL_ERROR "Please select another Build Directory ! (and give it a clever name, like bin_Visual2012_64bits/)" )
@@ -29,9 +29,10 @@ add_compile_options(-Wno-literal-suffix)
 
 
 include_directories(
-external/glfw-3.1.2/include/
+	external/glfw-3.1.2/include/
 	external/glm-0.9.7.1/
 	external/glew-1.13.0/include/
+	external/spdlog-1.x/include/spdlog
 	.
 )
 
@@ -39,6 +40,7 @@ set(ALL_LIBS
 	${OPENGL_LIBRARY}
 	glfw
 	GLEW_1130
+	spdlog
 )
 
 add_definitions(
@@ -47,397 +49,59 @@ add_definitions(
 	-DTW_NO_DIRECT3D
 	-DGLEW_STATIC
 	-D_CRT_SECURE_NO_WARNINGS
+	-DSPDLOG_COMPILED_LIB
 )
 
 
-
-
-
-
-
-
-add_executable(guitar
-		src/render-projects/guitar.cpp
-		src/utils/macros.hpp
+set(CORE_UTILS
 		src/utils/filesUtils.cpp
 		src/utils/mat.cpp
 		src/utils/func.cpp
-		src/engine/indexedRendering.cpp
-		src/engine/specific.cpp
-		src/engine/glslUtils.cpp
-		src/engine/renderingUtils.cpp
+		src/utils/flows.cpp
+		src/utils/integralTransforms.cpp
+		src/utils/elemFunc.cpp
+		src/utils/logging.cpp
+		src/utils/solvers.cpp
+#		src/utils/symbolic.cpp
+)
+
+set(CORE_GEOMETRY
         src/geometry/complexGeo.cpp
         src/geometry/discreteGeometry.cpp
 #        src/geometry/hyperbolic.cpp
         src/geometry/planarGeometry.cpp
         src/geometry/smoothParametric.cpp
         src/geometry/smoothImplicit.cpp
+		src/geometry/pde.cpp
+		src/geometry/pdeDiscrete.cpp
+		src/geometry/sph.cpp
+)
+
+set(CORE_PHYSICS
         src/physics/solidMeshes.cpp
 		src/physics/rigid.cpp
-		src/utils/flows.cpp
-		src/utils/flows.hpp
-		src/utils/modules.hpp
-		src/utils/integralTransforms.hpp
-		src/utils/integralTransforms.cpp
-		src/geometry/pde.hpp
-		src/geometry/pde.cpp
-		src/engine/interface.cpp
-		src/engine/dynamicalSystems.cpp
-		src/utils/elemFunc.cpp
-		src/utils/elemFunc.hpp
+#		src/physics/generic.cpp
 )
 
-target_link_libraries(guitar
-        ${ALL_LIBS}
-)
-# Xcode and Visual working directories
-set_target_properties(guitar PROPERTIES XCODE_ATTRIBUTE_CONFIGURATION_BUILD_DIR "${CMAKE_CURRENT_SOURCE_DIR}/src/")
-
-
-
-
-
-add_executable(guitarCyg
-		src/render-projects/stringCyg.cpp
-		src/utils/macros.hpp
-		src/utils/filesUtils.cpp
-		src/utils/mat.cpp
-		src/utils/func.cpp
+set(CORE_ENGINE
 		src/engine/indexedRendering.cpp
+#		src/engine/bufferUtils.cpp
 		src/engine/specific.cpp
 		src/engine/glslUtils.cpp
 		src/engine/renderingUtils.cpp
-        src/geometry/complexGeo.cpp
-        src/geometry/discreteGeometry.cpp
-#        src/geometry/hyperbolic.cpp
-        src/geometry/planarGeometry.cpp
-        src/geometry/smoothParametric.cpp
-        src/geometry/smoothImplicit.cpp
-        src/physics/solidMeshes.cpp
-		src/physics/rigid.cpp
-		src/utils/flows.cpp
-		src/utils/flows.hpp
-		src/utils/modules.hpp
-		src/utils/integralTransforms.hpp
-		src/utils/integralTransforms.cpp
-		src/geometry/pde.hpp
-		src/geometry/pde.cpp
-		src/geometry/pdeDiscrete.hpp
-		src/geometry/pdeDiscrete.cpp
 		src/engine/interface.cpp
 		src/engine/dynamicalSystems.cpp
-		src/utils/elemFunc.cpp
-		src/utils/elemFunc.hpp
-		src/geometry/pdeDiscrete.cpp
-		src/geometry/pdeDiscrete.hpp
+		src/engine/sdf-rendering/SDFObjects.cpp
+		src/engine/sdf-rendering/SDFRendering.cpp
 )
 
-target_link_libraries(guitarCyg
-        ${ALL_LIBS}
-)
-# Xcode and Visual working directories
-set_target_properties(guitarCyg PROPERTIES XCODE_ATTRIBUTE_CONFIGURATION_BUILD_DIR "${CMAKE_CURRENT_SOURCE_DIR}/src/")
-##create_target_launcher(guitarCyg WORKING_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}/src/")
-
-#
-#add_executable(harmonic
-#        src/harmonicCompletion.cpp
-#		src/utils/macros.hpp
-#        src/utils/filesUtils.cpp
-#        src/utils/mat.cpp
-#        src/utils/func.cpp
-#        src/engine/indexedRendering.cpp
-#        src/engine/specific.cpp
-#        src/engine/glslUtils.cpp
-#        src/engine/renderingUtils.cpp
-#        src/geometry/complexGeo.cpp
-#        src/geometry/discreteGeometry.cpp
-##        src/geometry/hyperbolic.cpp
-#        src/geometry/planarGeometry.cpp
-#        src/geometry/smoothParametric.cpp
-#        src/geometry/smoothImplicit.cpp
-#        src/physics/solidMeshes.cpp
-#		src/physics/rigid.cpp
-#		src/utils/flows.cpp
-#		src/utils/flows.hpp
-#		src/utils/modules.hpp
-#        src/utils/integralTransforms.hpp
-#        src/utils/integralTransforms.cpp
-#		src/geometry/pde.hpp
-#		src/geometry/pde.cpp
-#
-#		src/engine/interface.cpp
-#		src/engine/dynamicalSystems.cpp
-#		src/utils/elemFunc.cpp
-#		src/utils/elemFunc.hpp
-#)
-#
-#target_link_libraries(harmonic
-#        ${ALL_LIBS}
-#)
-## Xcode and Visual working directories
-#set_target_properties(harmonic PROPERTIES XCODE_ATTRIBUTE_CONFIGURATION_BUILD_DIR "${CMAKE_CURRENT_SOURCE_DIR}/src/")
-##create_target_launcher(harmonic WORKING_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}/src/")
-#
-#
-add_executable(tests1
-		src/tests/discreteFuncTests.cpp
-		src/utils/macros.hpp
-		src/utils/filesUtils.cpp
-		src/utils/mat.cpp
-		src/utils/func.cpp
-		src/engine/indexedRendering.cpp
-		src/engine/specific.cpp
-		src/engine/glslUtils.cpp
-		src/engine/renderingUtils.cpp
-        src/geometry/complexGeo.cpp
-        src/geometry/discreteGeometry.cpp
-#        src/geometry/hyperbolic.cpp
-        src/geometry/planarGeometry.cpp
-        src/geometry/smoothParametric.cpp
-        src/geometry/smoothImplicit.cpp
-        src/physics/solidMeshes.cpp
-		src/physics/rigid.cpp
-		src/utils/flows.cpp
-		src/utils/flows.hpp
-		src/utils/modules.hpp
-		src/utils/integralTransforms.hpp
-		src/utils/integralTransforms.cpp
-		src/geometry/pde.hpp
-		src/geometry/pde.cpp
-		src/geometry/pdeDiscrete.hpp
-		src/geometry/pdeDiscrete.cpp
-		src/engine/interface.cpp
-		src/engine/dynamicalSystems.cpp
-		src/utils/elemFunc.cpp
-		src/utils/elemFunc.hpp
-)
-
-target_link_libraries(tests1
-        ${ALL_LIBS}
-)
-# Xcode and Visual working directories
-set_target_properties(tests1 PROPERTIES XCODE_ATTRIBUTE_CONFIGURATION_BUILD_DIR "${CMAKE_CURRENT_SOURCE_DIR}/src/")
-##create_target_launcher(tests1 WORKING_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}/src/")
-
-
-
-
-add_executable(gabor
-		src/render-projects/gabor.cpp
-		src/utils/macros.hpp
-		src/utils/filesUtils.cpp
-		src/utils/mat.cpp
-		src/utils/func.cpp
-		src/engine/indexedRendering.cpp
-		src/engine/specific.cpp
-		src/engine/glslUtils.cpp
-		src/engine/renderingUtils.cpp
-        src/geometry/complexGeo.cpp
-        src/geometry/discreteGeometry.cpp
-#        src/geometry/hyperbolic.cpp
-        src/geometry/planarGeometry.cpp
-        src/geometry/smoothParametric.cpp
-        src/geometry/smoothImplicit.cpp
-        src/physics/solidMeshes.cpp
-		src/physics/rigid.cpp
-		src/utils/flows.cpp
-		src/utils/flows.hpp
-		src/utils/modules.hpp
-		src/utils/integralTransforms.hpp
-		src/utils/integralTransforms.cpp
-		src/geometry/pde.hpp
-		src/geometry/pde.cpp
-		src/geometry/pdeDiscrete.hpp
-		src/geometry/pdeDiscrete.cpp
-		src/engine/interface.cpp
-		src/engine/dynamicalSystems.cpp
-		src/utils/elemFunc.cpp
-		src/utils/elemFunc.hpp
-		src/geometry/pdeDiscrete.cpp
-		src/geometry/pdeDiscrete.hpp
-)
-
-target_link_libraries(gabor
-        ${ALL_LIBS}
-)
-# Xcode and Visual working directories
-set_target_properties(gabor PROPERTIES XCODE_ATTRIBUTE_CONFIGURATION_BUILD_DIR "${CMAKE_CURRENT_SOURCE_DIR}/src/")
-##create_target_launcher(gabor WORKING_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}/src/")
-
-
-
-
-add_executable(zero
-		src/render-projects/zero.cpp
-		src/utils/macros.hpp
-		src/utils/filesUtils.cpp
-		src/utils/mat.cpp
-		src/utils/func.cpp
-		src/engine/indexedRendering.cpp
-		src/engine/specific.cpp
-		src/engine/glslUtils.cpp
-		src/engine/renderingUtils.cpp
-        src/geometry/complexGeo.cpp
-        src/geometry/discreteGeometry.cpp
-#        src/geometry/hyperbolic.cpp
-        src/geometry/planarGeometry.cpp
-        src/geometry/smoothParametric.cpp
-        src/geometry/smoothImplicit.cpp
-        src/physics/solidMeshes.cpp
-		src/physics/rigid.cpp
-		src/utils/flows.cpp
-		src/utils/flows.hpp
-		src/utils/modules.hpp
-		src/utils/integralTransforms.hpp
-		src/utils/integralTransforms.cpp
-		src/geometry/pde.hpp
-		src/geometry/pde.cpp
-		src/geometry/pdeDiscrete.hpp
-		src/geometry/pdeDiscrete.cpp
-		src/engine/interface.cpp
-		src/engine/dynamicalSystems.cpp
-		src/utils/elemFunc.cpp
-		src/utils/elemFunc.hpp
-		src/geometry/pdeDiscrete.cpp
-		src/geometry/pdeDiscrete.hpp
-)
-
-target_link_libraries(zero
-        ${ALL_LIBS}
-)
-# Xcode and Visual working directories
-set_target_properties(zero PROPERTIES XCODE_ATTRIBUTE_CONFIGURATION_BUILD_DIR "${CMAKE_CURRENT_SOURCE_DIR}/src/")
-##create_target_launcher(zero WORKING_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}/src/")
-
-#
-
-#
-
-
-add_executable(fluids
-		src/render-projects/fluids.cpp
-		src/utils/macros.hpp
-		src/utils/filesUtils.cpp
-		src/utils/mat.cpp
-		src/utils/func.cpp
-		src/engine/indexedRendering.cpp
-		src/engine/specific.cpp
-		src/engine/glslUtils.cpp
-		src/engine/renderingUtils.cpp
-        src/geometry/complexGeo.cpp
-        src/geometry/discreteGeometry.cpp
-        src/geometry/sph.cpp
-        src/geometry/planarGeometry.cpp
-        src/geometry/smoothParametric.cpp
-        src/geometry/smoothImplicit.cpp
-        src/physics/solidMeshes.cpp
-		src/physics/rigid.cpp
-		src/utils/flows.cpp
-		src/utils/flows.hpp
-		src/utils/modules.hpp
-		src/utils/integralTransforms.hpp
-		src/utils/integralTransforms.cpp
-		src/geometry/pde.hpp
-		src/geometry/pde.cpp
-		src/geometry/pdeDiscrete.hpp
-		src/geometry/pdeDiscrete.cpp
-		src/engine/interface.cpp
-		src/engine/dynamicalSystems.cpp
-		src/utils/elemFunc.cpp
-		src/utils/elemFunc.hpp
-		src/geometry/pdeDiscrete.cpp
-		src/geometry/pdeDiscrete.hpp
-)
-
-target_link_libraries(fluids
-        ${ALL_LIBS}
-)
-# Xcode and Visual working directories
-set_target_properties(fluids PROPERTIES XCODE_ATTRIBUTE_CONFIGURATION_BUILD_DIR "${CMAKE_CURRENT_SOURCE_DIR}/src/")
-##create_target_launcher(fluids WORKING_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}/src/")
-
-#
-
-#
-
-add_executable(foliatedTorus
-		src/render-projects/foliatedTorus.cpp
-		src/utils/macros.hpp
-		src/utils/filesUtils.cpp
-		src/utils/mat.cpp
-		src/utils/func.cpp
-		src/engine/indexedRendering.cpp
-		src/engine/specific.cpp
-		src/engine/glslUtils.cpp
-		src/engine/renderingUtils.cpp
-        src/geometry/complexGeo.cpp
-        src/geometry/discreteGeometry.cpp
-#        src/geometry/hyperbolic.cpp
-        src/geometry/planarGeometry.cpp
-        src/geometry/smoothParametric.cpp
-        src/geometry/smoothImplicit.cpp
-        src/physics/solidMeshes.cpp
-		src/physics/rigid.cpp
-		src/utils/flows.cpp
-		src/utils/flows.hpp
-		src/utils/modules.hpp
-		src/utils/integralTransforms.hpp
-		src/utils/integralTransforms.cpp
-		src/geometry/pde.hpp
-		src/geometry/pde.cpp
-		src/geometry/pdeDiscrete.hpp
-		src/geometry/pdeDiscrete.cpp
-		src/engine/interface.cpp
-		src/engine/dynamicalSystems.cpp
-		src/utils/elemFunc.cpp
-		src/utils/elemFunc.hpp
-		src/geometry/pdeDiscrete.cpp
-		src/geometry/pdeDiscrete.hpp
-)
-
-target_link_libraries(foliatedTorus
-        ${ALL_LIBS}
-)
-# Xcode and Visual working directories
-set_target_properties(foliatedTorus PROPERTIES XCODE_ATTRIBUTE_CONFIGURATION_BUILD_DIR "${CMAKE_CURRENT_SOURCE_DIR}/src/")
-##create_target_launcher(foliatedTorus WORKING_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}/src/")
-#
-#
 
 add_executable(zerodiv
 		src/render-projects/zerodiv.cpp
-		src/utils/macros.hpp
-		src/utils/filesUtils.cpp
-		src/utils/mat.cpp
-		src/utils/func.cpp
-		src/engine/indexedRendering.cpp
-		src/engine/specific.cpp
-		src/engine/glslUtils.cpp
-		src/engine/renderingUtils.cpp
-        src/geometry/complexGeo.cpp
-        src/geometry/discreteGeometry.cpp
-#        src/geometry/hyperbolic.cpp
-        src/geometry/planarGeometry.cpp
-        src/geometry/smoothParametric.cpp
-        src/geometry/smoothImplicit.cpp
-        src/physics/solidMeshes.cpp
-		src/physics/rigid.cpp
-		src/utils/flows.cpp
-		src/utils/flows.hpp
-		src/utils/modules.hpp
-		src/utils/integralTransforms.hpp
-		src/utils/integralTransforms.cpp
-		src/geometry/pde.hpp
-		src/geometry/pde.cpp
-		src/geometry/pdeDiscrete.hpp
-		src/geometry/pdeDiscrete.cpp
-		src/engine/interface.cpp
-		src/engine/dynamicalSystems.cpp
-		src/utils/elemFunc.cpp
-		src/utils/elemFunc.hpp
-		src/geometry/pdeDiscrete.cpp
-		src/geometry/pdeDiscrete.hpp
+		${CORE_UTILS}
+		${CORE_GEOMETRY}
+		${CORE_PHYSICS}
+		${CORE_ENGINE}
 )
 
 target_link_libraries(zerodiv
@@ -446,90 +110,3 @@ target_link_libraries(zerodiv
 # Xcode and Visual working directories
 set_target_properties(zerodiv PROPERTIES XCODE_ATTRIBUTE_CONFIGURATION_BUILD_DIR "${CMAKE_CURRENT_SOURCE_DIR}/src/")
 #create_target_launcher(zerodiv WORKING_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}/src/")
-
-
-add_executable(pallettes
-		src/render-projects/palettes.cpp
-		src/utils/macros.hpp
-		src/utils/filesUtils.cpp
-		src/utils/mat.cpp
-		src/utils/func.cpp
-		src/engine/indexedRendering.cpp
-		src/engine/specific.cpp
-		src/engine/glslUtils.cpp
-		src/engine/renderingUtils.cpp
-        src/geometry/complexGeo.cpp
-        src/geometry/discreteGeometry.cpp
-#        src/geometry/hyperbolic.cpp
-        src/geometry/planarGeometry.cpp
-        src/geometry/smoothParametric.cpp
-        src/geometry/smoothImplicit.cpp
-        src/physics/solidMeshes.cpp
-		src/physics/rigid.cpp
-		src/utils/flows.cpp
-		src/utils/flows.hpp
-		src/utils/modules.hpp
-		src/utils/integralTransforms.hpp
-		src/utils/integralTransforms.cpp
-		src/geometry/pde.hpp
-		src/geometry/pde.cpp
-		src/geometry/pdeDiscrete.hpp
-		src/geometry/pdeDiscrete.cpp
-		src/engine/interface.cpp
-		src/engine/dynamicalSystems.cpp
-		src/utils/elemFunc.cpp
-		src/utils/elemFunc.hpp
-		src/geometry/pdeDiscrete.cpp
-		src/geometry/pdeDiscrete.hpp
-)
-
-target_link_libraries(pallettes
-        ${ALL_LIBS}
-)
-# Xcode and Visual working directories
-set_target_properties(pallettes PROPERTIES XCODE_ATTRIBUTE_CONFIGURATION_BUILD_DIR "${CMAKE_CURRENT_SOURCE_DIR}/src/")
-#create_target_launcher(pallettes WORKING_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}/src/")
-
-#
-
-add_executable(dom
-		src/render-projects/domains.cpp
-		src/utils/macros.hpp
-		src/utils/filesUtils.cpp
-		src/utils/mat.cpp
-		src/utils/func.cpp
-		src/engine/indexedRendering.cpp
-		src/engine/specific.cpp
-		src/engine/glslUtils.cpp
-		src/engine/renderingUtils.cpp
-        src/geometry/complexGeo.cpp
-        src/geometry/discreteGeometry.cpp
-#        src/geometry/hyperbolic.cpp
-        src/geometry/planarGeometry.cpp
-        src/geometry/smoothParametric.cpp
-        src/geometry/smoothImplicit.cpp
-        src/physics/solidMeshes.cpp
-		src/physics/rigid.cpp
-		src/utils/flows.cpp
-		src/utils/flows.hpp
-		src/utils/modules.hpp
-		src/utils/integralTransforms.hpp
-		src/utils/integralTransforms.cpp
-		src/geometry/pde.hpp
-		src/geometry/pde.cpp
-		src/geometry/pdeDiscrete.hpp
-		src/geometry/pdeDiscrete.cpp
-		src/engine/interface.cpp
-		src/engine/dynamicalSystems.cpp
-		src/utils/elemFunc.cpp
-		src/utils/elemFunc.hpp
-		src/geometry/pdeDiscrete.cpp
-		src/geometry/pdeDiscrete.hpp
-)
-
-target_link_libraries(dom
-        ${ALL_LIBS}
-)
-# Xcode and Visual working directories
-set_target_properties(dom PROPERTIES XCODE_ATTRIBUTE_CONFIGURATION_BUILD_DIR "${CMAKE_CURRENT_SOURCE_DIR}/src/")
-#create_target_launcher(dom WORKING_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}/src/")

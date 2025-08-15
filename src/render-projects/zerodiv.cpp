@@ -1,5 +1,6 @@
 #include "../engine/specific.hpp"
 #include "../engine/interface.hpp"
+#include "../utils/logging.hpp"
 
 using namespace glm;
 
@@ -60,6 +61,8 @@ float cam_r = 5.5f; // camera radius
 
 
 int main() {
+
+
 	Renderer renderer = Renderer(settings);
 	renderer.initMainWindow();
 

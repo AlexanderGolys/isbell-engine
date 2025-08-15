@@ -677,6 +677,12 @@ Camera::Camera(const std::shared_ptr<SmoothParametricCurve> &trajectory, const s
     this->projectionMatrix = perspective(fov_x, aspectRatio, clippingRangeMin, clippingRangeMax);
 }
 
+vec3 Camera::position(float t) const { return trajectory->operator()(t); }
+
+vec3 Camera::lookAtPoint(float t) const { return lookAtFunc->operator()(t); }
+
+vec3 Camera::upVector(float t) const { return up(t); }
+
 
 mat4 Camera::viewMatrix(float t)
 {
@@ -690,8 +696,8 @@ mat4 Camera::vp(float t)
 
 mat4 Camera::mvp(float t, const mat4 &modelTransform)
 {
-	return vp(t);
-    // return projectionMatrix * viewMatrix(t) * modelTransform;
+	// return vp(t);
+    return vp(t) * modelTransform;
 }
 
 
@@ -1011,7 +1017,9 @@ void RenderingStep::addCustomAction(const std::function<void(float)> &action)
 	this->customStep = action;
 }
 
-bool RenderingStep::weakSuperLoaded() const { return weak_super != nullptr; }
+bool RenderingStep::weakSuperLoaded() const {
+	return weak_super != nullptr;
+}
 
 
 void RenderingStep::weakMeshRenderStep(float t) {
@@ -1065,15 +1073,20 @@ Renderer::Renderer(float animSpeed, vec4 bgColor, const string &screenshotDirect
 		   false,
 		   UNKNOWN,
 		   screenshotFrequency) {
+
 	this->window = nullptr;
 	this->vao = 0;
 	this->camera = nullptr;
 	this->time = 0;
 	this->lights = std::vector<Light>();
-	if (!glfwInit())
-		exit(2137);
+	Logger::init();
+
+	if (!glfwInit()) {
+		throw SystemError("Failed to initialize GLFW");
+	}
 	this->animSpeed = [animSpeed](float t) { return animSpeed; };
 	this->perFrameFunction = [](float t, float delta) {};
+
 }
 
 Renderer::Renderer(const RenderSettings &settings)
@@ -1097,9 +1110,12 @@ void Renderer::initMainWindow(int width, int height, const char *title)
 {
 	this->window = std::make_unique<Window>(width, height, title);
 	glewExperimental = true;
-	if (glewInit() != GLEW_OK)
+	if (glewInit() != GLEW_OK) {
+		LOG_ERROR("Failed to initialize GLEW");
 		throw SystemError("Failed to initialize GLEW");
+	}
 	this->vao = bindVAO();
+	LOG("Window initialized with size: " + std::to_string(width) + "x" + std::to_string(height));
 }
 
 void Renderer::initMainWindow(Resolution resolution, const char *title) {
@@ -1122,8 +1138,7 @@ void Renderer::addRenderingStep(std::shared_ptr<RenderingStep> renderingStep)
 }
 
 void Renderer::addMeshStep(const ShaderProgram &shader, const std::shared_ptr<IndexedMesh> &model, const MaterialPhong &material) {
-	auto renderingStep = std::make_shared<RenderingStep>(make_shared<ShaderProgram>(shader));
-	model->addGlobalMaterial(material);
+	auto renderingStep = make_shared<RenderingStep>(make_shared<ShaderProgram>(shader));
 	renderingStep->setWeakSuperMesh(model);
 	addRenderingStep(renderingStep);
 }
@@ -1172,13 +1187,13 @@ float Renderer::initFrame()
 	}
     dt = real_dt*animSpeed(time);
 	time += dt;
-	return this->time;
+	return time;
 }
 
 
 
 float Renderer::lastDeltaTime() const {
-    return this->dt;
+    return dt;
 }
 
 void Renderer::addPerFrameUniforms(const std::map<string, GLSLType> &uniforms, const std::map<string, shared_ptr<std::function<void(float, std::shared_ptr<ShaderProgram>)>>> &setters)
@@ -1202,6 +1217,7 @@ void Renderer::addSurfaceFamilyDeformer(SurfaceParametricPencil &pencil, Indexed
 
 void Renderer::initRendering()
 {
+
     window->initViewport();
     glBindVertexArray(vao);
 
@@ -1230,6 +1246,9 @@ void Renderer::initRendering()
 			throw ValueError("Rendering step does not have a weak super mesh set");
 		}
 	}
+
+	LOG("OpenGL renderer initialized: " + string((const char *)glGetString(GL_RENDERER)));
+
 }
 
 void Renderer::addConstUniform(const string &uniformName, GLSLType uniformType, shared_ptr<std::function<void(std::shared_ptr<ShaderProgram>)>> setter)

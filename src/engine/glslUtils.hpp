@@ -9,7 +9,7 @@
 #include <glm/glm.hpp>
 #include <glm/gtc/matrix_transform.hpp>
 #include <glm/gtx/transform.hpp>
-
+#include "src/utils/logging.hpp"
 
 // #include "renderingUtils.hpp"
 
@@ -182,9 +182,9 @@ public:
     Camera(const shared_ptr<SmoothParametricCurve> &trajectory, const shared_ptr<SmoothParametricCurve> &lookAtPos, const std::function<vec3(float)> &upVector, float fov_x = PI / 4,
    float aspectRatio = 16 / 9.f, float clippingRangeMin=.01f, float clippingRangeMax=100.f);
 
-	vec3 position(float t) const { return trajectory->operator()(t); }
-    vec3 lookAtPoint(float t) const { return lookAtFunc->operator()(t); }
-    vec3 upVector(float t) const { return up(t); }
+	vec3 position(float t) const;
+	vec3 lookAtPoint(float t) const;
+	vec3 upVector(float t) const;
 	mat4 mvp(float t, const mat4 &modelTransform);
 	mat4 viewMatrix(float t);
 	mat4 vp(float t);
@@ -217,6 +217,7 @@ public:
 
 class RenderingStep {
     void weakMeshRenderStep(float t);
+
 
 public:
 	explicit RenderingStep(const shared_ptr<ShaderProgram> &shader);
@@ -291,6 +292,7 @@ public:
 
 
 class Renderer {
+protected:
 	float last_time_capture = 0;
 	float since_last_scr = 0;
 

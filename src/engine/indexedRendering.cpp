@@ -1893,17 +1893,6 @@ float IndexedMesh::GaussCurvature(int i, const PolyGroupID &id) const {
 	return sum;
 }
 
-void IndexedMesh::paintMeanCurvature(const PolyGroupID &id) {
-	deformPerVertex(id, [this, id](BufferedVertex &v) {
-		v.setColor(meanCurvature(v.getIndex(), id), 2);
-	});
-}
-
-void IndexedMesh::paintMeanCurvature() {
-	for (auto id: getPolyGroupIDs())
-		paintMeanCurvature(id);
-}
-
 
 
 mat3 IndexedMesh::inertiaTensorAppBd(PolyGroupID id, vec3 p) const {
