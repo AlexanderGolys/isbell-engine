@@ -932,6 +932,30 @@ void RenderingStep::addConstColor(const string &name, vec4 value) {
 	addConstVec4(name, value);
 }
 
+void RenderingStep::addMaterialUniforms() {
+	vec4 intenc = material->compressIntencities();
+	auto materialSetter = [intenc](float t, const shared_ptr<ShaderProgram> &s) { s->setUniform("intencities", intenc); };
+	addUniform("intencities", VEC4, std::make_shared<std::function<void(float, shared_ptr<ShaderProgram>)>>(materialSetter));
+
+	auto textureSetterAmbient = [m=material](float t, const shared_ptr<ShaderProgram> &s) {
+		m->texture_ambient->bind();
+		s->setTextureSampler(m->texture_ambient.get());
+	};
+	addUniform("texture_ambient", SAMPLER2D, std::make_shared<std::function<void(float, shared_ptr<ShaderProgram>)>>(textureSetterAmbient));
+
+	auto textureSetterDiff = [m=material](float t, const shared_ptr<ShaderProgram> &s) {
+		m->texture_diffuse->bind();
+		s->setTextureSampler(m->texture_diffuse.get());
+	};
+	addUniform("texture_diffuse", SAMPLER2D, std::make_shared<std::function<void(float, shared_ptr<ShaderProgram>)>>(textureSetterDiff));
+
+	auto textureSetterSpec = [m=material](float t, const shared_ptr<ShaderProgram> &s) {
+		m->texture_specular->bind();
+		s->setTextureSampler(m->texture_specular.get());
+	};
+	addUniform("texture_specular", SAMPLER2D, std::make_shared<std::function<void(float, shared_ptr<ShaderProgram>)>>(textureSetterSpec));
+}
+
 void RenderingStep::setUniforms(float t)
 {
 	for (const auto &key: uniforms | std::views::keys)
@@ -983,7 +1007,7 @@ void RenderingStep::init(const shared_ptr<Camera> &cam, const std::vector<Light>
         shader->use();
         initElementBuffer();
         initWeakMeshAttributes();
-    	initMaterialTextures();
+    	addMaterialUniforms();
 		addCameraUniforms(cam);
     	addLightsUniforms(lights);
 
@@ -1013,7 +1037,7 @@ void RenderingStep::weakMeshRenderStep(float t) {
     customStep(t);
     setUniforms(t);
     loadElementBuffer();
-	bindTextures();
+	// bindTextures();
 
     enableAttributes();
     glDrawElements(GL_TRIANGLES, weak_super->bufferIndexSize(), GL_UNSIGNED_INT, 0);

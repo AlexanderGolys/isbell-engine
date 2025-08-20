@@ -1,4 +1,4 @@
-#include "hyperbolic.hpp"
+#include "hyperbolic_dep.hpp"
 #include <random>
 #include <chrono>
 #include <functional>

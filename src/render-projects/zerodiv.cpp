@@ -127,9 +127,9 @@ int main() {
 
 
 	auto floormat = make_shared<MaterialPhong>(BLUE_PALLETTE[1], .25, .151536, 0.42112348, 70.0);
-	auto projmat = make_shared<MaterialPhong>(BLUE_PALLETTE[1], .15, .39, 0.59, 2.0);
+	auto projmat = make_shared<MaterialPhong>(BLUE_PALLETTE[5], .15, .39, 0.59, 2.0);
 	auto flatmat = make_shared<MaterialPhong>(BLUE_PALLETTE[2], .15, .39, 0.59, 2.0);
-	auto inflinemat = make_shared<MaterialPhong>(REDPINK_PALLETTE[3], .15, .73, 0.59, 50.0);
+	auto inflinemat = make_shared<MaterialPhong>(REDPINK_PALLETTE[5], .15, .73, 0.59, 50.0);
 
 
 	auto shader_curve = ShaderProgram(
@@ -160,10 +160,10 @@ int main() {
 	renderer.addMeshStep(shader_floor_front, floor_proj, floormat);
 	renderer.addMeshStep(shader_floor_back, floor_proj, floormat);
 
-	// renderer.addCustomAction([&floor_proj, &projsurf, &projcurve, &proj](float t){
-	// 	floor_proj->adjustToNewSurface(projsurf(t));
-	// 	proj->updateCurve(projcurve(t));
-	// });
+	renderer.addCustomAction([&floor_proj, &projsurf, &projcurve, &proj](float t){
+		floor_proj->adjustToNewSurface(projsurf(t));
+		proj->updateCurve(projcurve(t));
+	});
 
 	return renderer.mainLoop();
 }

@@ -265,6 +265,7 @@ public:
 	void addConstFloats(const std::map<string, float>& uniforms);
 	void addConstVec4(const string& name, vec4 value);
 	void addConstColor(const string &name, vec4 value);
+	void addMaterialUniforms();
 	void setUniforms(float t);
 
     virtual void addCameraUniforms(const shared_ptr<Camera>& camera);
