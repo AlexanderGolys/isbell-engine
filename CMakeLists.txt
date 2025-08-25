@@ -1,4 +1,4 @@
-cmake_minimum_required (VERSION 3.0)
+cmake_minimum_required (VERSION 3.5)
 project (Engine)
 
 set(CMAKE_CXX_STANDARD 26)
@@ -24,14 +24,14 @@ endif()
 add_subdirectory (external)
 
 # On Visual 2005 and above, this module can set the debug working directory
-cmake_policy(SET CMP0026 OLD)
+#cmake_policy(SET CMP0026 OLD)
 add_compile_options(-Wno-literal-suffix)
 
 
 include_directories(
 	external/glfw-3.1.2/include/
 	external/glm-0.9.7.1/
-	external/glew-1.13.0/include/
+	external/glew-2.1.0/include/
 	external/spdlog-1.x/include/spdlog
 	.
 )

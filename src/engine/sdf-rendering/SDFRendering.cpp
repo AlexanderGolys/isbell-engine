@@ -1,6 +1,5 @@
 #include "SDFRendering.hpp"
 
-
 using std::shared_ptr, std::make_shared, std::vector, std::string;
 
 
