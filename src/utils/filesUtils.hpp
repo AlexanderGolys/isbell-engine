@@ -1,8 +1,7 @@
-//#pragma clang diagnostic push
-//#pragma ide diagnostic ignored "HidingNonVirtualFunction"
 #pragma once
 
-#include "macros.hpp"
+#include <sstream>
+#include "exceptions.hpp"
 
 const string DEFAULT_CONFIG_PATH = "C:\\Users\\PC\\Desktop\\ogl-master\\config";
 
@@ -73,27 +72,22 @@ public:
 };
 
 
-
-
-class ConfigFile : public CodeFileDescriptor {
-	std::map<string, string> config;
-
+class FileDescriptor {
+	void *address = nullptr;
+	void *fileHandle = nullptr;
+	void *mappingHandle = nullptr;
+	long long bytesize;
+	Path path;
+	string filename;
+	string extension;
 
 public:
-	ConfigFile();
-	explicit ConfigFile(const string &path);
-	static Path currentDirectory();
+	FileDescriptor(const Path &path, const string &filename);
+	~FileDescriptor();
 
-	string operator[](const string &key) const;
-	string check(const string &key) const;
-	Path getRoot() const;
-	Path getMainShaderDirectory() const;
-	Path getSDFMacroShader() const;
-	Path getMathToolsShaderMacro() const;
-	Path getLightToolsShaderMacro() const;
-	Path getStructsShaderMacro() const;
-	Path getShadersDir() const;
-	Path getScreenshotsDir() const;
+	void mapFile();
+	long long getSize() const;
+	void *getAddress() const;
 };
 
 
@@ -102,10 +96,8 @@ public:
 class CodeMacro {
 	string replacementKey;
 	string replacementCode;
-
-
 public:
-	CodeMacro(const string &key, const string &code);
+	CodeMacro(const string &key, const string &c);
 	CodeMacro(const string &key, const CodeFileDescriptor &file);
 	CodeMacro(const CodeMacro &other);
 	CodeMacro(CodeMacro &&other) noexcept;
@@ -116,6 +108,23 @@ public:
 };
 
 
+class ConfigFile{
+	std::unordered_map<string, string> config;
+public:
+	ConfigFile(const string &configPath = DEFAULT_CONFIG_PATH);
+
+	string operator[](const string &key) const;
+	string check(const string &key) const;
+
+	Path getRoot() const;
+	Path getMainShaderDirectory() const;
+	Path getSDFMacroShader() const;
+	Path getMathToolsShaderMacro() const;
+	Path getLightToolsShaderMacro() const;
+	Path getStructsShaderMacro() const;
+	Path getShadersDir() const;
+	Path getScreenshotsDir() const;
+};
 
 
 class TemplateCodeFile {
@@ -248,8 +257,3 @@ public:
 	friend ShaderRealFunctionR3 operator&(const string &f1Name, const ShaderRealFunctionR3 &f2);
 	ShaderRealFunctionR3 composeReturnWith(const ShaderMethodTemplate &f2) const;
 };
-
-
-
-
-#pragma clang diagnostic pop

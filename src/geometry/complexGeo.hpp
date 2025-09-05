@@ -1,10 +1,7 @@
 #pragma once
 
-#include <utility>
-
 #include "planarGeometry.hpp"
 
-using std::make_shared, std::shared_ptr, std::function, std::vector, std::pair, std::make_unique;
 
 
 // const Mob CayleyTransform = Mob(1, -1.0i, 1, 1.0i);
@@ -24,17 +21,11 @@ public:
 
 	explicit ComplexCurve(HOM(float, Complex) f, bool cyclic=true, float t0=0, float t1=TAU);
     explicit ComplexCurve(const SmoothParametricPlaneCurve& curve);
-	Complex operator()(float t) const {return _f(t);}
-    vector<Complex> sample(float x0, float x1, int n) {
-		vector<Complex> res ={};
-		for (int i=0; i<n; i++)
-			res.push_back((*this)(lerp(x0, x1, 1.f*i/n)));
-		return res;
-	}
-    vector<Complex> sample(int n) {
-	    return sample(t0, t1, n);
-    }
-    ComplexCurve disjointUnion(ComplexCurve &other);
+	Complex operator()(float t) const;
+	vector<Complex> sample(float x0, float x1, int n);
+
+	vector<Complex> sample(int n);
+	ComplexCurve disjointUnion(ComplexCurve &other);
 
     static ComplexCurve line(Complex z0, Complex z1);
     static ComplexCurve circle(Complex z0, float r);
@@ -51,20 +42,20 @@ public:
 	Meromorphism(Meromorphism &&other) noexcept;
 	Meromorphism & operator=(const Meromorphism &other);
 	Meromorphism & operator=(Meromorphism &&other) noexcept;
-	Meromorphism() : _f([](Complex){return Complex(0.f);}), _df([](Complex){return Complex(0.f);}) {}
-	Meromorphism(endC f, endC df) : _f(std::move(f)), _df(std::move(df)) {}
-	explicit Meromorphism(endC f, float eps=.01f) : _f(std::move(f)), _df([F=f, e=eps](Complex z){return (F(z + Complex(e)) - F(z))/e;}) {}
+	Meromorphism();
+	Meromorphism(endC f, endC df);
+	explicit Meromorphism(endC f, float eps=.01f);
 
-	Complex operator()(Complex z) const {return _f(z);}
-	Complex operator()(vec2 z) const { return _f(Complex(z)); }
-	Complex df(Complex z) const { return _df(z); }
-	Complex df(vec2 z) const { return _df(Complex(z)); }
-	Meromorphism compose(const Meromorphism &g) const {return Meromorphism([f=_f, g=g._f](Complex z){return f(g(z));}, [f=_f, df=_df, g=g._f, dg=g._df](Complex z){return df(g(z)) * dg(z);});}
-	Meromorphism operator&(const Meromorphism &g) const {return (this)->compose(g);}
-	Meromorphism operator+(const Meromorphism& g) const {return Meromorphism([f=_f, g=g._f](Complex z){return f(z) + g(z);}, [df=_df, dg=g._df](Complex z){return df(z) + dg(z);});}
-	Meromorphism operator*(const Meromorphism& g) const {return Meromorphism([f=_f, g=g._f](Complex z){return f(z) * g(z);}, [f=_f, df=_df, g=g._f, dg=g._df](Complex z){return f(z) * dg(z) + df(z) * g(z);});}
-	Meromorphism operator-() const {return Meromorphism([f=_f](Complex z){return -f(z);}, [df=_df](Complex z){return -df(z);});}
-	Meromorphism operator-(const Meromorphism& g) const {return *this + -g;}
+	Complex operator()(Complex z) const;
+	Complex operator()(vec2 z) const;
+	Complex df(Complex z) const;
+	Complex df(vec2 z) const;
+	Meromorphism compose(const Meromorphism &g) const;
+	Meromorphism operator&(const Meromorphism &g) const;
+	Meromorphism operator+(const Meromorphism& g) const;
+	Meromorphism operator*(const Meromorphism& g) const;
+	Meromorphism operator-() const;
+	Meromorphism operator-(const Meromorphism& g) const;
 };
 
 
@@ -75,15 +66,16 @@ public:
 	Biholomorphism(endC f, endC f_inv, float eps=.01) : Meromorphism(std::move(f), eps), f_inv(std::move(f_inv), eps) {}
 	Biholomorphism(Meromorphism f, Meromorphism f_inv) : Meromorphism(f), f_inv(f_inv) {}
 
-	Complex inv(Complex z) const { return f_inv(z); }
-	Biholomorphism operator~() const {return Biholomorphism(f_inv, f_inv._df, _f);}
+	Complex inv(Complex z) const;
+	Biholomorphism operator~() const;
 	Biholomorphism operator*(Complex a) const;
 	Biholomorphism operator+(Complex a) const;
 	Biholomorphism operator-(Complex a) const;
 	Biholomorphism operator/(Complex a) const;
-	Biholomorphism inv() const { return ~(*this); }
-	Complex operator()(Complex z) const { return _f(z); }
+	Biholomorphism inv() const;
+	Complex operator()(Complex z) const;
 	Biholomorphism compose(Biholomorphism g) const;
+
 	static Biholomorphism mobius(Matrix<Complex> m);
 	static Biholomorphism linear(Complex a, Complex b);
 	static Biholomorphism _LOG();

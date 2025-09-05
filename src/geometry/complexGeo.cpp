@@ -53,6 +53,40 @@ Meromorphism & Meromorphism::operator=(Meromorphism &&other) noexcept {
 	return *this;
 }
 
+Meromorphism::Meromorphism(): _f([](Complex){return Complex(0.f);}), _df([](Complex){return Complex(0.f);}) {}
+
+Meromorphism::Meromorphism(std::function<Complex(Complex)> f, std::function<Complex(Complex)> df): _f(std::move(f)), _df(std::move(df)) {}
+
+Meromorphism::Meromorphism(std::function<Complex(Complex)> f, float eps): _f(std::move(f)), _df([F=f, e=eps](Complex z){return (F(z + Complex(e)) - F(z))/e;}) {}
+
+Complex Meromorphism::operator()(Complex z) const {return _f(z);}
+
+Complex Meromorphism::operator()(vec2 z) const { return _f(Complex(z)); }
+
+Complex Meromorphism::df(Complex z) const { return _df(z); }
+
+Complex Meromorphism::df(vec2 z) const { return _df(Complex(z)); }
+
+Meromorphism Meromorphism::compose(const Meromorphism &g) const {return Meromorphism([f=_f, g=g._f](Complex z){return f(g(z));}, [f=_f, df=_df, g=g._f, dg=g._df](Complex z){return df(g(z)) * dg(z);});}
+
+Meromorphism Meromorphism::operator&(const Meromorphism &g) const {return (this)->compose(g);}
+
+Meromorphism Meromorphism::operator+(const Meromorphism &g) const {return Meromorphism([f=_f, g=g._f](Complex z){return f(z) + g(z);}, [df=_df, dg=g._df](Complex z){return df(z) + dg(z);});}
+
+Meromorphism Meromorphism::operator*(const Meromorphism &g) const {return Meromorphism([f=_f, g=g._f](Complex z){return f(z) * g(z);}, [f=_f, df=_df, g=g._f, dg=g._df](Complex z){return f(z) * dg(z) + df(z) * g(z);});}
+
+Meromorphism Meromorphism::operator-() const {return Meromorphism([f=_f](Complex z){return -f(z);}, [df=_df](Complex z){return -df(z);});}
+
+Meromorphism Meromorphism::operator-(const Meromorphism &g) const {return *this + -g;}
+
+Complex Biholomorphism::inv(Complex z) const { return f_inv(z); }
+
+Biholomorphism Biholomorphism::operator~() const {return Biholomorphism(f_inv, f_inv._df, _f);}
+
+Biholomorphism Biholomorphism::inv() const { return ~(*this); }
+
+Complex Biholomorphism::operator()(Complex z) const { return _f(z); }
+
 Biholomorphism Biholomorphism::compose(Biholomorphism g) const {
 	return Biholomorphism([f=_f, g=g._f](Complex z) {
 							  return f(g(z));
@@ -94,4 +128,17 @@ ComplexCurve::ComplexCurve(const SmoothParametricPlaneCurve &curve)
 	_df = [C=curve](float t) { return Complex(C.df(t)); };
 	N = [d=_df](float t) { return Complex(orthogonalComplement(d(t).z)); };
 	period = 0;
+}
+
+Complex ComplexCurve::operator()(float t) const {return _f(t);}
+
+vector<Complex> ComplexCurve::sample(float x0, float x1, int n) {
+	vector<Complex> res ={};
+	for (int i=0; i<n; i++)
+		res.push_back((*this)(lerp(x0, x1, 1.f*i/n)));
+	return res;
+}
+
+vector<Complex> ComplexCurve::sample(int n) {
+	return sample(t0, t1, n);
 }

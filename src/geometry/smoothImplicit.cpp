@@ -1,6 +1,6 @@
 #include "smoothImplicit.hpp"
-#include "src/utils/func.hpp"
-#include "src/engine/indexedRendering.hpp"
+#include "../utils/func.hpp"
+#include "../engine/indexedRendering.hpp"
 
 using std::vector, std::string, std::shared_ptr, std::unique_ptr, std::pair, std::make_unique, std::make_shared, std::function;
 
@@ -282,7 +282,7 @@ vec3 ImplicitSurfacePoint::rotateAroundNormal(vec3 q, float angle) const {
 
 vec3 ImplicitVolume::uniform_random_sample(int rec_limit, int it) const {
 	if (it > rec_limit) 
-		throw RecursionLimitExceeded(rec_limit, "uniform sampling from implicit volume");
+		throw RecursionLimitExceeded(rec_limit, "uniform sampling from implicit volume", __FILE__, __LINE__);
 	vec3 x = random_vec3(x_min, x_max);
 	if (!contains(x))
 		return uniform_random_sample(rec_limit, it+1);

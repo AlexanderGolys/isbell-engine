@@ -1,39 +1,63 @@
+#include "macros.hpp"
 #include "logging.hpp"
+#include "spdlog/spdlog.h"
+#include "spdlog/sinks/stdout_color_sinks.h"
+#include <cstdarg>
 
-std::shared_ptr<spdlog::logger> Logger::engine_logger;
-std::shared_ptr<spdlog::logger> Logger::external_logger;
-std::shared_ptr<spdlog::logger> Logger::pure_logger;
+namespace logging {
 
-void Logger::init() {
-	engine_logger = std::make_shared<spdlog::logger>("Engine", std::make_shared<spdlog::sinks::stdout_color_sink_mt>());
-	spdlog::register_logger(engine_logger);
-	engine_logger->set_pattern("%^[%T:%e] %v");
-	engine_logger->set_level(spdlog::level::trace);
-	engine_logger->flush_on(spdlog::level::trace);
+	// Opaque logger handles
+	void* Logger::engine_logger = nullptr;
+	void* Logger::external_logger = nullptr;
+	void* Logger::pure_logger = nullptr;
 
-	external_logger = std::make_shared<spdlog::logger>("External", std::make_shared<spdlog::sinks::stdout_color_sink_mt>());
-	spdlog::register_logger(external_logger);
-	external_logger->set_pattern("%^[%T:%e] [SCENE] %v");
-	external_logger->set_level(spdlog::level::trace);
-	external_logger->flush_on(spdlog::level::trace);
+	void Logger::init() {
+		Logger::engine_logger = (void*)spdlog::stdout_color_mt("Engine").get();
+		Logger::external_logger = (void*)spdlog::stdout_color_mt("External").get();
+		Logger::pure_logger = (void*)spdlog::stdout_color_mt("Pure").get();
+	}
 
-	pure_logger = std::make_shared<spdlog::logger>("Pure", std::make_shared<spdlog::sinks::stdout_color_sink_mt>());
-	spdlog::register_logger(pure_logger);
-	pure_logger->set_pattern("%v");
-	pure_logger->set_level(spdlog::level::trace);
-	pure_logger->flush_on(spdlog::level::trace);
+	void* Logger::getEngineLogger() { return engine_logger; }
+	void* Logger::getExternalLogger() { return external_logger; }
+	void* Logger::getPureLogger() { return pure_logger; }
 
-	pure_logger->info("------------------------------------");
-}
+	static spdlog::logger* get_logger(void* handle) {
+		return reinterpret_cast<spdlog::logger*>(handle);
+	}
 
-std::shared_ptr<spdlog::logger>& Logger::getEngineLogger() {
-	return engine_logger;
-}
+	void log_info(const char* fmt, ...) {
+		char buf[1024];
+		va_list args;
+		va_start(args, fmt);
+		vsnprintf(buf, sizeof(buf), fmt, args);
+		va_end(args);
+		get_logger(Logger::engine_logger)->info(buf);
+	}
+	void log_error(const char* fmt, ...) {
+		char buf[1024];
+		va_list args;
+		va_start(args, fmt);
+		vsnprintf(buf, sizeof(buf), fmt, args);
+		va_end(args);
+		get_logger(Logger::engine_logger)->error(buf);
+	}
+	void log_warn(const char* fmt, ...) {
+		char buf[1024];
+		va_list args;
+		va_start(args, fmt);
+		vsnprintf(buf, sizeof(buf), fmt, args);
+		va_end(args);
+		get_logger(Logger::engine_logger)->warn(buf);
+	}
 
-std::shared_ptr<spdlog::logger>& Logger::getExternalLogger() {
-	return external_logger;
-}
+	void log_info(const string& msg) {
+		get_logger(Logger::engine_logger)->info(msg);
+	}
+	void log_error(const string& msg) {
+		get_logger(Logger::engine_logger)->error(msg);
+	}
+	void log_warn(const string& msg) {
+		get_logger(Logger::engine_logger)->warn(msg);
+	}
 
-std::shared_ptr<spdlog::logger> & Logger::getPureLogger() {
-	return pure_logger;
-}
+} // namespace logging

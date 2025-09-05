@@ -149,7 +149,7 @@ public:
 
 class RollingBody {
 	SmoothParametricCurve boundary; // polar b(phi)
-	SmoothParametricCurve floor; // arclen f(s)
+	SmoothParametricCurve floor; // arclen _f(s)
 	vec3 gravity;
 	vec3 centerOfMass;
 	float angularVelocity = 0;

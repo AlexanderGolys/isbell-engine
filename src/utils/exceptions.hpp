@@ -27,103 +27,122 @@ inline string plural (string word) {
 
 
 class ErrorClassWrapper : public std::exception {
-	string msg_;
+    string msg_;
+    string file_;
+    int line_;
+    mutable string full_msg_;
 public:
-	explicit ErrorClassWrapper(const string& msg) : msg_(msg) {}
-	const char* what() const noexcept override {
-		return msg_.c_str();
-	}
-	string message() const { return msg_; }
+    explicit ErrorClassWrapper(const string& msg, const char* file, int line)
+        : msg_(msg), file_(file), line_(line) {}
+    const char* what() const noexcept override {
+        if (file_.empty() || line_ == 0)
+            return msg_.c_str();
+        full_msg_ = msg_ + " [at " + file_ + ":" + std::to_string(line_) + "]";
+        return full_msg_.c_str();
+    }
+    string message() const { return msg_; }
+    string file() const { return file_; }
+    int line() const { return line_; }
 };
 
 class NotImplementedError : public ErrorClassWrapper {
 public:
-    explicit NotImplementedError(const string& notImplementedMethodName, const string& lackingType="Method")
-        : ErrorClassWrapper(lackingType + " " + notImplementedMethodName + " is not implemented yet.") {}
+    NotImplementedError(const string& notImplementedMethodName, const string& lackingType, const char* file, int line)
+        : ErrorClassWrapper(lackingType + " " + notImplementedMethodName + " is not implemented yet.", file, line) {}
+    NotImplementedError(const string& notImplementedMethodName, const char* file, int line)
+    : ErrorClassWrapper(notImplementedMethodName + " is not implemented yet.", file, line) {}
 };
 
 class RecursionLimitExceeded : public ErrorClassWrapper {
 public:
-	explicit RecursionLimitExceeded(int limit, const string &where)
-		: ErrorClassWrapper("Recursion limit (" + std::to_string(limit) + "levels) exceeded during " + where) {}
+    RecursionLimitExceeded(int limit, const string &where, const char* file, int line)
+        : ErrorClassWrapper("Recursion limit (" + std::to_string(limit) + "levels) exceeded during " + where, file, line) {}
 };
 
 class IndexOutOfBounds : public ErrorClassWrapper {
 public:
-	IndexOutOfBounds(int index, int size, const string &indexName="i")
-		: ErrorClassWrapper("Index " + indexName + " is out of bounds [" + std::to_string(index) + "/" + std::to_string(size) + "].") {}
-	IndexOutOfBounds(const string &index, const string &size, const string &indexName="i")
-		: ErrorClassWrapper("Index " + indexName + " is out of bounds [" + index + "/" + size + "].") {}
-	IndexOutOfBounds(const ivec2 &index, const ivec2 &size, const string &indexName="i")
-		: ErrorClassWrapper("Index " + indexName + " is out of bounds [" + format("({}, {})", index.x, index.y) + "/" + format("({}, {})", size.x, size.y) + "].") {}
-	IndexOutOfBounds(const ivec3 &index, const ivec3 &size, const string &indexName="i")
-	: ErrorClassWrapper("Index " + indexName + " is out of bounds [" + format("({}, {}, {})", index.x, index.y, index.z) + "/" + format("({}, {}, {})", size.x, size.y, size.z) + "].") {}
-	IndexOutOfBounds(const ivec4 &index, const ivec4 &size, const string &indexName="i")
-	: ErrorClassWrapper("Index " + indexName + " is out of bounds [" + format("({}, {}, {}, {})", index.x, index.y, index.z, index.w) + "/" + format("({}, {}, {}, {})", size.x, size.y, size.z, size.w) + "].") {}
+    IndexOutOfBounds(int index, int size, const string &indexName, const char* file, int line)
+        : ErrorClassWrapper("Index " + indexName + " is out of bounds [" + std::to_string(index) + "/" + std::to_string(size) + "].", file, line) {}
+    IndexOutOfBounds(const string &index, const string &size, const string &indexName, const char* file, int line)
+        : ErrorClassWrapper("Index " + indexName + " is out of bounds [" + index + "/" + size + "].", file, line) {}
+    IndexOutOfBounds(const ivec2 &index, const ivec2 &size, const string &indexName, const char* file, int line)
+        : ErrorClassWrapper("Index " + indexName + " is out of bounds [" + format("({}, {})", index.x, index.y) + "/" + format("({}, {})", size.x, size.y) + "].", file, line) {}
+    IndexOutOfBounds(const ivec3 &index, const ivec3 &size, const string &indexName, const char* file, int line)
+        : ErrorClassWrapper("Index " + indexName + " is out of bounds [" + format("({}, {}, {})", index.x, index.y, index.z) + "/" + format("({}, {}, {})", size.x, size.y, size.z) + "].", file, line) {}
+    IndexOutOfBounds(const ivec4 &index, const ivec4 &size, const string &indexName, const char* file, int line)
+        : ErrorClassWrapper("Index " + indexName + " is out of bounds [" + format("({}, {}, {}, {})", index.x, index.y, index.z, index.w) + "/" + format("({}, {}, {}, {})", size.x, size.y, size.z, size.w) + "].", file, line) {}
+    IndexOutOfBounds(int index, int size, const char* file, int line)
+        : ErrorClassWrapper("Index " + std::to_string(index) + " is out of bounds [" + std::to_string(index) + "/" + std::to_string(size) + "].", file, line) {}
 };
 
 class NotImplementedMethodError : public NotImplementedError {
 public:
-  explicit NotImplementedMethodError(const string& methodName)
-      :NotImplementedError(methodName, "Method") {}
+    NotImplementedMethodError(const string& methodName, const char* file, int line)
+        : NotImplementedError(methodName, "Method", file, line) {}
 };
 
 class NotImplementedFunctionError : public NotImplementedError {
 public:
-  explicit NotImplementedFunctionError(const string& name)
-      :NotImplementedError(name, "Function") {}
+    NotImplementedFunctionError(const string& name, const char* file, int line)
+        : NotImplementedError(name, "Function", file, line) {}
 };
 
 class NotImplementedVariantError : public NotImplementedError {
 public:
-  NotImplementedVariantError(const string& variant, const string& ofWhat)
-      :NotImplementedError(variant + " of " + ofWhat, "Variant") {}
+    NotImplementedVariantError(const string& variant, const string& ofWhat, const char* file, int line)
+        : NotImplementedError(variant + " of " + ofWhat, "Variant", file, line) {}
 };
 
 class UnknownVariantError : public ErrorClassWrapper {
 public:
-  UnknownVariantError(const string& variant, const string& ofWhat)
-      : ErrorClassWrapper("Variant " + variant + " of  " + ofWhat + " is an unknown type in this context.") {}
-  explicit UnknownVariantError(const string& msg) : ErrorClassWrapper(msg) {}
-
+    UnknownVariantError(const string& variant, const string& ofWhat, const char* file, int line)
+        : ErrorClassWrapper("Variant " + variant + " of  " + ofWhat + " is an unknown type in this context.", file, line) {}
+    UnknownVariantError(const string& msg, const char* file, int line)
+        : ErrorClassWrapper(msg, file, line) {}
 };
 
 class IllegalVariantError : public ErrorClassWrapper {
 public:
-  IllegalVariantError(const string& variant, const string& ofWhat, const string& rejectingMethod)
-      : ErrorClassWrapper(plural(ofWhat) + " in variant " + variant + " are considered invalid by method " + rejectingMethod + ".") {}
-  explicit IllegalVariantError(const string& msg) : ErrorClassWrapper(msg) {}
-
+    IllegalVariantError(const string& variant, const string& ofWhat, const string& rejectingMethod, const char* file, int line)
+        : ErrorClassWrapper(plural(ofWhat) + " in variant " + variant + " are considered invalid by method " + rejectingMethod + ".", file, line) {}
+    IllegalVariantError(const string& msg, const char* file, int line)
+        : ErrorClassWrapper(msg, file, line) {}
 };
 
 class IllegalArgumentError : public ErrorClassWrapper {
 public:
-	explicit IllegalArgumentError(const string& msg) : ErrorClassWrapper(msg) {}
+    IllegalArgumentError(const string& msg, const char* file, int line)
+        : ErrorClassWrapper(msg, file, line) {}
 };
 
 class ValueError : public ErrorClassWrapper {
 public:
-	explicit ValueError(const string& msg) : ErrorClassWrapper(msg) {}
+    ValueError(const string& msg, const char* file, int line)
+        : ErrorClassWrapper(msg, file, line) {}
 };
 
 class SystemError : public ErrorClassWrapper {
 public:
-	explicit SystemError(const string& msg) : ErrorClassWrapper(msg) {}
+    SystemError(const string& msg, const char* file, int line)
+        : ErrorClassWrapper(msg, file, line) {}
 };
 
 class FileNotFoundError : public SystemError {
 public:
-	explicit FileNotFoundError(const string& filename) : SystemError("File " + filename + " not found.") {}
-	FileNotFoundError(const string& filename, const string& dir) : SystemError("File " + filename + " not found in " + dir) {}
+    FileNotFoundError(const string& filename, const char* file, int line)
+        : SystemError("File " + filename + " not found.", file, line) {}
+    FileNotFoundError(const string& filename, const string& dir, const char* file, int line)
+        : SystemError("File " + filename + " not found in " + dir, file, line) {}
 };
 
 class InvalidFileError : public SystemError {
 public:
-	explicit InvalidFileError(const string& filename, const string& reason="")
-	: SystemError(format("File {0} is invalid{1}{2}{3}.", filename, reason == "" ? " (" : "", reason, reason == "" ? ")" : "")) {}
+    InvalidFileError(const string& filename, const string& reason, const char* file, int line)
+        : SystemError("File " + filename + " is invalid (" + reason + ").", file, line) {}
 };
 
 class ZeroDivisionError : public ValueError {
 public:
-	explicit ZeroDivisionError(const string& msg="") : ValueError(msg) {}
+    ZeroDivisionError(const string& msg, const char* file, int line)
+        : ValueError(msg, file, line) {}
 };

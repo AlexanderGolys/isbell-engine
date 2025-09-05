@@ -1,8 +1,5 @@
 #pragma once
 
-// #include <utility>
-
-#include <utility>
 #include "complexGeo.hpp"
 
 
@@ -26,14 +23,14 @@ protected:
     bool periodic;
     PolyGroupID id;
 public:
-    SmoothParametricCurve(Foo13 f, Foo13 df, Foo13 ddf, PolyGroupID id=DFLT_CURV, float t0=0, float t1=TAU, bool periodic=true, float epsilon=0.01);
-	SmoothParametricCurve(Foo13 f, Foo13 df,PolyGroupID id=DFLT_CURV,  float t0=0, float t1=TAU, bool periodic=true, float epsilon=0.01);
-    explicit SmoothParametricCurve(const Foo13 &f, PolyGroupID id=DFLT_CURV,  float t0=0, float t1=TAU, bool periodic=true, float epsilon=0.01) : SmoothParametricCurve(f, derivativeOperator(f, epsilon), std::move(id), t0, t1, periodic, epsilon) {}
-	SmoothParametricCurve(const Foo13 &f,   vec2 dom, PolyGroupID id=DFLT_CURV, bool periodic=false, float epsilon=0.01) : SmoothParametricCurve(f, derivativeOperator(f, epsilon), std::move(id), dom.x, dom.y, periodic, epsilon) {}
+    SmoothParametricCurve(Foo13 f, Foo13 df, Foo13 ddf, PolyGroupID id=DFLT_CURV, float t0=0, float t1=TAU, bool periodic=true, float epsilon=0.01f);
+	SmoothParametricCurve(Foo13 f, Foo13 df, PolyGroupID id=DFLT_CURV,  float t0=0, float t1=TAU, bool periodic=true, float epsilon=0.01f);
+    explicit SmoothParametricCurve(const Foo13 &f, PolyGroupID id=DFLT_CURV,  float t0=0, float t1=TAU, bool periodic=true, float epsilon=0.01f) : SmoothParametricCurve(f, derivativeOperator(f, epsilon), id, t0, t1, periodic, epsilon) {}
+	SmoothParametricCurve(const Foo13 &f,   vec2 dom, PolyGroupID id=DFLT_CURV, bool periodic=false, float epsilon=0.01f) : SmoothParametricCurve(f, derivativeOperator(f, epsilon), id, dom.x, dom.y, periodic, epsilon) {}
 
-	SmoothParametricCurve( const RealFunction& fx, const RealFunction& fy, const RealFunction& fz, PolyGroupID id=DFLT_CURV, float t0=0, float t1=TAU, bool periodic=true, float epsilon=0.01);
-    SmoothParametricCurve(Foo13 f, std::function<Foo13(int)> derivativeOperator, PolyGroupID id=DFLT_CURV, float t0=0, RP1 t1=TAU, bool periodic=true, float epsilon=0.01);
-    SmoothParametricCurve(Foo13 f, std::vector<Foo13> derivatives, PolyGroupID id=DFLT_CURV, float t0=0, float t1=TAU, bool periodic=true, float epsilon=0.01);
+	SmoothParametricCurve( const RealFunction& fx, const RealFunction& fy, const RealFunction& fz, PolyGroupID id=DFLT_CURV, float t0=0, float t1=TAU, bool periodic=true, float epsilon=0.01f);
+    SmoothParametricCurve(Foo13 f, std::function<Foo13(int)> derivativeOperator, PolyGroupID id=DFLT_CURV, float t0=0, RP1 t1=TAU, bool periodic=true, float epsilon=0.01f);
+    SmoothParametricCurve(Foo13 f, std::vector<Foo13> derivatives, PolyGroupID id=DFLT_CURV, float t0=0, float t1=TAU, bool periodic=true, float epsilon=0.01f);
     SmoothParametricCurve(const SmoothParametricCurve &other);
     SmoothParametricCurve(SmoothParametricCurve &&other) noexcept;
     SmoothParametricCurve &operator=(const SmoothParametricCurve &other);

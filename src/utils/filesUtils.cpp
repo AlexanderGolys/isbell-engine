@@ -42,7 +42,7 @@ Path::Path() {
 	if (getcwd(cwd, sizeof(cwd)) != nullptr)
 		path = string(cwd);
 
-	else throw SystemError("Current directory not found");
+	else throw SystemError("Current directory not found", __FILE__, __LINE__);
 }
 
 Path::Path(const string &path)
@@ -106,7 +106,8 @@ void Path::setStyle(bool newStyle) {
 
 
 bool Path::endsWithFile(const string &filename) const {
-	if (!path.contains('.')) return false;
+	if (!path.contains('.'))
+		return false;
 	int dotIndex = path.find_last_of('.');
 	return dotIndex != 0 && path[dotIndex - 1] != slash()[0];
 }
@@ -115,7 +116,8 @@ bool Path::endsWithFile(const string &filename) const {
 
 
 Path Path::pureDirectory() const {
-	if (endsWithFile(path)) return Path(path.substr(0, path.find_last_of(slash())));
+	if (endsWithFile(path))
+		return Path(path.substr(0, path.find_last_of(slash())));
 	return *this;
 }
 
@@ -123,20 +125,23 @@ Path Path::pureDirectory() const {
 
 
 string Path::filename() const {
-	if (endsWithFile(path)) return path.substr(path.find_last_of(slash()) + 1, path.size());
-	throw ValueError("Path does not end with a file");
+	if (endsWithFile(path))
+		return path.substr(path.find_last_of(slash()) + 1, path.size());
+	throw ValueError("Path " + path + " does not end with a file", __FILE__, __LINE__);
 }
 
 
 
 
 string Path::fileExtension() const {
-	if (endsWithFile(path)) return path.substr(path.find_last_of('.') + 1, path.size());
-	throw ValueError("Path does not end with a file");
+	if (endsWithFile(path))
+		return path.substr(path.find_last_of('.') + 1, path.size());
+	throw ValueError("Path does not end with a file", __FILE__, __LINE__);
 }
 
 Path Path::makeRelative(const Path &other) const {
-	if (!path.contains(other.path)) throw ValueError("Path does not contain the other path");
+	if (!path.contains(other.path))
+		throw ValueError("Path does not contain the other path", __FILE__, __LINE__);
 	return Path(path.substr(other.path.size()));
 }
 
@@ -153,9 +158,9 @@ string Path::to_str() const { return path; }
 // Path::operator string() const { return path; }
 
 
-CodeMacro::CodeMacro(const string &key, const string &code)
+CodeMacro::CodeMacro(const string &key, const string &c)
 : replacementKey(key),
-  replacementCode(code) {}
+  replacementCode(c) {}
 
 CodeMacro::CodeMacro(const string &key, const CodeFileDescriptor &file)
 : replacementKey(key) {
@@ -197,10 +202,48 @@ string CodeMacro::apply(const string &codeScheme) const {
 
 string CodeMacro::getKey() const { return replacementKey; }
 
+ConfigFile::ConfigFile(const string &configPath) {
+	CodeFileDescriptor configFile = CodeFileDescriptor("config.txt", configPath, false);
+	if (!configFile.exists())
+		throw FileNotFoundError(configPath, __FILE__, __LINE__);
+	string code = configFile.readCode();
+	std::istringstream stream(code);
+	string line;
+	while (std::getline(stream, line)) {
+		size_t eqPos = line.find(':');
+		if (eqPos != string::npos) {
+			string key = line.substr(0, eqPos);
+			string value = line.substr(eqPos + 1);
+			config[key] = value;
+		}
+	}
+}
+
+string ConfigFile::operator[](const string &key) const { return config.at(key); }
+
+string ConfigFile::check(const string &key) const { return config.at(key); }
+
+Path ConfigFile::getRoot() const { return Path(check("root")); }
+
+Path ConfigFile::getMainShaderDirectory() const { return Path(check("shader-templates")); }
+
+Path ConfigFile::getSDFMacroShader() const { return Path(check("sdfTools")); }
+
+Path ConfigFile::getMathToolsShaderMacro() const { return Path(check("mathTools")); }
+
+Path ConfigFile::getLightToolsShaderMacro() const { return Path(check("lightTools")); }
+
+Path ConfigFile::getStructsShaderMacro() const { return Path(check("glslStructs")); }
+
+Path ConfigFile::getShadersDir() const { return Path(check("shadersDir")); }
+
+Path ConfigFile::getScreenshotsDir() const { return Path(check("screenshotsDir")); }
+
 
 void CodeFileDescriptor::changeLine(const string &line, int lineNumber) {
 	std::ifstream file(getPath().to_str());
-	if (!exists()) throw FileNotFoundError(getFilename());
+	if (!exists())
+		throw FileNotFoundError(getFilename(), __FILE__, __LINE__);
 	std::string code;
 	int i = 0;
 	while (std::getline(file, code)) {
@@ -216,7 +259,8 @@ void CodeFileDescriptor::changeLine(const string &line, int lineNumber) {
 
 string CodeFileDescriptor::readLine(int lineNumber) const {
 	std::ifstream file(getPath().to_str());
-	if (!exists()) throw FileNotFoundError(getFilename());
+	if (!exists())
+		throw FileNotFoundError(getFilename(), __FILE__, __LINE__);
 	std::string code;
 	int i = 0;
 	while (std::getline(file, code)) {
@@ -227,16 +271,14 @@ string CodeFileDescriptor::readLine(int lineNumber) const {
 	return code;
 }
 
-string ConfigFile::operator[](const string &key) const { return config.at(key); }
-string ConfigFile::check(const string &key) const { return config.at(key); }
-Path ConfigFile::getRoot() const { return Path(check("root")); }
-Path ConfigFile::getMainShaderDirectory() const { return Path(check("shader-templates")); }
-Path ConfigFile::getSDFMacroShader() const { return Path(check("sdfTools")); }
-Path ConfigFile::getMathToolsShaderMacro() const { return Path(check("mathTools")); }
-Path ConfigFile::getLightToolsShaderMacro() const { return Path(check("lightTools")); }
-Path ConfigFile::getStructsShaderMacro() const { return Path(check("glslStructs")); }
-Path ConfigFile::getShadersDir() const { return Path(check("shadersDir")); }
-Path ConfigFile::getScreenshotsDir() const { return Path(check("screenshotsDir")); }
+FileDescriptor::FileDescriptor(const Path &path, const string &filename) {
+    this->path = path;
+    this->filename = filename;
+    this->extension = filename.substr(filename.find_last_of('.') + 1);
+    bytesize = 0;
+}
+
+
 
 
 
@@ -254,7 +296,7 @@ string CodeFileDescriptor::getCode() {
 		shaderStream.close();
 		return code;
 	}
-	throw FileNotFoundError(filename);
+	throw FileNotFoundError(filename, __FILE__, __LINE__);
 }
 
 string CodeFileDescriptor::readCode() const {
@@ -267,7 +309,7 @@ string CodeFileDescriptor::readCode() const {
 		shaderStream.close();
 		return code;
 	}
-	throw FileNotFoundError(filename);
+	throw FileNotFoundError(filename, __FILE__, __LINE__);
 }
 
 bool CodeFileDescriptor::exists() const {
@@ -283,18 +325,18 @@ void CodeFileDescriptor::writeCode(const string &code) const {
 		shaderStream.close();
 		return;
 	}
-	throw FileNotFoundError(filename);
+	throw FileNotFoundError(filename, __FILE__, __LINE__);
 }
 
 void CodeFileDescriptor::modifyCode(const string &code) const {
 	if (!exists())
-		throw FileNotFoundError(filename);
+		throw FileNotFoundError(filename, __FILE__, __LINE__);
 	writeCode(code);
 }
 
 void CodeFileDescriptor::saveNewCode(const string &code) const {
 	if (exists())
-		throw SystemError("File " + getFilename() + " already exists in " + getDirectory().to_str() + ".");
+		throw SystemError("File " + getFilename() + " already exists in " + getDirectory().to_str() + ".", __FILE__, __LINE__);
 	writeCode(code);
 }
 
@@ -503,4 +545,13 @@ ShaderRealFunctionR3 operator&(const string &f1Name, const ShaderRealFunctionR3 
 
 ShaderRealFunctionR3 ShaderRealFunctionR3::composeReturnWith(const ShaderMethodTemplate &f2) const {
 	return ShaderRealFunctionR3(getName(), getBody(), f2.generateCall(getReturnCode()));
+}
+
+
+long long FileDescriptor::getSize() const {
+	return bytesize;
+}
+
+void * FileDescriptor::getAddress() const {
+	return address;
 }

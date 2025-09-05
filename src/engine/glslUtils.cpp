@@ -1,4 +1,3 @@
-
 #include "glslUtils.hpp"
 #include <stdio.h>
 #include <string>
@@ -15,11 +14,20 @@
 #include <string.h>
 
 #include <GL/glew.h>
+#include <GLFW/glfw3.h>
 
 #include "specific.hpp"
 
 using namespace glm;
 
+
+// void LOG(const string &message) {
+// 	std::cout << message << std::endl;
+// }
+//
+// void LOG_ERROR(string message) {
+// 	std::cerr << message << std::endl;
+// }
 
 void setUniformTextureSampler(GLuint programID, Texture *texture, int textureSlot)
 {
@@ -37,7 +45,7 @@ int predefinedWidth(Resolution res) {
 		case HD2K:
 			return 2560;
 	}
-	throw UnknownVariantError("Resolution not recognized");
+	throw UnknownVariantError("Resolution not recognized", __FILE__, __LINE__);
 }
 
 int predefinedHeight(Resolution res) {
@@ -49,7 +57,7 @@ int predefinedHeight(Resolution res) {
 		case HD2K:
 			return 1440;
 	}
-	throw UnknownVariantError("Resolution not recognized");
+	throw UnknownVariantError("Resolution not recognized", __FILE__, __LINE__);
 
 }
 
@@ -78,7 +86,7 @@ size_t sizeOfGLSLType(GLSLType type)
 	case SAMPLER3D:
 		return sizeof(GLuint);
 	}
-	throw UnknownVariantError("GLSL type not recognized");
+	throw UnknownVariantError("GLSL type not recognized", __FILE__, __LINE__);
 }
 
 int lengthOfGLSLType(GLSLType type)
@@ -142,7 +150,7 @@ GLenum Shader::getTypeFromExtension(const string &extension) {
 		return GL_FRAGMENT_SHADER;
 	if (nodot == "geom" || nodot == "geo")
 		return GL_GEOMETRY_SHADER;
-	throw SystemError("Unknown shader extension: ." + nodot);
+	throw SystemError("Unknown shader extension: ." + nodot, __FILE__, __LINE__);
 }
 
 
@@ -165,7 +173,7 @@ void Shader::compile() {
 	{
 		vector<char> error(InfoLogLength + 1);
 		glGetShaderInfoLog(shaderID, InfoLogLength, nullptr, &error[0]);
-		throw SystemError(&error[0]);
+		throw SystemError(&error[0], __FILE__, __LINE__);
 	}
 }
 
@@ -211,22 +219,10 @@ Shader & Shader::operator=(Shader &&other) noexcept {
 	return *this;
 }
 
-ConfigFile::ConfigFile(const string &path): CodeFileDescriptor("config.txt", path, false) {
-	int i = 0;
-	config = std::map<string, string>();
-	while (readLine(i).contains(':')) {
-		string key = readLine(i).substr(0, readLine(i).find(':'));
-		string value = readLine(i).substr(readLine(i).find(':') + 1);
-		std::erase(value, '\t');
-		std::erase(value, ' ');
-		std::erase(key, ':');
-		config[key] = value;
-		i++;
-	}
-}
 
 
-ConfigFile::ConfigFile(): ConfigFile(DEFAULT_CONFIG_PATH) {}
+
+
 
 void error_callback(int error, const char *description)
 {
@@ -262,8 +258,7 @@ mat4 generateMVP(vec3 camPosition, vec3 camLookAt, vec3 upVector, float fov, flo
 
 Window::Window(int width, int height, const char *title)
 {
-    if (!glfwInit())
-        throw SystemError("GLFW initialization failed");
+    // glfwInit() removed; handled by Renderer
 	glfwWindowHint(GLFW_SAMPLES, 4);
 	glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 3);
 	glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 3);
@@ -274,7 +269,7 @@ Window::Window(int width, int height, const char *title)
 	this->window = glfwCreateWindow(width, height, title, nullptr, nullptr);
 	if (!this->window)
 	{
-		glfwTerminate();
+		// glfwTerminate(); // removed; handled by Renderer
 		exit(2136);
 	}
 	glfwMakeContextCurrent(this->window);
@@ -293,8 +288,8 @@ Window::Window(Resolution resolution, const char *title)
 	window = glfwCreateWindow(width, height, title, nullptr, nullptr);
 	if (!window)
 	{
-		glfwTerminate();
-		throw SystemError("GLFW window creation failed");
+		// glfwTerminate(); // removed; handled by Renderer
+		throw SystemError("GLFW window creation failed", __FILE__, __LINE__);
 	}
 	glfwMakeContextCurrent(window);
 }
@@ -304,7 +299,11 @@ Window::~Window()
 	destroy();
 }
 
-
+int Window::destroy() {
+    glfwDestroyWindow(this->window);
+    // glfwTerminate(); // removed; handled by Renderer
+    return 0;
+}
 
 void Window::renderFramebufferToScreen()
 {
@@ -366,11 +365,6 @@ bool Window::isOpen()
 	return !glfwWindowShouldClose(this->window);
 }
 
-int Window::destroy() {
-    glfwDestroyWindow(this->window);
-    glfwTerminate();
-    return 0;
-}
 void Window::initViewport() {
     glViewport(0, 0, this->width, this->height);
 }
@@ -405,7 +399,7 @@ void ShaderProgram::linkShaders() {
 	{
 		vector<char> ProgramErrorMessage(InfoLogLength + 1);
 		glGetProgramInfoLog(programID, InfoLogLength, NULL, &ProgramErrorMessage[0]);
-		throw SystemError(&ProgramErrorMessage[0]);
+		throw SystemError(&ProgramErrorMessage[0], __FILE__, __LINE__);
 	}
 
 	glDetachShader(programID, VertexShaderID);
@@ -431,7 +425,8 @@ ShaderProgram::ShaderProgram(const Shader &vertexShader, const Shader &fragmentS
 ShaderProgram::ShaderProgram(const string &vertexPath, const string &fragPath) :
 vertexShader(CodeFileDescriptor(vertexPath, false)),
 fragmentShader(CodeFileDescriptor(fragPath, false)),
-geometryShader(std::nullopt){
+geometryShader(std::nullopt)
+{
 	linkShaders();
 }
 
@@ -658,7 +653,7 @@ Camera::Camera(const shared_ptr<SmoothParametricCurve> &trajectory, vec3 lookAtP
 	this->projectionMatrix = perspective(fov_x, aspectRatio, clippingRangeMin, clippingRangeMax);
 }
 
-Camera::Camera(const std::shared_ptr<SmoothParametricCurve> &trajectory, const std::shared_ptr<SmoothParametricCurve> &lookAtPos,
+Camera::Camera(const shared_ptr<SmoothParametricCurve> &trajectory, const shared_ptr<SmoothParametricCurve> &lookAtPos,
         vec3 upVector, float fov_x, float aspectRatio, float clippingRangeMin, float clippingRangeMax) {
 
     this->lookAtFunc = lookAtPos;
@@ -672,7 +667,7 @@ Camera::Camera(const std::shared_ptr<SmoothParametricCurve> &trajectory, const s
     this->projectionMatrix = perspective(fov_x, aspectRatio, clippingRangeMin, clippingRangeMax);
 }
 
-Camera::Camera(const std::shared_ptr<SmoothParametricCurve> &trajectory, const std::shared_ptr<SmoothParametricCurve> &lookAtPos,
+Camera::Camera(const shared_ptr<SmoothParametricCurve> &trajectory, const shared_ptr<SmoothParametricCurve> &lookAtPos,
         const std::function<vec3(float)> &upVector, float fov_x, float aspectRatio, float clippingRangeMin, float clippingRangeMax) {
 
     this->lookAtFunc = lookAtPos;
@@ -805,7 +800,7 @@ RenderingStep::~RenderingStep()
 	shader.reset();
 }
 
-void RenderingStep::setWeakSuperMesh(const std::shared_ptr<IndexedMesh> &super) {
+void RenderingStep::setWeakSuperMesh(const shared_ptr<IndexedMesh> &super) {
     this-> weak_super = super;
 }
 
@@ -873,7 +868,7 @@ void RenderingStep::resetAttributeBuffers()
 		attribute->freeBuffer();
 }
 
-void RenderingStep::initUnusualAttributes(const std::vector<std::shared_ptr<Attribute>>& attributes) {
+void RenderingStep::initUnusualAttributes(const std::vector<shared_ptr<Attribute>>& attributes) {
     this->attributes.insert(this->attributes.end(), attributes.begin(), attributes.end());
     for (const auto &attribute: attributes)
 		attribute->initBuffer();
@@ -965,7 +960,7 @@ void RenderingStep::setUniforms(float t)
 	}
 }
 
-void RenderingStep::addCameraUniforms(const std::shared_ptr<Camera>& camera)
+void RenderingStep::addCameraUniforms(const shared_ptr<Camera>& camera)
 {
 	std::function<void(float, shared_ptr<ShaderProgram>)> MVPsetter;
 
@@ -1051,7 +1046,7 @@ void RenderingStep::renderStep(float t)
     if (weakSuperLoaded())
         weakMeshRenderStep(t);
     else
-        throw ValueError("Mesh not loaded correctly");
+        throw ValueError("Mesh not loaded correctly", __FILE__, __LINE__);
 }
 
 RenderSettings::RenderSettings(vec4 bgColor, bool alphaBlending, bool depthTest, bool timeUniform, float speed, int maxFPS, bool takeScreenshots, Resolution resolution, float screenshotFrequency, const string &windowTitle):
@@ -1067,7 +1062,7 @@ screenshotFrequency(screenshotFrequency),
 windowTitle(windowTitle) {
 
 	if (takeScreenshots)
-		throw NotImplementedError("Screenshot functionality not implemented yet."); // TODO screenshots
+		throw NotImplementedError("Screenshot functionality not implemented yet.", __FILE__, __LINE__);
 	this->screenshotFrequency = -1;
 
 	screenshotDirectory = ConfigFile().getScreenshotsDir();
@@ -1089,11 +1084,15 @@ Renderer::Renderer(float animSpeed, vec4 bgColor, const string &screenshotDirect
 	this->camera = nullptr;
 	this->time = 0;
 	this->lights = std::vector<Light>();
-	Logger::init();
+	logging::Logger::init();
 
-	if (!glfwInit()) {
-		throw SystemError("Failed to initialize GLFW");
-	}
+	glfwSetErrorCallback([](int error, const char* description) {
+        std::cerr << "GLFW Error " << error << ": " << description << std::endl;
+    });
+    if (!glfwInit()) {
+        throw SystemError("Failed to initialize GLFW", __FILE__, __LINE__);
+    }
+
 	this->animSpeed = [animSpeed](float t) { return animSpeed; };
 	this->perFrameFunction = [](float t, float delta) {};
 
@@ -1122,7 +1121,7 @@ void Renderer::initMainWindow(int width, int height, const char *title)
 	glewExperimental = true;
 	if (glewInit() != GLEW_OK) {
 		LOG_ERROR("Failed to initialize GLEW");
-		throw SystemError("Failed to initialize GLEW");
+		throw SystemError("Failed to initialize GLEW", __FILE__, __LINE__);
 	}
 	this->vao = bindVAO();
 	LOG("Window initialized with size: " + std::to_string(width) + "x" + std::to_string(height));
@@ -1142,12 +1141,12 @@ void Renderer::resetTimer() {
 	this->time = 0;
 }
 
-void Renderer::addRenderingStep(std::shared_ptr<RenderingStep> renderingStep)
+void Renderer::addRenderingStep(shared_ptr<RenderingStep> renderingStep)
 {
 	this->renderingSteps.push_back(std::move(renderingStep));
 }
 
-void Renderer::addMeshStep(const ShaderProgram &shader, const std::shared_ptr<IndexedMesh> &model, const shared_ptr<MaterialPhong> &material) {
+void Renderer::addMeshStep(const ShaderProgram &shader, const shared_ptr<IndexedMesh> &model, const shared_ptr<MaterialPhong> &material) {
 	auto renderingStep = make_shared<RenderingStep>(make_shared<ShaderProgram>(shader), material);
 	renderingStep->setWeakSuperMesh(model);
 	addRenderingStep(renderingStep);
@@ -1155,7 +1154,7 @@ void Renderer::addMeshStep(const ShaderProgram &shader, const std::shared_ptr<In
 
 
 
-void Renderer::setCamera(const std::shared_ptr<Camera> &camera)
+void Renderer::setCamera(const shared_ptr<Camera> &camera)
 {
 	this->camera = camera;
 }
@@ -1206,14 +1205,14 @@ float Renderer::lastDeltaTime() const {
     return dt;
 }
 
-void Renderer::addPerFrameUniforms(const std::map<string, GLSLType> &uniforms, const std::map<string, shared_ptr<std::function<void(float, std::shared_ptr<ShaderProgram>)>>> &setters)
+void Renderer::addPerFrameUniforms(const std::map<string, GLSLType> &uniforms, const std::map<string, shared_ptr<std::function<void(float, shared_ptr<ShaderProgram>)>>> &setters)
 {
 	for (const auto& renderingStep : renderingSteps)
 		renderingStep->addUniforms(uniforms, setters);
 
 }
 
-void Renderer::addPerFrameUniform(const string &uniformName, GLSLType uniformType, const shared_ptr<std::function<void(float, std::shared_ptr<ShaderProgram>)>> &setter)
+void Renderer::addPerFrameUniform(const string &uniformName, GLSLType uniformType, const shared_ptr<std::function<void(float, shared_ptr<ShaderProgram>)>> &setter)
 {
 	for (const auto& renderingStep : renderingSteps)
 		renderingStep->addUniform(uniformName, uniformType, setter);
@@ -1252,7 +1251,7 @@ void Renderer::initRendering()
 	    if (renderingStep->weakSuperLoaded())
 	        renderingStep->init(camera, lights);
 		else {
-			throw ValueError("Rendering step does not have a weak super mesh set");
+			throw ValueError("Rendering step does not have a weak super mesh set", __FILE__, __LINE__);
 		}
 	}
 
@@ -1260,17 +1259,17 @@ void Renderer::initRendering()
 
 }
 
-void Renderer::addConstUniform(const string &uniformName, GLSLType uniformType, shared_ptr<std::function<void(std::shared_ptr<ShaderProgram>)>> setter)
+void Renderer::addConstUniform(const string &uniformName, GLSLType uniformType, shared_ptr<std::function<void(shared_ptr<ShaderProgram>)>> setter)
 {
-	std::function<void(float, std::shared_ptr<ShaderProgram>)> setterWrapper = [setter](float t, const std::shared_ptr<ShaderProgram> &shader) { (*setter)(shader); };
+	std::function<void(float, shared_ptr<ShaderProgram>)> setterWrapper = [setter](float t, const shared_ptr<ShaderProgram> &shader) { (*setter)(shader); };
 	for (const auto& renderingStep : renderingSteps)
-		renderingStep->addUniform(uniformName, uniformType, make_shared<std::function<void(float, std::shared_ptr<ShaderProgram>)>>(setterWrapper));
+		renderingStep->addUniform(uniformName, uniformType, make_shared<std::function<void(float, shared_ptr<ShaderProgram>)>>(setterWrapper));
 }
 
 void Renderer::addTimeUniform()
 {
-	addPerFrameUniform("time", FLOAT, std::make_shared<std::function<void(float, std::shared_ptr<ShaderProgram>)>>(
-	[](float t, const std::shared_ptr<ShaderProgram> &shader) {
+	addPerFrameUniform("time", FLOAT, std::make_shared<std::function<void(float, shared_ptr<ShaderProgram>)>>(
+	[](float t, const shared_ptr<ShaderProgram> &shader) {
 		shader->setUniform("time", t);
 	}));
 }
@@ -1301,7 +1300,7 @@ void Renderer::nonlinearSpeed(const std::function<float(float)> &speed) {
 	animSpeed = speed;
 }
 
-void Renderer::addConstUniforms(const std::map<string, GLSLType>& uniforms, std::map<string, shared_ptr<std::function<void(std::shared_ptr<ShaderProgram>)>>> setters)
+void Renderer::addConstUniforms(const std::map<string, GLSLType>& uniforms, std::map<string, shared_ptr<std::function<void(shared_ptr<ShaderProgram>)>>> setters)
 {	
 	for (const auto& uniform : uniforms)
 		addConstUniform(uniform.first, uniform.second,  setters[uniform.first]);

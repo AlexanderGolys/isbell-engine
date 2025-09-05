@@ -113,56 +113,20 @@ PlanarMeshWithBoundary PlanarConvexPolygon(const vector<vec2> &verts)
     return PlanarMeshWithBoundary(trng, { bd }, { true });
 }
 
-COLOR_PALETTE::COLOR_PALETTE(vec4 mainColor, vec4 second, vec4 third, vec4 accent, vec4 accent2)
-{
-	this->mainColor = mainColor;
-	this->second = second;
-	this->third = third;
-	this->accent = accent;
-	this->accent2 = accent2;
-}
 
-COLOR_PALETTE::COLOR_PALETTE(vec3 mainColor, vec3 second, vec3 third, vec3 accent, vec3 accent2) : COLOR_PALETTE(vec4(mainColor, 1.0f), vec4(second, 1.0f), vec4(third, 1.0f), vec4(accent, 1.0f), vec4(accent2, 1.0f) ) {}
 
-COLOR_PALETTE::COLOR_PALETTE(ivec3 mainColor, ivec3 second, ivec3 third, ivec3 accent, ivec3 accent2)
-{
-	this->mainColor = vec4(mainColor.x / 255.f, mainColor.y / 255.f, mainColor.z / 255.f, 1.0f);
-	this->second = vec4(second.x / 255.f, second.y / 255.f, second.z / 255.f, 1.0f);
-	this->third = vec4(third.x / 255.f, third.y / 255.f, third.z / 255.f, 1.0f);
-	this->accent = vec4(accent.x / 255.f, accent.y / 255.f, accent.z / 255.f, 1.0f);
-	this->accent2 = vec4(accent2.x / 255.f, accent2.y / 255.f, accent2.z / 255.f, 1.0f);
-}
 
-std::vector<vec4> COLOR_PALETTE::colors()
-{
-    return std::vector({ mainColor, second, third, accent, accent2 });
-}
 
-vec4 COLOR_PALETTE::operator[](int i)
-{
-    return colors()[i];
-}
 
-COLOR_PALETTE10::COLOR_PALETTE10(ivec3 c1, ivec3 c2, ivec3 c3,
-                                 ivec3 c4, ivec3 c5, ivec3 c6,
-                                 ivec3 c7, ivec3 c8, ivec3 c9,
-                                 ivec3 c10) {
-  cls = {vec4(c1.x / 255.f, c1.y / 255.f, c1.z / 255.f, 1.0f),
-         vec4(c2.x / 255.f, c2.y / 255.f, c2.z / 255.f, 1.0f),
-         vec4(c3.x / 255.f, c3.y / 255.f, c3.z / 255.f, 1.0f),
-         vec4(c4.x / 255.f, c4.y / 255.f, c4.z / 255.f, 1.0f),
-         vec4(c5.x / 255.f, c5.y / 255.f, c5.z / 255.f, 1.0f),
-         vec4(c6.x / 255.f, c6.y / 255.f, c6.z / 255.f, 1.0f),
-         vec4(c7.x / 255.f, c7.y / 255.f, c7.z / 255.f, 1.0f),
-         vec4(c8.x / 255.f, c8.y / 255.f, c8.z / 255.f, 1.0f),
-         vec4(c9.x / 255.f, c9.y / 255.f, c9.z / 255.f, 1.0f),
-         vec4(c10.x / 255.f, c10.y / 255.f, c10.z / 255.f, 1.0f)};
 
-}
+
+
+
+
 
 Permutation Permutation::operator&(const Permutation &p) const {
 	if (size() != p.size())
-		throw ValueError("Permutations must have the same size to be composed.");
+		throw ValueError("Permutations must have the same size to be composed.", __FILE__, __LINE__);
 	auto lst = p.perm;
 	for (int i = 0; i < lst.size(); i++)
 		lst[i] = perm[lst[i]];
@@ -1006,8 +970,8 @@ RealFunction cubicShroom(float center, float margin) {
 }
 
 RealFunction powerShroom(float begin, float end, float zeroExponent, float oneExponent) {
-	if (zeroExponent <= 0) throw IllegalArgumentError("zeroExponent must be positive.");
-	if (oneExponent <= 0) throw IllegalArgumentError("oneExponent must be positive.");
+	if (zeroExponent <= 0) throw IllegalArgumentError("zeroExponent must be positive.", __FILE__, __LINE__);
+	if (oneExponent <= 0) throw IllegalArgumentError("oneExponent must be positive.", __FILE__, __LINE__);
 	return RealFunction([begin, end, zeroExponent, oneExponent](float t) {
 		float x = (t-begin)/(end-begin);
 		if (x < 0) return 0.f;
@@ -1024,7 +988,7 @@ RealFunction toneMap(float k) {
 }
 
 RealFunction rationalInfiniteShroom(float steepFactor, float center) {
-	if (steepFactor <= 0) throw IllegalArgumentError("steepFactor must be positive.");
+	if (steepFactor <= 0) throw IllegalArgumentError("steepFactor must be positive.", __FILE__, __LINE__);
 	return RealFunction([steepFactor, center](float t) {
 			return 1.f/(steepFactor*sq(t-center) + 1);
 		});

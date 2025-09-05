@@ -137,7 +137,7 @@ public:
 	SteadyScalarField operator()(const SteadyScalarField &f) const;
 };
 
-const DifferentialOperator DABBA_T = DifferentialOperator(vec3(0, 0, 0), 1);
-const DifferentialOperator DABBA_X = DifferentialOperator(vec3(1, 0, 0), 0);
-const DifferentialOperator DABBA_Y = DifferentialOperator(vec3(0, 1, 0), 0);
-const DifferentialOperator DABBA_Z = DifferentialOperator(vec3(0, 0, 1), 0);
+// const DifferentialOperator DABBA_T = DifferentialOperator(vec3(0, 0, 0), 1);
+// const DifferentialOperator DABBA_X = DifferentialOperator(vec3(1, 0, 0), 0);
+// const DifferentialOperator DABBA_Y = DifferentialOperator(vec3(0, 1, 0), 0);
+// const DifferentialOperator DABBA_Z = DifferentialOperator(vec3(0, 0, 1), 0);

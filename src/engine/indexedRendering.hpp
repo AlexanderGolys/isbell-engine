@@ -5,7 +5,7 @@
 
 #include <set>
 
-#include "src/utils/randomUtils.hpp"
+#include "../utils/randomUtils.hpp"
 
 
 
@@ -510,7 +510,7 @@ public:
 	PipeCurveVertexShader(const SmoothParametricCurve &curve, const PIPE_SETTINGS &s, const PolyGroupID &id = randomID());
 	PipeCurveVertexShader(const RealFunction &plot, vec2 dom, const PIPE_SETTINGS &s, const PolyGroupID &id = randomID());
 	PipeCurveVertexShader(const DiscreteRealFunction &plot, const PIPE_SETTINGS &s, const PolyGroupID &id = randomID());
-	PipeCurveVertexShader(const DiscreteRealFunctionNonUniform &plot, const PIPE_SETTINGS &s, const PolyGroupID &id = randomID()) : PipeCurveVertexShader(plot, s.radius, s.radialRes, id) {}
+	PipeCurveVertexShader(const DiscreteRealFunctionNonUniform &plot, const PIPE_SETTINGS &s, const PolyGroupID &id = randomID());
 	virtual ~PipeCurveVertexShader() = default;
 
 	void duplicateCurve(const PolyGroupID &copy_id);

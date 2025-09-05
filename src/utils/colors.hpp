@@ -1,5 +1,8 @@
 #pragma once
 #include "../../external/glm-0.9.7.1/glm/glm.hpp"
+#include "../../external/glm-0.9.7.1/glm/gtc/matrix_transform.hpp"
+#include "../../external/glm-0.9.7.1/glm/gtx/transform.hpp"
+
 #include <array>
 #include <vector>
 
@@ -14,11 +17,31 @@ struct COLOR_PALETTE {
 	vec4 accent;
 	vec4 accent2;
 
-	COLOR_PALETTE(vec4 mainColor, vec4 second, vec4 third, vec4 accent, vec4 accent2);
-	COLOR_PALETTE(vec3 mainColor, vec3 second, vec3 third, vec3 accent, vec3 accent2);
-	COLOR_PALETTE(ivec3 mainColor, ivec3 second, ivec3 third, ivec3 accent, ivec3 accent2);
-	vector<vec4> colors();
-	vec4 operator[] (int i);
+	COLOR_PALETTE(vec4 mainColor, vec4 second, vec4 third, vec4 accent, vec4 accent2)
+	{
+		this->mainColor = mainColor;
+		this->second = second;
+		this->third = third;
+		this->accent = accent;
+		this->accent2 = accent2;
+	}
+	COLOR_PALETTE(vec3 mainColor, vec3 second, vec3 third, vec3 accent, vec3 accent2)  : COLOR_PALETTE(vec4(mainColor, 1.0f), vec4(second, 1.0f), vec4(third, 1.0f), vec4(accent, 1.0f), vec4(accent2, 1.0f) ) {}
+	COLOR_PALETTE(ivec3 mainColor, ivec3 second, ivec3 third, ivec3 accent, ivec3 accent2)
+	{
+		this->mainColor = vec4(mainColor.x / 255.f, mainColor.y / 255.f, mainColor.z / 255.f, 1.0f);
+		this->second = vec4(second.x / 255.f, second.y / 255.f, second.z / 255.f, 1.0f);
+		this->third = vec4(third.x / 255.f, third.y / 255.f, third.z / 255.f, 1.0f);
+		this->accent = vec4(accent.x / 255.f, accent.y / 255.f, accent.z / 255.f, 1.0f);
+		this->accent2 = vec4(accent2.x / 255.f, accent2.y / 255.f, accent2.z / 255.f, 1.0f);
+	}
+	vector<vec4> colors()
+	{
+		return std::vector({ mainColor, second, third, accent, accent2 });
+	}
+	vec4 operator[] (int i)
+	{
+		return colors()[i];
+	}
 };
 
 struct COLOR_PALETTE10 {
@@ -26,7 +49,20 @@ struct COLOR_PALETTE10 {
 
 	explicit COLOR_PALETTE10(const array<vec4, 10> &colors) : cls(colors) {}
 	COLOR_PALETTE10(COLOR_PALETTE p1, COLOR_PALETTE p2) : cls({p1[0], p1[1], p1[2], p1[3], p1[4], p2[0], p2[1], p2[2], p2[3], p2[4]}) {}
-	COLOR_PALETTE10(ivec3 c1, ivec3 c2, ivec3 c3, ivec3 c4, ivec3 c5, ivec3 c6, ivec3 c7, ivec3 c8, ivec3 c9, ivec3 c10);
+	COLOR_PALETTE10(ivec3 c1, ivec3 c2, ivec3 c3, ivec3 c4, ivec3 c5, ivec3 c6, ivec3 c7, ivec3 c8, ivec3 c9, ivec3 c10)
+	{
+		cls = {vec4(c1.x / 255.f, c1.y / 255.f, c1.z / 255.f, 1.0f),
+			   vec4(c2.x / 255.f, c2.y / 255.f, c2.z / 255.f, 1.0f),
+			   vec4(c3.x / 255.f, c3.y / 255.f, c3.z / 255.f, 1.0f),
+			   vec4(c4.x / 255.f, c4.y / 255.f, c4.z / 255.f, 1.0f),
+			   vec4(c5.x / 255.f, c5.y / 255.f, c5.z / 255.f, 1.0f),
+			   vec4(c6.x / 255.f, c6.y / 255.f, c6.z / 255.f, 1.0f),
+			   vec4(c7.x / 255.f, c7.y / 255.f, c7.z / 255.f, 1.0f),
+			   vec4(c8.x / 255.f, c8.y / 255.f, c8.z / 255.f, 1.0f),
+			   vec4(c9.x / 255.f, c9.y / 255.f, c9.z / 255.f, 1.0f),
+			   vec4(c10.x / 255.f, c10.y / 255.f, c10.z / 255.f, 1.0f)};
+
+	}
 	vector<vec4> colors() const { return vector(cls.begin(), cls.end()); }
 	vec4 operator[] (int i) const { return cls[i]; }
 };
@@ -47,10 +83,10 @@ struct COLOR_PALETTE10 {
 #define LIGHT_YELLOW vec4(1, 1, .5, 1)
 #define LIGHT_CYAN vec4(.5, 1, 1, 1)
 #define LIGHT_MAGENTA vec4(1, .5, 1, 1)
-#define DARK_PURPLE vec4(54.f/255, 31.f/255, 39.f/255, 0)
-#define PURPLE vec4(82.f/255, 25.f/255, 69.f/255, 1)
-#define BROWN_SUGAR vec4(169.f/255, 113.f/255, 75.f/255, 1)
-#define POWDER_PINK vec4(255.f/255, 179.f/255, 198.f/255, 1)
+#define DARK_PURPLE vec4(54._f/255, 31._f/255, 39._f/255, 0)
+#define PURPLE vec4(82._f/255, 25._f/255, 69._f/255, 1)
+#define BROWN_SUGAR vec4(169._f/255, 113._f/255, 75._f/255, 1)
+#define POWDER_PINK vec4(255._f/255, 179._f/255, 198._f/255, 1)
 #define DARKDARKBLUE vec4(0, 0.016, .045, 1)
 
 #define INTENSE_DARKER_RED_PALLETTE COLOR_PALETTE(ivec3(173, 40, 49), ivec3(128, 14, 19), ivec3(100, 13, 20), ivec3(56, 4, 14), ivec3(37, 9, 2))

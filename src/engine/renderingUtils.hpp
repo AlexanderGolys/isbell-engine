@@ -1,13 +1,13 @@
 #pragma once
 #include "../geometry/smoothImplicit.hpp"
-#include "src/utils/macros.hpp"
+#include "../utils/macros.hpp"
 
 #include <array>
 #include <map>
 #include <variant>
 #include <vector>
 #include <string>
-#include <glm/glm.hpp>
+// #include <glm/glm.hpp>
 
 #include <memory>
 #include <optional>
@@ -369,7 +369,6 @@ public:
 };
 
 class PointLight: public Light {
-
 public:
 	PointLight(vec3 position, float intensity_constant, float intensity_linear, float intensity_quadratic, float softShadowRadius=.1f, vec4 color=WHITE);
 	PointLight(vec3 position, vec3 intensities, float r=.1f, vec4 color=WHITE);
@@ -659,7 +658,7 @@ const std::map<CurveEmbeddingTypeID, string> curveEmbeddingTypes = {
 inline string embeddingTypeName(CurveEmbeddingTypeID type) {
   if (curveEmbeddingTypes.contains(type))
     return curveEmbeddingTypes.at(type);
-  throw UnknownVariantError("Embedding type with id " + std::to_string(type) + " not recognised as valid variant.");
+  throw UnknownVariantError("Embedding type with id " + std::to_string(type) + " not recognised as valid variant.", __FILE__, __LINE__);
 };
 
 

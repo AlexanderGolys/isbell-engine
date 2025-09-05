@@ -61,8 +61,8 @@ public:
 	virtual ComplexValuedFunction operator()(RealFunction f) const = 0;
 	virtual RealFunction inv(ComplexValuedFunction f) const = 0;
 	virtual RealFunction inv(RealFunction f) const = 0;
-	// virtual RealFunctionR2 operator()(RealFunctionR2 f, int var);
-	// virtual RealFunctionR2 inv(RealFunctionR2 f, int var);
+	// virtual RealFunctionR2 operator()(RealFunctionR2 _f, int var);
+	// virtual RealFunctionR2 inv(RealFunctionR2 _f, int var);
 };
 
 class STFT {
@@ -89,8 +89,8 @@ public:
 	ComplexValuedFunction operator()(RealFunction f) const override;
 	RealFunction inv(ComplexValuedFunction f) const override;
 	RealFunction inv(RealFunction f) const override;
-	// RealFunctionR2 operator()(RealFunctionR2 f, int var) override;
-	// RealFunctionR2 inv(RealFunctionR2 f, int var) override;
+	// RealFunctionR2 operator()(RealFunctionR2 _f, int var) override;
+	// RealFunctionR2 inv(RealFunctionR2 _f, int var) override;
 };
 
 
@@ -176,8 +176,8 @@ public:
 	DiscreteRealFunction operator()(const DiscreteRealFunction &f) const {
 		return (f.fft() * kernel(f.samples())).ifft().re();
 	}
-	// DiscreteComplexFunctionR2 operator()(const DiscreteComplexFunctionR2 &f, int var) const {
-	// 	return (f.fft(var) * kernel(
+	// DiscreteComplexFunctionR2 operator()(const DiscreteComplexFunctionR2 &_f, int var) const {
+	// 	return (_f.fft(var) * kernel(
 	// }
 	// TODO: All operations that mix two-variable discrete functions with one variable need some systematic implementation. In particular convolution on one component, multiplication on one component.
 };

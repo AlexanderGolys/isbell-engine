@@ -1,19 +1,22 @@
 #pragma once
-#include "glslUtils.hpp"
-// #include "../utils/flows.hpp"
+// #include "glslUtils.hpp"
+#include "../utils/flows.hpp"
 
 
 #include <chrono>
 #include <iosfwd>
 #include <vector>
 
+#include "indexedRendering.hpp"
+#include "renderingUtils.hpp"
 
 
 
-const VectorField dabbaX = VectorField::constant(vec3(1, 0, 0));
-const VectorField dabbaY = VectorField::constant(vec3(0, 1, 0));
-const VectorField dabbaZ = VectorField::constant(vec3(0, 0, 1));
 
+// const VectorField dabbaX = VectorField::constant(vec3(1, 0, 0));
+// const VectorField dabbaY = VectorField::constant(vec3(0, 1, 0));
+// const VectorField dabbaZ = VectorField::constant(vec3(0, 0, 1));
+//
 
 /**
  * @brief Planar surfaces with boundary

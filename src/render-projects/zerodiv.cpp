@@ -1,6 +1,7 @@
-#include "../engine/specific.hpp"
-#include "../engine/interface.hpp"
-#include "../utils/logging.hpp"
+#include "specific.hpp"
+#include "interface.hpp"
+#include "mat.hpp"
+#include "glslUtils.hpp"
 
 using namespace glm;
 
@@ -68,13 +69,13 @@ int main() {
 
 
 	auto f = [](float t){
-		return (t*t)/(t*t-1)*(t*t-4)/(t*t-6);
+		return t*t/(t*t-1)*(t*t-4)/(t*t-6);
 	};
 
-	auto projcurve = [&f](float x){
+	auto projcurve = [f](float x){
 		return SmoothParametricCurve(
-			[&f, x](float t){
-				auto xx = saturate(x);
+			[f=f, x](float t){
+				float xx = saturate(x);
 				vec2 p = stereoProjectionInverse(f(t))*xx + vec2(f(t), 0)*(1-xx);
 				return vec3(t, p.x, p.y);
 		}, "p1", -10, 10, false, 0.001f);
@@ -119,7 +120,7 @@ int main() {
 	auto infaxis = make_shared<IndexedMesh>(PipeCurveVertexShader(infline, pipe_infaxis));
 	infaxis->merge(PipeCurveVertexShader(zeroline, pipe_infaxis));
 
-	PointLight light1 = PointLight(vec3(5,-1, 2), .003, .005);
+	PointLight light1 = PointLight(vec3(5,-1, 2), .003f, .005f);
 	PointLight light2 = PointLight(vec3(-4,-10, -2), .003, .005, BLUE_PALLETTE[0]);
 	PointLight light3 = PointLight(vec3(2,6, 5), .003, .005, REDPINK_PALLETTE[0]);
 

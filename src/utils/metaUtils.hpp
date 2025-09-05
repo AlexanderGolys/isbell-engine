@@ -258,8 +258,6 @@ vector<T> flattened2DVector(vector<vector<T>> v)
 inline int flattened2DVectorIndex(int i, int j, ivec2 size) {
 	if (i < 0) return flattened2DVectorIndex(size.x + i, j, size);
 	if (j < 0) return flattened2DVectorIndex(i, size.y + j, size);
-	if (i >= size.x) throw IndexOutOfBounds(ivec2(i, j), size, "i");
-	if (j >= size.y) throw IndexOutOfBounds(ivec2(i, j), size, "j");
 	return i * size.y + j;
 }
 
@@ -286,9 +284,9 @@ inline int flattened3DVectorIndex(int i, int j, int k,  ivec3 size) {
 	if (i < 0) return flattened3DVectorIndex(size.x + i, j, k, size);
 	if (j < 0) return flattened3DVectorIndex(i, size.y + j, k, size);
 	if (k < 0) return flattened3DVectorIndex(i, j, size.z + k, size);
-	if (i >= size.x) throw IndexOutOfBounds(ivec3(i, j, k), size, "i");
-	if (j >= size.y) throw IndexOutOfBounds(ivec3(i, j, k), size, "j");
-	if (k >= size.z) throw IndexOutOfBounds(ivec3(i, j, k), size, "k");
+	if (i >= size.x) throw IndexOutOfBounds(ivec3(i, j, k), size, "i", __FILE__, __LINE__);
+	if (j >= size.y) throw IndexOutOfBounds(ivec3(i, j, k), size, "j", __FILE__, __LINE__);
+	if (k >= size.z) throw IndexOutOfBounds(ivec3(i, j, k), size, "k", __FILE__, __LINE__);
 	return i * size.y * size.z + j * size.z + k;
 }
 
@@ -303,10 +301,10 @@ inline int flattened4DVectorIndex(int i, int j, int k, int m,  ivec4 size) {
 	if (j < 0) return flattened4DVectorIndex(i, size.y + j, k,m, size);
 	if (k < 0) return flattened4DVectorIndex(i, j, size.z + k,m, size);
 	if (m < 0) return flattened4DVectorIndex(i, j, k, size.w + m, size);
-	if (i >= size.x) throw IndexOutOfBounds(ivec4(i, j, k, m), size, "i");
-	if (j >= size.y) throw IndexOutOfBounds(ivec4(i, j, k, m), size, "j");
-	if (k >= size.z) throw IndexOutOfBounds(ivec4(i, j, k, m), size, "k");
-	if (m >= size.w) throw IndexOutOfBounds(ivec4(i, j, k, m), size, "m");
+	if (i >= size.x) throw IndexOutOfBounds(ivec4(i, j, k, m), size, "i", __FILE__, __LINE__);
+	if (j >= size.y) throw IndexOutOfBounds(ivec4(i, j, k, m), size, "j", __FILE__, __LINE__);
+	if (k >= size.z) throw IndexOutOfBounds(ivec4(i, j, k, m), size, "k", __FILE__, __LINE__);
+	if (m >= size.w) throw IndexOutOfBounds(ivec4(i, j, k, m), size, "m", __FILE__, __LINE__);
 	return i * size.y * size.z * size.w + j * size.z * size.w + k * size.w + m;
 }
 
@@ -578,7 +576,7 @@ int indexOf(T x, const vector<T> &v) {
 	for (int i = 0; i < v.size(); i++)
 		if (v[i] == x)
 			return i;
-	throw ValueError("Element not found in vector.");
+	throw ValueError("Element not found in vector.", __FILE__, __LINE__);
 }
 
 template<typename T>

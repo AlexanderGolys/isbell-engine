@@ -1,26 +1,17 @@
 #pragma once
 
 #include "indexedRendering.hpp"
+#include "renderingUtils.hpp"
+#include "../utils/filesUtils.hpp"
+#include "../utils/logging.hpp"
 
 #include <cstdio>
 #include <cstdlib>
 #include <GL/glew.h>
 #include <GLFW/glfw3.h>
-#include <glm/glm.hpp>
-#include <glm/gtc/matrix_transform.hpp>
-#include <glm/gtx/transform.hpp>
-#include "src/utils/logging.hpp"
 
-// #include "renderingUtils.hpp"
 
-#include <fstream>
-#include <io.h>
-#include <map>
-#include <string>
-#include <memory>
-#include <sstream>
 
-#include "src/utils/filesUtils.hpp"
 
 class Texture;
 
@@ -131,7 +122,6 @@ public:
 
 	void linkShaders();
 
-//	ShaderProgram(const string &vertexShaderCode, const string &fragmentShaderCode, const string &geometryShaderCode="");
 	explicit ShaderProgram(const string &standard_file_path);
 	~ShaderProgram();
 
@@ -292,7 +282,8 @@ public:
 	float screenshotFrequency;
 	Path screenshotDirectory;
 
-	RenderSettings(vec4 bgColor, bool alphaBlending, bool depthTest, bool timeUniform, float speed, int maxFPS, bool takeScreenshots, Resolution resolution, float screenshotFrequency=0.f, const string &windowTitle="window");
+	RenderSettings(vec4 bgColor, bool alphaBlending, bool depthTest, bool timeUniform, float speed, int maxFPS,
+		bool takeScreenshots, Resolution resolution, float screenshotFrequency=0.f, const string &windowTitle="window");
 };
 
 
@@ -308,8 +299,10 @@ protected:
 	unique_ptr<Window> window;
 	GLuint vao;
 	vector<shared_ptr<RenderingStep>> renderingSteps;
+
 	shared_ptr<Camera> camera;
 	vector<Light> lights;
+
 	float time = 0;
     float dt = 0;
 	END(float) animSpeed;
@@ -328,6 +321,7 @@ public:
 
 	void setCamera(const shared_ptr<Camera> &camera);
 	void setLights(const vector<Light> &lights);
+
 	void setLightWithMesh(const Light &light, const shared_ptr<MaterialPhong> &material, const ShaderProgram &shader, float radius);
 	void setLightsWithMesh(const vector<Light> &lights, const shared_ptr<MaterialPhong> &material, const ShaderProgram &shader, float radius);
 	void setLightWithMesh(const Light &light, float ambient, float diff, float spec, float shine, const ShaderProgram &shader, float radius);

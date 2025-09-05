@@ -8,14 +8,14 @@
 #include <utility>
 #include <variant>
 
-
 #include "filesUtils.hpp"
 #include "mat.hpp"
-// #include "randomUtils.hpp"
+#include "randomUtils.hpp"
 
 
 std::string polyGroupIDtoString(PolyGroupID id);
 PolyGroupID prefix(const PolyGroupID &id, const std::string& prefix);
+
 
 PolyGroupID make_unique_id(const PolyGroupID &id);
 PolyGroupID bdGroup(int n);
@@ -29,6 +29,14 @@ bool idBelongsToBd(const PolyGroupID &id);
 
 class RealFunctionR3;
 typedef RealFunctionR3 SteadyScalarField;
+
+
+
+
+
+
+
+
 
 
 enum class Regularity {
@@ -152,7 +160,7 @@ public:
 class RealFunctionR3 {
 	Foo31 _f;
 	Foo33 _df;
-    float eps = 0.01;
+    float eps = 0.01f;
     Regularity regularity;
 public:
 	RealFunctionR3();
@@ -160,10 +168,11 @@ public:
     RealFunctionR3(RealFunctionR3 &&other) noexcept;
     RealFunctionR3 & operator=(const RealFunctionR3 &other);
     RealFunctionR3 & operator=(RealFunctionR3 &&other) noexcept;
-    RealFunctionR3(Foo31 f,Foo33 df, float eps=.01, Regularity regularity = Regularity::SMOOTH);;
-	explicit RealFunctionR3(Foo31 f, float epsilon=0.01, Regularity regularity = Regularity::SMOOTH);;
-	RealFunctionR3(Foo1111 f,Foo1113 df, float eps=.01, Regularity regularity = Regularity::SMOOTH);;
-	explicit RealFunctionR3(Foo1111 f, float epsilon=0.01, Regularity regularity = Regularity::SMOOTH);;
+    RealFunctionR3(Foo31 f,Foo33 df, float eps=.01f, Regularity regularity = Regularity::SMOOTH);;
+	explicit RealFunctionR3(Foo31 f, float epsilon=0.01f, Regularity regularity = Regularity::SMOOTH);;
+	RealFunctionR3(Foo1111 f,Foo1113 df, float eps=.01f, Regularity regularity = Regularity::SMOOTH);;
+	explicit RealFunctionR3(Foo1111 f, float epsilon=0.01f, Regularity regularity = Regularity::SMOOTH);;
+
 	float operator()(vec3 v) const;
 	vec3 df(vec3 v) const;
 	float operator()(float x, float y, float z) const;
@@ -231,7 +240,7 @@ class SpaceEndomorphism {
 protected:
 	Foo33 _f;
 	Foo3Foo33 _df;
-    float eps = 0.01;
+    float eps = 0.01f;
 	virtual SpaceEndomorphism compose(const SpaceEndomorphism &g) const;
 
 
@@ -430,7 +439,7 @@ public:
 	friend RealFunction max(const RealFunction &f, float a);
 	friend RealFunction min(const RealFunction &f, const RealFunction &g);
 	friend RealFunction min(const RealFunction &f, float a);
-	friend RealFunction abs(const RealFunction &f) {return max(f, -f);}
+	friend RealFunction abs(const RealFunction &f);
 
 	RealFunction sqrt() const { return pow(.5f); }
 	RealFunction pow2() const { return pow(2); }
@@ -441,7 +450,7 @@ public:
 	friend RealFunction operator+(float a, const RealFunction &f);
 	friend RealFunction operator-(float a, const RealFunction &f);
 	friend RealFunction operator/(float a, const RealFunction &f);
-	// RealFunction operator~() const { return 1.f/(*this); }
+	// RealFunction operator~() const { return 1._f/(*this); }
 
 	RealFunction operator& (const RealFunction &g_) const;
 	RealFunctionR3 operator& (const RealFunctionR3 &g_) const;
@@ -476,15 +485,13 @@ public:
 	static RealFunction SQRT();
 };
 
-const auto SIN_R = RealFunction::sin();
-const auto COS_R = RealFunction::cos();
-const auto EXP_R = RealFunction::exp();
-const auto LOG_R = RealFunction::log();
-const auto SQRT_R = RealFunction::SQRT();
-const auto ONE_R = RealFunction::one();
-const auto X_R = RealFunction::linear(1, 0);
-const auto RELU = max(X_R, 0);
 
+RealFunction max(const RealFunction &f, float a);
+RealFunction max(const RealFunction &f, const RealFunction &g);
+RealFunction min(const RealFunction &f, float a);
+RealFunction min(const RealFunction &f, const RealFunction &g);
+RealFunction abs(const RealFunction &f);
+RealFunction pow(const RealFunction &f, float a);
 
 
 
@@ -563,11 +570,11 @@ public:
 
 class PlaneSmoothEndomorphism {
 protected:
-	std::shared_ptr<Foo22> _f;
-	std::shared_ptr<std::function<mat2(vec2)>> _df;
+	shared_ptr<Foo22> _f;
+	shared_ptr<std::function<mat2(vec2)>> _df;
 public:
 	PlaneSmoothEndomorphism();
-	PlaneSmoothEndomorphism(std::shared_ptr<Foo22> f, std::shared_ptr<std::function<mat2(vec2)>> _df);
+	PlaneSmoothEndomorphism(shared_ptr<Foo22> f, shared_ptr<std::function<mat2(vec2)>> _df);
 	vec2 operator()(vec2 x) const;
 	vec2 operator()(float t, float u) const;
 	vec2 df(vec2 x, vec2 v) const;
@@ -578,9 +585,9 @@ public:
 
 class PlaneAutomorphism : public PlaneSmoothEndomorphism {
 protected:
-	std::shared_ptr<Foo22> _f_inv;
+	shared_ptr<Foo22> _f_inv;
 public:
-	PlaneAutomorphism(std::shared_ptr<Foo22> f, std::shared_ptr<std::function<mat2(vec2)>> _df, std::shared_ptr<Foo22> f_inv);
+	PlaneAutomorphism(shared_ptr<Foo22> f, shared_ptr<std::function<mat2(vec2)>> _df, shared_ptr<Foo22> f_inv);
 	vec2 f_inv(vec2 x) const;
 	vec2 inv(vec2 x) const;
 	vec2 inv(float t, float u) const;
@@ -654,25 +661,25 @@ public:
 	HolomorphicFunction pow3() const;
 };
 
-const auto ONE_C = HolomorphicFunction([](Complex z) { return Complex(1); }, [](Complex z) { return Complex(0); }, .001);
-const auto ZERO_C = HolomorphicFunction([](Complex z) { return Complex(0); }, [](Complex z) { return Complex(0); }, .001);
-const auto X_C = HolomorphicFunction([](Complex z) { return z; }, [](Complex z) { return Complex(1); }, .001);
-const auto X2_C = X_C * X_C;
-const auto EXP_C = HolomorphicFunction([](Complex z) { return exp(z); }, [](Complex z) { return exp(z); }, .001);
-const auto LOG_C = HolomorphicFunction([](Complex z) { return log(z); }, [](Complex z) { return 1/z; }, .001);
-const auto SIN_C = HolomorphicFunction([](Complex z) { return sin(z); }, [](Complex z) { return cos(z); }, .001);
-const auto COS_C = HolomorphicFunction([](Complex z) { return cos(z); }, [](Complex z) { return -sin(z); }, .001);
-const auto TAN_C = SIN_C / COS_C;
-const auto COT_C = 1/TAN_C;
-const auto SINH_C = HolomorphicFunction([](Complex z) { return sinh(z); }, [](Complex z) { return cosh(z); }, .001);
-const auto COSH_C = HolomorphicFunction([](Complex z) { return cosh(z); }, [](Complex z) { return sinh(z); }, .001);
-const auto TANH_C = SINH_C / COSH_C;
-const auto COTH_C = 1/TANH_C;
-const auto ASIN_C = HolomorphicFunction([](Complex z) { return asin(z); }, [](Complex z) { return 1/sqrt(1-z*z); }, .001);
-const auto ACOS_C = HolomorphicFunction([](Complex z) { return acos(z); }, [](Complex z) { return -1/sqrt(1-z*z); }, .001);
-const auto ATAN_C = HolomorphicFunction([](Complex z) { return atan(z); }, [](Complex z) { return 1/(1+z*z); }, .001);
-const auto ACOT_C = HolomorphicFunction([](Complex z) { return atan(1/z); }, [](Complex z) { return -1/(1+1/(z*z)); }, .001);
-const auto ASINH_C = HolomorphicFunction([](Complex z) { return asinh(z); }, [](Complex z) { return 1/sqrt(z*z+1); }, .001);
+const HolomorphicFunction ONE_C = HolomorphicFunction([](Complex z) { return Complex(1); }, [](Complex z) { return Complex(0); }, .001f);
+const HolomorphicFunction ZERO_C = HolomorphicFunction([](Complex z) { return Complex(0); }, [](Complex z) { return Complex(0); }, .001f);
+const HolomorphicFunction X_C = HolomorphicFunction([](Complex z) { return z; }, [](Complex z) { return Complex(1); }, .001f);
+const HolomorphicFunction X2_C = X_C * X_C;
+const HolomorphicFunction EXP_C = HolomorphicFunction([](Complex z) { return exp(z); }, [](Complex z) { return exp(z); }, .001f);
+const HolomorphicFunction LOG_C = HolomorphicFunction([](Complex z) { return log(z); }, [](Complex z) { return 1/z; }, .001f);
+const HolomorphicFunction SIN_C = HolomorphicFunction([](Complex z) { return sin(z); }, [](Complex z) { return cos(z); }, .001f);
+const HolomorphicFunction COS_C = HolomorphicFunction([](Complex z) { return cos(z); }, [](Complex z) { return -sin(z); }, .001f);
+const HolomorphicFunction TAN_C = SIN_C / COS_C;
+const HolomorphicFunction COT_C = 1/TAN_C;
+const HolomorphicFunction SINH_C = HolomorphicFunction([](Complex z) { return sinh(z); }, [](Complex z) { return cosh(z); }, .001f);
+const HolomorphicFunction COSH_C = HolomorphicFunction([](Complex z) { return cosh(z); }, [](Complex z) { return sinh(z); }, .001f);
+const HolomorphicFunction TANH_C = SINH_C / COSH_C;
+const HolomorphicFunction COTH_C = 1/TANH_C;
+const HolomorphicFunction ASIN_C = HolomorphicFunction([](Complex z) { return asin(z); }, [](Complex z) { return 1/sqrt(1-z*z); }, .001f);
+const HolomorphicFunction ACOS_C = HolomorphicFunction([](Complex z) { return acos(z); }, [](Complex z) { return -1/sqrt(1-z*z); }, .001f);
+const HolomorphicFunction ATAN_C = HolomorphicFunction([](Complex z) { return atan(z); }, [](Complex z) { return 1/(1+z*z); }, .001f);
+const HolomorphicFunction ACOT_C = HolomorphicFunction([](Complex z) { return atan(1/z); }, [](Complex z) { return -1/(1+1/(z*z)); }, .001f);
+const HolomorphicFunction ASINH_C = HolomorphicFunction([](Complex z) { return asinh(z); }, [](Complex z) { return 1/sqrt(z*z+1); }, .001f);
 
 class BiholomorphicFunction {
 	HolomorphicFunction _f, _f_inv;
@@ -690,10 +697,10 @@ public:
 };
 
 class ComplexValuedFunction {
-	HOM(float, Complex) f;
+	HOM(float, Complex) _f;
 	float eps;
 public:
-	explicit ComplexValuedFunction(Complex c, float eps=.001) : f([c](float) { return c; }), eps(eps) {}
+	explicit ComplexValuedFunction(Complex c, float eps=.001) : _f([c](float) { return c; }), eps(eps) {}
 	explicit ComplexValuedFunction(float c, float eps=.001) : ComplexValuedFunction(Complex(c), eps) {}
 	explicit ComplexValuedFunction(int c, float eps=.001) : ComplexValuedFunction(Complex(c), eps) {}
 
@@ -712,15 +719,15 @@ public:
 
 
 
-	Complex operator()(float x) const { return f(x); }
-	Complex operator()(int x) const { return f(x*1.f); }
+	Complex operator()(float x) const { return _f(x); }
+	Complex operator()(int x) const { return _f(x*1.f); }
 
-	ComplexValuedFunction df() const { return ComplexValuedFunction([f=f, eps=eps](float x) { return (f(x+eps) - f(x-eps))/(2.f*eps); }, eps); }
+	ComplexValuedFunction df() const { return ComplexValuedFunction([f=_f, eps=eps](float x) { return (f(x+eps) - f(x-eps))/(2.f*eps); }, eps); }
 	ComplexValuedFunction conj() const { return ComplexValuedFunction(re(), -im(), eps); }
 
-	ComplexValuedFunction operator+(const ComplexValuedFunction &g) const { return ComplexValuedFunction([f=f, g=g](float x) { return f(x) + g(x); }, eps); }
-	ComplexValuedFunction operator+(const RealFunction &g) const { return ComplexValuedFunction([f=f, g=g](float x) { return f(x) + g(x); }, eps); }
-	ComplexValuedFunction operator+(const Complex &g) const { return ComplexValuedFunction([f=f, g=g](float x) { return f(x) + g; }, eps); }
+	ComplexValuedFunction operator+(const ComplexValuedFunction &g) const { return ComplexValuedFunction([f=_f, g=g](float x) { return f(x) + g(x); }, eps); }
+	ComplexValuedFunction operator+(const RealFunction &g) const { return ComplexValuedFunction([f=_f, g=g](float x) { return f(x) + g(x); }, eps); }
+	ComplexValuedFunction operator+(const Complex &g) const { return ComplexValuedFunction([f=_f, g=g](float x) { return f(x) + g; }, eps); }
 	ComplexValuedFunction operator+(const float &g) const { return *this + Complex(g); }
 	ComplexValuedFunction operator+(const int &g) const { return *this + Complex(g); }
 	friend ComplexValuedFunction operator+(const RealFunction &g, const ComplexValuedFunction &f) { return f + g; }
@@ -728,7 +735,7 @@ public:
 	friend ComplexValuedFunction operator+(float a, const ComplexValuedFunction &f) { return f + a; }
 	friend ComplexValuedFunction operator+(int a, const ComplexValuedFunction &f) { return f + a; }
 
-	ComplexValuedFunction operator-() const { return ComplexValuedFunction([f=f](float x) { return -f(x); }, eps); }
+	ComplexValuedFunction operator-() const { return ComplexValuedFunction([f=_f](float x) { return -f(x); }, eps); }
 	ComplexValuedFunction operator-(const ComplexValuedFunction &g) const { return (*this) + (-g); }
 	ComplexValuedFunction operator-(const RealFunction &g) const { return (*this) + (-g); }
 	ComplexValuedFunction operator-(const Complex &g) const { return (*this) + (-g); }
@@ -739,9 +746,9 @@ public:
 	friend ComplexValuedFunction operator-(float a, const ComplexValuedFunction &f) { return a + -f;}
 	friend ComplexValuedFunction operator-(int a, const ComplexValuedFunction &f) { return a + -f;}
 
-	ComplexValuedFunction operator*(const ComplexValuedFunction &g) const { return ComplexValuedFunction([f=f, g=g](float x) { return f(x) * g(x); }, eps); }
-	ComplexValuedFunction operator*(const RealFunction &g) const { return ComplexValuedFunction([f=f, g=g](float x) { return f(x) * g(x); }, eps); }
-	ComplexValuedFunction operator*(const Complex &g) const { return ComplexValuedFunction([f=f, g=g](float x) { return f(x) * g; }, eps); }
+	ComplexValuedFunction operator*(const ComplexValuedFunction &g) const { return ComplexValuedFunction([f=_f, g=g](float x) { return f(x) * g(x); }, eps); }
+	ComplexValuedFunction operator*(const RealFunction &g) const { return ComplexValuedFunction([f=_f, g=g](float x) { return f(x) * g(x); }, eps); }
+	ComplexValuedFunction operator*(const Complex &g) const { return ComplexValuedFunction([f=_f, g=g](float x) { return f(x) * g; }, eps); }
 	ComplexValuedFunction operator*(const float &g) const { return *this * Complex(g); }
 	ComplexValuedFunction operator*(const int &g) const { return *this * Complex(g); }
 	friend ComplexValuedFunction operator*(const RealFunction &g, const ComplexValuedFunction &f) { return f * g; }
@@ -750,9 +757,9 @@ public:
 	friend ComplexValuedFunction operator*(int a, const ComplexValuedFunction &f) { return f*a; }
 
 
-	ComplexValuedFunction operator/(const ComplexValuedFunction &g) const { return ComplexValuedFunction([f=f, g=g](float x) { return f(x) / g(x); }, eps); }
-	ComplexValuedFunction operator/(const RealFunction &g) const { return ComplexValuedFunction([f=f, g=g](float x) { return f(x) / g(x); }, eps); }
-	ComplexValuedFunction operator/(const Complex &g) const { return ComplexValuedFunction([f=f, g=g](float x) { return f(x) / g; }, eps); }
+	ComplexValuedFunction operator/(const ComplexValuedFunction &g) const { return ComplexValuedFunction([f=_f, g=g](float x) { return f(x) / g(x); }, eps); }
+	ComplexValuedFunction operator/(const RealFunction &g) const { return ComplexValuedFunction([f=_f, g=g](float x) { return f(x) / g(x); }, eps); }
+	ComplexValuedFunction operator/(const Complex &g) const { return ComplexValuedFunction([f=_f, g=g](float x) { return f(x) / g; }, eps); }
 	ComplexValuedFunction operator/(const float &g) const { return *this * (1.f/g); }
 	ComplexValuedFunction operator/(const int &g) const { return *this * (1.f/g); }
 	friend ComplexValuedFunction operator/(const RealFunction &g, const ComplexValuedFunction &f) { return ComplexValuedFunction([f=f, g=g](float x) { return Complex(g(x)) / f(x); }, f.eps); }
@@ -761,26 +768,26 @@ public:
 	friend ComplexValuedFunction operator/(int a, const ComplexValuedFunction &f) { return Complex(a) / f; }
 
 
-	ComplexValuedFunction operator & (float t) const { return ComplexValuedFunction([f=f, t](float x) { return f(x*t); }, eps); }
-	ComplexValuedFunction operator & (const RealFunction &g) const { return ComplexValuedFunction([f=f, g=g](float x) { return f(g(x)); }, eps); }
+	ComplexValuedFunction operator & (float t) const { return ComplexValuedFunction([f=_f, t](float x) { return f(x*t); }, eps); }
+	ComplexValuedFunction operator & (const RealFunction &g) const { return ComplexValuedFunction([f=_f, g=g](float x) { return f(g(x)); }, eps); }
 	ComplexValuedFunction operator() (const RealFunction &g) const { return (*this) & g; }
 
-	RealFunction re() const { return RealFunction([f=f](float x) { return f(x).real(); }, eps); }
-	RealFunction im() const { return RealFunction([f=f](float x) { return f(x).imag(); }, eps); }
-	RealFunction abs() const { return RealFunction([f=f](float x) { return norm(f(x)); }, eps); }
-	RealFunction arg() const { return RealFunction([f=f](float x) { return f(x).arg(); }, eps); }
-	RealFunction norm2() const { return RealFunction([f=f](float x) { return ::norm2(f(x)); }, eps); }
+	RealFunction re() const { return RealFunction([f=_f](float x) { return f(x).real(); }, eps); }
+	RealFunction im() const { return RealFunction([f=_f](float x) { return f(x).imag(); }, eps); }
+	RealFunction abs() const { return RealFunction([f=_f](float x) { return norm(f(x)); }, eps); }
+	RealFunction arg() const { return RealFunction([f=_f](float x) { return f(x).arg(); }, eps); }
+	RealFunction norm2() const { return RealFunction([f=_f](float x) { return ::norm2(f(x)); }, eps); }
 
 	Complex integral(float a, float b, int prec) const { return Complex(re().integral(a, b, prec), im().integral(a, b, prec)); }
 };
 
 
 class ComplexFunctionR2 {
-	BIHOM(float, float,  Complex) f;
+	BIHOM(float, float,  Complex) _f;
 	float eps;
 public:
-	explicit ComplexFunctionR2(Complex c) : f([c](float x, float y) { return c; }), eps(0.01) {}
-	explicit ComplexFunctionR2(BIHOM(float, float,  Complex) f, float eps=.01) : f(std::move(f)), eps(eps) {}
+	explicit ComplexFunctionR2(Complex c) : _f([c](float x, float y) { return c; }), eps(0.01) {}
+	explicit ComplexFunctionR2(BIHOM(float, float,  Complex) f, float eps=.01) : _f(std::move(f)), eps(eps) {}
 	explicit ComplexFunctionR2(RealFunctionR2 re, float eps=.01) : ComplexFunctionR2([re](float x, float y) { return Complex(re(x, y), 0); }, eps) {}
 	ComplexFunctionR2(RealFunctionR2 f_re, RealFunctionR2 f_im, float eps=.01) : ComplexFunctionR2([f_re, f_im](float x, float y) { return Complex(f_re(x, y), f_im(x, y)); }, eps) {}
 	explicit ComplexFunctionR2(HOM(vec2,  Complex) f, float eps=.01) : ComplexFunctionR2([f](float x, float y) { return f(vec2(x, y)); }, eps) {}
@@ -792,41 +799,41 @@ public:
 	ComplexFunctionR2 & operator=(ComplexFunctionR2 &&other) noexcept;
 
 
-	Complex operator()(float x, float y) const { return f(x, y); }
-	Complex operator()(vec2 x) const { return f(x.x, x.y); }
-	ComplexFunctionR2 dfdx() const { return ComplexFunctionR2([f=f, eps=eps](float x, float y) { return (f(x+eps, y) - f(x-eps, y))/(2.f*eps); }, eps); }
+	Complex operator()(float x, float y) const { return _f(x, y); }
+	Complex operator()(vec2 x) const { return _f(x.x, x.y); }
+	ComplexFunctionR2 dfdx() const { return ComplexFunctionR2([f=_f, eps=eps](float x, float y) { return (f(x+eps, y) - f(x-eps, y))/(2.f*eps); }, eps); }
 	ComplexFunctionR2 conj() const { return ComplexFunctionR2(re(), -im(), eps); }
 
-	ComplexFunctionR2 operator+(const ComplexFunctionR2 &g) const { return ComplexFunctionR2([f=f, g=g](float x, float y) { return f(x, y) + g(x, y); }, eps); }
-	ComplexFunctionR2 operator+(const RealFunctionR2 &g) const { return ComplexFunctionR2([f=f, g=g](float x, float y) { return f(x, y) + g(x, y); }, eps); }
-	ComplexFunctionR2 operator+(const Complex &g) const { return ComplexFunctionR2([f=f, g=g](float x, float y) { return f(x, y) + g; }, eps); }
+	ComplexFunctionR2 operator+(const ComplexFunctionR2 &g) const { return ComplexFunctionR2([f=_f, g=g](float x, float y) { return f(x, y) + g(x, y); }, eps); }
+	ComplexFunctionR2 operator+(const RealFunctionR2 &g) const { return ComplexFunctionR2([f=_f, g=g](float x, float y) { return f(x, y) + g(x, y); }, eps); }
+	ComplexFunctionR2 operator+(const Complex &g) const { return ComplexFunctionR2([f=_f, g=g](float x, float y) { return f(x, y) + g; }, eps); }
 	friend ComplexFunctionR2 operator+(const RealFunctionR2 &g, const ComplexFunctionR2 &f) { return f + g; }
     friend ComplexFunctionR2 operator+(const Complex &g, const ComplexFunctionR2 &f) { return f + g; }
 
-	ComplexFunctionR2 operator-() const { return ComplexFunctionR2([f=f](float x, float y) { return -f(x, y); }, eps); }
+	ComplexFunctionR2 operator-() const { return ComplexFunctionR2([f=_f](float x, float y) { return -f(x, y); }, eps); }
 	ComplexFunctionR2 operator-(const ComplexFunctionR2 &g) const { return (*this) + (-g); }
 	ComplexFunctionR2 operator-(const RealFunctionR2 &g) const { return (*this) + (-g); }
 	ComplexFunctionR2 operator-(const Complex &g) const { return (*this) + (-g); }
 	friend ComplexFunctionR2 operator-(const RealFunctionR2 &g, const ComplexFunctionR2 &f) { return -f + g; }
 	friend ComplexFunctionR2 operator-(const Complex &g, const ComplexFunctionR2 &f) { return -f + g; }
 
-	ComplexFunctionR2 operator*(const ComplexFunctionR2 &g) const { return ComplexFunctionR2([f=f, g=g](float x, float y) { return f(x, y) * g(x, y); }, eps); }
-	ComplexFunctionR2 operator*(const RealFunctionR2 &g) const { return ComplexFunctionR2([f=f, g=g](float x, float y) { return f(x, y) * g(x, y); }, eps); }
-	ComplexFunctionR2 operator*(const Complex &g) const { return ComplexFunctionR2([f=f, g=g](float x, float y) { return f(x, y) * g; }, eps); }
+	ComplexFunctionR2 operator*(const ComplexFunctionR2 &g) const { return ComplexFunctionR2([f=_f, g=g](float x, float y) { return f(x, y) * g(x, y); }, eps); }
+	ComplexFunctionR2 operator*(const RealFunctionR2 &g) const { return ComplexFunctionR2([f=_f, g=g](float x, float y) { return f(x, y) * g(x, y); }, eps); }
+	ComplexFunctionR2 operator*(const Complex &g) const { return ComplexFunctionR2([f=_f, g=g](float x, float y) { return f(x, y) * g; }, eps); }
 	friend ComplexFunctionR2 operator*(const RealFunctionR2 &g, const ComplexFunctionR2 &f) { return f * g; }
 	friend ComplexFunctionR2 operator*(const Complex &g, const ComplexFunctionR2 &f) { return f * g; }
 
-	ComplexFunctionR2 operator/(const ComplexFunctionR2 &g) const { return ComplexFunctionR2([f=f, g=g](float x, float y) { return f(x, y) / g(x, y); }, eps); }
-	ComplexFunctionR2 operator/(const RealFunctionR2 &g) const { return ComplexFunctionR2([f=f, g=g](float x, float y) { return f(x, y) / g(x, y); }, eps); }
-	ComplexFunctionR2 operator/(const Complex &g) const { return ComplexFunctionR2([f=f, g=g](float x, float y) { return f(x, y) / g; }, eps); }
+	ComplexFunctionR2 operator/(const ComplexFunctionR2 &g) const { return ComplexFunctionR2([f=_f, g=g](float x, float y) { return f(x, y) / g(x, y); }, eps); }
+	ComplexFunctionR2 operator/(const RealFunctionR2 &g) const { return ComplexFunctionR2([f=_f, g=g](float x, float y) { return f(x, y) / g(x, y); }, eps); }
+	ComplexFunctionR2 operator/(const Complex &g) const { return ComplexFunctionR2([f=_f, g=g](float x, float y) { return f(x, y) / g; }, eps); }
 	friend ComplexFunctionR2 operator/(const RealFunctionR2 &g, const ComplexFunctionR2 &f) { return ComplexFunctionR2([f=f, g=g](float x, float y) { return Complex(g(x, y)) / f(x, y); }, f.eps); }
 	friend ComplexFunctionR2 operator/(const Complex &g, const ComplexFunctionR2 &f) { return ComplexFunctionR2([f=f, g=g](float x, float y) { return Complex(g) / f(x, y); }, f.eps); }
 
-	RealFunctionR2 re() const { return RealFunctionR2([f=f](float x, float y) { return f(x, y).real(); }, eps); }
-	RealFunctionR2 im() const { return RealFunctionR2([f=f](float x, float y) { return f(x, y).imag(); }, eps); }
-	RealFunctionR2 abs() const { return RealFunctionR2([f=f](float x, float y) { return norm(f(x, y)); }, eps); }
-	RealFunctionR2 arg() const { return RealFunctionR2([f=f](float x, float y) { return f(x, y).arg(); }, eps); }
-	RealFunctionR2 norm2() const { return RealFunctionR2([f=f](float x, float y) { return ::norm2(f(x, y)); }, eps); }
+	RealFunctionR2 re() const { return RealFunctionR2([f=_f](float x, float y) { return f(x, y).real(); }, eps); }
+	RealFunctionR2 im() const { return RealFunctionR2([f=_f](float x, float y) { return f(x, y).imag(); }, eps); }
+	RealFunctionR2 abs() const { return RealFunctionR2([f=_f](float x, float y) { return norm(f(x, y)); }, eps); }
+	RealFunctionR2 arg() const { return RealFunctionR2([f=_f](float x, float y) { return f(x, y).arg(); }, eps); }
+	RealFunctionR2 norm2() const { return RealFunctionR2([f=_f](float x, float y) { return ::norm2(f(x, y)); }, eps); }
 };
 
 
@@ -959,7 +966,7 @@ public:
 	float operator[](int i) const;
 	Vector<float> getVector() const { return fn; }
 	vec2 getDomain() const { return domain; }
-	void setDomain(vec2 domain) { this->domain = domain; }
+	void setDomain(vec2 dom) { this->domain = dom; }
 
 	DiscreteRealFunction(const DiscreteRealFunction &other);
 	DiscreteRealFunction(DiscreteRealFunction &&other) noexcept;
@@ -1086,7 +1093,7 @@ public:
 	float sampling_step_x() const;
 	vector<float> args_t() const;
 	vector<float> args_x() const;
-	void setDomain(vec2 domain) { this->domain = domain; }
+	void setDomain(vec2 dom) { this->domain = dom; }
 
 	DiscreteComplexFunctionR2 operator+(const DiscreteComplexFunctionR2 &g) const;
 	DiscreteComplexFunctionR2 operator+(Complex a) const;
@@ -1178,8 +1185,8 @@ public:
 	float sampling_step_x() const;
 	vector<float> args_t() const;
 	vector<float> args_x() const;
-	void setDomain_t(vec2 domain) { this->domain = domain; }
-	void setDomain_x(vec2 domain) { for (auto &f : fn) f.setDomain(domain); }
+	void setDomain_t(vec2 dom) { this->domain = dom; }
+	void setDomain_x(vec2 dom) { for (auto &f : fn) f.setDomain(dom); }
 	vec2 domain_x() const { return fn[0].getDomain(); }
 
 	DiscreteRealFunctionR2 transpose() const;
@@ -1227,3 +1234,14 @@ RealFunction smootherstep(float x0, float x1);
 RealFunctionR2 smoothUnion(float k);
 RealFunctionR2 smoothSubtract(float k);
 RealFunctionR2 smoothIntersect(float k);
+
+
+
+const RealFunction SIN_R = RealFunction::sin();
+const RealFunction COS_R = RealFunction::cos();
+const RealFunction EXP_R = RealFunction::exp();
+const RealFunction LOG_R = RealFunction::log();
+const RealFunction SQRT_R = RealFunction::SQRT();
+const RealFunction ONE_R = RealFunction::one();
+const RealFunction X_R = RealFunction::linear(1, 0);
+const RealFunction RELU = max(X_R, 0);

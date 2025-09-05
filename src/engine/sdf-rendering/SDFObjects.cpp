@@ -158,15 +158,15 @@ SDFObject binaryPostcomposeWithKnownOperator(string operatorName, std::function<
 }
 
 SDFObject SDFObject::translate(vec3 t) const {
-	throw NotImplementedError("Not implemented");
+	throw NotImplementedError("Not implemented", __FILE__, __LINE__);
 }
 
 SDFObject SDFObject::rotate(const mat3 &r, vec3 center) const {
-	throw std::logic_error("Not implemented");
+	throw NotImplementedError("SDFObject::rotate Not implemented", __FILE__, __LINE__);
 }
 
 SDFObject SDFObject::scale(float s) const {
-	throw std::logic_error("Not implemented");
+	throw NotImplementedError("SDFObject::scale Not implemented", __FILE__, __LINE__);
 }
 
 SDFObject SDFObject::operator+(const SDFObject &other) const {
@@ -295,7 +295,7 @@ ShaderMethodTemplateFromUniform SDFObject::getHelper(string name) const {
 			return helper;
 	if (mainFunction.getName() == name)
 		return mainFunction;
-	throw ValueError("No helper with name " + name);
+	throw ValueError("No helper with name " + name, __FILE__, __LINE__);
 }
 
 string SDFObject::sdfCode() const {

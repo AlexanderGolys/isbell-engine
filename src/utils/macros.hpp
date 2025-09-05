@@ -13,7 +13,6 @@
 #include "colors.hpp"
 
 using glm::vec2, glm::vec3, glm::mat3, glm::mat4, glm::mat2, glm::mat2x3, glm::ivec2, glm::ivec3, glm::ivec4;
-
 using std::vector, std::variant, std::string, std::optional, std::shared_ptr, std::unique_ptr, std::make_unique;
 using std::make_shared, std::endl, std::array, std::format, std::to_string, std::cout, std::printf, std::pair, std::unordered_map;
 
@@ -21,6 +20,7 @@ using std::make_shared, std::endl, std::array, std::format, std::to_string, std:
 
 constexpr float PI = 3.14159265359f;
 constexpr float TAU = 6.28318530718f;
+
 #define RP1 optional<float>
 
 #define INFf std::nullopt
@@ -39,6 +39,7 @@ constexpr float TAU = 6.28318530718f;
 #define GEN_MAT(R) GenericTensor<R, GEN_VEC(R)>
 
 namespace std {
+
 #define MAYBE(A) std::optional<A>
 #define HOM(B,A) std::function<A(B)>
 #define BIHOM(A, B, C) std::function<C(A,B)>
@@ -117,7 +118,7 @@ namespace std {
 
 #define unpackQuad(F, vec, ...) [F](vec v, ...){return F(v[0], v[1], v[2], v[3], ...);}
 // #define curry(F, arg, ...) [F](arg a, ...){return F(a, ...);}
-// #define uncarry(F, arg, arg2, ...) [F](HOM(arg, HOM(arg2, ...)) f, arg a, ...){return f(a)(...);}
+// #define uncarry(F, arg, arg2, ...) [F](HOM(arg, HOM(arg2, ...)) _f, arg a, ...){return _f(a)(...);}
 }
 
 // #define Foo(A)_Foo33 Foo33([](float){return hom(A, glm::mat3)(t);};)

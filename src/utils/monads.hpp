@@ -26,8 +26,8 @@ BIHOM(C1, C2, D) hom_adjunction(const HOM(C1, HOM(C2, D)) &F) {
 //
 // template<typename C2, typename C1, typename D>
 // BIHOM(C1, C2, D) product_monoidal_symmetriser(const BIHOM(C2, C1, D) &F) {
-// 	return [f=F](C1 x, C2 y) {
-// 		return f(y, x);
+// 	return [_f=F](C1 x, C2 y) {
+// 		return _f(y, x);
 // 	};
 // }
 //

@@ -1,4 +1,5 @@
 #pragma once
+#pragma GCC diagnostic ignored "-Wliteral-suffix"
 
 #include <cmath>
 #include <vector>
@@ -904,14 +905,16 @@ class Complex {
 public:
 	vec2 z;
 	float x, y;
+
 	Complex();
 	explicit Complex(vec2 z);
 	Complex(float x, float y);
 	Complex(int x, float y);
 	Complex(float x, int y);
 	Complex(int x, int y);
-
 	explicit Complex(float x);
+	explicit Complex(int x);
+
 	Complex operator+(Complex c) const;
 	Complex operator-(Complex c) const;
 	Complex operator*(Complex c) const;
@@ -972,11 +975,11 @@ public:
 
 
 
-constexpr Complex operator""i(long double im) {return Complex(0.f, static_cast<float>(im));}
-constexpr Complex operator""i(unsigned long long int im) {return Complex(0, static_cast<int>(im));}
+Complex operator""i(long double im);
+Complex operator""i(unsigned long long int im);
 
-auto norm2(Complex c) -> float;
-auto abs(Complex c) -> float;
+float norm2(Complex c);
+float abs(Complex c);
 
 
 Complex fromExpForm(vec2 e);
@@ -1680,27 +1683,26 @@ R Matrix<R>::at(int i, int j) const {
 	if (i < 0) i = rows + i;
 	if (j < 0) j = cols + j;
 	if (i < 0 || i >= rows || j < 0 || j >= cols)
-		throw IndexOutOfBounds(ivec2(i, j), ivec2(rows, cols));
+		throw IndexOutOfBounds(ivec2(i, j), ivec2(rows, cols), "M", __FILE__, __LINE__);
 	return coefs[i * cols + j];
 }
 
 template<typename R>
 Vector<R> Matrix<R>::operator*(const Vector<R> &v) const {
 	if (v.size() != cols)
-		throw ValueError("Matrix sizes do not match for multiplication");
+		throw ValueError("Matrix sizes do not match for multiplication", __FILE__, __LINE__);
 	Vector<R> res = Vector(rows);
 	for (int i = 0; i < rows; i++) {
 		R sum = R(0);
 		for (int j = 0; j < cols; j++)
 			sum += at(i, j) * v[j];
-		res.set(i, sum);
 	}
 	return res;
 }
 
 template<typename R>
 R Matrix<R>::a() const {
-	if (!square() || rows > 3) throw std::invalid_argument("Matrix must be 1x1 or 2x2 or 3x3");
+	if (!square() || rows > 3) throw ValueError("Matrix must be 1x1 or 2x2 or 3x3", __FILE__, __LINE__);
 	return at();
 }
 
@@ -1709,7 +1711,7 @@ R Matrix<R>::a() const {
 
 template<typename R>
 R Matrix<R>::b() const {
-	if (!square() || rows > 3 || rows < 2) throw std::invalid_argument("Matrix must be 2x2 or 3x3");
+	if (!square() || rows > 3 || rows < 2) throw ValueError("Matrix must be 2x2 or 3x3", __FILE__, __LINE__);
 	return at(0, 1);
 }
 
@@ -1718,7 +1720,7 @@ R Matrix<R>::b() const {
 
 template<typename R>
 R Matrix<R>::c() const {
-	if (!square() || rows > 3 || rows < 2) throw std::invalid_argument("Matrix must be 2x2 or 3x3");
+	if (!square() || rows > 3 || rows < 2) throw ValueError("Matrix must be 2x2 or 3x3", __FILE__, __LINE__);
 	return cols == 3 ? at(0, 2) : at(1, 0);
 }
 
@@ -1727,7 +1729,7 @@ R Matrix<R>::c() const {
 
 template<typename R>
 R Matrix<R>::d() const {
-	if (!square() || rows > 3 || rows < 2) throw std::invalid_argument("Matrix must be 2x2 or 3x3");
+	if (!square() || rows > 3 || rows < 2) throw ValueError("Matrix must be 2x2 or 3x3", __FILE__, __LINE__);
 	return cols == 3 ? at(1, 0) : at(1, 1);
 }
 
@@ -1736,7 +1738,7 @@ R Matrix<R>::d() const {
 
 template<typename R>
 R Matrix<R>::e() const {
-	if (!square() || cols != 3) throw std::invalid_argument("Matrix must be 3x3");
+	if (!square() || cols != 3) throw ValueError("Matrix must be 3x3", __FILE__, __LINE__);
 	return at(0, 2);
 }
 
@@ -1745,7 +1747,7 @@ R Matrix<R>::e() const {
 
 template<typename R>
 R Matrix<R>::f() const {
-	if (!square() || cols != 3) throw std::invalid_argument("Matrix must be 3x3");
+	if (!square() || cols != 3) throw ValueError("Matrix must be 3x3", __FILE__, __LINE__);
 	return at(1, 2);
 }
 
@@ -1754,7 +1756,7 @@ R Matrix<R>::f() const {
 
 template<typename R>
 R Matrix<R>::g() const {
-	if (!square() || cols != 3) throw std::invalid_argument("Matrix must be 3x3");
+	if (!square() || cols != 3) throw ValueError("Matrix must be 3x3", __FILE__, __LINE__);
 	return at(2, 0);
 }
 
@@ -1763,7 +1765,7 @@ R Matrix<R>::g() const {
 
 template<typename R>
 R Matrix<R>::h() const {
-	if (!square() || cols != 3) throw std::invalid_argument("Matrix must be 3x3");
+	if (!square() || cols != 3) throw ValueError("Matrix must be 3x3", __FILE__, __LINE__);
 	return at(2, 1);
 }
 
@@ -1772,7 +1774,7 @@ R Matrix<R>::h() const {
 
 template<typename R>
 R Matrix<R>::i() const {
-	if (!square() || cols != 3) throw std::invalid_argument("Matrix must be 3x3");
+	if (!square() || cols != 3) throw ValueError("Matrix must be 3x3", __FILE__, __LINE__);
 	return at(2, 2);
 }
 
@@ -1820,6 +1822,7 @@ vec3 stereoProjection(vec4 v);
 vec3 stereoProjection(Quaternion v);
 vec2 stereoProjection(vec3 v);
 float stereoProjection(vec2 v);
+
 vec4 stereoProjectionInverse(vec3 v);
 vec3 stereoProjectionInverse(vec2 v);
 vec2 stereoProjectionInverse(float t);
@@ -1839,4 +1842,4 @@ inline float saturate(float x) { return max(0.f, min(1.f, x)); }
 
 
 
-#pragma clang diagnostic pop
+// #pragma clang diagnostic pop

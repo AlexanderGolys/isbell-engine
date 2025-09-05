@@ -7,8 +7,7 @@
 #include <set>
 #include <sstream>
 #include <vector>
-#include <glm/glm.hpp>
-#include <glm/gtc/matrix_transform.hpp>
+
 
 using namespace glm;
 using std::vector, std::string, std::set, std::array, std::pair, std::exp, std::log, std::cos, std::sin, std::cosh, std::sinh, std::sqrt, std::pow, std::atan2, std::abs;
@@ -47,7 +46,9 @@ Complex::Complex(float x, int y): Complex(vec2(x, y)) {}
 Complex::Complex(int x, int y): Complex(vec2(x, y)) {}
 
 
-Complex::Complex(float x) : Complex(x, 0) {}
+Complex::Complex(float x) : Complex(x, 0.f) {}
+
+Complex::Complex(int x) : Complex(x, 0) {}
 
 Complex Complex::operator+(Complex c) const { return Complex(z + c.z); }
 
@@ -105,6 +106,14 @@ vec5 operator*(float scalar, const vec5 &a) {
 Complex toComplex(vec2 v) { return Complex(v); }
 
 float abs(Complex z) { return norm(z.z); }
+
+Complex operator ""i(long double im) {
+	return Complex(0.f, static_cast<float>(im));
+}
+
+Complex operator ""i(unsigned long long int im) {
+	return Complex(0, static_cast<int>(im));
+}
 
 float norm2(Complex z) { return norm2(z.z); }
 
@@ -345,7 +354,7 @@ auto vec5::operator[](int i) const -> float {
 		case 2: return z;
 		case 3: return w;
 		case 4: return v;
-		default: throw IndexOutOfBounds(i, 5, "Index out of bounds in vec5");
+		default: throw IndexOutOfBounds(i, 5, "Index out of bounds in vec5", __FILE__, __LINE__);
 	}
 }
 
@@ -362,7 +371,7 @@ vec5 vec5::operator*(float scalar) const {
 }
 
 vec5 vec5::operator/(float scalar) const {
-	if (scalar == 0) throw ZeroDivisionError("Division by zero in vec5 division");
+	if (scalar == 0) throw ZeroDivisionError("Division by zero in vec5 division", __FILE__, __LINE__);
 	return vec5(x / scalar, y / scalar, z / scalar, w / scalar, v / scalar);
 }
 
@@ -557,7 +566,7 @@ int FloatMatrix::n() const { return this->data.size(); }
 int FloatMatrix::m() const { return this->data[0].size(); }
 
 FloatMatrix::operator float() {
-	if (n() != m() || n() != 1) throw ValueError("wrong dimension of matrix (not 1x1)");
+	if (n() != m() || n() != 1) throw ValueError("wrong dimension of matrix (not 1x1)", __FILE__, __LINE__);
 	return this->data[0][0];
 }
 
@@ -719,6 +728,7 @@ float polarAngle(vec3 v, vec3 n) {
 }
 
 float cot(float x) { return 1.f / tan(x); }
+
 Complex cot(Complex c) { return 1.f / tan(c); }
 
 vec3 stereoProjection(vec4 v) {

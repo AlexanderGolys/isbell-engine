@@ -3,10 +3,10 @@
 
 
 template<typename A>
-constexpr A one = A(1);
+A one = A(1);
 
 template<typename A>
-constexpr A zero = A(0);
+A zero = A(0);
 
 template<typename T>
     concept AbelianSemigroup = requires(T a, T b) {

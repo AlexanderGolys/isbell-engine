@@ -2,10 +2,10 @@
 #include <iostream>
 #include <stdio.h>
 #include <stdlib.h>
-#include <glm/glm.hpp>
+// #include <glm/glm.hpp>
 #include <GL/glew.h>
 #include <GLFW/glfw3.h>
-#include <glm/glm.hpp>
+// #include <glm/glm.hpp>
 #include <string>
 #include <vector>
 #include <array>
@@ -481,7 +481,7 @@ std::map<string, int> countEstimatedBufferSizesInOBJFile(const char *filename) {
             normals++;
         else if (strcmp(lineHeader, "vt") == 0)
             uvs++;
-        else if (strcmp(lineHeader, "f") == 0)
+        else if (strcmp(lineHeader, "_f") == 0)
             faces++;
     }
     fclose(file);
@@ -1964,13 +1964,13 @@ Texture::Texture(const char* filename, int slot, const char* sampler, bool alpha
 	FILE* file = fopen(filename, "rb");
 
 	if (!file)
-		throw FileNotFoundError(filename);
+		throw FileNotFoundError(filename, __FILE__, __LINE__);
 
 	if (fread(header, 1, 54, file) != 54)
-		throw InvalidFileError(filename, "Not a correct BMP file (54 bytes header not found)");
+		throw InvalidFileError(filename, "Not a correct BMP file (54 bytes header not found)", __FILE__, __LINE__);
 
 	if (header[0] != 'B' || header[1] != 'M')
-		throw InvalidFileError(filename, "Not a correct BMP file (first two bytes of header invalid)");
+		throw InvalidFileError(filename, "Not a correct BMP file (first two bytes of header invalid)", __FILE__, __LINE__);
 
 
     bpp = alpha ? 4 : 3;
@@ -2235,11 +2235,11 @@ void SuperCurve::generateMesh(int radialSegments, CurveEmbeddingTypeID type) {
             _mesh = std::make_shared<SuperMesh>(generateMeshTube(radialSegments));
         break;
         case PLANAR:
-            throw NotImplementedVariantError("PLANAR", "curve embedding as SuperMesh");
+            throw NotImplementedVariantError("PLANAR", "curve embedding as SuperMesh", __FILE__, __LINE__);
         case NOT_EMBEDDED:
-            throw IllegalVariantError("NOT_EMBEDDED", "embedding type", "generating embedding as SuperMesh");
+            throw IllegalVariantError("NOT_EMBEDDED", "embedding type", "generating embedding as SuperMesh", __FILE__, __LINE__);
         default:
-            throw UnknownVariantError(embeddingTypeName(type), "curve embedding as SuperMesh");
+            throw UnknownVariantError(embeddingTypeName(type), "curve embedding as SuperMesh", __FILE__, __LINE__);
 
     }
 }

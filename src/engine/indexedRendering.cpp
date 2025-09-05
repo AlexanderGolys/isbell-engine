@@ -56,7 +56,7 @@ int BufferManager::bufferLength(CommonBufferType type) const {
         case INDEX:
             return indices->size();
     }
-    throw UnknownVariantError("Buffer not recognised among common types. ");
+    throw UnknownVariantError("Buffer not recognised among common types. ", __FILE__, __LINE__);
 }
 
 size_t BufferManager::bufferSize(CommonBufferType type) const { return bufferLength(type) * bufferElementSize(type); }
@@ -84,7 +84,7 @@ void *BufferManager::firstElementAddress(CommonBufferType type) const {
     case INDEX:
         return &(*indices)[0];
     }
-    throw UnknownVariantError("Buffer not recognised among common types. ");
+    throw UnknownVariantError("Buffer not recognised among common types. ", __FILE__, __LINE__);
 }
 
 bool BufferManager::isActive(CommonBufferType type) const { return activeBuffers.contains(type); }
@@ -401,7 +401,7 @@ void IndexedMesh::addNewPolygroup(const char *filename, const PolyGroupID &id) {
 	int shift = boss->bufferLength(POSITION);
 	int index = polygroupIndexOrder.size();
 	if (polygroupIndexOrder.contains(id))
-		throw IllegalVariantError("Polygroup ID already exists in mesh. ");
+		throw IllegalVariantError("Polygroup ID already exists in mesh. ", __FILE__, __LINE__);
 	polygroupIndexOrder[id] = index;
     vertices.emplace_back(vector<BufferedVertex>());
     triangles.emplace_back(vector<IndexedTriangle>());
@@ -424,7 +424,7 @@ void IndexedMesh::addNewPolygroup(const char *filename, const PolyGroupID &id) {
 
     std::ifstream in(filename, std::ios::in);
     if (!in)
-        throw FileNotFoundError(string(filename));
+        throw FileNotFoundError(string(filename), __FILE__, __LINE__);
 
     string line;
     while (getline(in, line))
@@ -458,10 +458,10 @@ void IndexedMesh::addNewPolygroup(const char *filename, const PolyGroupID &id) {
             norms.emplace_back(norm);
         }
 
-        else if (line.substr(0,2) == "f ")
+        else if (line.substr(0,2) == "_f ")
         {
             ivec3 vertexIndex, uvIndex, normalIndex;
-            sscanf(line.c_str(),"f %d/%d/%d %d/%d/%d %d/%d/%d", &vertexIndex[0], &uvIndex[0], &normalIndex[0], &vertexIndex[1], &uvIndex[1], &normalIndex[1], &vertexIndex[2], &uvIndex[2], &normalIndex[2]);
+            sscanf(line.c_str(),"_f %d/%d/%d %d/%d/%d %d/%d/%d", &vertexIndex[0], &uvIndex[0], &normalIndex[0], &vertexIndex[1], &uvIndex[1], &normalIndex[1], &vertexIndex[2], &uvIndex[2], &normalIndex[2]);
 
             vertexIndex -= ivec3(1, 1, 1);
             uvIndex -= ivec3(1, 1, 1);
@@ -512,7 +512,7 @@ IndexedMesh::IndexedMesh(const SmoothParametricSurface &surf, int tRes, int uRes
 void IndexedMesh::addNewPolygroup(const vector<Vertex> &hardVertices, const vector<ivec3> &faceIndices, const PolyGroupID &id) {
 
     if (polygroupIndexOrder.contains(id))
-        throw IllegalVariantError("Polygroup ID already exists in mesh. ");
+        throw IllegalVariantError("Polygroup ID already exists in mesh. ", __FILE__, __LINE__);
 
 	int shift = boss->bufferLength(POSITION);
 	int index = polygroupIndexOrder.size();
@@ -955,7 +955,7 @@ void BufferManager::insertValueToSingleBuffer(CommonBufferType type, void *value
         b->push_back(*v);
         return;
     }
-    throw IllegalVariantError("Buffer element has illegal length.");
+    throw IllegalVariantError("Buffer element has illegal length.", __FILE__, __LINE__);
 }
 
 void BufferManager::insertDefaultValueToSingleBuffer(CommonBufferType type) {
@@ -978,7 +978,7 @@ void BufferManager::insertDefaultValueToSingleBuffer(CommonBufferType type) {
         b->emplace_back(0, 0, 0, 0);
         return;
     }
-    throw IllegalVariantError("Buffer element has illegal length.");
+    throw IllegalVariantError("Buffer element has illegal length.", __FILE__, __LINE__);
 }
 
 BufferManager::BufferManager(const BufferManager &other) :
@@ -1087,7 +1087,7 @@ vec4 BufferManager::getExtra(int index, int slot) const {
         return (*extra4)[index];
 	default: ;
 	}
-    throw UnknownVariantError("Extra slot not recognised. ");
+    throw UnknownVariantError("Extra slot not recognised. ", __FILE__, __LINE__);
 }
 
 vec4 BufferManager::getExtra0(int index) const { return (*extra0)[index]; }
@@ -1143,7 +1143,7 @@ void BufferManager::setExtra(int index, vec4 value, int slot) {
             (*extra4)[index] = value;
             return;
     }
-    throw UnknownVariantError("Extra slot not recognised. ");
+    throw UnknownVariantError("Extra slot not recognised. ", __FILE__, __LINE__);
 }
 void BufferManager::setExtra(int index, vec3 value, int slot) {
     setExtra(index, value.x, slot, 0);
@@ -1168,7 +1168,7 @@ void BufferManager::setExtra(int index, float value, int slot, int component) {
             (*extra4)[index][component] = value;
             return;
         default:
-            throw UnknownVariantError("Extra slot not recognised. ");
+            throw UnknownVariantError("Extra slot not recognised. ", __FILE__, __LINE__);
 
     }
 }
@@ -1640,6 +1640,8 @@ PipeCurveVertexShader::PipeCurveVertexShader(const RealFunction &plot, vec2 dom,
 
 PipeCurveVertexShader::PipeCurveVertexShader(const DiscreteRealFunction &plot, const PIPE_SETTINGS &s, const std::variant<int, std::string> &id): PipeCurveVertexShader(plot, s.radius, s.radialRes, id) {}
 
+PipeCurveVertexShader::PipeCurveVertexShader(const DiscreteRealFunctionNonUniform &plot, const PIPE_SETTINGS &s, const std::variant<int, std::string> &id): PipeCurveVertexShader(plot, s.radius, s.radialRes, id) {}
+
 
 void PipeCurveVertexShader::updateCurve(const SmoothParametricCurve &curve) {
 	deformPerVertex(id, [this, &curve](BufferedVertex &v) {
@@ -1971,7 +1973,7 @@ SurfacePolarPlotDiscretisedMesh::SurfacePolarPlotDiscretisedMesh(const DiscreteR
 		float t = ts[i];
 		for (int j = 0; j < nx; j++) {
 			float phi = xs[j] + t*rot_speed;
-			// float R = r-f[i][j];
+			// float R = r-_f[i][j];
 			float R = r-log(1+f[i][j]);
 
 			vec3 p = vec3(R*sin(phi), t, R*cos(phi));

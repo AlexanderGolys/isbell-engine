@@ -11,7 +11,7 @@
 #include <random>
 #include <utility>
 #include <vector>
-#include <glm/gtx/transform.hpp>
+// #include <glm/gtx/transform.hpp>
 
 #include "filesUtils.hpp"
 
@@ -172,7 +172,9 @@ RealFunctionR3 max(const RealFunctionR3 &f, float a) { return RealFunctionR3([f,
 
 RealFunctionR3 max(const RealFunctionR3 &f, const RealFunctionR3 &g) { return RealFunctionR3([f, g](vec3 x) { return std::max(f(x),g(x)); }, f.getEps(), f.regularity); }
 
-RealFunctionR3 max(float a, const RealFunctionR3 &f) { return max(f, a); }
+RealFunctionR3 max(float a, const RealFunctionR3 &f) {
+	return max(f, a);
+}
 
 RealFunctionR3 precompose(std::function<float(float, float)> F, const RealFunctionR3 &g1, const RealFunctionR3 &g2) {
 	return RealFunctionR3([F, g1, g2](vec3 v) {
@@ -193,7 +195,7 @@ RealFunctionR3 RealFunctionR3::pow(float a) const {
 }
 
 RealFunctionR3 RealFunctionR3::sqrt() const {
-	return pow(0.5);
+	return pow(0.5f);
 }
 
 float RealFunctionR3::getEps() const {
@@ -329,7 +331,7 @@ RealFunction::RealFunction(std::function<float(float)> f, std::function<float(fl
   _ddf(std::move(ddf)),
   eps(epsilon),
   regularity(regularity),
-is_zero(false){}
+  is_zero(false){}
 
 RealFunction::RealFunction(std::function<float(float)> f, std::function<float(float)> df, float epsilon, Regularity regularity)
 : RealFunction(f, df, derivativeOperator(df, epsilon), epsilon, regularity) {}
@@ -359,33 +361,6 @@ float RealFunction::ddf(float x) const {
 
 RealFunction RealFunction::df() const {
 	return RealFunction(_df, _ddf, eps, regularity - 1);
-}
-
-float RealFunction::integral(float a, float b, int prec) const {
-	float sum = 0;
-	float dx = (b - a) / prec;
-	float x = a;
-	for (int i = 0; i < prec; i++) {
-		float v0 = operator()(x);
-		float v1 = operator()(x + dx / 4);
-		float v2 = operator()(x + dx / 2);
-		float v3 = operator()(x + 3 * dx / 4);
-		float v4 = operator()(x + dx);
-		sum += 2 * dx / 45.f * (7 * v0 + 32 * v1 + 12 * v2 + 32 * v3 + 7 * v4);
-		x += dx;
-	}
-	return sum;
-}
-
-RealFunction RealFunction::antiderivative(float a, int prec) const {
-	return RealFunction([this, a, prec](float x) {
-							return this->integral(a, x, prec);
-						},
-						[f=this->_f](float x) {
-							return f(x);
-						},
-						eps,
-						regularity + 1);
 }
 
 bool RealFunction::isZero(float a, float b, int prec) {
@@ -456,17 +431,33 @@ RealFunction RealFunction::operator/(float a) const {
 	return *this * (1 / a);
 }
 
-RealFunction RealFunction::pow(float a) const { return RealFunction([this, a](float x) { return std::pow(this->operator()(x), a); }, eps, regularity); }
+RealFunction RealFunction::pow(float a) const {
+	return RealFunction([this, a](float x) { return std::pow(this->operator()(x), a); }, eps, regularity);
+}
 
-RealFunction pow(const RealFunction &f, float a) { return f.pow(a); }
+RealFunction pow(const RealFunction &f, float a) {
+	return f.pow(a);
+}
 
-RealFunction max(const RealFunction &f, const RealFunction &g) { return RealFunction([f, g](float x) { return std::max(f(x), g(x)); }, f.eps, min(f.regularity, g.regularity)); }
+RealFunction max(const RealFunction &f, const RealFunction &g) {
+	return RealFunction([f, g](float x) { return std::max(f(x), g(x)); }, f.eps, min(f.regularity, g.regularity));
+}
 
-RealFunction max(const RealFunction &f, float a) { return RealFunction([f, a](float x) { return std::max(f(x), a); }, f.eps, f.regularity); }
+RealFunction max(const RealFunction &f, float a) {
+	return RealFunction([f, a](float x) { return std::max(f(x), a); }, f.eps, f.regularity);
+}
 
-RealFunction min(const RealFunction &f, const RealFunction &g) { return RealFunction([f, g](float x) { return std::min(f(x), g(x)); }, f.eps, min(f.regularity, g.regularity)); }
+RealFunction min(const RealFunction &f, const RealFunction &g) {
+	return RealFunction([f, g](float x) { return std::min(f(x), g(x)); }, f.eps, min(f.regularity, g.regularity));
+}
 
-RealFunction min(const RealFunction &f, float a) { return RealFunction([f, a](float x) { return std::min(f(x), a); }, f.eps, f.regularity); }
+RealFunction min(const RealFunction &f, float a) {
+	return RealFunction([f, a](float x) { return std::min(f(x), a); }, f.eps, f.regularity);
+}
+
+RealFunction abs(const RealFunction &f) {
+	return max(f, -f);
+}
 
 RealFunction operator*(float a, const RealFunction &f) {
 	return f * a;
@@ -484,6 +475,33 @@ RealFunction operator/(float a, const RealFunction &f) {
 	return RealFunction::constant(a) / f;
 }
 
+float RealFunction::integral(float a, float b, int prec) const {
+	float sum = 0;
+	float dx = (b - a) / prec;
+	float x = a;
+	for (int i = 0; i < prec; i++) {
+		float v0 = operator()(x);
+		float v1 = operator()(x + dx / 4);
+		float v2 = operator()(x + dx / 2);
+		float v3 = operator()(x + 3 * dx / 4);
+		float v4 = operator()(x + dx);
+		sum += 2 * dx / 45.f * (7 * v0 + 32 * v1 + 12 * v2 + 32 * v3 + 7 * v4);
+		x += dx;
+	}
+	return sum;
+}
+
+RealFunction RealFunction::antiderivative(float a, int prec) const {
+	return RealFunction([this, a, prec](float x) {
+							return this->integral(a, x, prec);
+						},
+						[f=this->_f](float x) {
+							return f(x);
+						},
+						eps,
+						regularity + 1);
+}
+
 RealFunctionR2 separated_product(const RealFunction &f_x, const RealFunction &f_t) {
 	return RealFunctionR2([f_x=f_x, f_t=f_t](vec2 v) { return f_x(v.x) * f_t(v.y); }, f_x.eps, min(f_x.regularity, f_t.regularity));
 }
@@ -498,25 +516,25 @@ RealFunction RealFunction::constant(float a) {
 
 RealFunction RealFunction::x() {
 	return RealFunction(
-						[](float x) {
-							return x;
-						},
-						[](float x) {
-							return 1;
-						},
-						[](float x) {
-							return 0;
-						},
-						.01,
-						Regularity::ANALYTIC);
+			[](float x) {
+				return x;
+			},
+			[](float) {
+				return 1.0f;
+			},
+			[](float) {
+				return 0.0f;
+			},
+			.01,
+			Regularity::ANALYTIC);
 }
 
 RealFunction RealFunction::one() {
-	return constant(1);
+	return RealFunction::constant(1);
 }
 
 RealFunction RealFunction::zero() {
-	return constant(0);
+	return RealFunction::constant(0);
 }
 
 RealFunction RealFunction::linear(float a, float b) {
@@ -529,77 +547,77 @@ RealFunction RealFunction::quadratic(float a, float b, float c) {
 
 RealFunction RealFunction::sin() {
 	return RealFunction(
-						[](float x) {
-							return std::sin(x);
-						},
-						[](float x) {
-							return std::cos(x);
-						},
-						[](float x) {
-							return -std::sin(x);
-						},
-						.01,
-						Regularity::ANALYTIC);
+			[](float x) {
+				return std::sin(x);
+			},
+			[](float x) {
+				return std::cos(x);
+			},
+			[](float x) {
+				return -std::sin(x);
+			},
+			.01,
+			Regularity::ANALYTIC);
 }
 
 RealFunction RealFunction::cos() {
 	return RealFunction(
-						[](float x) {
-							return std::cos(x);
-						},
-						[](float x) {
-							return -std::sin(x);
-						},
-						[](float x) {
-							return -std::cos(x);
-						},
-						.01,
-						Regularity::ANALYTIC);
+			[](float x) {
+				return std::cos(x);
+			},
+			[](float x) {
+				return -std::sin(x);
+			},
+			[](float x) {
+				return -std::cos(x);
+			},
+			.01,
+			Regularity::ANALYTIC);
 }
 
 RealFunction RealFunction::exp() {
 	return RealFunction(
-						[](float x) {
-							return std::exp(x);
-						},
-						[](float x) {
-							return std::exp(x);
-						},
-						[](float x) {
-							return std::exp(x);
-						},
-						.001,
-						Regularity::ANALYTIC);
+			[](float x) {
+				return std::exp(x);
+			},
+			[](float x) {
+				return std::exp(x);
+			},
+			[](float x) {
+				return std::exp(x);
+			},
+			.001,
+			Regularity::ANALYTIC);
 }
 
 RealFunction RealFunction::log() {
 	return RealFunction(
-						[](float x) {
-							return std::log(x);
-						},
-						[](float x) {
-							return 1 / x;
-						},
-						[](float x) {
-							return -1 / sq(x);
-						},
-						.001,
-						Regularity::ANALYTIC);
+			[](float x) {
+				return std::log(x);
+			},
+			[](float x) {
+				return 1 / x;
+			},
+			[](float x) {
+				return -1 / sq(x);
+			},
+			.001,
+			Regularity::ANALYTIC);
 }
 
 RealFunction RealFunction::SQRT() {
 	return RealFunction(
-						[](float x) {
-							return std::sqrt(x);
-						},
-						[](float x) {
-							return 1 / (2 * std::sqrt(x));
-						},
-						[](float x) {
-							return -1 / (4 * x * std::sqrt(x));
-						},
-						.001,
-						Regularity::ANALYTIC);
+			[](float x) {
+				return std::sqrt(x);
+			},
+			[](float x) {
+				return 1 / (2 * std::sqrt(x));
+			},
+			[](float x) {
+				return -1 / (4 * x * std::sqrt(x));
+			},
+			.001,
+			Regularity::ANALYTIC);
 }
 
 vec2 CompactlySupportedRealFunction::support_sum(vec2 other) const {
@@ -686,10 +704,6 @@ CompactlySupportedRealFunction CompactlySupportedRealFunction::operator*(const R
 	return CompactlySupportedRealFunction(RealFunction::operator*(g_), support);
 }
 
-CompactlySupportedRealFunction operator*(const RealFunction &g, const CompactlySupportedRealFunction &f) {
-	return f * g;
-}
-
 CompactlySupportedRealFunction CompactlySupportedRealFunction::operator-() const {
 	return CompactlySupportedRealFunction(RealFunction::operator-(), support);
 }
@@ -698,11 +712,15 @@ CompactlySupportedRealFunction CompactlySupportedRealFunction::operator-(const C
 	return CompactlySupportedRealFunction(RealFunction::operator-(g), support_sum(g.support));
 }
 
-
-
-
 CompactlySupportedRealFunction operator*(float a, const CompactlySupportedRealFunction &f) {
 	return f * a;
+}
+
+
+
+
+CompactlySupportedRealFunction operator*(const RealFunction &g, const CompactlySupportedRealFunction &f) {
+	return f * g;
 }
 
 RealLineAutomorphism::RealLineAutomorphism(RealFunction f, RealFunction inv)
@@ -801,17 +819,21 @@ PlaneAutomorphism PlaneAutomorphism::inv() const {
 	return ~(*this);
 }
 
-HolomorphicFunction::HolomorphicFunction(std::function<Complex(Complex)> f, std::function<Complex(Complex)> df, float epsilon): _f(std::move(f)), _df(std::move(df)), eps(epsilon) {}
+HolomorphicFunction::HolomorphicFunction(std::function<Complex(Complex)> f, std::function<Complex(Complex)> df, float epsilon)
+: _f(f), _df(df), eps(epsilon) {}
 
-HolomorphicFunction::HolomorphicFunction(std::function<Complex(Complex)> f, float epsilon): _f(std::move(f)), eps(epsilon) {
+HolomorphicFunction::HolomorphicFunction(std::function<Complex(Complex)> f, float epsilon)
+: _f(f), eps(epsilon) {
 	_df = [F=_f, eps=epsilon](Complex z) {
 		return (F(z + eps) - F(z - eps)) / (2.f * eps);
 	};
 }
 
-HolomorphicFunction::HolomorphicFunction(const PlaneSmoothEndomorphism &f, float epsilon): HolomorphicFunction([f=f](Complex z) { return Complex(f(vec2(z.real(), z.imag()))); }, epsilon) {}
+HolomorphicFunction::HolomorphicFunction(const PlaneSmoothEndomorphism &f, float epsilon)
+: HolomorphicFunction([f=f](Complex z) { return Complex(f(vec2(z.real(), z.imag()))); }, epsilon) {}
 
-HolomorphicFunction::HolomorphicFunction(const RealFunctionR2 &re, const RealFunctionR2 &im, float epsilon): HolomorphicFunction([real=re, imag=im](Complex z) { return Complex(real(z.real(), z.imag()), imag(z.real(), z.imag())); }, epsilon) {}
+HolomorphicFunction::HolomorphicFunction(const RealFunctionR2 &re, const RealFunctionR2 &im, float epsilon)
+: HolomorphicFunction([real=re, imag=im](Complex z) { return Complex(real(z.real(), z.imag()), imag(z.real(), z.imag())); }, epsilon) {}
 
 Complex HolomorphicFunction::operator()(Complex z) const { return _f(z); }
 
@@ -822,33 +844,69 @@ HolomorphicFunction HolomorphicFunction::d2f() const { return df().df(); }
 HolomorphicFunction HolomorphicFunction::dnf(int n) const {
 	if (n == 0) return *this;
 	if (n == 1) return df();
-	if (n < 0) throw ValueError("Derivative order must be non-negative");
+	if (n < 0) throw ValueError("Derivative order must be non-negative", __FILE__, __LINE__);
 	return df().dnf(n-1);
 }
 
-Complex HolomorphicFunction::df(Complex z) const { return _df(z); }
+Complex HolomorphicFunction::df(Complex z) const {
+	return _df(z);
+}
 
-Complex HolomorphicFunction::d2f(Complex z) const { return df().df(z); }
+Complex HolomorphicFunction::d2f(Complex z) const {
+	return df().df(z);
+}
 
-Complex HolomorphicFunction::dnf(Complex z, int n) const {return dnf(n)(z); }
+Complex HolomorphicFunction::dnf(Complex z, int n) const {
+	return dnf(n)(z);
+}
 
-HolomorphicFunction HolomorphicFunction::operator-() const { return HolomorphicFunction([f=_f](Complex z) { return -f(z); }, [df=_df](Complex z) { return -df(z); }, eps); }
+HolomorphicFunction HolomorphicFunction::operator-() const {
+	return HolomorphicFunction([f=_f](Complex z) { return -f(z); }, [df=_df](Complex z) { return -df(z); }, eps);
+}
 
-HolomorphicFunction HolomorphicFunction::operator+(const HolomorphicFunction &g) const {return HolomorphicFunction([f=_f, g=g._f](Complex z) { return f(z) + g(z); }, [df=_df, dg=g._df](Complex z) { return df(z) + dg(z); }, eps); }
+HolomorphicFunction HolomorphicFunction::operator+(const HolomorphicFunction &g) const {
+	return HolomorphicFunction([F=_f, G=g._f](Complex z) { return F(z) + G(z); }, [df=_df, dg=g._df](Complex z) { return df(z) + dg(z); }, eps);
+}
 
-HolomorphicFunction HolomorphicFunction::operator+(Complex a) const {return HolomorphicFunction([f=_f, a](Complex z) { return f(z) + a; }, _df, eps); }
+HolomorphicFunction HolomorphicFunction::operator+(Complex a) const {
+	return HolomorphicFunction([f=_f, a](Complex z) { return f(z) + a; }, _df, eps);
+}
 
-HolomorphicFunction HolomorphicFunction::operator+(float a) const {return *this + Complex(a); }
+HolomorphicFunction HolomorphicFunction::operator+(float a) const {
+	return *this + Complex(a);
+}
 
-HolomorphicFunction HolomorphicFunction::operator+(int a) const {return *this + Complex(a); }
+HolomorphicFunction HolomorphicFunction::operator+(int a) const {
+	return *this + Complex(a);
+}
 
-HolomorphicFunction HolomorphicFunction::operator-(const HolomorphicFunction &g) const {return *this + (-g); }
+HolomorphicFunction operator+(Complex a, const HolomorphicFunction &f) { return f + a; }
 
-HolomorphicFunction HolomorphicFunction::operator-(Complex a) const {return *this + (-a); }
+HolomorphicFunction operator+(float a, const HolomorphicFunction &f) { return f + a; }
 
-HolomorphicFunction HolomorphicFunction::operator-(float a) const {return *this + (-a); }
+HolomorphicFunction operator+(int a, const HolomorphicFunction &f) { return f + a; }
 
-HolomorphicFunction HolomorphicFunction::operator-(int a) const {return *this + (-a); }
+HolomorphicFunction HolomorphicFunction::operator-(const HolomorphicFunction &g) const {
+	return *this + (-g);
+}
+
+HolomorphicFunction HolomorphicFunction::operator-(Complex a) const {
+	return *this + (-a);
+}
+
+HolomorphicFunction HolomorphicFunction::operator-(float a) const {
+	return *this + (-a);
+}
+
+HolomorphicFunction HolomorphicFunction::operator-(int a) const {
+	return *this + (-a);
+}
+
+HolomorphicFunction operator-(Complex a, const HolomorphicFunction &f) { return -f + a; }
+
+HolomorphicFunction operator-(float a, const HolomorphicFunction &f) { return -f + a; }
+
+HolomorphicFunction operator-(int a, const HolomorphicFunction &f) { return -f + a; }
 
 HolomorphicFunction HolomorphicFunction::operator*(const HolomorphicFunction &g) const {return HolomorphicFunction([f=_f, g=g._f](Complex z) { return f(z) * g(z); }, [df=_df, dg=g._df, f=_f, g=g._f](Complex z) { return df(z) * g(z) + f(z) * dg(z); }, eps); }
 
@@ -857,18 +915,6 @@ HolomorphicFunction HolomorphicFunction::operator*(Complex a) const {return Holo
 HolomorphicFunction HolomorphicFunction::operator*(float a) const {return *this * Complex(a); }
 
 HolomorphicFunction HolomorphicFunction::operator*(int a) const {return *this * Complex(a); }
-
-HolomorphicFunction operator+(Complex a, const HolomorphicFunction &f) { return f + a; }
-
-HolomorphicFunction operator+(float a, const HolomorphicFunction &f) { return f + a; }
-
-HolomorphicFunction operator+(int a, const HolomorphicFunction &f) { return f + a; }
-
-HolomorphicFunction operator-(Complex a, const HolomorphicFunction &f) { return -f + a; }
-
-HolomorphicFunction operator-(float a, const HolomorphicFunction &f) { return -f + a; }
-
-HolomorphicFunction operator-(int a, const HolomorphicFunction &f) { return -f + a; }
 
 HolomorphicFunction operator*(Complex a, const HolomorphicFunction &f) { return f * a; }
 
@@ -917,7 +963,7 @@ HolomorphicFunction HolomorphicFunction::pow2() const { return pow(2); }
 HolomorphicFunction HolomorphicFunction::pow3() const { return pow(3); }
 
 ComplexValuedFunction::ComplexValuedFunction(HOM(float, Complex) f, float eps)
-: f(std::move(f)), eps(eps) {}
+: _f(std::move(f)), eps(eps) {}
 
 ComplexValuedFunction::ComplexValuedFunction(RealFunction re, float eps)
 : ComplexValuedFunction([re](float x) { return Complex(re(x), 0); }, eps) {}
@@ -933,16 +979,16 @@ ComplexValuedFunction::ComplexValuedFunction(std::function<float(float)> re, flo
 ComplexValuedFunction::ComplexValuedFunction(std::function<float(float)> f_re, std::function<float(float)> f_im, float eps)
 : ComplexValuedFunction([f_re, f_im](float x) { return Complex(f_re(x), f_im(x)); }, eps) {}
 
-ComplexValuedFunction::ComplexValuedFunction(const ComplexValuedFunction &other): f(other.f),
+ComplexValuedFunction::ComplexValuedFunction(const ComplexValuedFunction &other): _f(other._f),
 																				  eps(other.eps) {}
 
-ComplexValuedFunction::ComplexValuedFunction(ComplexValuedFunction &&other) noexcept: f(std::move(other.f)),
+ComplexValuedFunction::ComplexValuedFunction(ComplexValuedFunction &&other) noexcept: _f(std::move(other._f)),
 																					  eps(other.eps) {}
 
 ComplexValuedFunction & ComplexValuedFunction::operator=(const ComplexValuedFunction &other) {
 	if (this == &other)
 		return *this;
-	f = other.f;
+	_f = other._f;
 	eps = other.eps;
 	return *this;
 }
@@ -950,21 +996,21 @@ ComplexValuedFunction & ComplexValuedFunction::operator=(const ComplexValuedFunc
 ComplexValuedFunction & ComplexValuedFunction::operator=(ComplexValuedFunction &&other) noexcept {
 	if (this == &other)
 		return *this;
-	f = std::move(other.f);
+	_f = std::move(other._f);
 	eps = other.eps;
 	return *this;
 }
 
-ComplexFunctionR2::ComplexFunctionR2(const ComplexFunctionR2 &other): f(other.f),
+ComplexFunctionR2::ComplexFunctionR2(const ComplexFunctionR2 &other): _f(other._f),
 																	  eps(other.eps) {}
 
-ComplexFunctionR2::ComplexFunctionR2(ComplexFunctionR2 &&other) noexcept: f(std::move(other.f)),
+ComplexFunctionR2::ComplexFunctionR2(ComplexFunctionR2 &&other) noexcept: _f(std::move(other._f)),
 																		  eps(other.eps) {}
 
 ComplexFunctionR2 & ComplexFunctionR2::operator=(const ComplexFunctionR2 &other) {
 	if (this == &other)
 		return *this;
-	f = other.f;
+	_f = other._f;
 	eps = other.eps;
 	return *this;
 }
@@ -972,14 +1018,14 @@ ComplexFunctionR2 & ComplexFunctionR2::operator=(const ComplexFunctionR2 &other)
 ComplexFunctionR2 & ComplexFunctionR2::operator=(ComplexFunctionR2 &&other) noexcept {
 	if (this == &other)
 		return *this;
-	f = std::move(other.f);
+	_f = std::move(other._f);
 	eps = other.eps;
 	return *this;
 }
 
 DiscreteComplexFunction::DiscreteComplexFunction(const HOM(float, Complex) &fn, vec2 domain, int sampling)
 : fn(map<float, Complex>(linspace(domain[0], domain[1], sampling), fn)),
-DiscreteSingleVariableFunction(domain.x, domain.y, sampling) {}
+  DiscreteSingleVariableFunction(domain.x, domain.y, sampling) {}
 
 DiscreteComplexFunction::DiscreteComplexFunction(const DiscreteComplexFunction &other): DiscreteSingleVariableFunction<float, Complex>(other),
 																						fn(other.fn) {}
@@ -1070,12 +1116,12 @@ DiscreteRealFunction DiscreteComplexFunction::abs() const {
 	return DiscreteRealFunction(fn.base_change<float>([](Complex c) { return norm(c.z); }), domain());
 }
 
-DiscreteComplexFunction DiscreteComplexFunction::conj() const {
-	return DiscreteComplexFunction(fn.base_change<Complex>([](Complex c) { return c.conj(); }), domain());
-}
-
 DiscreteRealFunction DiscreteComplexFunction::arg() const {
 	return DiscreteRealFunction(fn.base_change<float>([](Complex c) { return c.arg(); }), domain());
+}
+
+DiscreteComplexFunction DiscreteComplexFunction::conj() const {
+	return DiscreteComplexFunction(fn.base_change<Complex>([](Complex c) { return c.conj(); }), domain());
 }
 
 DiscreteComplexFunction DiscreteComplexFunction::fft() const {
@@ -1095,11 +1141,11 @@ DiscreteComplexFunction DiscreteComplexFunction::fft() const {
 	}
 
 	auto v = Vector<Complex>(samples(), [fn=fn, n=samples()](int k) {
-			Complex c = 0i;
-			for (int j=0; j<n; j++)
-				c = c + exp(-1.0i * TAU/n  * k * j)*fn[j];
-			return c;
-		});
+		Complex c = 0i;
+		for (int j=0; j<n; j++)
+			c = c + exp(-1.0i * TAU/n  * k * j)*fn[j];
+		return c;
+	});
 	return DiscreteComplexFunction(v, domain());
 }
 
@@ -1132,15 +1178,15 @@ DiscreteComplexFunction DiscreteComplexFunction::ifft_() const {
 
 DiscreteComplexFunction DiscreteComplexFunction::shift_domain_left() const {
 	return DiscreteComplexFunction(
-		fn.slice_from(samples()/2).concat(fn.slice_to(samples()/2)),
-		domain()-vec2(supp_len())/2
-		);}
+			fn.slice_from(samples()/2).concat(fn.slice_to(samples()/2)),
+			domain()-vec2(supp_len())/2
+			);}
 
 DiscreteComplexFunction DiscreteComplexFunction::shift_domain_right() const {
 	return DiscreteComplexFunction(
-		fn.slice_from(samples()/2).concat(fn.slice_to(samples()/2)),
-		domain()+vec2(supp_len())/2
-		);
+			fn.slice_from(samples()/2).concat(fn.slice_to(samples()/2)),
+			domain()+vec2(supp_len())/2
+			);
 }
 
 DiscreteComplexFunction DiscreteComplexFunction::downsample(int factor, int shift) const {
@@ -1160,7 +1206,7 @@ DiscreteRealFunction::DiscreteRealFunction(const Vector<float> &fn, vec2 domain)
 
 DiscreteRealFunction::DiscreteRealFunction(const HOM(float, float) &f, vec2 domain, int sampling)
 : fn(sampling, [domain, sampling, &f](int i) { return f(domain[0] + (domain[1] - domain[0]) * i / (sampling-1)); }),
-domain(domain) {
+  domain(domain) {
 	// if (fn.size() % 2 != 0) {
 	// 	throw NotImplementedError("Assuming the length is even, as there are differences in shifts, so just assume even for now not to write more dubious code");
 	// }
@@ -1244,11 +1290,11 @@ DiscreteComplexFunction DiscreteRealFunction::fft() const {
 	}
 
 	auto v = Vector<Complex>(samples(), [fn=fn, n=samples()](int k) {
-			Complex c = 0i;
-			for (int j=0; j<n; j++)
-				c = c + exp(-1.0i * TAU/n  * k * j)*fn[j];
-			return c;
-		});
+		Complex c = 0i;
+		for (int j=0; j<n; j++)
+			c = c + exp(-1.0i * TAU/n  * k * j)*fn[j];
+		return c;
+	});
 	return DiscreteComplexFunction(v, domain);
 }
 
@@ -1283,16 +1329,16 @@ DiscreteRealFunction DiscreteRealFunction::derivative() const {
 // TODO test that, it will be annoying to debug in practice
 DiscreteRealFunction DiscreteRealFunction::shift_domain_left() const {
 	return DiscreteRealFunction(
-		fn.slice_from(samples()/2).concat(fn.slice_to(samples()/2)),
-		domain-vec2(supp_len())/2
-		);
+			fn.slice_from(samples()/2).concat(fn.slice_to(samples()/2)),
+			domain-vec2(supp_len())/2
+			);
 }
 
 DiscreteRealFunction DiscreteRealFunction::shift_domain_right() const {
 	return DiscreteRealFunction(
-		fn.slice_from(samples()/2).concat(fn.slice_to(samples()/2)),
-		domain+vec2(supp_len())/2
-		);}
+			fn.slice_from(samples()/2).concat(fn.slice_to(samples()/2)),
+			domain+vec2(supp_len())/2
+			);}
 
 DiscreteRealFunction DiscreteRealFunction::downsample(int factor) const {
 	vector<float> res;
@@ -1447,6 +1493,8 @@ DiscreteRealFunctionNonUniform DiscreteRealFunctionNonUniform::operator-(const D
 
 DiscreteRealFunctionNonUniform DiscreteRealFunctionNonUniform::operator-(float a) const { return DiscreteRealFunctionNonUniform(args, values - a); }
 
+DiscreteRealFunctionNonUniform operator-(float a, const DiscreteRealFunctionNonUniform &f) { return f + -a; }
+
 DiscreteRealFunctionNonUniform DiscreteRealFunctionNonUniform::operator*(const DiscreteRealFunctionNonUniform &g) const {
 	auto f_ = refine_domain(g.args);
 	auto g_ = g.refine_domain(args);
@@ -1460,13 +1508,19 @@ DiscreteRealFunctionNonUniform DiscreteRealFunctionNonUniform::operator/(const D
 
 DiscreteRealFunctionNonUniform DiscreteRealFunctionNonUniform::operator/(float a) const { return DiscreteRealFunctionNonUniform(args, values / a); }
 
-DiscreteRealFunctionNonUniform operator-(float a, const DiscreteRealFunctionNonUniform &f) { return f + -a; }
-
 DiscreteRealFunctionNonUniform operator/(float a, const DiscreteRealFunctionNonUniform &f) {
 	vector <float> new_values;
 	for (int i = 0; i < f.values.samples(); ++i)
 		new_values.emplace_back(a / f.values[i]);
 	return DiscreteRealFunctionNonUniform(f.args, DiscreteRealFunction(new_values));
+}
+
+DiscreteRealFunctionNonUniform DiscreteRealFunctionNonUniform::operator&(const DiscreteRealFunctionNonUniform &g) const {
+	vector<float> values = {};
+	for (int i=0; i<g.size(); i++) {
+		values.push_back((*this)(g.values[i]));
+	}
+	return DiscreteRealFunctionNonUniform(g.args, values);
 }
 
 DiscreteRealFunctionNonUniform operator&(const DiscreteRealFunction &f, const DiscreteRealFunctionNonUniform &g) {
@@ -1495,19 +1549,11 @@ DiscreteRealFunctionNonUniform operator&(const DiscreteRealFunction &f, const Di
 	return DiscreteRealFunctionNonUniform(args, values);
 }
 
-DiscreteRealFunctionNonUniform DiscreteRealFunctionNonUniform::operator&(const DiscreteRealFunctionNonUniform &g) const {
-	vector<float> values = {};
-	for (int i=0; i<g.size(); i++) {
-		values.push_back((*this)(g.values[i]));
-	}
-	return DiscreteRealFunctionNonUniform(g.args, values);
-}
-
 DiscreteComplexFunctionR2::DiscreteComplexFunctionR2(const vector<DiscreteComplexFunction> &fn, vec2 domain): fn(fn), domain(domain) {}
 
-// DiscreteComplexFunctionR2::DiscreteComplexFunctionR2(const vector<std::function<Complex(float)>> &f, vec2 domain, int sampling)
-// : fn(f.size(), [f, domain, sampling](int i) {
-// 		return DiscreteComplexFunction(f[i], domain, sampling);
+// DiscreteComplexFunctionR2::DiscreteComplexFunctionR2(const vector<std::function<Complex(float)>> &_f, vec2 domain, int sampling)
+// : fn(_f.size(), [_f, domain, sampling](int i) {
+// 		return DiscreteComplexFunction(_f[i], domain, sampling);
 // 	})
 // {}
 
@@ -2402,7 +2448,7 @@ RealFunctionR3 RealFunctionR3::linear(vec3 v) {
 RealFunctionR3 RealFunctionR3::projection(int i) {
 	return RealFunctionR3([i](vec3 x) {
 							  return x[i];
-						  }, [i](vec3 x) {
+						  }, [](vec3) {
 							  return vec3(0, 0, 0);
 						  });
 }
@@ -2602,7 +2648,7 @@ RealLineAutomorphism RealLineAutomorphism::operator&(const RealLineAutomorphism 
 }
 
 RealLineAutomorphism RealLineAutomorphism::pow(int n) {
-	if (n % 2 == 0) throw IllegalArgumentError("Only odd degree monomials are invertible");
+	if (n % 2 == 0) throw IllegalArgumentError("Only odd degree monomials are invertible", __FILE__, __LINE__);
 	return RealLineAutomorphism(RealFunction::monomial(n), RealFunction::monomial(1.f / n));
 }
 
@@ -2653,8 +2699,8 @@ PlaneAutomorphism PlaneAutomorphism::operator~() const {
 }
 
 RealFunction expStep(int exponentDegree, float center) {
-	if (exponentDegree < 1) throw IllegalArgumentError("Exponent should be positive (and at least 2).");
-	if (exponentDegree < 2) throw IllegalArgumentError("Step with exponent 1 is not differentiable at zero.");
+	if (exponentDegree < 1) throw IllegalArgumentError("Exponent should be positive (and at least 2).", __FILE__, __LINE__);
+	if (exponentDegree < 2) throw IllegalArgumentError("Step with exponent 1 is not differentiable at zero.", __FILE__, __LINE__);
 	return RealFunction([exponentDegree, center](float t) {
 		if (t < center) return 1.f;
 		return (float) exp(-1.f * exp(exponentDegree) * pow(t, exponentDegree));

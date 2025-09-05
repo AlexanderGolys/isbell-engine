@@ -1,6 +1,6 @@
 #include "planarGeometry.hpp"
-#include "glm/glm.hpp"
-#include "src/utils/func.hpp"
+// #include "glm/glm.hpp"
+#include "../utils/func.hpp"
 
 using namespace glm;
 using std::vector, std::string, std::shared_ptr, std::unique_ptr, std::pair, std::make_unique, std::make_shared;

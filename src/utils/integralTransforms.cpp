@@ -203,10 +203,10 @@ FiniteSequence<float> DFT::frequencies() const {
 
 
 
-// RealFunctionR2 FourierTransform::operator()(RealFunctionR2 f, int var) {
+// RealFunctionR2 FourierTransform::operator()(RealFunctionR2 _f, int var) {
 // 	throw std::logic_error("Not implemented");
 // }
 //
-// RealFunctionR2 FourierTransform::inv(RealFunctionR2 f, int var) {
+// RealFunctionR2 FourierTransform::inv(RealFunctionR2 _f, int var) {
 // 	throw std::logic_error("Not implemented");
 // }

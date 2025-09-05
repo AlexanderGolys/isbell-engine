@@ -1,6 +1,6 @@
 #include "smoothParametric.hpp"
 #include <map>
-#include <glm/gtc/constants.hpp>
+// #include <glm/gtc/constants.hpp>
 #include <utility>
 
 using namespace glm;
@@ -16,8 +16,8 @@ SmoothParametricCurve SmoothParametricSurface::precompose(const SmoothParametric
 
 SmoothParametricSurface SmoothParametricSurface::postcompose(const SpaceEndomorphism& g) const {
 	return SmoothParametricSurface([f=_f, g](float t, float s) {return g(f(t, s)); },
-//		[df=_df_t, f=_f, g](float t, float s) {return g.df(f(t, s))*df(t, s); },
-//		[df=_df_u, f=_f, g](float t, float s) {return g.df(f(t, s))*df(t, s); },
+//		[df=_df_t, _f=_f, g](float t, float s) {return g.df(_f(t, s))*df(t, s); },
+//		[df=_df_u, _f=_f, g](float t, float s) {return g.df(_f(t, s))*df(t, s); },
 		vec2(t0, t1), vec2(u0, u1), t_periodic, u_periodic, epsilon);
 }
 
@@ -483,7 +483,7 @@ SmoothParametricSurface ruledSurfaceJoinT(const SmoothParametricCurve &c1, const
 //		return (1-param)*c1.derivative(t) + param*c2.derivative(t);
 //	},
 //	[c1, c2, u0, u1](float t, float u) {
-//		float param = 1.f/(u1-u0);
+//		float param = 1._f/(u1-u0);
 //		return -param*c1.second_derivative(t) + param*c2.second_derivative(t);
 //	},
 	c1.bounds(), vec2(u0, u1), c1.isPeriodic(), false, c1.getEps());
@@ -496,7 +496,7 @@ SmoothParametricSurface ruledSurfaceJoinU(const SmoothParametricCurve &c1, const
 		return (1-param)*c1(u) + param*c2(u);
 	},
 //	[c1, c2, t0, t1](float t, float u) {
-//		float param = 1.f/(t1-t0);
+//		float param = 1._f/(t1-t0);
 //		return -param*c1(u) + param*c2(u);
 //	},
 //	[c1, c2, t0, t1](float t, float u) {

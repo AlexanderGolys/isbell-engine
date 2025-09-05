@@ -72,7 +72,7 @@ vec4 SDFMaterial::operator[](int i) const {
 		case 2:
 			return vec4(reflectivity, transparency, indexOfRefraction, translucency);
 		default:
-			throw IndexOutOfBounds(i, 3);
+			throw IndexOutOfBounds(i, 3, __FILE__, __LINE__);
 	}
 }
 
@@ -123,7 +123,7 @@ float SDFMaterialPlus::getExtraParam(const string &name, int j) const {
 }
 
 vec4 SDFMaterialPlus::operator[](int i) const {
-	return i < 3 ? SDFMaterial::operator[](i) : i < size() ? extraParams[i - 3] : throw IndexOutOfBounds(i, size());
+	return i < 3 ? SDFMaterial::operator[](i) : i < size() ? extraParams[i - 3] : throw IndexOutOfBounds(i, size(), __FILE__, __LINE__);
 }
 
 int SDFMaterialPlus::size() const {
