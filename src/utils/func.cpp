@@ -1027,6 +1027,8 @@ DiscreteComplexFunction::DiscreteComplexFunction(const HOM(float, Complex) &fn, 
 : fn(map<float, Complex>(linspace(domain[0], domain[1], sampling), fn)),
   DiscreteSingleVariableFunction(domain.x, domain.y, sampling) {}
 
+
+
 DiscreteComplexFunction::DiscreteComplexFunction(const DiscreteComplexFunction &other): DiscreteSingleVariableFunction<float, Complex>(other),
 																						fn(other.fn) {}
 
@@ -1373,7 +1375,7 @@ DiscreteRealFunction DiscreteRealFunction::downsample_max(int factor) const {
 	}
 	return DiscreteRealFunction(res, getDomain());}
 
-DiscreteRealFunctionNonUniform::DiscreteRealFunctionNonUniform(const DiscreteRealFunction &args, const DiscreteRealFunction &values): args(args), values(values) {}
+DiscreteRealFunctionNonUniform::DiscreteRealFunctionNonUniform(const DiscreteRealFunction &args, const DiscreteRealFunction &values): sampling_args(args), values(values) {}
 
 DiscreteRealFunctionNonUniform::DiscreteRealFunctionNonUniform(const RealFunction &f, float arclen_step, float linear_eps, vec2 bounds, bool include_bounds): DiscreteRealFunctionNonUniform(DiscreteRealFunction(vector<float>{}), DiscreteRealFunction(vector<float>{})) {
 	vector<float> args = {};
@@ -1397,28 +1399,28 @@ DiscreteRealFunctionNonUniform::DiscreteRealFunctionNonUniform(const RealFunctio
 		values.emplace_back(f(bounds[1]));
 	}
 
-	this->args = DiscreteRealFunction(args);
+	this->sampling_args = DiscreteRealFunction(args);
 	this->values = DiscreteRealFunction(values);
 }
 
 float DiscreteRealFunctionNonUniform::operator()(float x) const {
-	if ((x < args[0] || x >= args[-1]) && args.samples() == 1) return values[0];
-	if (x < args[0]) {
-		float t = (x - args[0]) / (args[1] - args[0]);
+	if ((x < sampling_args[0] || x >= sampling_args[-1]) && sampling_args.samples() == 1) return values[0];
+	if (x < sampling_args[0]) {
+		float t = (x - sampling_args[0]) / (sampling_args[1] - sampling_args[0]);
 		return values[0] + t * (values[1] - values[0]);
 	}
-	if (x >= args[-1]) {
-		float t = (x - args[-2]) / (args[-1] - args[-2]);
+	if (x >= sampling_args[-1]) {
+		float t = (x - sampling_args[-2]) / (sampling_args[-1] - sampling_args[-2]);
 		return values[-2] + t * (values[-1] - values[-2]);
 	}
 	int i = 0;
-	while (i < args.samples() && args[i] < x) i++;
-	float t = (x - args[i-1]) / (args[i] - args[i-1]);
+	while (i < sampling_args.samples() && sampling_args[i] < x) i++;
+	float t = (x - sampling_args[i-1]) / (sampling_args[i] - sampling_args[i-1]);
 	return values[i-1] + t * (values[i] - values[i-1]);
 
 }
 
-vec2 DiscreteRealFunctionNonUniform::point(int i) const { return vec2(args[i], values[i]); }
+vec2 DiscreteRealFunctionNonUniform::point(int i) const { return vec2(sampling_args[i], values[i]); }
 
 float DiscreteRealFunctionNonUniform::operator[](int i) const { return values[i]; }
 
@@ -1426,29 +1428,29 @@ DiscreteRealFunctionNonUniform DiscreteRealFunctionNonUniform::refine_domain(con
 	vector<float> new_values = {};
 	vector<float> all_args = {};
 	int i = 0, j = 0;
-	while (i < args.samples() || j < new_args.samples()) {
-		if (i == args.samples()) {
+	while (i < sampling_args.samples() || j < new_args.samples()) {
+		if (i == sampling_args.samples()) {
 			all_args.push_back(new_args[j]);
 			new_values.push_back((*this)(new_args[j]));
 			j++;
 		}
 		else if (j == new_args.samples()) {
-			all_args.push_back(args[i]);
+			all_args.push_back(sampling_args[i]);
 			new_values.push_back(values[i]);
 			i++;
 		}
-		else if (nearlyEqual(args[i],  new_args[j]))
+		else if (nearlyEqual(sampling_args[i],  new_args[j]))
 		{
-			all_args.push_back(args[i]);
+			all_args.push_back(sampling_args[i]);
 			new_values.push_back(values[i]);
 			i++;
 			j++;
-		} else if (args[i] > new_args[j]) {
+		} else if (sampling_args[i] > new_args[j]) {
 			all_args.push_back(new_args[j]);
 			new_values.push_back((*this)(new_args[j]));
 			j++;
 		} else {
-			all_args.push_back(args[i]);
+			all_args.push_back(sampling_args[i]);
 			new_values.push_back(values[i]);
 			i++;
 		}
@@ -1460,59 +1462,59 @@ DiscreteRealFunctionNonUniform DiscreteRealFunctionNonUniform::refine_domain(flo
 
 DiscreteRealFunctionNonUniform DiscreteRealFunctionNonUniform::derivative() const {
 	if (size() == 1)
-		return DiscreteRealFunctionNonUniform(args, DiscreteRealFunction(vector{0.f}));
+		return DiscreteRealFunctionNonUniform(sampling_args, DiscreteRealFunction(vector{0.f}));
 
-	vector<float> values = {((*this)[1] - (*this)[0])/(args[1] - args[0])};
-	for (int i = 1; i < args.samples()-1; i++)
-		values.push_back((this->operator()(args[i+1]) - this->operator()(args[i-1])) / (args[i+1] - args[i-1]));
-	values.push_back(((*this)[-1] - (*this)[-2])/(args[-1] - args[-2]));
-	return DiscreteRealFunctionNonUniform(args, DiscreteRealFunction(values));
+	vector<float> values = {((*this)[1] - (*this)[0])/(sampling_args[1] - sampling_args[0])};
+	for (int i = 1; i < sampling_args.samples()-1; i++)
+		values.push_back((this->operator()(sampling_args[i+1]) - this->operator()(sampling_args[i-1])) / (sampling_args[i+1] - sampling_args[i-1]));
+	values.push_back(((*this)[-1] - (*this)[-2])/(sampling_args[-1] - sampling_args[-2]));
+	return DiscreteRealFunctionNonUniform(sampling_args, DiscreteRealFunction(values));
 }
 
 Vector<float> DiscreteRealFunctionNonUniform::arclens() const {
 	vector<float> arcs = {};
-	for (int i = 0; i < args.samples()-1; i++) {
+	for (int i = 0; i < sampling_args.samples()-1; i++) {
 		arcs.push_back(norm(point(i)-point(i+1)));
 	}
 	return Vector(arcs);
 }
 
 DiscreteRealFunctionNonUniform DiscreteRealFunctionNonUniform::operator+(const DiscreteRealFunctionNonUniform &g) const {
-	auto f_ = refine_domain(g.args);
-	auto g_ = g.refine_domain(args);
-	return DiscreteRealFunctionNonUniform(f_.args, f_.values + g_.values);
+	auto f_ = refine_domain(g.sampling_args);
+	auto g_ = g.refine_domain(sampling_args);
+	return DiscreteRealFunctionNonUniform(f_.sampling_args, f_.values + g_.values);
 }
 
-DiscreteRealFunctionNonUniform DiscreteRealFunctionNonUniform::operator+(float a) const { return DiscreteRealFunctionNonUniform(args, values + a); }
+DiscreteRealFunctionNonUniform DiscreteRealFunctionNonUniform::operator+(float a) const { return DiscreteRealFunctionNonUniform(sampling_args, values + a); }
 
 DiscreteRealFunctionNonUniform operator+(float a, const DiscreteRealFunctionNonUniform &f) { return f + a; }
 
-DiscreteRealFunctionNonUniform DiscreteRealFunctionNonUniform::operator-() const { return DiscreteRealFunctionNonUniform(args, -values); }
+DiscreteRealFunctionNonUniform DiscreteRealFunctionNonUniform::operator-() const { return DiscreteRealFunctionNonUniform(sampling_args, -values); }
 
 DiscreteRealFunctionNonUniform DiscreteRealFunctionNonUniform::operator-(const DiscreteRealFunctionNonUniform &g) const { return (*this) + (-g); }
 
-DiscreteRealFunctionNonUniform DiscreteRealFunctionNonUniform::operator-(float a) const { return DiscreteRealFunctionNonUniform(args, values - a); }
+DiscreteRealFunctionNonUniform DiscreteRealFunctionNonUniform::operator-(float a) const { return DiscreteRealFunctionNonUniform(sampling_args, values - a); }
 
 DiscreteRealFunctionNonUniform operator-(float a, const DiscreteRealFunctionNonUniform &f) { return f + -a; }
 
 DiscreteRealFunctionNonUniform DiscreteRealFunctionNonUniform::operator*(const DiscreteRealFunctionNonUniform &g) const {
-	auto f_ = refine_domain(g.args);
-	auto g_ = g.refine_domain(args);
-	return DiscreteRealFunctionNonUniform(f_.args, f_.values * g_.values);}
+	auto f_ = refine_domain(g.sampling_args);
+	auto g_ = g.refine_domain(sampling_args);
+	return DiscreteRealFunctionNonUniform(f_.sampling_args, f_.values * g_.values);}
 
-DiscreteRealFunctionNonUniform DiscreteRealFunctionNonUniform::operator*(float a) const { return DiscreteRealFunctionNonUniform(args, values * a); }
+DiscreteRealFunctionNonUniform DiscreteRealFunctionNonUniform::operator*(float a) const { return DiscreteRealFunctionNonUniform(sampling_args, values * a); }
 
 DiscreteRealFunctionNonUniform operator*(float a, const DiscreteRealFunctionNonUniform &f) { return f * a; }
 
 DiscreteRealFunctionNonUniform DiscreteRealFunctionNonUniform::operator/(const DiscreteRealFunctionNonUniform &g) const { return (*this) * (1.f/g); }
 
-DiscreteRealFunctionNonUniform DiscreteRealFunctionNonUniform::operator/(float a) const { return DiscreteRealFunctionNonUniform(args, values / a); }
+DiscreteRealFunctionNonUniform DiscreteRealFunctionNonUniform::operator/(float a) const { return DiscreteRealFunctionNonUniform(sampling_args, values / a); }
 
 DiscreteRealFunctionNonUniform operator/(float a, const DiscreteRealFunctionNonUniform &f) {
 	vector <float> new_values;
 	for (int i = 0; i < f.values.samples(); ++i)
 		new_values.emplace_back(a / f.values[i]);
-	return DiscreteRealFunctionNonUniform(f.args, DiscreteRealFunction(new_values));
+	return DiscreteRealFunctionNonUniform(f.sampling_args, DiscreteRealFunction(new_values));
 }
 
 DiscreteRealFunctionNonUniform DiscreteRealFunctionNonUniform::operator&(const DiscreteRealFunctionNonUniform &g) const {
@@ -1520,7 +1522,7 @@ DiscreteRealFunctionNonUniform DiscreteRealFunctionNonUniform::operator&(const D
 	for (int i=0; i<g.size(); i++) {
 		values.push_back((*this)(g.values[i]));
 	}
-	return DiscreteRealFunctionNonUniform(g.args, values);
+	return DiscreteRealFunctionNonUniform(g.sampling_args, values);
 }
 
 DiscreteRealFunctionNonUniform operator&(const DiscreteRealFunction &f, const DiscreteRealFunctionNonUniform &g) {

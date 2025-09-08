@@ -17,7 +17,7 @@ using namespace glm;
 CodeFileDescriptor::CodeFileDescriptor(const string &filename, const Path &directory, bool rootRelative)
 : path(directory, filename) {
 	if (rootRelative)
-		path = FilePath(path.getPath().makeAbsolute(ConfigFile().getRoot()));
+		path = FilePath(path.getPath().makeAbsolute());
 }
 
 CodeFileDescriptor::CodeFileDescriptor(const Path &path, bool rootRelative)
@@ -259,7 +259,7 @@ FileDescriptor::FileDescriptor(const FilePath &filePath)
 
 
 string CodeFileDescriptor::extension() const {
-	return filename.substr(filename.find_last_of('.') + 1);
+	return path.getExtension();
 }
 
 string CodeFileDescriptor::getCode() {
@@ -301,12 +301,12 @@ void CodeFileDescriptor::writeCode(const string &code) const {
 		shaderStream.close();
 		return;
 	}
-	throw FileNotFoundError(filename, __FILE__, __LINE__);
+	throw FileNotFoundError(getFilename(), __FILE__, __LINE__);
 }
 
 void CodeFileDescriptor::modifyCode(const string &code) const {
 	if (!exists())
-		throw FileNotFoundError(filename, __FILE__, __LINE__);
+		throw FileNotFoundError(getFilename(), __FILE__, __LINE__);
 	writeCode(code);
 }
 
@@ -317,7 +317,7 @@ void CodeFileDescriptor::saveNewCode(const string &code) const {
 }
 
 bool CodeFileDescriptor::recogniseDirectoryNamingStyle() {
-	return directory.to_str().find('/') != string::npos;
+	return getDirectory().to_str().find('/') != string::npos;
 }
 
 

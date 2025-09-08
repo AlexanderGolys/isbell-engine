@@ -12,20 +12,22 @@
 #include <memory>
 #include <initializer_list>
 #include <filesystem>
+#include <string>
+#include <string_view>
 
 #include "colors.hpp"
 
 using glm::vec2, glm::vec3, glm::mat3, glm::mat4, glm::mat2, glm::mat2x3, glm::ivec2, glm::ivec3, glm::ivec4;
-using std::vector, std::variant, std::optional, std::array, std::unordered_map;
+using std::vector, std::variant, std::optional, std::array, std::unordered_map, std::pair;
 using std::shared_ptr, std::unique_ptr, std::make_unique, std::make_shared;
-using std::string, std::endl, std::format, std::to_string, std::cout, std::printf, std::vformat, std::literals::string_literals::operator""s;
+using std::string, std::endl, std::format, std::to_string, std::cout, std::printf;
 namespace filesystem = std::filesystem;
 
 constexpr float PI = 3.14159265359f;
 constexpr float TAU = 6.28318530718f;
 
 #define RP1 optional<float>
-
+#define INT(A) static_cast<int>(A)
 #define INFf std::nullopt
 #define UNDEFINED std::nullopt
 

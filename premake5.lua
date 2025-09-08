@@ -81,9 +81,12 @@ project "engine"
 
     removefiles {
         project_dirs .. "/**",
-        "src/tests/**",
+        "src/tests/**.cpp",
+        "src/tests/**.hpp",
+
         "src/**_dep.**",
     }
+
     includedirs(inc)
 
     filter "system:windows"
@@ -133,6 +136,47 @@ project(selectedScene)
     objdir    ("build/" .. selectedScene .. "/obj/build-%{cfg.architecture}")
 
     files { scenePath }
+    includedirs(inc)
+
+    filter "configurations:Debug"
+        defines { "DEBUG" }
+        runtime "Debug"
+        symbols "On"
+    filter "configurations:Profile"
+        defines { "NDEBUG" }
+        runtime "Release"
+        symbols "On"
+        optimize "Speed"
+        linktimeoptimization "On"
+    filter "configurations:Dist"
+        defines { "NDEBUG" }
+        runtime "Release"
+        symbols "Off"
+        optimize "Speed"
+        linktimeoptimization "On"
+    filter {}
+
+
+project "unitTests"
+    location ("build/tests")
+    language "C++"
+    cppdialect(dialect)
+    staticruntime "off"
+    kind "ConsoleApp"
+
+    links { "engine" }
+
+    filter "system:windows"
+        systemversion "latest"
+        defines { "_WINDOWS", "WIN32_LEAN_AND_MEAN", "NOMINMAX", "GLEW_STATIC", "_GLFW_WIN32" }
+        links(winlibs)
+    filter {}
+
+    targetdir ("build/tests/bin/build-%{cfg.architecture}")
+    objdir    ("build/tests/obj/build-%{cfg.architecture}")
+
+    files { "src/tests/runTests.cpp", "src/tests/**.hpp"}
+
     includedirs(inc)
 
     filter "configurations:Debug"

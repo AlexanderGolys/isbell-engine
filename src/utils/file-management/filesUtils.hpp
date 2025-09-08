@@ -1,6 +1,6 @@
 #pragma once
 
-#include "exceptions.hpp"
+#include "../exceptions.hpp"
 
 
 
@@ -119,4 +119,3 @@ public:
 	string getFilename() const;
 	void resize(size_t newSize);
 };
-+++++++++++

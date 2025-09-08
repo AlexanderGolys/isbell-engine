@@ -1,5 +1,9 @@
 #include "macroParsing.hpp"
 
+#include "configFiles.hpp"
+#include "metaUtils.hpp"
+#include "randomUtils.hpp"
+
 
 
 CodeMacro::CodeMacro(const string &key, const string &c)

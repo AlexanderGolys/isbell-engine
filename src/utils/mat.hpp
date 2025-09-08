@@ -161,7 +161,7 @@ public:
 	FiniteSequence operator+(const FiniteSequence &other) const;
 	FiniteSequence operator-(const FiniteSequence &other) const;
 	FiniteSequence operator*(const T &scalar) const;
-	FiniteSequence operator/(const T &scalar) const requires DivisionRing<T>;
+	FiniteSequence operator/(const T &scalar) const;
 	FiniteSequence operator-() const;
 
 	T dot(const FiniteSequence &other) const;
@@ -501,7 +501,7 @@ FiniteSequence<T> FiniteSequence<T>::operator*(const T &scalar) const {
 }
 
 template<Rng T>
-FiniteSequence<T> FiniteSequence<T>::operator/(const T &scalar) const requires DivisionRing<T> {
+FiniteSequence<T> FiniteSequence<T>::operator/(const T &scalar) const{
 	vector<T> new_coefs_positive = coefs_positive;
 	vector<T> new_coefs_negative = coefs_negative;
 	for (int i = 0; i < new_coefs_positive.size(); i++)
@@ -531,8 +531,8 @@ T FiniteSequence<T>::dot(const FiniteSequence &other) const {
 }
 
 template<Rng T>
-FiniteSequence<T> FiniteSequence<T>::convolve(const FiniteSequence &other) const {
-	FiniteSequence res;
+FiniteSequence<T> FiniteSequence<T>::convolve(const FiniteSequence<T> &other) const {
+	FiniteSequence<T> res;
 	for (int i = n_min(); i < n_max(); ++i) {
 		T sum = T(0);
 		for (int j = other.n_min(); j < other.n_max(); ++j) {
@@ -1523,7 +1523,7 @@ vector<T> reverse(vector<T> v) {
 	return v;
 }
 
-template<AbelianMonoid V>
+template<AbelianSemigroup V>
 vector<V> arange(V a, V b, V step) {
 	if (step == V(0)) throw std::invalid_argument("step cannot be 0");
 

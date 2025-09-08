@@ -859,7 +859,9 @@ public:
 	DiscreteSingleVariableFunction(Domain a, Domain b, int size) : size(size), dom_a(a), dom_b(b) {}
 	virtual ~DiscreteSingleVariableFunction() = default;
 
-	int samples() const { return size; }
+	virtual int samples() const {
+		return size;
+	}
 
 	float sampling_step() const {
 		if (size < 2) return dom_b - dom_a;
@@ -892,10 +894,14 @@ public:
 
 	Vector<Complex> getVector() const { return fn; }
 	vec2 domain() const { return vec2(dom_a, dom_b); }
+
 	vec2 getDomain() const { return domain(); }
 	Complex& operator[](int i) { return fn[i]; }
 	const Complex & operator[](int i) const { return fn[i]; }
 	void setDomain(vec2 domain) { setDom(domain.x, domain.y); }
+
+	int samples() const override { return fn.size(); }
+	vector<float> args() const { return linspace(dom_a, dom_b, samples()); }
 
 	DiscreteComplexFunction(const DiscreteComplexFunction &other);
 	DiscreteComplexFunction(DiscreteComplexFunction &&other) noexcept;
@@ -935,7 +941,7 @@ public:
 	DiscreteRealFunction abs() const;
 	DiscreteRealFunction arg() const;
 	DiscreteComplexFunction conj() const;
-	vector<float> args() const { return linspace(dom_a, dom_b, samples()); }
+	// vector<float> sampling_args() const { return linspace(dom_a, dom_b, samples()); }
 
 
 	DiscreteComplexFunction fft() const;
@@ -1035,7 +1041,7 @@ class DiscreteRealFunctionR2;
 
 
 class DiscreteRealFunctionNonUniform {
-	DiscreteRealFunction args, values;
+	DiscreteRealFunction sampling_args, values;
 public:
 	DiscreteRealFunctionNonUniform(const DiscreteRealFunction &args, const DiscreteRealFunction &values);
 	DiscreteRealFunctionNonUniform(const RealFunction &f, float arclen_step, float linear_eps, vec2 bounds, bool include_bounds);
@@ -1064,10 +1070,10 @@ public:
 	DiscreteRealFunctionNonUniform operator/(float a) const;
 	friend DiscreteRealFunctionNonUniform operator/(float a, const DiscreteRealFunctionNonUniform &f);
 
-	Vector<float> args_vector() const { return args.getVector(); }
+	Vector<float> args_vector() const { return sampling_args.getVector(); }
 	Vector<float> values_vector() const { return values.getVector(); }
-	int size() const { return args.samples(); }
-	int samples() const { return args.samples(); }
+	int size() const { return sampling_args.samples(); }
+	int samples() const { return sampling_args.samples(); }
 
 	DiscreteRealFunctionNonUniform operator&(const DiscreteRealFunctionNonUniform &g) const;
 	friend DiscreteRealFunctionNonUniform operator&(const DiscreteRealFunction &f, const DiscreteRealFunctionNonUniform &g);

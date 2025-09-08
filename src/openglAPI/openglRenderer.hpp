@@ -2,6 +2,7 @@
 
 #include "bufferUtils.hpp"
 #include "logging.hpp"
+#include "macroParsing.hpp"
 
 
 namespace openglAPI {

@@ -1,5 +1,5 @@
-
-#include "func.hpp"
+#pragma once
+#include "../utils/func.hpp"
 #include <cassert>
 #include "unittests.hpp"
 #include <iostream>
@@ -8,8 +8,11 @@ using namespace glm;
 
 
 
-void rotationsTest()
+inline bool rotationsTest()
   {
+  try {
+
+    bool passed = true;
     float t1 = 0;
     float t2 = 1;
 
@@ -17,8 +20,10 @@ void rotationsTest()
     vec3 n3 = vec3(1, -4, 1)/100.f;
     vec3 n4 = vec3(0, -2, -2);
 
-    assertNearlyEqual(rotationMatrix3(0), rotationMatrix3(TAU));
-    assertNearlyEqual(rotationMatrix3(n2, 0), rotationMatrix3(n2, TAU));
+
+
+    passed &= assertNearlyEqual_UT(rotationMatrix3(0), rotationMatrix3(TAU));
+    passed &= assertNearlyEqual_UT(rotationMatrix3(n2, 0), rotationMatrix3(n2, TAU));
 
     mat3 m11 = rotationMatrix3(t1);
     mat3 m12 = rotationMatrix3(n2, t1);
@@ -30,20 +35,27 @@ void rotationsTest()
     mat3 m24 = rotationMatrix3(n4, t2);
 
     float ang = angle(e1, m22*e1);
-    assertNearlyEqual(ang, t2);
+    passed &= assertNearlyEqual_UT(ang, t2);
 
     vector all = {m11, m12, m13, m14, m21, m22, m23, m24};
 
     for (auto m: all)
-      assertNearlyEqual(abs(det(m)), 1);
+      passed &= assertNearlyEqual_UT(abs(det(m)), 1);
 
-    printf("Rotation matrix tests passed");
+    return passed;
+  }
+  catch (...) {
+    return false;
+  }
   }
 
-
-
-  int main(void)
+inline UnitTestResult hyperbolicTests__all()
   {
-    rotationsTest();
-    return 0;
+    int passed = 0;
+    int all = 1;
+
+    if (rotationsTest())
+      ++passed;
+
+  return UnitTestResult(passed, all);
   }

@@ -16,6 +16,7 @@
 #include <GL/glew.h>
 #include <GLFW/glfw3.h>
 
+#include "configFiles.hpp"
 #include "specific.hpp"
 
 using namespace glm;

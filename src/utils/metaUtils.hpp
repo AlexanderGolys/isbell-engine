@@ -1,4 +1,5 @@
 #pragma once
+#pragma GCC diagnostic ignored "-Wliteral-suffix"
 
 #include <chrono>
 #include <exception>
@@ -20,6 +21,10 @@ inline string removeWhitespace(const string &s)
 	for (char c : s)
 		if (!isspace(c)) result += c;
 	return result;
+}
+
+inline string operator""s(const char* str) {
+	return string(str);
 }
 
 
@@ -661,16 +666,16 @@ V mean(vector<V> points) {
 }
 
 
-template<VectorSpaceConcept<float> V>
+template<typename V>
 vector<V> linspace(V a, V b, int n, bool includeEnd = true) {
 	vector<V> res;
 	res.reserve(n);
 	if (includeEnd)
 		for (int i = 0; i < n; i++)
-			res.push_back(lerp(a, b, i * 1.f / (n - 1.f)));
+			res.emplace_back(lerp(a, b, i * 1.f / (n - 1.f)));
 	else
 		for (int i = 0; i < n; i++)
-			res.push_back(lerp(a, b, i * 1.f / n));
+			res.emplace_back(lerp(a, b, i * 1.f / n));
 	return res;
 }
 
@@ -856,7 +861,7 @@ public:
     }
 
 private:
-    std::stack<pair<typename vector<T>::iterator, typename vector<T>::iterator>> stack;
+    std::stack<std::pair<typename vector<T>::iterator, typename vector<T>::iterator>> stack;
 
     void advanceToNext() {
         while (!stack.empty() && stack.top().first == stack.top().second) {

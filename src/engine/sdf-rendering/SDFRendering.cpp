@@ -1,5 +1,7 @@
 #include "SDFRendering.hpp"
 
+#include "configFiles.hpp"
+
 using std::shared_ptr, std::make_shared, std::vector, std::string;
 
 

@@ -13,10 +13,10 @@ namespace logging {
 	unordered_map<string, long> Logger::time_points = unordered_map<string, long>();
 
 	void Logger::init() {
-		Logger::engine_logger = (void*)spdlog::stdout_color_mt("Engine").get();
+		engine_logger = (void*)spdlog::stdout_color_mt("Engine").get();
 
-		Logger::external_logger = (void*)spdlog::stdout_color_mt("External").get();
-		Logger::pure_logger = (void*)spdlog::stdout_color_mt("Pure").get();
+		external_logger = (void*)spdlog::stdout_color_mt("External").get();
+		pure_logger = (void*)spdlog::stdout_color_mt("Pure").get();
 	}
 
 	void* Logger::getEngineLogger() { return engine_logger; }
