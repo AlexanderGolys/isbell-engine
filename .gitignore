@@ -17,3 +17,5 @@ src/shaders/auto-generated-shaders/*
 .clang-tidy
 /docs/
 /doc
+example.lane
+**.hs
