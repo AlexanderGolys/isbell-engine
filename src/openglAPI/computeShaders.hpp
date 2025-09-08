@@ -9,10 +9,13 @@ namespace openglAPI {
 		ComputeShaderProgram(const shared_ptr<Shader> &computeShader);
 		void linkComputeShader();
 
-		void run(ivec3 numGroups) {
-			glDispatchCompute(numGroups.x, numGroups.y, numGroups.z);
+		void run(int numGroupsX, int numGroupsY=1, int numGroupsZ=1) {
+			use();
+			glDispatchCompute(numGroupsX, numGroupsY, numGroupsZ);
 			glMemoryBarrier(GL_SHADER_IMAGE_ACCESS_BARRIER_BIT);
+			glFinish();
 		}
+
 	};
 
 }

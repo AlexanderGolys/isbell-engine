@@ -39,6 +39,7 @@ local inc = {
     "src/engine",
     "src/geometry",
     "src/physics",
+    "src/utils/file-management",
     "external/glew-2.1.0/include",
     "external/glfw-3.4/include",
     "external/glm-0.9.1.7",

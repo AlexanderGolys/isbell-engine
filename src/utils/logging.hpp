@@ -20,11 +20,16 @@ namespace logging {
 		static void* engine_logger;
 		static void* external_logger;
 		static void* pure_logger;
+		static unordered_map<string, long> time_points;
 
 		static void init();
 		static void* getEngineLogger();
 		static void* getExternalLogger();
 		static void* getPureLogger();
+		static long getTimePoint();
+		static void setTimePoint(const string& name);
+		static long measureTimeDifference(const string& name);
+
 	};
 
 	void log_info(const char* fmt, ...);
@@ -45,4 +50,7 @@ namespace logging {
 	#define PURE_LOG(...) ::logging::log_info(__VA_ARGS__)
 	#define PURE_LOG_ERROR(...) ::logging::log_error(__VA_ARGS__)
 	#define PURE_LOG_WARN(...) ::logging::log_warn(__VA_ARGS__)
+
+	#define START_TIMER(name) ::logging::Logger::setTimePoint(name);
+	#define STOP_TIMER(name) ::logging::Logger::measureTimeDifference(name);
 }

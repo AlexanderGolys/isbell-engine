@@ -14,6 +14,14 @@
 
 
 
+inline string removeWhitespace(const string &s)
+{
+	string result;
+	for (char c : s)
+		if (!isspace(c)) result += c;
+	return result;
+}
+
 
 inline string vecToString(vec2 v) {
 	return "(" + to_string(v.x) + ", " + to_string(v.y) + ")"; }
@@ -284,9 +292,7 @@ inline int flattened3DVectorIndex(int i, int j, int k,  ivec3 size) {
 	if (i < 0) return flattened3DVectorIndex(size.x + i, j, k, size);
 	if (j < 0) return flattened3DVectorIndex(i, size.y + j, k, size);
 	if (k < 0) return flattened3DVectorIndex(i, j, size.z + k, size);
-	if (i >= size.x) throw IndexOutOfBounds(ivec3(i, j, k), size, "i", __FILE__, __LINE__);
-	if (j >= size.y) throw IndexOutOfBounds(ivec3(i, j, k), size, "j", __FILE__, __LINE__);
-	if (k >= size.z) throw IndexOutOfBounds(ivec3(i, j, k), size, "k", __FILE__, __LINE__);
+	if (i >= size.x || j >= size.y || k >= size.z) throw IndexOutOfBounds(format("({},{},{})", i, j, k), format("({},{},{})", size[0], size[1],size[2]),"flattened3DVectorIndex", __FILE__, __LINE__);
 	return i * size.y * size.z + j * size.z + k;
 }
 
@@ -301,10 +307,8 @@ inline int flattened4DVectorIndex(int i, int j, int k, int m,  ivec4 size) {
 	if (j < 0) return flattened4DVectorIndex(i, size.y + j, k,m, size);
 	if (k < 0) return flattened4DVectorIndex(i, j, size.z + k,m, size);
 	if (m < 0) return flattened4DVectorIndex(i, j, k, size.w + m, size);
-	if (i >= size.x) throw IndexOutOfBounds(ivec4(i, j, k, m), size, "i", __FILE__, __LINE__);
-	if (j >= size.y) throw IndexOutOfBounds(ivec4(i, j, k, m), size, "j", __FILE__, __LINE__);
-	if (k >= size.z) throw IndexOutOfBounds(ivec4(i, j, k, m), size, "k", __FILE__, __LINE__);
-	if (m >= size.w) throw IndexOutOfBounds(ivec4(i, j, k, m), size, "m", __FILE__, __LINE__);
+	if (i >= size.x || j >= size.y || k >= size.z || m>size.w) throw IndexOutOfBounds(format("({},{},{},{})", i, j, k, m), format("({},{},{},{})", size[0], size[1],size[2], size[3]),"flattened4DVectorIndex", __FILE__, __LINE__);
+
 	return i * size.y * size.z * size.w + j * size.z * size.w + k * size.w + m;
 }
 
@@ -399,12 +403,30 @@ float norm2(V v) {
 	return dot(v, v);
 }
 
-inline float norm2(mat2 m) { return
-	m[0][0]*m[0][0] + m[0][1]*m[0][1] + m[1][0]*m[1][0] + m[1][1]*m[1][1];
+inline float norm2(mat2 m) {
+	return m[0][0]*m[0][0] + m[0][1]*m[0][1] + m[1][0]*m[1][0] + m[1][1]*m[1][1];
+}
+
+inline float norm2(mat3 m) {
+	float res = 0;
+	for (int i = 0; i < 3; i++)
+		for (int j = 0; j < 3; j++)
+			res += m[i][j] * m[i][j];
+	return res;
+}
+
+inline float norm2(mat4 m) {
+	float res = 0;
+	for (int i = 0; i < 4; i++)
+		for (int j = 0; j < 4; j++)
+			res += m[i][j] * m[i][j];
+	return res;
 }
 
 template <typename  T>
-float norm(T v) { return sqrt(norm2(v)); }
+float norm(T v) {
+	return sqrt(norm2(v));
+}
 
 inline array<array<float, 2>, 2> mat2ToArray(mat2 m) {
 	return vectorToArray<array<float, 2>, 2>({{m[0][0], m[0][1]}, {m[1][0], m[1][1]} }); }
@@ -981,4 +1003,6 @@ inline vector<string> split(const string &s, const string &delim) {
 	return res;
 }
 
-inline float angleBetween(vec3 vec3, glm::vec3 down) {return  acos(glm::dot(vec3, down)/length(vec3));}
+inline float angleBetween(vec3 vec3, glm::vec3 down) {
+	return  acos(glm::dot(vec3, down)/length(vec3));
+}

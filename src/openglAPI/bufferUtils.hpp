@@ -1,7 +1,7 @@
 #include <GL/glew.h>
 #include <GLFW/glfw3.h>
 
-#include "../utils/filesUtils.hpp"
+#include "../utils/file-management/filesUtils.hpp"
 
 namespace openglAPI {
 
@@ -13,5 +13,6 @@ namespace openglAPI {
 		ShaderStorageBufferObject(size_t bufferSize, const void* data);
 		void bind();
 		void unbind();
+		void readData(void* destination) const;
 	};
 }

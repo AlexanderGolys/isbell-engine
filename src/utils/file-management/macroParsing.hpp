@@ -1,94 +1,6 @@
 #pragma once
+#include "filesUtils.hpp"
 
-#include <sstream>
-#include "exceptions.hpp"
-
-const string DEFAULT_CONFIG_PATH = "C:\\Users\\PC\\Desktop\\ogl-master\\config";
-
-
-
-
-class Path {
-	string path;
-
-public:
-	Path();
-	explicit Path(const string &path);
-
-	Path(const Path &other);
-	Path(Path &&other) noexcept;
-	Path &operator=(const Path &other);
-	Path &operator=(Path &&other) noexcept;
-
-	bool unixStyle() const;
-	string slash() const;
-	string wrongSlash() const;
-	operator string() const;
-	Path operator+(const string &other) const;
-	Path operator+(const Path &other) const;
-	void switchStyle();
-	void setStyle(bool newStyle);
-	bool endsWithFile(const string &filename) const;
-	Path pureDirectory() const;
-	string filename() const;
-	string fileExtension() const;
-
-	Path makeRelative(const Path &other) const;
-	Path makeAbsolute(const Path &root) const;
-	Path makeRelative(const string &other) const;
-	Path makeAbsolute(const string &root) const;
-	Path goUp() const;
-	string to_str() const;
-};
-
-
-
-
-class CodeFileDescriptor {
-	string filename;
-	Path directory;
-
-
-public:
-	virtual ~CodeFileDescriptor() = default;
-	CodeFileDescriptor(const string &filename, const string &directory, bool rootRelative = true);
-	CodeFileDescriptor(const string &filename, const Path &directory, bool rootRelative = true);
-	explicit CodeFileDescriptor(const Path &path);
-	explicit CodeFileDescriptor(const string &path, bool rootRelative = true);
-	Path getPath() const;
-	string getFilename() const;
-	Path getDirectory() const;
-	string extension() const;
-	virtual string getCode();
-	string readCode() const;
-	bool exists() const;
-	void writeCode(const string &code) const;
-	void modifyCode(const string &code) const;
-	void saveNewCode(const string &code) const;
-	bool recogniseDirectoryNamingStyle();
-	void changeDirectoryNamingStyle(bool unix = true);
-	void changeLine(const string &line, int lineNumber);
-	string readLine(int lineNumber) const;
-};
-
-
-class FileDescriptor {
-	void *address = nullptr;
-	void *fileHandle = nullptr;
-	void *mappingHandle = nullptr;
-	long long bytesize;
-	Path path;
-	string filename;
-	string extension;
-
-public:
-	FileDescriptor(const Path &path, const string &filename);
-	~FileDescriptor();
-
-	void mapFile();
-	long long getSize() const;
-	void *getAddress() const;
-};
 
 
 
@@ -105,25 +17,6 @@ public:
 	CodeMacro &operator=(CodeMacro &&other) noexcept;
 	string apply(const string &codeScheme) const;
 	string getKey() const;
-};
-
-
-class ConfigFile{
-	std::unordered_map<string, string> config;
-public:
-	ConfigFile(const string &configPath = DEFAULT_CONFIG_PATH);
-
-	string operator[](const string &key) const;
-	string check(const string &key) const;
-
-	Path getRoot() const;
-	Path getMainShaderDirectory() const;
-	Path getSDFMacroShader() const;
-	Path getMathToolsShaderMacro() const;
-	Path getLightToolsShaderMacro() const;
-	Path getStructsShaderMacro() const;
-	Path getShadersDir() const;
-	Path getScreenshotsDir() const;
 };
 
 
@@ -247,7 +140,7 @@ class ShaderBinaryOperator : public ShaderMethodTemplateFromUniform {
 public:
 	ShaderBinaryOperator(const string &name, const string &body, const string &returnCode);
 	ShaderBinaryOperator(const string &name, const string &returnCode);
-}; 
+};
 
 class ShaderRealFunctionR3 : public ShaderMethodTemplateFromUniform {
 public:

@@ -1,25 +1,20 @@
 #pragma once
 
 #include "bufferUtils.hpp"
+#include "logging.hpp"
+
 
 namespace openglAPI {
-	void error_callback(int error, const char* description);
 	void key_callback(GLFWwindow* window, int key, int scancode, int action, int mods);
+
+	void openGL_API_init();
 
 	GLuint bindVAO();
 	void disableAttributeArrays(int how_many=4);
 	mat4 generateMVP(vec3 camPosition, vec3 camLookAt, vec3 upVector, float fov, float aspectRatio, float clippingRangeMin, float clippingRangeMax, const mat4 &modelTransform);
-	GLuint LoadShaders(const char* vertex_file_path, const char* fragment_file_path);
-
-
-	enum Resolution {
-		FHD,
-		HD2K,
-		UHD,
-		UNKNOWN
-	};
 
 	enum GLSLType {
+		BOOL,
 		FLOAT,
 		INT,
 		VEC2,
@@ -37,6 +32,13 @@ namespace openglAPI {
 		CLASSIC,
 		GEOMETRY1,
 		COMPUTE
+	};
+
+	enum Resolution {
+		FHD,
+		HD2K,
+		UHD,
+		UNKNOWN
 	};
 
 	ivec2 getResolutionSize(Resolution resolution);

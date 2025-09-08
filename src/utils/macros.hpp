@@ -1,5 +1,6 @@
 #pragma once
 
+#include <filesystem>
 #include <variant>
 #include <string>
 #include <optional>
@@ -9,14 +10,16 @@
 #include <format>
 #include <map>
 #include <memory>
+#include <initializer_list>
+#include <filesystem>
 
 #include "colors.hpp"
 
 using glm::vec2, glm::vec3, glm::mat3, glm::mat4, glm::mat2, glm::mat2x3, glm::ivec2, glm::ivec3, glm::ivec4;
-using std::vector, std::variant, std::string, std::optional, std::shared_ptr, std::unique_ptr, std::make_unique;
-using std::make_shared, std::endl, std::array, std::format, std::to_string, std::cout, std::printf, std::pair, std::unordered_map;
-
-
+using std::vector, std::variant, std::optional, std::array, std::unordered_map;
+using std::shared_ptr, std::unique_ptr, std::make_unique, std::make_shared;
+using std::string, std::endl, std::format, std::to_string, std::cout, std::printf, std::vformat, std::literals::string_literals::operator""s;
+namespace filesystem = std::filesystem;
 
 constexpr float PI = 3.14159265359f;
 constexpr float TAU = 6.28318530718f;
@@ -28,7 +31,6 @@ constexpr float TAU = 6.28318530718f;
 
 #define PolyGroupID std::variant<int, std::string>
 #define Mat2C Matrix<Complex, 2>
-#define INT(x) static_cast<int>(x)
 #define End1P std::function<SpaceEndomorphism(float)>
 #define End2P std::function<SpaceEndomorphism(float, float)>
 #define maybeMaterial std::optional<MaterialPhongConstColor>

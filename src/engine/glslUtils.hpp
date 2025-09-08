@@ -2,7 +2,7 @@
 
 #include "indexedRendering.hpp"
 #include "renderingUtils.hpp"
-#include "../utils/filesUtils.hpp"
+#include "../utils/file-management/filesUtils.hpp"
 #include "../utils/logging.hpp"
 
 #include <cstdio>

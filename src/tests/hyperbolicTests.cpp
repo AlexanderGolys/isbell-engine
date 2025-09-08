@@ -1,5 +1,5 @@
 
-#include "../utils/func.hpp"
+#include "func.hpp"
 #include <cassert>
 #include "unittests.hpp"
 #include <iostream>
@@ -39,6 +39,7 @@ void rotationsTest()
 
     printf("Rotation matrix tests passed");
   }
+
 
 
   int main(void)

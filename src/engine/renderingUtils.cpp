@@ -1090,7 +1090,9 @@ TriangleComplex(vertices, { vec4(1.0f, 1.0f, 1.0f, 1.0f), vec4(1.0f, 1.0f, 1.0f,
 TriangleComplex::TriangleComplex(const array<Complex, 3> &vertices) : TriangleComplex(vertices, { vec2(vertices[0]), vec2(vertices[1]), vec2(vertices[2]) }) {}
 
 TriangleComplex::operator TriangleR2() const {
-	vector<vec2> vertices = { vec2(this->vertices[0].x, this->vertices[0].y), vec2(this->vertices[1].x, this->vertices[1].y), vec2(this->vertices[2].x, this->vertices[2].y) };
+	vector<vec2> vertices = { vec2(this->vertices[0].x(), this->vertices[0].y()),
+		vec2(this->vertices[1].x(), this->vertices[1].y()),
+		vec2(this->vertices[2].x(), this->vertices[2].y()) };
 	vector<vec4> colors = { this->vertexColors[0], this->vertexColors[1], this->vertexColors[2] };
 	vector<vec2> uvs = { this->uvs[0], this->uvs[1], this->uvs[2] };
 	return TriangleR2(vertices, colors, uvs);

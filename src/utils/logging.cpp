@@ -10,9 +10,11 @@ namespace logging {
 	void* Logger::engine_logger = nullptr;
 	void* Logger::external_logger = nullptr;
 	void* Logger::pure_logger = nullptr;
+	unordered_map<string, long> Logger::time_points = unordered_map<string, long>();
 
 	void Logger::init() {
 		Logger::engine_logger = (void*)spdlog::stdout_color_mt("Engine").get();
+
 		Logger::external_logger = (void*)spdlog::stdout_color_mt("External").get();
 		Logger::pure_logger = (void*)spdlog::stdout_color_mt("Pure").get();
 	}
@@ -22,7 +24,29 @@ namespace logging {
 	void* Logger::getPureLogger() { return pure_logger; }
 
 	static spdlog::logger* get_logger(void* handle) {
-		return reinterpret_cast<spdlog::logger*>(handle);
+		return static_cast<spdlog::logger*>(handle);
+	}
+
+	long Logger::measureTimeDifference(const string &name) {
+		if (!time_points.contains(name))
+		{
+			log_warn("No time point with name " + name + " found!");
+			return -1.0;
+		}
+		long now = getTimePoint();
+		long diff = now - time_points[name];
+		time_points.erase(name);
+		return diff;
+	}
+
+	long Logger::getTimePoint() {
+		auto tm = spdlog::log_clock::now();
+		auto ms = std::chrono::duration_cast<std::chrono::milliseconds>(tm.time_since_epoch()).count();
+		return ms;
+	}
+
+	void Logger::setTimePoint(const string &name) {
+		time_points[name] = getTimePoint();
 	}
 
 	void log_info(const char* fmt, ...) {
@@ -51,13 +75,13 @@ namespace logging {
 	}
 
 	void log_info(const string& msg) {
-		get_logger(Logger::engine_logger)->info(msg);
+		log_info("%s", msg.c_str());
 	}
 	void log_error(const string& msg) {
-		get_logger(Logger::engine_logger)->error(msg);
+		log_error("%s", msg.c_str());
 	}
 	void log_warn(const string& msg) {
-		get_logger(Logger::engine_logger)->warn(msg);
+		log_warn("%s", msg.c_str());
 	}
 
 } // namespace logging

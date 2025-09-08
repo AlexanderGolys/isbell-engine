@@ -5,15 +5,16 @@ using std::formatter, std::format, std::to_string;
 
 template<>
 struct formatter<Complex> : formatter<string> {
+
 	template<typename FormatContext>
 	auto format(const Complex &c, FormatContext &ctx) const {
 		if (nearlyEqual(c.imag(), 0.f))
-			return formatter<string>::format("{}", c.real(), ctx);
+			return formatter<string>::format("{}", format(c.real(), ctx), ctx);
 		if (nearlyEqual(c.real(), 0.f))
-			return formatter<string>::format("{}i", c.imag(), ctx);
+			return formatter<string>::format("{}i", format(c.imag(), ctx), ctx);
 		if (c.imag() < 0)
-			return formatter<string>::format("{} - {}i", c.real(), -c.imag(), ctx);
-		return formatter<string>::format("{} + {}i", c.real(), c.imag(), ctx);
+			return formatter<string>::format("{} - {}i", format(c.real(), ctx), format(-c.imag(), ctx), ctx);
+		return formatter<string>::format("{} + {}i", format(c.real(), ctx), format(c.imag(), ctx), ctx);+++++++++++
 	}
 };
 

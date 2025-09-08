@@ -8,7 +8,7 @@
 #include <utility>
 #include <variant>
 
-#include "filesUtils.hpp"
+#include "file-management/filesUtils.hpp"
 #include "mat.hpp"
 #include "randomUtils.hpp"
 
@@ -893,7 +893,8 @@ public:
 	Vector<Complex> getVector() const { return fn; }
 	vec2 domain() const { return vec2(dom_a, dom_b); }
 	vec2 getDomain() const { return domain(); }
-	Complex operator[](int i) const { return fn[i]; }
+	Complex& operator[](int i) { return fn[i]; }
+	const Complex & operator[](int i) const { return fn[i]; }
 	void setDomain(vec2 domain) { setDom(domain.x, domain.y); }
 
 	DiscreteComplexFunction(const DiscreteComplexFunction &other);

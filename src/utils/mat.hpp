@@ -43,37 +43,7 @@ public:
 	Morphism operator/(K a) const requires VectorSpaceConcept<codomain, K> { return Morphism([this, a](domain x){ return (*this)(x) / a; }); }
 
 	template<Rng R>
-	Morphism operator*(R a) const requires ModuleConcept<codomain, R> { return Morphism([this, a](domain x){ return (*this)(x) * a; }); }
-};
-
-
-
-
-template<typename domain, typename codomain>
-class Isomorphism : public Morphism<domain, codomain> {
-	Morphism<codomain, domain> _inverse;
-
-public:
-	Isomorphism(std::function<codomain(domain)> f, std::function<domain(codomain)> g)
-	: Morphism<domain, codomain>(f),
-	  _inverse(g) {}
-
-	Isomorphism inverseMorphism() const { return Isomorphism(_inverse, this->_f); }
-	Isomorphism operator~() const { return inverseMorphism(); }
-	domain inv(codomain y) const { return _inverse(y); }
-};
-
-
-
-
-template<typename domain>
-class Endomorphism : public Morphism<domain, domain> {
-public:
-	using Morphism<domain, domain>::Morphism;
-	static Endomorphism id();
-
-	Endomorphism pow(int p) const;
-	Endomorphism operator^(int p) const;
+	Morphism operator*(R a) const requires RModule<codomain, R> { return Morphism([this, a](domain x){ return (*this)(x) * a; }); }
 };
 
 
@@ -97,40 +67,40 @@ Morphism<X, Z> operator&(const Morphism<Y, Z> &f, const Morphism<X, Y> &g) {
 
 
 
-template<RingConcept T>
+template<Rng T>
 class Vector {
 	int n;
 	vector<T> coefs;
 
 public:
 	explicit Vector(vector<T> c);
-	explicit Vector(T scalar) : Vector(vector<T>({scalar})) { n = 1; }
-
-	explicit Vector(int n, HOM(int, T) f)
-	: n(n),
-	  coefs(n) { for (int i = 0; i < n; i++) coefs[i] = f(i); }
+	explicit Vector(T scalar) : Vector(vector<T>({scalar})) {}
+	explicit Vector(std::initializer_list<T> c) : Vector(vector<T>(c)) {}
+	explicit Vector(int n, HOM(int, T) f);
 
 	Vector(const Vector &other);
 	Vector(Vector &&other) noexcept;
 	Vector &operator=(const Vector &other);
 	Vector &operator=(Vector &&other) noexcept;
 
-	Vector operator*(const T &f) const { return Vector(n, [this, f](int i){ return coefs[i] * f; }); }
-	Vector operator+(const T &f) const { return Vector(n, [this, f](int i){ return coefs[i] + f; }); }
-	Vector operator-(const T &f) const { return Vector(n, [this, f](int i){ return coefs[i] - f; }); }
-	Vector operator/(const T &f) const requires DivisionRing<T> { return *this * (T(1) / f); }
-	Vector operator+(const Vector &v) const { return Vector(n, [this, v](int i){ return coefs[i] + v[i]; }); }
-	Vector operator-(const Vector &v) const { return *this + v * -1; }
-	Vector operator-() const { return *this * -T(1); }
-	explicit operator string() const { return std::format("({})", coefs); }
+	Vector operator*(const T &f) const;
+	Vector operator+(const T &f) const;
+	Vector operator-(const T &f) const;
+	Vector operator/(const T &f) const requires DivisionRing<T>;
+	Vector operator+(const Vector &v) const;
+	Vector operator-(const Vector &v) const;
+	Vector operator-() const;
+	explicit operator string() const;
 
-	int length() const { return n; }
-	int size() const { return n; }
-	bool operator==(const Vector &v) const { return coefs == v.coefs; }
-	bool operator!=(const Vector &v) const { return !(*this == v); }
+	constexpr int length() const;
+	constexpr int size() const;
 
-	T at(int i) const;
-	T operator[](const int i) const { return at(i); }
+	bool operator==(const Vector &v) const;
+	bool operator!=(const Vector &v) const;
+
+	const T& at(int i) const;
+	T& operator[](int i);
+	const T& operator[](int i) const { return at(i); }
 
 	T max() const;
 	T min() const;
@@ -155,17 +125,17 @@ public:
 	vector<T> vec() const;
 	static Vector zeros(int n);
 
-	template<RingConcept S>
+	template<Rng S>
 	Vector<S> base_change(const HOM(T, S) &phi) const;
 
-	template<RingConcept S>
+	template<Rng S>
 	Vector<S> base_change() const;
 };
 
 
 
 
-template<RingConcept T>
+template<Rng T>
 class FiniteSequence {
 	vector<T> coefs_positive;
 	vector<T> coefs_negative;
@@ -173,12 +143,11 @@ class FiniteSequence {
 public:
 	FiniteSequence(const vector<T> &coefs_positive, const vector<T> &coefs_negative);
 	explicit FiniteSequence(const vector<T> &coefs_positive);
-
-	FiniteSequence() : FiniteSequence(vector<T>()) {}
+	FiniteSequence();
 
 	int size() const;
-	int n_min() const { return -coefs_negative.size(); }
-	int n_max() const { return coefs_positive.size() - 1; }
+	int n_min() const;
+	int n_max() const;
 
 	FiniteSequence(const FiniteSequence &other);
 	FiniteSequence(FiniteSequence &&other) noexcept;
@@ -188,42 +157,57 @@ public:
 	T at(int i) const;
 	T operator[](int i) const;
 	void set(int i, T val);
+
 	FiniteSequence operator+(const FiniteSequence &other) const;
 	FiniteSequence operator-(const FiniteSequence &other) const;
 	FiniteSequence operator*(const T &scalar) const;
 	FiniteSequence operator/(const T &scalar) const requires DivisionRing<T>;
 	FiniteSequence operator-() const;
+
 	T dot(const FiniteSequence &other) const;
 	T dot(const Vector<T> &other) const { return dot(FiniteSequence(other.vec())); }
 	friend T dot(const FiniteSequence &a, const FiniteSequence &b) { return a.dot(b); }
+
 	FiniteSequence convolve(const FiniteSequence &other) const;
 	FlatteningIterator<T> begin();
 	FlatteningIterator<T> end();
 
 
-	template<RingConcept R>
+	template<Rng R>
 	FiniteSequence<R> base_change(const HOM(T, R) &phi) const;
-	template<RingConcept R>
+
+	template<Rng R>
 	FiniteSequence<R> base_change() const;
 };
 
 
 
 
-template<RingConcept T>
-template<RingConcept R>
-FiniteSequence<R> FiniteSequence<T>::base_change() const { return base_change<R>([](T t){ return R(t); }); }
 
-
-
-
-template<RingConcept T>
-T Vector<T>::at(int i) const {
-	if (i < 0) i = n + i;
+template<Rng T>
+ T& Vector<T>::operator[](int i) {
+	if (i < 0)
+		i = n + i;
+	if (i < 0)
+		throw IndexOutOfBounds(i+n, n, "Vector::at: index out of bounds", __FILE__, __LINE__);
+	if (i >= n)
+		throw IndexOutOfBounds(i, n, "Vector::at: index out of bounds", __FILE__, __LINE__);
 	return coefs[i];
 }
 
-template<RingConcept T>
+
+template<Rng T>
+ const T& Vector<T>::at(int i) const {
+	if (i < 0)
+		i = n + i;
+	if (i < 0)
+		throw IndexOutOfBounds(i+n, n, "Vector::at: index out of bounds", __FILE__, __LINE__);
+	if (i >= n)
+		throw IndexOutOfBounds(i, n, "Vector::at: index out of bounds", __FILE__, __LINE__);
+	return coefs.at(i);
+}
+
+template<Rng T>
 T Vector<T>::max() const {
 	T m = coefs[0];
 	for (int i = 1; i < n; i++) {
@@ -232,7 +216,7 @@ T Vector<T>::max() const {
 	return m;
 }
 
-template<RingConcept T>
+template<Rng T>
 T Vector<T>::min() const {
 	T m = coefs[0];
 	for (int i = 1; i < n; i++) {
@@ -241,7 +225,7 @@ T Vector<T>::min() const {
 	return m;
 }
 
-template<RingConcept T>
+template<Rng T>
 T Vector<T>::sum() const {
 	T s = coefs[0];
 	for (int i = 1; i < n; i++) {
@@ -250,13 +234,13 @@ T Vector<T>::sum() const {
 	return s;
 }
 
-template<RingConcept T>
+template<Rng T>
 T Vector<T>::mean() const {
 	T s = sum();
 	return s / n;
 }
 
-template<RingConcept T>
+template<Rng T>
 T Vector<T>::dot(const Vector &v) const {
 	if (n != v.n) throw std::runtime_error("Vector::dot: incompatible sizes");
 	T s = coefs[0] * v[0];
@@ -266,7 +250,7 @@ T Vector<T>::dot(const Vector &v) const {
 	return s;
 }
 
-template<RingConcept T>
+template<Rng T>
 int Vector<T>::argmax() const {
 	int i_max = 0;
 	T m = coefs[0];
@@ -279,7 +263,7 @@ int Vector<T>::argmax() const {
 	return i_max;
 }
 
-template<RingConcept T>
+template<Rng T>
 int Vector<T>::argmin() const {
 	int i_min = 0;
 	T m = coefs[0];
@@ -292,7 +276,7 @@ int Vector<T>::argmin() const {
 	return i_min;
 }
 
-template<RingConcept T>
+template<Rng T>
 int Vector<T>::argmaxAbs() const {
 	int i_max = 0;
 	T m = abs(coefs[0]);
@@ -305,7 +289,7 @@ int Vector<T>::argmaxAbs() const {
 	return i_max;
 }
 
-template<RingConcept T>
+template<Rng T>
 int Vector<T>::argminAbs() const {
 	int i_min = 0;
 	T m = abs(coefs[0]);
@@ -318,7 +302,7 @@ int Vector<T>::argminAbs() const {
 	return i_min;
 }
 
-template<RingConcept T>
+template<Rng T>
 Vector<T> Vector<T>::slice(int start, int end, int step) const {
 	if (step == 0) throw std::range_error("Vector::slice: step cannot be 0");
 	if (start < 0) start = n - start;
@@ -331,53 +315,61 @@ Vector<T> Vector<T>::slice(int start, int end, int step) const {
 	return Vector((end - start + step - 1) / step, [this, start, step](int i){ return coefs[start + i * step]; });
 }
 
-template<RingConcept T>
+template<Rng T>
 Vector<T> Vector<T>::slice_to(int end) const {
 	if (end > n) throw std::runtime_error("Vector::slice_to: end cannot be greater than n");
 	return slice(0, end);
 }
 
-template<RingConcept T>
+template<Rng T>
 Vector<T> Vector<T>::slice_from(int start) const {
 	if (start < 0) start = length() - start;
 	return slice(start, n);
 }
 
-template<RingConcept T>
+template<Rng T>
 Vector<T> Vector<T>::reverse() const {
 	return Vector(n, [this](int i){ return coefs[n - 1 - i]; });
 }
 
-template<RingConcept T>
+template<Rng T>
 Vector<T> Vector<T>::pointwise_product(const Vector &v) const {
-	return Vector(n, [this, v](int i){ return coefs[i] * v[i]; });
+	vector<T> new_coefs(n);
+	for (int i = 0; i < n; i++)
+		new_coefs[i] = coefs[i] * v.coefs[i];
+	return Vector(new_coefs);
 }
 
-template<RingConcept T>
-Vector<T> Vector<T>::pointwise_division(const Vector &v) const requires DivisionRing<T> { return Vector(n, [this, v](int i){ return coefs[i] / v[i]; }); }
+template<Rng T>
+Vector<T> Vector<T>::pointwise_division(const Vector &v) const requires DivisionRing<T> {
+	vector<T> new_coefs(n);
+	for (int i = 0; i < n; i++)
+		new_coefs[i] = coefs[i] / v.coefs[i];
+	return Vector(new_coefs);
+}
 
-template<RingConcept T>
+template<Rng T>
 Vector<T> Vector<T>::concat(const Vector &v) const { return Vector(n + v.n, [this, v](int i){ return i < n ? coefs[i] : v[i - n]; }); }
 
-template<RingConcept T>
+template<Rng T>
 vector<T> Vector<T>::vec() const { return coefs; }
 
-template<RingConcept T>
+template<Rng T>
 Vector<T> Vector<T>::zeros(int n) { return Vector(vector<T>(n)); }
 
-template<RingConcept T>
-template<RingConcept S>
+template<Rng T>
+template<Rng S>
 Vector<S> Vector<T>::base_change(const std::function<S(T)> &phi) const {
 	return Vector<S>(n, [this, phi](int i){ return phi(coefs[i]); });
 }
 
-template<RingConcept T>
-template<RingConcept S>
+template<Rng T>
+template<Rng S>
 Vector<S> Vector<T>::base_change() const {
 	return Vector<S>(n, [this](int i){ return S(coefs[i]); });
 }
 
-template<RingConcept T>
+template<Rng T>
 FiniteSequence<T>::FiniteSequence(const vector<T> &coefs_positive, const vector<T> &coefs_negative)
 : coefs_positive(coefs_positive),
   coefs_negative(coefs_negative) {}
@@ -385,28 +377,37 @@ FiniteSequence<T>::FiniteSequence(const vector<T> &coefs_positive, const vector<
 
 
 
-template<RingConcept T>
+template<Rng T>
 FiniteSequence<T>::FiniteSequence(const vector<T> &coefs_positive)
 : coefs_positive(coefs_positive),
   coefs_negative(vector<T>()) {}
 
+template<Rng T>
+FiniteSequence<T>::FiniteSequence(): FiniteSequence(vector<T>()) {}
 
 
 
-template<RingConcept T>
+
+template<Rng T>
 int FiniteSequence<T>::size() const { return coefs_positive.size() + coefs_negative.size(); }
 
-template<RingConcept T>
+template<Rng T>
+int FiniteSequence<T>::n_min() const { return -coefs_negative.size(); }
+
+template<Rng T>
+int FiniteSequence<T>::n_max() const { return coefs_positive.size() - 1; }
+
+template<Rng T>
 FiniteSequence<T>::FiniteSequence(const FiniteSequence &other)
 : coefs_positive(other.coefs_positive),
   coefs_negative(other.coefs_negative) {}
 
-template<RingConcept T>
+template<Rng T>
 FiniteSequence<T>::FiniteSequence(FiniteSequence &&other) noexcept
 : coefs_positive(std::move(other.coefs_positive)),
   coefs_negative(std::move(other.coefs_negative)) {}
 
-template<RingConcept T>
+template<Rng T>
 FiniteSequence<T> &FiniteSequence<T>::operator=(const FiniteSequence &other) {
 	if (this == &other)
 		return *this;
@@ -415,7 +416,7 @@ FiniteSequence<T> &FiniteSequence<T>::operator=(const FiniteSequence &other) {
 	return *this;
 }
 
-template<RingConcept T>
+template<Rng T>
 FiniteSequence<T> &FiniteSequence<T>::operator=(FiniteSequence &&other) noexcept {
 	if (this == &other)
 		return *this;
@@ -427,17 +428,19 @@ FiniteSequence<T> &FiniteSequence<T>::operator=(FiniteSequence &&other) noexcept
 
 
 
-template<RingConcept T>
+template<Rng T>
 T FiniteSequence<T>::at(int i) const {
-	if (i >= 0 && i < coefs_positive.size()) return coefs_positive[i];
-	if (i < 0 && -i <= coefs_negative.size()) return coefs_negative[-i - 1];
-	return T(0);
+	if (i < -coefs_negative.size() || i >= coefs_positive.size())
+		throw IndexOutOfBounds(i, n_max() - n_min() + 1, "FiniteSequence::at: index out of bounds", __FILE__, __LINE__);
+	if (i >= 0)
+		return coefs_positive[i];
+	return coefs_negative[-i - 1];
 }
 
 
 
 
-template<RingConcept T>
+template<Rng T>
 T FiniteSequence<T>::operator[](const int i) const {
 	return at(i);
 }
@@ -445,7 +448,7 @@ T FiniteSequence<T>::operator[](const int i) const {
 
 
 
-template<RingConcept T>
+template<Rng T>
 void FiniteSequence<T>::set(int i, T val) {
 	if (i >= 0) {
 		while (i >= coefs_positive.size())
@@ -461,7 +464,7 @@ void FiniteSequence<T>::set(int i, T val) {
 
 
 
-template<RingConcept T>
+template<Rng T>
 FiniteSequence<T> FiniteSequence<T>::operator+(const FiniteSequence &other) const {
 	vector<T> new_coefs_positive = coefs_positive;
 	vector<T> new_coefs_negative = coefs_negative;
@@ -475,7 +478,7 @@ FiniteSequence<T> FiniteSequence<T>::operator+(const FiniteSequence &other) cons
 
 
 
-template<RingConcept T>
+template<Rng T>
 FiniteSequence<T> FiniteSequence<T>::operator-(const FiniteSequence &other) const {
 	vector<T> new_coefs_positive = coefs_positive;
 	vector<T> new_coefs_negative = coefs_negative;
@@ -486,7 +489,7 @@ FiniteSequence<T> FiniteSequence<T>::operator-(const FiniteSequence &other) cons
 	return FiniteSequence(new_coefs_positive, new_coefs_negative);
 }
 
-template<RingConcept T>
+template<Rng T>
 FiniteSequence<T> FiniteSequence<T>::operator*(const T &scalar) const {
 	vector<T> new_coefs_positive = coefs_positive;
 	vector<T> new_coefs_negative = coefs_negative;
@@ -497,7 +500,7 @@ FiniteSequence<T> FiniteSequence<T>::operator*(const T &scalar) const {
 	return FiniteSequence(new_coefs_positive, new_coefs_negative);
 }
 
-template<RingConcept T>
+template<Rng T>
 FiniteSequence<T> FiniteSequence<T>::operator/(const T &scalar) const requires DivisionRing<T> {
 	vector<T> new_coefs_positive = coefs_positive;
 	vector<T> new_coefs_negative = coefs_negative;
@@ -508,7 +511,7 @@ FiniteSequence<T> FiniteSequence<T>::operator/(const T &scalar) const requires D
 	return FiniteSequence(new_coefs_positive, new_coefs_negative);
 }
 
-template<RingConcept T>
+template<Rng T>
 FiniteSequence<T> FiniteSequence<T>::operator-() const {
 	vector<T> new_coefs_positive = coefs_positive;
 	vector<T> new_coefs_negative = coefs_negative;
@@ -519,7 +522,7 @@ FiniteSequence<T> FiniteSequence<T>::operator-() const {
 	return FiniteSequence(new_coefs_positive, new_coefs_negative);
 }
 
-template<RingConcept T>
+template<Rng T>
 T FiniteSequence<T>::dot(const FiniteSequence &other) const {
 	T res = max(n_max(), other.n_max());
 	for (int i = min(n_min(), other.n_min()); i < max(n_max(), other.n_max()); ++i)
@@ -527,7 +530,7 @@ T FiniteSequence<T>::dot(const FiniteSequence &other) const {
 	return res;
 }
 
-template<RingConcept T>
+template<Rng T>
 FiniteSequence<T> FiniteSequence<T>::convolve(const FiniteSequence &other) const {
 	FiniteSequence res;
 	for (int i = n_min(); i < n_max(); ++i) {
@@ -540,14 +543,18 @@ FiniteSequence<T> FiniteSequence<T>::convolve(const FiniteSequence &other) const
 	return res;
 }
 
-template<RingConcept T>
-FlatteningIterator<T> FiniteSequence<T>::begin() { return FlatteningIterator<T>({coefs_negative, coefs_positive}); }
+template<Rng T>
+FlatteningIterator<T> FiniteSequence<T>::begin() {
+	return FlatteningIterator<T>({coefs_negative, coefs_positive});
+}
 
-template<RingConcept T>
-FlatteningIterator<T> FiniteSequence<T>::end() { return FlatteningIterator<T>(); }
+template<Rng T>
+FlatteningIterator<T> FiniteSequence<T>::end() {
+	return FlatteningIterator<T>();
+}
 
-template<RingConcept T>
-template<RingConcept R>
+template<Rng T>
+template<Rng R>
 FiniteSequence<R> FiniteSequence<T>::base_change(const std::function<R(T)> &phi) const {
 	FiniteSequence<R> res;
 	for (int i = 0; i < size(); i++)
@@ -555,6 +562,11 @@ FiniteSequence<R> FiniteSequence<T>::base_change(const std::function<R(T)> &phi)
 	return res;
 }
 
+template<Rng T>
+template<Rng R>
+FiniteSequence<R> FiniteSequence<T>::base_change() const {
+	return base_change<R>([](T t){ return R(t); });
+}
 
 
 
@@ -630,6 +642,7 @@ public:
 	explicit Matrix(int rows, int cols, BIHOM(int, int, R) c);
 	explicit Matrix(int n = 3, R diag = R(0));
 	explicit Matrix(Vector<R> v);
+
 	Matrix(R a, R b, R c, R d);
 	Matrix(R a, R b, R c, R d, R e, R f, R g, R h, R i);
 
@@ -642,16 +655,17 @@ public:
 	Matrix operator/(const R &c) const;
 	Matrix operator+(const Matrix &M) const;
 	Matrix operator*(const Matrix &M) const;
+
 	Matrix pointwise_product(const Matrix &M) const;
 	Matrix pointwise_division(const Matrix &M) const;
 	Matrix operator-(const Matrix &M) const;
 	Matrix transpose() const;
 	Matrix operator-() const;
-
 	Matrix operator~() const;
 
 	bool operator==(const Matrix &M) const;
 	bool operator!=(const Matrix &M) const;
+
 	bool square() const;
 	bool symmetric() const;
 
@@ -663,15 +677,17 @@ public:
 	Matrix pow(int p) const;
 
 	float normL_inf() const;
-
 	bool nearly_equal(const Matrix &M) const;
 
 	explicit operator string() const { return std::format("({})", coefs); }
-	R operator[](const int i, const int j) const { return at(i, j); }
+
 
 	Vector<R> column(int j) const;
 	Vector<R> row(int i) const;
-	R at(int i, int j) const;
+
+	R& at(int i, int j);
+	R& operator[](int i, int j) { return at(i, j); }
+
 	Vector<R> operator*(const Vector<R> &v) const;
 
 	R a() const;
@@ -687,6 +703,10 @@ public:
 	R mobius_derivative(R z) const { return (a() * d() - b() * c()) / ((c() * z + d()) * (c() * z + d())); }
 };
 
+template<typename R=float>
+Matrix<R> norm2(const Matrix<R> &M) {
+	return pow2(M.normL_inf());
+}
 
 
 
@@ -751,8 +771,6 @@ public:
 };
 
 
-
-
 class FloatMatrix {
 protected:
 	MATR$X data;
@@ -813,7 +831,7 @@ public:
 
 
 
-template<Rng R=float, ModuleConcept<R> M=R>
+template<Rng R=float, RModule<R> M=R>
 class GenericTensor {
 	vector<M> data;
 	int dim_;
@@ -832,28 +850,28 @@ public:
 
 	M operator[](int i) const { return this->data[i]; }
 
-	template<ModuleConcept<R> E0=R>
+	template<RModule<R> E0=R>
 	E0 at(int i, int j) const { return this->data[i][j]; }
 
-	template<ModuleConcept<R> E0=R>
+	template<RModule<R> E0=R>
 	E0 at(int i, int j, int k) const { return this->data[i][j][k]; }
 
-	template<ModuleConcept<R> E0=R>
+	template<RModule<R> E0=R>
 	E0 at(vector<int> indices) const;
 
-	template<ModuleConcept<R> E0=R>
+	template<RModule<R> E0=R>
 	E0 at(int i) const { return this->data[i]; }
 
-	template<ModuleConcept<R> E0=R>
+	template<RModule<R> E0=R>
 	void set(vector<int> ind, E0 val);
 
-	template<ModuleConcept<R> E0=R>
+	template<RModule<R> E0=R>
 	void set(int i, E0 val) { this->data[i] = val; }
 
-	template<ModuleConcept<R> E0=R>
+	template<RModule<R> E0=R>
 	void set(int i, int j, E0 val) { this->data[i][j] = val; }
 
-	template<ModuleConcept<R> E0=R>
+	template<RModule<R> E0=R>
 	void set(int i, int j, int k, E0 val) { this->data[i][j][k] = val; }
 
 
@@ -904,7 +922,6 @@ GEN_MAT(R) operator*(const GEN_MAT(R) &M1, const GEN_MAT(R) &M2) {
 class Complex {
 public:
 	vec2 z;
-	float x, y;
 
 	Complex();
 	explicit Complex(vec2 z);
@@ -958,6 +975,8 @@ public:
 	float im() const;
 	float real() const;
 	float imag() const;
+	float x() const { return re(); }
+	float y() const { return im(); }
 
 	auto square() const -> Complex;
 	auto sqrt() const -> Complex;
@@ -968,7 +987,7 @@ public:
 	bool nearlyEqual(Complex c) const;
 	bool nearlyZero() const { return nearlyEqual(Complex(0, 0)); }
 
-	string to_str() const { return std::format("{0}+{1}i", x, y); }
+	string to_str() const { return std::format("{0}+{1}i", z[0], z[1]); }
 	friend std::ostream &operator<<(std::ostream &_stream, Complex const &z);
 };
 
@@ -1120,7 +1139,7 @@ bool nearlyEqual(T a) { return norm(a) < 1e-6; }
 
 
 
-template<VectorSpaceConcept<float> vec>
+template<typename vec>
 vec barycenter(vec a, vec b, vec c) { return (a + b + c) / 3.f; };
 
 
@@ -1170,7 +1189,7 @@ std::pair<vec2, mat2> eigendecomposition(mat2 m);
 
 
 
-template<VectorSpaceConcept<float> V, VectorSpaceConcept<float> M>
+template<typename V, typename M>
 class EuclideanSpace {
 	V value;
 	std::shared_ptr<M> metric;
@@ -1278,10 +1297,10 @@ class vec5 {
 public:
 	float x, y, z, w, v;
 
-
 	vec5();
 	explicit vec5(float x);
 	vec5(float x, float y, float z, float w, float v);
+	vec5(std::initializer_list<float> list);
 
 	float operator[](int i) const;
 	friend vec5 operator+(const vec5 &a, const vec5 &b);
@@ -1290,6 +1309,8 @@ public:
 	vec5 operator*(float scalar) const;
 	friend vec5 operator*(float scalar, const vec5 &a);
 	vec5 operator/(float scalar) const;
+
+	static vec5 zero();
 };
 
 
@@ -1332,37 +1353,30 @@ Morphism<domain, codomain> Morphism<domain, codomain>::operator*(codomain a) con
 	return Morphism([this, a](domain x){ return (*this)(x) * a; });
 }
 
-template<typename domain>
-Endomorphism<domain> Endomorphism<domain>::id() { return Endomorphism([](domain x){ return x; }); }
+template<Rng T>
+Vector<T>::Vector(vector<T> c)
+: n(c.size()), coefs(c) {}
 
-template<typename domain>
-Endomorphism<domain> Endomorphism<domain>::pow(int p) const {
-	if (p < 0) return ~(*this).pow(-p);
-	if (p == 0) return Endomorphism::id();
-	if (p == 1) return *this;
-	if (p % 2 == 0) return this->pow(p / 2) * this->pow(p / 2);
-	return (*this) * this->pow(p / 2) * this->pow(p / 2);
+template<Rng T>
+Vector<T>::Vector(int n, std::function<T(int)> f)
+: n(n)
+{
+	coefs = vector<T>();
+	for (int i = 0; i < n; i++)
+		coefs.emplace_back(f(i));
 }
 
-template<typename domain>
-Endomorphism<domain> Endomorphism<domain>::operator^(int p) const { return pow(p); }
-
-template<RingConcept T>
-Vector<T>::Vector(vector<T> c)
-: n(c.size()),
-  coefs(c) {}
-
-template<RingConcept T>
+template<Rng T>
 Vector<T>::Vector(const Vector &other)
 : n(other.n),
   coefs(other.coefs) {}
 
-template<RingConcept T>
+template<Rng T>
 Vector<T>::Vector(Vector &&other) noexcept
 : n(other.n),
   coefs(std::move(other.coefs)) {}
 
-template<RingConcept T>
+template<Rng T>
 Vector<T> &Vector<T>::operator=(const Vector &other) {
 	if (this == &other)
 		return *this;
@@ -1371,7 +1385,7 @@ Vector<T> &Vector<T>::operator=(const Vector &other) {
 	return *this;
 }
 
-template<RingConcept T>
+template<Rng T>
 Vector<T> &Vector<T>::operator=(Vector &&other) noexcept {
 	if (this == &other)
 		return *this;
@@ -1380,11 +1394,71 @@ Vector<T> &Vector<T>::operator=(Vector &&other) noexcept {
 	return *this;
 }
 
+template<Rng T>
+Vector<T> Vector<T>::operator*(const T &f) const {
+	return Vector(n, [this, f](int i){ return coefs[i] * f; });
+}
+
+template<Rng T>
+Vector<T> Vector<T>::operator+(const T &f) const {
+	return Vector(n, [this, f](int i){ return coefs[i] + f; });
+}
+
+template<Rng T>
+Vector<T> Vector<T>::operator-(const T &f) const {
+	return Vector(n, [this, f](int i){ return coefs[i] - f; });
+}
+
+template<Rng T>
+Vector<T> Vector<T>::operator/(const T &f) const requires DivisionRing<T> {
+	return Vector(n, [this, f](int i){ return coefs[i]/f; });
+}
+
+template<Rng T>
+Vector<T> Vector<T>::operator+(const Vector &v) const {
+	return Vector(n, [this, v](int i){ return coefs[i] + v[i]; });
+}
+
+template<Rng T>
+Vector<T> Vector<T>::operator-(const Vector &v) const {
+	return *this + v * -1;
+}
+
+template<Rng T>
+Vector<T> Vector<T>::operator-() const {
+	return *this * -T(1);
+}
+
+template<Rng T>
+Vector<T>::operator string() const {
+	return std::format("({})", coefs);
+}
+
+template<Rng T>
+constexpr int Vector<T>::length() const {
+	return n;
+}
+
+template<Rng T>
+constexpr int Vector<T>::size() const {
+	return n;
+}
+
+template<Rng T>
+bool Vector<T>::operator==(const Vector &v) const {
+	return coefs == v.coefs;
+}
+
+template<Rng T>
+bool Vector<T>::operator!=(const Vector &v) const {
+	return !(*this == v);
+}
+
 
 
 
 template<typename T>
-::Matrix<T>::Matrix(int rows, int cols, std::function<T(int, int)> c)
+Matrix<T>::Matrix(int rows, int cols, std::function<T(int, int)> c)
 : rows(rows), cols(cols), coefs()
 {
 	for (int i = 0; i < rows; i++)
@@ -1410,7 +1484,7 @@ Matrix<R>::Matrix(R a, R b, R c, R d, R e, R f, R g, R h, R i)
 
 
 //
-// template<RingConcept T>
+// template<Rng T>
 // T Matrix<T, 2>::mobius_derivative(T z) const requires DivisionRing<T> { // todo
 // 	return (a * d - b * c) / ((c * z + d) * (c * z + d));
 // }
@@ -1427,7 +1501,7 @@ Matrix<R>::Matrix(R a, R b, R c, R d, R e, R f, R g, R h, R i)
 
 
 
-template<VectorSpaceConcept<float> V, VectorSpaceConcept<float> M>
+template<typename V, typename M>
 M EuclideanSpace<V, M>::GSProcess(const M &basis) {
 	M result = basis;
 	for (int i = 0; i < dim; i++) {
@@ -1652,7 +1726,8 @@ Matrix<R> Matrix<R>::pow(int p) const {
 template<typename R>
 float Matrix<R>::normL_inf() const {
 	float res = 0;
-	for (int i = 0; i < rows; i++) res = std::max(res, abs(coefs[i][0]));
+	for (int i = 0; i < rows; i++)
+		res = std::max(res, abs(coefs[i][0]));
 	return res;
 }
 
@@ -1679,11 +1754,11 @@ Vector<R> Matrix<R>::row(int i) const {
 }
 
 template<typename R>
-R Matrix<R>::at(int i, int j) const {
+R& Matrix<R>::at(int i, int j) {
+	if (i < -rows || i >= rows || j < -cols || j >= cols)
+		throw IndexOutOfBounds(std::format("({}, {})", i, j), std::format("({}, {})", rows, cols), "Matrix", __FILE__, __LINE__);
 	if (i < 0) i = rows + i;
 	if (j < 0) j = cols + j;
-	if (i < 0 || i >= rows || j < 0 || j >= cols)
-		throw IndexOutOfBounds(ivec2(i, j), ivec2(rows, cols), "M", __FILE__, __LINE__);
 	return coefs[i * cols + j];
 }
 

@@ -1,8 +1,19 @@
+## How to build and run:
+- to build the project use the command ".\premake5 --{filename-without-cpp-suffix} cmake" in the main directory terminal
+- you may need to install premake, to do so run the executable premake file from main directory
+- you can also run the bash script "rebuild.bat" (after modifying the target file if needed)
+- currently only Windows system is supported 
+- your main file should be placed in the "src/render-projects" directory
+- the executable file will be in one of the build directories "cmake-build-{BUILD_TYPE}"
+- your IDE should also recognise them as CMake projects automatically giving you run configuration
+- you don't need to run premake each time, the modified files should recompile automatically
+
 ## Render gallery: 
 https://www.behance.net/alexandergolys
 
 
-# Implemented features:
+## Implemented features:
+- using vertex, fragment, geometry and compute shaders with OpenGL API
 - shading with Phong material model, both vertex and face based triangular meshes
 - hyperbolic geometry, conformal metric pullbacks
 - Kleinian groups and hyperbolic tesselations
@@ -30,13 +41,12 @@ with no side effects in any moment within the code
 - SPH fluid simulations 
 - Reading and processing audio signals, Gabor transforms, spectral power density 
 - Foliated parametric surfaces
-- Curve rendering based only on FFT-based differential operatorts
-(no numerical differentiation, no differential geo, better local frames, curve may be already sampled
+- differential operators of sampled data with FFT based implementation, FFT-based curve renderer 
 - config file storing paths to directories used implicitly in the code, so that no hardcoding is needed
 - Time dependent flows 
+- basic windows filesystem operations and file buffering 
 
 # Next objectives:
-- premake 
 - divide into API and specific renderers
 - add Vulkan 
 - make profiling 
@@ -44,5 +54,4 @@ with no side effects in any moment within the code
 
 
 ## Fixes and improvements TODO list:
-- generate config paths in prebuild stage to avoid hardcoding 
 - more debug logging
