@@ -15,7 +15,5 @@ Makefile
 src/shaders/auto-generated-shaders/*
 .clang-format
 .clang-tidy
-/.luarc.json
 /docs/
 /doc
-M
