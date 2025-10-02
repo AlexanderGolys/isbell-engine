@@ -18,11 +18,17 @@ concept Semigroup = requires(T a, T b) {
 		{ a*b } -> std::same_as<T>;
 	};
 
+
 template<typename T>
-concept TotalOrder = requires(T a, T b) {
-		{ a < b } -> std::same_as<bool>;
-		{ a == b } -> std::same_as<bool>;
+PartialOrder = requires(T a, T b) {
+		{ a <= b } -> std::convertible_to<bool>;
+		{ a >= b } -> std::convertible_to<bool>;
+		{ a < b } -> std::convertible_to<bool>;
+		{ a > b } -> std::convertible_to<bool>;
 	};
+
+template<typename T>
+concept TotalOrder = std::totally_ordered<T>;
 
 template<typename T>
 concept TotallyOrderedAbelianSemigroup = AbelianSemigroup<T> && TotalOrder<T>;
