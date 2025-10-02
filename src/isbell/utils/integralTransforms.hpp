@@ -182,7 +182,6 @@ public:
 	// TODO: All operations that mix two-variable discrete functions with one variable need some systematic implementation. In particular convolution on one component, multiplication on one component.
 };
 
-
 class higherDerivativeMultiplier : public MultiplierOperator {
 	int ord;
 public:

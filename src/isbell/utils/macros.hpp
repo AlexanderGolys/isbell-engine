@@ -21,7 +21,9 @@ using glm::vec2, glm::vec3, glm::mat3, glm::mat4, glm::mat2, glm::mat2x3, glm::i
 using std::vector, std::variant, std::optional, std::array, std::unordered_map, std::pair;
 using std::shared_ptr, std::unique_ptr, std::make_unique, std::make_shared;
 using std::string, std::endl, std::format, std::to_string, std::cout, std::printf;
+using std::expected, std::unexpected, std::bad_expected_access;
 namespace filesystem = std::filesystem;
+
 
 constexpr float PI = 3.14159265359f;
 constexpr float TAU = 6.28318530718f;
@@ -155,3 +157,10 @@ using dict = std::map<A, B>;
 // }
 
 #define THROW(ErrType, ...) throw ErrType(__VA_ARGS__, __FILE__, __LINE__)
+
+
+#ifdef _WIN32
+    #define IS_WINDOWS true
+#else
+    #define IS_WINDOWS false
+#endif

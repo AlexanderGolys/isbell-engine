@@ -3,15 +3,6 @@
 
 
 
-FileDescriptor::~FileDescriptor() {
-    if (address)
-        UnmapViewOfFile(address);
-    if (mappingHandle)
-        CloseHandle(mappingHandle);
-    if (fileHandle)
-        CloseHandle(fileHandle);
-}
-
 
 void FileDescriptor::mapFile() {
     if (address != nullptr)
@@ -32,7 +23,6 @@ void FileDescriptor::flush() const {
     if (address == nullptr)
         throw InvalidFileError(path.to_str(), "File not mapped", __FILE__, __LINE__);
     FlushViewOfFile(address, bytesize);
-
 }
 
 void FileDescriptor::closeFile() {

@@ -19,7 +19,7 @@ local configFile = "config/build_config.json"
 local config = dofile(configFile)
 if not config then error("Failed to read/parse config file: " .. configFile) end
 
-local dialect = config.cpp_dialect or "C++23"
+local dialect = config.cpp_dialect or "C++26"
 local project_dirs = config.projects_dir or "src/render-projects"
 
 local selectedScene = _OPTIONS["scene"]

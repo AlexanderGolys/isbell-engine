@@ -1328,12 +1328,12 @@ DiscreteRealFunction DiscreteRealFunction::derivative() const {
 	}), dft.domain());
 	return (dft*v).ifft().re();
 }
-// TODO test that, it will be annoying to debug in practice
+
+
 DiscreteRealFunction DiscreteRealFunction::shift_domain_left() const {
 	return DiscreteRealFunction(
 			fn.slice_from(samples()/2).concat(fn.slice_to(samples()/2)),
-			domain-vec2(supp_len())/2
-			);
+			domain-vec2(supp_len())/2);
 }
 
 DiscreteRealFunction DiscreteRealFunction::shift_domain_right() const {

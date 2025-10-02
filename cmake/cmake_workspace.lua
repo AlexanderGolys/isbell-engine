@@ -19,8 +19,8 @@ local cmake = p.modules.cmake
 local config = dofile("../config/build_config.json")
 if not config then error("Failed to read/parse config file: ../config/build_config.json") end
 
-local dialect = config.cpp_dialect or "C++23"
-local cmake_version = config.cmake_version or "3.16"
+local dialect = config.cpp_dialect or "C++26"
+local cmake_version = config.cmake_version or "4.1.1"
 
 cmake.workspace = {}
 local m = cmake.workspace
@@ -106,7 +106,5 @@ function m.generate(wks)
 			prjpath = path.getrelative(prj.workspace.location, prjpath)
 			p.w('include(%s)', prjpath)
 		end,
-
-		--TODO wks.startproject
 	})
 end

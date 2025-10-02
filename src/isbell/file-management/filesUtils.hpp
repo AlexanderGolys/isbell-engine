@@ -1,58 +1,31 @@
 #pragma once
+#include <expected>
 
 #include "metaUtils.hpp"
-#include "exceptions.hpp"
+
+typedef std::filesystem::path Path;
 
 
-
-
-
-class Path {
-
-public:
-	filesystem::path path;
-
-	Path();
-	explicit Path(const string &path);
-	explicit Path(const char* path);
-	explicit Path(const filesystem::path &path);
-
-	Path(const Path &other);
-	Path(Path &&other) noexcept;
-	Path &operator=(const Path &other);
-	Path &operator=(Path &&other) noexcept;
-
-	void makePrefferedStyle();
-
-	Path operator+(const string &other) const;
-	Path operator+(const Path &other) const;
-
-	bool endsWithFile(const string &filename) const;
-	bool endsWithFile() const;
-	bool isAbsolute() const;
-	bool isPrimitive() const;
-
-	Path pureDirectory() const;
-	string filename() const;
-	string fileExtension() const;
-
-	Path makeRelative(const Path &other) const;
-	Path makeRelative(const string &other) const;
-	Path makeAbsolute() const;
-	Path goUp() const;
-	string to_str() const;
-
-	bool operator==(const Path &other) const { return path == other.path; }
+enum RecognisedFileType {
+	REG_FILE,
+	DIR,
+	SYM_LINK,
+	UNRECOGNISED,
+	EMPTY_PATH,
+	FILE_NOT_FOUND
 };
 
-class FilePath {
+
+
+class PathDereference {
 	Path path;
+	RecognisedFileType file_status;
+
+
 public:
-	FilePath(const string &path);
-	FilePath(const Path &path);
-	FilePath(const Path &directory, const string &filename);
-	FilePath(const string &directory, const string &filename);
-	FilePath(const filesystem::path &path);
+
+	PathDereference(const Path &p);
+
 	Path getPath() const;
 	string getFilename() const;
 	string getExtension() const;
@@ -69,14 +42,15 @@ public:
 
 
 class CodeFileDescriptor {
-	FilePath path;
+	PathDereference path;
 
 public:
-	virtual ~CodeFileDescriptor() = default;
 	CodeFileDescriptor(const string &filename, const string &directory, bool rootRelative = true);
 	CodeFileDescriptor(const string &filename, const Path &directory, bool rootRelative = true);
 	explicit CodeFileDescriptor(const Path &path, bool rootRelative = true);
 	explicit CodeFileDescriptor(const string &path, bool rootRelative = true);
+	virtual ~CodeFileDescriptor() = default;
+
 	Path getPath() const;
 	string getFilename() const;
 	Path getDirectory() const;
@@ -99,13 +73,20 @@ class FileDescriptor {
 	void *fileHandle = nullptr;
 	void *mappingHandle = nullptr;
 	size_t bytesize;
-	FilePath path;
+	PathDereference path;
 
 
 public:
-	FileDescriptor(const FilePath &filePath);
-	FileDescriptor(const string &path) : FileDescriptor(FilePath(path)) {}
+	FileDescriptor(const PathDereference &filePath);
+	FileDescriptor(const string &path) : FileDescriptor(PathDereference(path)) {}
 	FileDescriptor(const char* path) : FileDescriptor(string(path)) {}
+
+	FileDescriptor(const FileDescriptor &other) : FileDescriptor(other.path) {}
+	FileDescriptor(FileDescriptor &&other) noexcept : FileDescriptor(std::move(other.path)) {}
+
+	FileDescriptor &operator=(const FileDescriptor &other);
+	FileDescriptor &operator=(FileDescriptor &&other) noexcept;
+
 	~FileDescriptor();
 
 	void mapFile();
@@ -137,14 +118,11 @@ class DirectoryDescriptor {
 public:
 	DirectoryDescriptor(const Path &p);
 	DirectoryDescriptor(const string &p);
-	DirectoryDescriptor(const filesystem::path &p);
 	Path getPath() const;
 	bool exists() const;
-
-	vector<FilePath> listFiles() const;
+	vector<PathDereference> listFiles() const;
 	vector<DirectoryDescriptor> listDirectories() const;
-	vector<FilePath> listAllFilesRecursively() const;
+	vector<PathDereference> listAllFilesRecursively() const;
 	size_t directorySize() const;
-
-	bool operator==(const DirectoryDescriptor &other) const { return path == other.path; }
+	bool operator==(const DirectoryDescriptor &other) const;
 };
