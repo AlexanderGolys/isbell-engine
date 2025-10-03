@@ -60,7 +60,7 @@ public:
 	RealFunctionR3 F_y() const;
 	RealFunctionR3 F_z() const;
 	std::array<RealFunctionR3, 3> components() const;
-	R3 operator()(R3 v) const;
+	vec3 operator()(vec3 v) const;
 	float getEps() const { return eps; }
 
 	friend VectorField operator*(const mat3 &A, const VectorField &X);

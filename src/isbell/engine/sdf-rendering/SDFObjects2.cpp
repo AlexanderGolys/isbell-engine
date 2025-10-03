@@ -71,7 +71,7 @@ bool GLSLValidType::operator==(const GLSLPrimitiveType::BuiltInType &other) cons
 }
 
 
-GLSLStruct::GLSLStruct(const string &name, const dict<string, GLSLValidType> &members): name(name), members(members) {}
+GLSLStruct::GLSLStruct(const string &name, const dict(string, GLSLValidType) &members): name(name), members(members) {}
 
 string GLSLStruct::declarationCode() const {
 	string s = "struct " + name + " {\n";
@@ -123,7 +123,7 @@ SDFPrimitiveCentered::SDFPrimitiveCentered(const GLSLStruct &sdfParametersStatic
 
 SDFStateStruct::SDFStateStruct(const GLSLStruct &base):
 GLSLStruct("State_" + base.name,
-			dict<string, GLSLValidType>{
+			dict(string, GLSLValidType){
 				{"transform", GLSLValidType(GLSLParameterType(GLSLPrimitiveType::SE3_STRUCT))},
 				{"params", GLSLValidType(make_shared<GLSLStruct>(base))}
 			}) {}

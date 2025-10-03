@@ -12,7 +12,6 @@ inline bool projectAnalysisTest()
 		return passed;
 	}
 	catch (...) {
-		THROW(SystemError, "Project analysis test failed");
 		return false;
 	}
 }

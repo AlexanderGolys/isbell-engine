@@ -58,6 +58,7 @@ public:
         : ErrorClassWrapper("Recursion limit (" + std::to_string(limit) + "levels) exceeded during " + where, file, line) {}
 };
 
+
 class IndexOutOfBounds : public ErrorClassWrapper {
 public:
     IndexOutOfBounds(int index, int size, const string &structure_name, const char* file, int line)
@@ -68,16 +69,32 @@ public:
     : ErrorClassWrapper("Index " + index + " out of bounds ("+ structure_name + " of size: "+size+")", file, line) {}
 };
 
+class IteratorError : public ErrorClassWrapper {
+public:
+    IteratorError(const string& msg, const char* file, int line) : ErrorClassWrapper(msg, file, line) {}
+    IteratorError(const char* file, int line) : ErrorClassWrapper("Iterator operation error.", file, line) {}
+};
+
+class IteratorEndReferenceError : public IteratorError {
+public:
+    IteratorEndReferenceError(const string& msg, const char* file, int line) : IteratorError(msg, file, line) {}
+    IteratorEndReferenceError(const char* file, int line) : IteratorError("Reference to terminal iterator undefined", file, line) {}
+};
+
+class IteratorEndIncrementError : public IteratorError {
+public:
+    IteratorEndIncrementError(const string& msg, const char* file, int line) : IteratorError(msg, file, line) {}
+    IteratorEndIncrementError(const char* file, int line) : IteratorError("Incrementing terminal iterator undefined", file, line) {}
+};
+
 class NotImplementedMethodError : public NotImplementedError {
 public:
-    NotImplementedMethodError(const string& methodName, const char* file, int line)
-        : NotImplementedError(methodName, "Method", file, line) {}
+    NotImplementedMethodError(const string& methodName, const char* file, int line) : NotImplementedError(methodName, "Method", file, line) {}
 };
 
 class NotImplementedFunctionError : public NotImplementedError {
 public:
-    NotImplementedFunctionError(const string& name, const char* file, int line)
-        : NotImplementedError(name, "Function", file, line) {}
+    NotImplementedFunctionError(const string& name, const char* file, int line) : NotImplementedError(name, "Function", file, line) {}
 };
 
 class NotImplementedVariantError : public NotImplementedError {

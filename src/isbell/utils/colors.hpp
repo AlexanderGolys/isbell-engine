@@ -6,9 +6,8 @@
 #include <array>
 #include <vector>
 
-using std::vector, std::array;
-using glm::vec4, glm::vec3, glm::ivec3;
-
+using glm::vec2, glm::vec3, glm::vec4, glm::ivec3;
+using std::array, std::vector;
 
 struct COLOR_PALETTE {
 	vec4 mainColor;

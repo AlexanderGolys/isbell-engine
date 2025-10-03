@@ -30,20 +30,22 @@ protected:
 	HOM(domain, codomain) _f;
 
 public:
-	explicit Morphism(HOM(domain, codomain) f) : _f(f) {}
+	explicit Morphism(HOM(domain, codomain) f);
 
-	codomain operator()(domain x) const { return _f(x); }
-	Morphism operator+(const Morphism &g) const requires AbelianSemigroup<codomain> { return Morphism([f_=_f, g_=g._f](domain x){ return f_(x) + g_(x); }); }
+	codomain operator()(domain x) const;
+
+	Morphism operator+(const Morphism &g) const requires AbelianSemigroup<codomain>;
+
 	Morphism operator-(const Morphism &g) const requires AbelianGroupConcept<codomain>;
 	Morphism operator*(const Morphism &g) const requires Semigroup<codomain>;
 	Morphism operator/(const Morphism &g) const requires DivisionRing<codomain>;
 	Morphism operator*(codomain a) const requires Semigroup<codomain>;
 
 	template<DivisionRing K>
-	Morphism operator/(K a) const requires VectorSpaceConcept<codomain, K> { return Morphism([this, a](domain x){ return (*this)(x) / a; }); }
+	Morphism operator/(K a) const requires VectorSpaceConcept<codomain, K>;
 
 	template<Rng R>
-	Morphism operator*(R a) const requires RModule<codomain, R> { return Morphism([this, a](domain x){ return (*this)(x) * a; }); }
+	Morphism operator*(R a) const requires RModule<codomain, R>;
 };
 
 
@@ -131,7 +133,6 @@ public:
 	template<Rng S>
 	Vector<S> base_change() const;
 };
-
 
 
 
@@ -1334,6 +1335,15 @@ int binSearch(vector<T> v, T x) {
 
 
 template<typename domain, typename codomain>
+Morphism<domain, codomain>::Morphism(std::function<codomain(domain)> f): _f(f) {}
+
+template<typename domain, typename codomain>
+codomain Morphism<domain, codomain>::operator()(domain x) const { return _f(x); }
+
+template<typename domain, typename codomain>
+Morphism<domain, codomain> Morphism<domain, codomain>::operator+(const Morphism &g) const requires AbelianSemigroup<codomain> { return Morphism([f_=_f, g_=g._f](domain x){ return f_(x) + g_(x); }); }
+
+template<typename domain, typename codomain>
 Morphism<domain, codomain> Morphism<domain, codomain>::operator-(const Morphism &g) const requires AbelianGroupConcept<codomain> {
 	return Morphism([this, g](domain x){ return (*this)(x) - g(x); });
 }
@@ -1352,6 +1362,14 @@ template<typename domain, typename codomain>
 Morphism<domain, codomain> Morphism<domain, codomain>::operator*(codomain a) const requires Semigroup<codomain> {
 	return Morphism([this, a](domain x){ return (*this)(x) * a; });
 }
+
+template<typename domain, typename codomain>
+template<DivisionRing K>
+Morphism<domain, codomain> Morphism<domain, codomain>::operator/(K a) const requires VectorSpaceConcept<codomain, K> { return Morphism([this, a](domain x){ return (*this)(x) / a; }); }
+
+template<typename domain, typename codomain>
+template<Rng R>
+Morphism<domain, codomain> Morphism<domain, codomain>::operator*(R a) const requires RModule<codomain, R> { return Morphism([this, a](domain x){ return (*this)(x) * a; }); }
 
 template<Rng T>
 Vector<T>::Vector(vector<T> c)

@@ -1100,7 +1100,7 @@ Renderer::Renderer(float animSpeed, vec4 bgColor, const string &screenshotDirect
 }
 
 Renderer::Renderer(const RenderSettings &settings)
-: Renderer(settings.speed, settings.bgColor, settings.screenshotDirectory.to_str(), settings.screenshotFrequency)
+: Renderer(settings.speed, settings.bgColor, settings.screenshotDirectory.string(), settings.screenshotFrequency)
 {
 	this->settings = settings;
 	this->animSpeed = [settings](float t) { return settings.speed; };
