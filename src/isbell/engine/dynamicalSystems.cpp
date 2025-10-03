@@ -20,6 +20,7 @@ AreaUnderWave::AreaUnderWave(RealFunctionR2 f, vec2 dom, int sampling_res, float
 			faceIndices.emplace_back(last_ind, last_ind - 1, last_ind - 3);
 		}
 	}
+
 	addNewPolygroup(vertices, faceIndices, id);
 }
 
