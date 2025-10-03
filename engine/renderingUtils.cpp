@@ -2324,13 +2324,13 @@ vector<CurveSample> sampleCurve(SmoothParametricCurve curve, float width,
 
 // SuperPencilCurve::SuperPencilCurve(const SuperCurve &c) : SuperPencilCurve(c){}
 
-void SuperPencilCurve::addAmbientDeformation(End2P _ambient_operator, float t){
-	this->_ambient_operator = make_unique<End2P>(_ambient_operator);
+void SuperPencilCurve::addAmbientDeformation(BIHOM(float, float, SpaceEndomorphism) _ambient_operator, float t){
+	this->_ambient_operator = make_unique<BIHOM(float, float, SpaceEndomorphism)>(_ambient_operator);
 	this->_t = t;
 }
 
-void SuperPencilCurve::addLocalDeformation(End1P _local_operator, float t) {
-	this->_ambient_operator = make_unique<End2P>([op=_local_operator](float t1, float t2) {return op(t2-t1); });
+void SuperPencilCurve::addLocalDeformation(HOM(float, SpaceEndomorphism) _local_operator, float t) {
+	this->_ambient_operator = make_unique<BIHOM(float, float, SpaceEndomorphism)>([op=_local_operator](float t1, float t2) {return op(t2-t1); });
 	this->_t = t;
 }
 

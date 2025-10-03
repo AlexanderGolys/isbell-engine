@@ -35,16 +35,16 @@ public:
 
 class Meromorphism {
 public:
-	endC _f; // TODO: is this shared ptr even making sense
-	endC _df;
+	END(Complex) _f; // TODO: is this shared ptr even making sense
+	END(Complex) _df;
 
 	Meromorphism(const Meromorphism &other);
 	Meromorphism(Meromorphism &&other) noexcept;
 	Meromorphism & operator=(const Meromorphism &other);
 	Meromorphism & operator=(Meromorphism &&other) noexcept;
 	Meromorphism();
-	Meromorphism(endC f, endC df);
-	explicit Meromorphism(endC f, float eps=.01f);
+	Meromorphism(END(Complex) f, END(Complex) df);
+	explicit Meromorphism(END(Complex) f, float eps=.01f);
 
 	Complex operator()(Complex z) const;
 	Complex operator()(vec2 z) const;
@@ -62,8 +62,8 @@ public:
 class Biholomorphism : public Meromorphism {
 public:
 	Meromorphism f_inv;
-	Biholomorphism(endC f, endC df, endC f_inv) : Meromorphism(std::move(f), std::move(df)), f_inv(std::move(f_inv)) {}
-	Biholomorphism(endC f, endC f_inv, float eps=.01) : Meromorphism(std::move(f), eps), f_inv(std::move(f_inv), eps) {}
+	Biholomorphism(END(Complex) f, END(Complex) df, END(Complex) f_inv) : Meromorphism(std::move(f), std::move(df)), f_inv(std::move(f_inv)) {}
+	Biholomorphism(END(Complex) f, END(Complex) f_inv, float eps=.01) : Meromorphism(std::move(f), eps), f_inv(std::move(f_inv), eps) {}
 	Biholomorphism(Meromorphism f, Meromorphism f_inv) : Meromorphism(f), f_inv(f_inv) {}
 
 	Complex inv(Complex z) const;

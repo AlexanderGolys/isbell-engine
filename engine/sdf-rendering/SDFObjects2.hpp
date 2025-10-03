@@ -68,8 +68,8 @@ struct GLSLValidType
 struct GLSLStruct
 {
     string name;
-    dict<string, GLSLValidType> members;
-	GLSLStruct(const string &name, const dict<string, GLSLValidType> &members);
+    dict(string, GLSLValidType) members;
+	GLSLStruct(const string &name, const dict(string, GLSLValidType) &members);
 
     string declarationCode() const;
     string typeName() const;

@@ -1,10 +1,6 @@
 #pragma once
 #include "filesUtils.hpp"
 
-
-
-
-
 class CodeMacro {
 	string replacementKey;
 	string replacementCode;

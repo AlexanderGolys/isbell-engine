@@ -20,7 +20,7 @@ concept Semigroup = requires(T a, T b) {
 
 
 template<typename T>
-PartialOrder = requires(T a, T b) {
+concept PartialOrder = requires(T a, T b) {
 		{ a <= b } -> std::convertible_to<bool>;
 		{ a >= b } -> std::convertible_to<bool>;
 		{ a < b } -> std::convertible_to<bool>;
