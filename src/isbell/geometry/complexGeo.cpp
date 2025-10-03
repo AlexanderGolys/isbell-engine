@@ -53,11 +53,14 @@ Meromorphism & Meromorphism::operator=(Meromorphism &&other) noexcept {
 	return *this;
 }
 
-Meromorphism::Meromorphism(): _f([](Complex){return Complex(0.f);}), _df([](Complex){return Complex(0.f);}) {}
+Meromorphism::Meromorphism()
+: _f([](Complex){return Complex(0.f);}), _df([](Complex){return Complex(0.f);}) {}
 
-Meromorphism::Meromorphism(std::function<Complex(Complex)> f, std::function<Complex(Complex)> df): _f(std::move(f)), _df(std::move(df)) {}
+Meromorphism::Meromorphism(END(Complex) f, END(Complex) df)
+: _f(std::move(f)), _df(std::move(df)) {}
 
-Meromorphism::Meromorphism(std::function<Complex(Complex)> f, float eps): _f(std::move(f)), _df([F=f, e=eps](Complex z){return (F(z + Complex(e)) - F(z))/e;}) {}
+Meromorphism::Meromorphism(END(Complex) f, float eps)
+: _f(std::move(f)), _df([F=f, e=eps](Complex z){return (F(z + Complex(e)) - F(z))/e;}) {}
 
 Complex Meromorphism::operator()(Complex z) const {return _f(z);}
 

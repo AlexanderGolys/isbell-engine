@@ -11,17 +11,17 @@
 
 #include "exceptions.hpp"
 #include "concepts.hpp"
-#include "monads.hpp"
+#include "abstractNonsense.hpp"
 
 
 
 
-inline string removeWhitespace(const string &s)
-{
-	string result;
+inline string removeWhitespace(const string &s){
+	string res;
 	for (char c : s)
-		if (!isspace(c)) result += c;
-	return result;
+		if (!isspace(c))
+			res += c;
+	return res;
 }
 
 inline string operator""s(const char* str) {
@@ -55,12 +55,6 @@ void add_all(vector<X> a, vector<X> b) {
 	a.insert(a.end(), b.begin(), b.end());
 }
 
-// template<typename X>
-// vector<X> concat(vector<X> a, vector<X> b) {
-// 	auto c = a;
-// 	c.insert(c.end(), b.begin(), b.end());
-// 	return c;
-// }
 
 namespace glm {
     inline vec3 xyz(const vec4& v) {
@@ -118,8 +112,8 @@ inline int binom(int a, int b) {
 	return a >= b ? factorial(a) / (factorial(b) * factorial(a - b)) : 0;
 }
 
-    template<typename T>
-    void printVector(vector<T> v, string title="vector")
+template<typename T>
+void printVector(vector<T> v, string title="vector")
     {
         std::cout << title << " [" << v.size() << "]: ";
         for (int i = 0; i < v.size(); i++)
@@ -132,6 +126,7 @@ inline int binom(int a, int b) {
 constexpr PolyGroupID DEFAULT_POLY_GROUP_ID = PolyGroupID(0);
 constexpr RP1 inf = std::nullopt;
 constexpr RP1 unbounded = std::nullopt;
+
 const vec3 e1 = vec3(1, 0, 0);
 const vec3 e2 = vec3(0, 1, 0);
 const vec3 e3 = vec3(0, 0, 1);
@@ -672,7 +667,7 @@ vector<A> arange(A a, A b, A step) {
 
 
 
-template<typename A=float, typename container>
+template<typename A=float, typename container=vector<A>>
 A sum(container arr) {
 	A res = arr[0];
 	for (int i = 1; i < arr.size(); i++) res = res + arr[i];

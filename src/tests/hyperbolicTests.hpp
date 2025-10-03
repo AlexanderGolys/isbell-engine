@@ -9,7 +9,7 @@ using namespace glm;
 
 
 inline bool rotationsTest()
-  {
+{
   try {
 
     bool passed = true;

@@ -256,10 +256,10 @@ private:
     maybeMaterial material;
     std::map<string, vec4> extraData = {};
     int index = -1;
-    vector<std::pair<std::weak_ptr<IndexedTriangle>, int>> triangles = {};
+    vector<pair<weak_ptr<IndexedTriangle>, int>> triangles = {};
 public:
-	Vertex(vec3 position, vec2 uv, vec3 normal=e3, vec4 color=BLACK, std::map<string, vec4> extraData = {}, maybeMaterial material=std::nullopt);
-	explicit Vertex(vec3 position, vec3 normal=e3, vec4 color=BLACK, std::map<string, vec4> extraData = {}, maybeMaterial material=std::nullopt);
+	Vertex(vec3 position, vec2 uv, vec3 normal=e3, vec4 color=BLACK, std::map<string, vec4> extraData = {}, optional<MaterialPhongConstColor> material=std::nullopt);
+	explicit Vertex(vec3 position, vec3 normal=e3, vec4 color=BLACK, std::map<string, vec4> extraData = {}, optional<MaterialPhongConstColor> material=std::nullopt);
 
 	// explicit Vertex(vec3 position, vec3 normal=vec3(0,0,1),  vec4 color=vec4(0,0,0,1),  maybeMaterial material=std::nullopt)
 	// : Vertex(position, vec2(position.x, position.y), normal, color, material) {}
@@ -270,9 +270,9 @@ public:
     void setIndex(int i);
 	int getIndex() const;
 	bool hasIndex() const;
-	void gotAddedAsVertex (std::weak_ptr<IndexedTriangle> triangle, int i);
-	vector<std::pair<std::weak_ptr<IndexedTriangle>, int>> getTriangles() const;
-	vector<std::weak_ptr<Vertex>> getNeighbours() const;
+	void gotAddedAsVertex (weak_ptr<IndexedTriangle> triangle, int i);
+	vector<pair<weak_ptr<IndexedTriangle>, int>> getTriangles() const;
+	vector<weak_ptr<Vertex>> getNeighbours() const;
     void recomputeNormals(bool weightByArea=true);
 
 	vec3 getPosition() const;
@@ -621,7 +621,7 @@ public:
     vec3 getTangent() const {return tangent;}
     MaterialPhongConstColor getMaterial() const { return MaterialPhongConstColor(material); }
     mat4 getMaterialMatrix() const { return material; }
-	float readExtra(int position) const {return extraInfo[position];}
+	float readExtra(int i) const {return extraInfo[i];}
 	float readExtraLast() const	{return extraInfo.w;}
     vec4 readExtra() const {return extraInfo;}
     vec3 readExtraXYZ() const {return vec3(extraInfo);}
@@ -686,24 +686,24 @@ public:
   void precomputeBuffers();
 
   void updateCurve(const SmoothParametricCurve &new_curve);
-  std::function<void(float)> pencilDeformerWeak(std::function<SmoothParametricCurve(float)> pencil);
+  std::function<void(float)> pencilDeformerWeak(HOM(float, SmoothParametricCurve) pencil);
 };
 
 
 
 class SuperPencilCurve : public SuperCurve {
   float _t = 0;
-  std::unique_ptr<End2P> _ambient_operator = nullptr;
-  std::unique_ptr<std::function<SmoothParametricCurve(float)>> _parametric_operator = nullptr;
+  unique_ptr<BIHOM(float, float, SpaceEndomorphism)> _ambient_operator = nullptr;
+  unique_ptr<HOM(float, SmoothParametricCurve)> _parametric_operator = nullptr;
 public:
   using SuperCurve::SuperCurve;
   SuperPencilCurve(const SuperCurve &other) : SuperCurve(other) {}
   SuperPencilCurve(SuperCurve &&other) noexcept : SuperCurve(std::move(other)) {}
 
-  void addAmbientDeformation(End2P _ambient_operator, float t=0);
-  void addLocalDeformation(End1P _local_operator, float t=0);
+  void addAmbientDeformation(BIHOM(float, float, SpaceEndomorphism) _ambient_operator, float t=0);
+  void addLocalDeformation(HOM(float, SpaceEndomorphism) _local_operator, float t=0);
   void addDeformationAlongVectorField(VectorField vectorField, float t=0);
-  void addPencil(std::function<SmoothParametricCurve(float)> family, float t = 0);
+  void addPencil(HOM(float, SmoothParametricCurve) family, float t = 0);
   float time() const;
   void transformMesh(float new_t);
 };

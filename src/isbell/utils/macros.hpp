@@ -5,7 +5,6 @@
 #include <string>
 #include <optional>
 #include <functional>
-#include <vector>
 #include <iostream>
 #include <format>
 #include <map>
@@ -14,30 +13,39 @@
 #include <filesystem>
 #include <string>
 #include <string_view>
+#include <exception>
+#include <expected>
 
 #include "colors.hpp"
 
-using glm::vec2, glm::vec3, glm::mat3, glm::mat4, glm::mat2, glm::mat2x3, glm::ivec2, glm::ivec3, glm::ivec4;
+
+/**
+* @note: the only commonly used std keywo♥rds that require namespace prefix are std::map and std::function
+*/
+
+using glm::vec2, glm::vec3, glm::vec4;
+using glm::mat2, glm::mat3, glm::mat4, glm::mat2x3;
+using glm::ivec2, glm::ivec3, glm::ivec4;
 using std::vector, std::variant, std::optional, std::array, std::unordered_map, std::pair;
-using std::shared_ptr, std::unique_ptr, std::make_unique, std::make_shared;
+using std::shared_ptr, std::unique_ptr, std::make_unique, std::make_shared, std::weak_ptr;
 using std::string, std::endl, std::format, std::to_string, std::cout, std::printf;
 using std::expected, std::unexpected, std::bad_expected_access;
-namespace filesystem = std::filesystem;
 
+namespace filesystem = std::filesystem;
 
 constexpr float PI = 3.14159265359f;
 constexpr float TAU = 6.28318530718f;
 
+// template <typename A, typename B>
+// using dict = std::map<A, B>;
+
 #define RP1 optional<float>
 #define INT(A) static_cast<int>(A)
-#define INFf std::nullopt
 #define UNDEFINED std::nullopt
 
-#define PolyGroupID std::variant<int, std::string>
+#define PolyGroupID variant<int, string>
 #define Mat2C Matrix<Complex, 2>
-#define End1P std::function<SpaceEndomorphism(float)>
-#define End2P std::function<SpaceEndomorphism(float, float)>
-#define maybeMaterial std::optional<MaterialPhongConstColor>
+#define maybeMaterial optional<MaterialPhongConstColor>
 #define Mob Matrix<Complex>
 #define isClose nearlyEqual
 
@@ -46,37 +54,32 @@ constexpr float TAU = 6.28318530718f;
 
 // namespace std {
 
-#define MAYBE(A) std::optional<A>
+#define MAYBE(A) optional<A>
+#define maybe(A) optional<A>
+
 #define HOM(B, A) std::function<A(B)>
 #define BIHOM(A, B, C) std::function<C(A,B)>
 #define TRIHOM(A, B, C, D) std::function<D(A,B,C)>
 #define QUADHOM(A, B, C, D, E) std::function<E(A,B,C,D)>
-
-
-#define FUNC(B, ...) std::function<B(...)>
 #define END(A) HOM(A, A)
-#define HOM$$(B,A) std::vector<HOM(B, A)>
-#define FUNC$$(B, A) std::vector<FUNC(B, A)>
-#define END$$(A) std::vector<END(A)>
 
-#define endC END(Complex)
 #define Fooo END(float)
 #define Foo12 HOM(float, vec2)
-#define Foo13  HOM(float, vec3)
-#define Foo33  HOM(vec3, vec3)
-#define Foo31  HOM(vec3, float)
-#define Foo21  HOM(vec2, float)
-#define Foo22  HOM(vec2, vec2)
-#define Foo32  HOM(vec3, vec2)
-#define Foo23  HOM(vec2, vec3)
-#define Foo113 std::function<vec3(float, float)>
-#define Foo112 std::function<vec2(float, float)>
-#define Foo111 std::function<float(float, float)>
+#define Foo13 HOM(float, vec3)
+#define Foo33 HOM(vec3, vec3)
+#define Foo31 HOM(vec3, float)
+#define Foo21 HOM(vec2, float)
+#define Foo22 HOM(vec2, vec2)
+#define Foo32 HOM(vec3, vec2)
+#define Foo23 HOM(vec2, vec3)
+#define Foo113 BIHOM(float, float, vec3)
+#define Foo112 BIHOM(float, float, vec2)
+#define Foo111 BIHOM(float, float, float)
 
-#define Foo1111 std::function<float(float, float, float)>
-#define Foo1113 std::function<vec3(float, float, float)>
-#define Foo313 std::function<vec3(vec3, float)>
-#define Foo311 std::function<float(vec3, float)>
+#define Foo1111 TRIHOM(float, float, float, float)
+#define Foo1113 TRIHOM(float, float, float, vec3)
+#define Foo313 BIHOM(vec3, float, vec3)
+#define Foo311 BIHOM(vec3, float, float)
 
 #define upt std::unique_ptr
 #define spt std::shared_ptr
@@ -140,15 +143,14 @@ std::function<A(std::function<B(C)>)> curr(std::function<A(B, C)> f) {
 	return [f](std::function<B(C)> g) { return [f, g](C c) { return f(g(c), c); }; };
 }
 
-template <typename A, typename B>
-using dict = std::map<A, B>;
 
 
-#define BigMatrix_t HOM(float, FloatMatrix)
 
-#define float_hm std::optional<float>
-#define OPT(x) std::optional<x>
-#define R3 glm::vec3
+
+#define float_hm optional<float>
+
+
+
 
 // namespace color
 // {
@@ -156,7 +158,8 @@ using dict = std::map<A, B>;
 
 // }
 
-#define THROW(ErrType, ...) throw ErrType(__VA_ARGS__, __FILE__, __LINE__)
+#define THROW(ErrType, ...) throw ErrType(__VA_ARGS__ __VA_OPT__(,) __FILE__, __LINE__)
+#define THROW_IF(cond, ErrType, ...) if (cond) THROW(ErrType, __VA_ARGS__)
 
 
 #ifdef _WIN32
