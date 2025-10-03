@@ -202,21 +202,10 @@ public:
 	explicit CodeFileDescriptor(const string &path, bool rootRelative = true);
 	virtual ~CodeFileDescriptor() = default;
 
-	CodeFileDescriptor(const CodeFileDescriptor &other) : file(other.file.getPath()) {}
-
-	CodeFileDescriptor(CodeFileDescriptor &&other) noexcept : file(std::move(other.file.getPath())) {}
-
-	CodeFileDescriptor & operator=(const CodeFileDescriptor &other) {
-		if (this == &other) return *this;
-		file = other.file;
-		return *this;
-	}
-
-	CodeFileDescriptor & operator=(CodeFileDescriptor &&other) noexcept {
-		if (this == &other) return *this;
-		file = std::move(other.file);
-		return *this;
-	}
+	CodeFileDescriptor(const CodeFileDescriptor &other);
+	CodeFileDescriptor(CodeFileDescriptor &&other) noexcept;
+	CodeFileDescriptor & operator=(const CodeFileDescriptor &other);
+	CodeFileDescriptor & operator=(CodeFileDescriptor &&other) noexcept;
 
 	Path getPath() const;
 	string getFilename() const;
@@ -229,7 +218,6 @@ public:
 	void modifyCode(const string &code) const;
 	void saveCopyToNewFile(const string &code) const;
 	bool recogniseDirectoryNamingStyle();
-	void changeDirectoryNamingStyle(bool unix = true);
 	void changeLine(const string &line, int lineNumber);
 	string readLine(int lineNumber) const;
 };

@@ -625,6 +625,10 @@ CodeFileDescriptor::CodeFileDescriptor(const string &filename, const string &dir
 CodeFileDescriptor::CodeFileDescriptor(const string &path, bool rootRelative)
 : CodeFileDescriptor(Path(path), rootRelative) {}
 
+CodeFileDescriptor::CodeFileDescriptor(const CodeFileDescriptor &other): file(other.file.getPath()) {}
+
+CodeFileDescriptor::CodeFileDescriptor(CodeFileDescriptor &&other) noexcept: file(std::move(other.file.getPath())) {}
+
 void CodeFileDescriptor::changeLine(const string &line, int lineNumber) {
 	std::ifstream file_stream(getPath().string());
 	if (!exists())
@@ -666,6 +670,18 @@ string CodeFileDescriptor::readLine(int lineNumber) const {
 	}
 	file_stream.close();
 	THROW(ValueError, "Line number out of range");
+}
+
+CodeFileDescriptor & CodeFileDescriptor::operator=(const CodeFileDescriptor &other) {
+	if (this == &other) return *this;
+	file = other.file;
+	return *this;
+}
+
+CodeFileDescriptor & CodeFileDescriptor::operator=(CodeFileDescriptor &&other) noexcept {
+	if (this == &other) return *this;
+	file = std::move(other.file);
+	return *this;
 }
 
 Path CodeFileDescriptor::getPath() const {
