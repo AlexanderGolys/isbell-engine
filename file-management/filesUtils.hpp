@@ -220,4 +220,5 @@ public:
 	bool recogniseDirectoryNamingStyle();
 	void changeLine(const string &line, int lineNumber);
 	string readLine(int lineNumber) const;
+
 };
