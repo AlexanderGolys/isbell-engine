@@ -26,13 +26,14 @@ protected:
 	DirectoryEntryType type;
 
 public:
+	DirectoryEntry(); // project root directory, not current (which is usually the build directory 4 steps deeper)
 	DirectoryEntry(const Path &p);
 	DirectoryEntry(const string &p);
 	virtual ~DirectoryEntry() = default;
 	DirectoryEntry(const DirectoryEntry &other);
 	DirectoryEntry(DirectoryEntry &&other) noexcept;
-	DirectoryEntry & operator=(const DirectoryEntry &other);
-	DirectoryEntry & operator=(DirectoryEntry &&other) noexcept;
+	DirectoryEntry& operator=(const DirectoryEntry &other);
+	DirectoryEntry& operator=(DirectoryEntry &&other) noexcept;
 
 	virtual string getName() const;
 	virtual bool exists();
@@ -40,7 +41,6 @@ public:
 	virtual void moveTo(const Path &destination);
 	virtual void rename(const string &newName);
 	virtual void remove();
-
 	virtual void refresh();
 	virtual size_t getSize() const;
 
@@ -49,8 +49,17 @@ public:
 	DirectoryDescriptor getParent() const;
 	bool hasParent() const;
 
+	void setPath(const Path &newPath);
+
 	bool isFile() const;
 	bool isDirectory() const;
+
+	DirectoryEntry operator/(const string &subpath) const;
+	DirectoryEntry operator/(const Path &subpath) const;
+	DirectoryEntry operator/(const char* subpath) const;
+	DirectoryEntry& operator/=(const string &subpath);
+	DirectoryEntry& operator/=(const Path &subpath);
+	DirectoryEntry& operator/=(const char* subpath);
 
 	filesystem::directory_entry getStdDirectoryEntry() const;
 	filesystem::file_status getStdFileStatus() const;
@@ -69,12 +78,11 @@ class FileDescriptor : public DirectoryEntry {
 
 public:
 	explicit FileDescriptor(const DirectoryEntry &filePath);
-	explicit FileDescriptor(const Path &path) : FileDescriptor(DirectoryEntry(path)) {}
+	explicit FileDescriptor(const Path &path);
 	explicit FileDescriptor(const string &path);
 	explicit FileDescriptor(const char* path);
 	~FileDescriptor() override;
 	FileDescriptor &operator=(const FileDescriptor &other);
-	FileDescriptor &operator=(FileDescriptor &&other) noexcept;
 
 	void mapFile();
 	void closeFile();
@@ -110,35 +118,49 @@ class DirectoryDescriptor : public DirectoryEntry {
 public:
 	using DirectoryEntry::DirectoryEntry;
 
+	DirectoryDescriptor operator/(const string &subpath) const;
+	DirectoryDescriptor operator/(const Path &subpath) const;
+	DirectoryDescriptor operator/(const char* subpath) const;
+	DirectoryDescriptor& operator/=(const Path &subpath);
+	DirectoryDescriptor& operator/=(const string &subpath);
+	DirectoryDescriptor& operator/=(const char* subpath);
+	FileDescriptor operator+(const Path &subpath) const;
+	FileDescriptor operator+(const string &subpath) const;
+	FileDescriptor operator+(const char* subpath) const;
+
+
+
+
 	class FileIterator {
 		filesystem::directory_iterator it;
-		bool _points_to_file() const;
+		bool _points_wrong_thing() const;
 		void _make_end_independent();
+		void _end_check();
 
 	public:
-		explicit FileIterator(); // end
+		explicit FileIterator();
 		explicit FileIterator(const DirectoryDescriptor &dir);
 		FileIterator& operator++();
+		void inc();
 		FileDescriptor operator*() const;
 		bool operator!=(const FileIterator &other) const;
 		bool isEnd() const;
 	};
 	FileIterator beginFiles() const;
-	FileIterator EndFiles() const;
+	FileIterator endFiles() const;
 
 	class SubdirectoryIterator {
 		filesystem::directory_iterator it;
-		bool _points_to_dir() const;
+		bool _points_wrong_thing() const;
 		void _make_end_independent();
+		void _end_check();
 
 	public:
-		explicit SubdirectoryIterator(); // end
+		explicit SubdirectoryIterator();
 		explicit SubdirectoryIterator(const DirectoryDescriptor &dir);
 		SubdirectoryIterator &operator++();
 		DirectoryDescriptor operator*() const;
-		SubdirectoryIterator& reset();
 		void inc();
-
 		bool operator!=(const SubdirectoryIterator &other) const;
 		bool isEnd() const;
 	};
@@ -150,11 +172,9 @@ public:
 		SubdirectoryIterator it;
 
 		void _make_new_child();
-		void _inc_child();
-		void _inc_it();
 
 	public:
-		RecursiveSubdirectoryIterator() = default; // end
+		RecursiveSubdirectoryIterator() : child(nullptr) {}
 		explicit RecursiveSubdirectoryIterator(const DirectoryDescriptor &dir);
 
 		RecursiveSubdirectoryIterator& operator++();
@@ -163,8 +183,6 @@ public:
 		bool operator!=(const RecursiveSubdirectoryIterator &other) const;
 
 		bool isEnd() const;
-		bool pointingToSelf() const;
-		bool childEnded() const;
 	};
 	RecursiveSubdirectoryIterator beginRecursiveDir() const;
 	RecursiveSubdirectoryIterator endRecursiveDir() const;
@@ -172,9 +190,12 @@ public:
 	class RecursiveFileIterator {
 		RecursiveSubdirectoryIterator dir_it;
 		FileIterator file_it;
+		bool rootDirIter;
+
+		void _next_dir();
 
 	public:
-		RecursiveFileIterator() = default;
+		RecursiveFileIterator() : rootDirIter(true) {}
 		explicit RecursiveFileIterator(const DirectoryDescriptor &dir);
 
 		RecursiveFileIterator &operator++();

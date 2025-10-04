@@ -1,6 +1,7 @@
 #pragma once
 #include <format>
 #include "func.hpp"
+// ReSharper disable CppParameterMayBeConstPtrOrRef
 
 using std::formatter, std::format, std::to_string;
 
@@ -9,30 +10,31 @@ namespace std
 	template<>
 	struct formatter<Complex>
 	{
-		constexpr auto parse(format_parse_context& ctx) { return ctx.begin(); }
+		constexpr format_parse_context::const_iterator parse(format_parse_context &ctx) { return ctx.begin(); }
 
 		template<typename FormatContext>
-		auto format(const Complex& c, FormatContext& ctx) const
-		{
+		std::format_context::iterator format(const Complex& c, FormatContext& ctx) const{
 			if (nearlyEqual(c.imag(), 0.f))
 				return format_to(ctx.out(), "{}", c.real());
 			if (nearlyEqual(c.real(), 0.f))
 				return format_to(ctx.out(), "{}i", c.imag());
-			if (c.imag() < 0)
+			if (c.imag() < 0.f)
 				return format_to(ctx.out(), "{} - {}i", c.real(), -c.imag());
 			return format_to(ctx.out(), "{} + {}i", c.real(), c.imag());
 		}
 	};
 
 	template<>
-	struct formatter<glm::vec3>
+	struct formatter<vec3>
 	{
-		constexpr auto parse(format_parse_context& ctx) { return ctx.begin(); }
+		constexpr auto parse(format_parse_context& ctx) {
+			return ctx.begin();
+		}
 
 		template<typename FormatContext>
-		auto format(const glm::vec3& v, FormatContext& ctx) const
-		{
-			return format_to(ctx.out(), "({}, {}, {})", v.x, v.y, v.z);
+		std::format_context::iterator format(const vec3& v, FormatContext& ctx) const{
+			return format_to(ctx.out(), "({}, {}, {})",
+				static_cast<double>(v.x), static_cast<double>(v.y), static_cast<double>(v.z));
 		}
 	};
 
@@ -42,9 +44,9 @@ namespace std
 		constexpr auto parse(format_parse_context& ctx) { return ctx.begin(); }
 
 		template<typename FormatContext>
-		auto format(const vec2& v, FormatContext& ctx) const
-		{
-			return format_to(ctx.out(), "({}, {})", v.x, v.y);
+		std::format_context::iterator format(const vec2& v, FormatContext& ctx) const{
+			return format_to(ctx.out(), "({}, {})",
+				static_cast<double>(v.x), static_cast<double>(v.y));
 		}
 	};
 
@@ -54,9 +56,9 @@ namespace std
 		constexpr auto parse(format_parse_context& ctx) { return ctx.begin(); }
 
 		template<typename FormatContext>
-		auto format(const vec4& v, FormatContext& ctx) const
-		{
-			return format_to(ctx.out(), "({}, {}, {}, {})", v.x, v.y, v.z, v.w);
+		std::format_context::iterator format(const vec4& v, FormatContext& ctx) const{
+			return format_to(ctx.out(), "({}, {}, {}, {})",
+				static_cast<double>(v.x), static_cast<double>(v.y), static_cast<double>(v.z), static_cast<double>(v.w));
 		}
 	};
 
@@ -66,8 +68,7 @@ namespace std
 		constexpr auto parse(format_parse_context& ctx) { return ctx.begin(); }
 
 		template<typename FormatContext>
-		auto format(const vec5& v, FormatContext& ctx) const
-		{
+		std::format_context::iterator format(const vec5& v, FormatContext& ctx) const{
 			return format_to(ctx.out(), "({}, {}, {}, {}, {})", v.x, v.y, v.z, v.w, v.v);
 		}
 	};
@@ -78,26 +79,26 @@ namespace std
 		constexpr auto parse(format_parse_context& ctx) { return ctx.begin(); }
 
 		template<typename FormatContext>
-		auto format(const mat2& m, FormatContext& ctx) const
-		{
-			return format_to(ctx.out(), "| {} {} |\n| {} {} |", m[0][0], m[0][1], m[1][0], m[1][1]);
+		std::format_context::iterator format(const mat2& m, FormatContext& ctx) const{
+			return format_to(ctx.out(), "|{} {}|\n|{} {}|",
+				static_cast<double>(m[0][0]), static_cast<double>(m[0][1]),
+				static_cast<double>(m[1][0]), static_cast<double>(m[1][1]));
 		}
 	};
 
 	template<>
-	struct formatter<glm::mat3>
+	struct formatter<mat3>
 	{
 		constexpr auto parse(format_parse_context& ctx) { return ctx.begin(); }
 
 		template<typename FormatContext>
-		auto format(const glm::mat3& m, FormatContext& ctx) const
-		{
+		std::format_context::iterator format(const mat3& m, FormatContext& ctx) const {
 			return format_to(
 				ctx.out(),
-				"mat3([{}, {}, {}], [{}, {}, {}], [{}, {}, {}])",
-				m[0][0], m[0][1], m[0][2],
-				m[1][0], m[1][1], m[1][2],
-				m[2][0], m[2][1], m[2][2]
+				"|{} {} {}|\n|{} {} {}|\n|{} {} {}|)",
+				static_cast<double>(m[0][0]), static_cast<double>(m[0][1]), static_cast<double>(m[0][2]),
+				static_cast<double>(m[1][0]), static_cast<double>(m[1][1]), static_cast<double>(m[1][2]),
+				static_cast<double>(m[2][0]), static_cast<double>(m[2][1]), static_cast<double>(m[2][2])
 			);
 		}
 	};
@@ -108,15 +109,15 @@ namespace std
 		constexpr auto parse(format_parse_context& ctx) { return ctx.begin(); }
 
 		template<typename FormatContext>
-		auto format(const mat4& m, FormatContext& ctx) const
+		std::format_context::iterator format(const mat4& m, FormatContext& ctx) const
 		{
 			return format_to(
 				ctx.out(),
-				"| {} {} {} {} |\n| {} {} {} {} |\n| {} {} {} {} |\n| {} {} {} {} |",
-				m[0][0], m[0][1], m[0][2], m[0][3],
-				m[1][0], m[1][1], m[1][2], m[1][3],
-				m[2][0], m[2][1], m[2][2], m[2][3],
-				m[3][0], m[3][1], m[3][2], m[3][3]
+				"|{} {} {} {}|\n|{} {} {} {}|\n|{} {} {} {}|\n|{} {} {} {}|",
+				static_cast<double>(m[0][0]), static_cast<double>(m[0][1]), static_cast<double>(m[0][2]), static_cast<double>(m[0][3]),
+				static_cast<double>(m[1][0]), static_cast<double>(m[1][1]), static_cast<double>(m[1][2]), static_cast<double>(m[1][3]),
+				static_cast<double>(m[2][0]), static_cast<double>(m[2][1]), static_cast<double>(m[2][2]), static_cast<double>(m[2][3]),
+				static_cast<double>(m[3][0]), static_cast<double>(m[3][1]), static_cast<double>(m[3][2]), static_cast<double>(m[3][3])
 			);
 		}
 	};

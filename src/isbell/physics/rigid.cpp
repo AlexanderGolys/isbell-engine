@@ -114,7 +114,7 @@ void RollingBody::roll(float dt) {
 }
 
 float RollingBody::rotationAngle(float d1, float d2) {
-	//	vec3 t2 = boundary.tangent(d2);
+	//	vec3 t2 = boundary.tangent(dd1);
 	float a = angle(boundary.tangent(d1), boundary.tangent(d2));
 	if (a < -100 || a > 260) return 0;
 	return a;

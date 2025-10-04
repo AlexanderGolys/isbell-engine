@@ -8,7 +8,6 @@ using namespace glm;
 
 inline bool fftInverseTest()
 {
-  try {
     bool passed = true;
     DiscreteRealFunction fn = DiscreteRealFunction(max(15-abs(X_R*X_R-16), -1), vec2(0, 7), 16);
     DiscreteComplexFunction fn_fft = fn.fft();
@@ -22,16 +21,12 @@ inline bool fftInverseTest()
     passed &= assertLess_UT((fn-fn_back).L2_norm(), 0.01);
 
     return passed;
-  }
-  catch (...) {
-    return false;
-  }
+
 }
 
 
 inline bool fftRealDomainSymmetryDFTTest()
 {
-  try {
 
   bool passed = true;
   auto fn = DiscreteRealFunction(X_R*X_R-1, vec2(0, 1), 16);
@@ -45,15 +40,11 @@ inline bool fftRealDomainSymmetryDFTTest()
   }
 
   return passed;
-  }
-  catch (...) {
-    return false;
-  }
+
 }
 
 inline bool paddingTest()
 {
-  try {
 
   bool passed = true;
   auto fn = DiscreteRealFunction(X_R*X_R-1, vec2(0, 1), 50);
@@ -72,29 +63,20 @@ inline bool paddingTest()
 
   return passed;
 }
-catch (...) {
-  return false;
-}
-}
 
 
 inline bool gaborTest()
 {
-  try {
 
   auto fn = DiscreteRealFunction(X_R*X_R-1, vec2(0, 1), 100);
   auto gab = DiscreteGaborTransform(10).transform(fn);
 
   return true;
-  }
-  catch (...) {
-    return false;
-  }
+
 }
 
 
 inline bool quaternionTest() {
-  try {
 
   bool passed = true;
   auto i = Quaternion::i();
@@ -109,27 +91,16 @@ inline bool quaternionTest() {
 
   return passed;
 }
-catch (...) {
-  return false;
-}
-}
 
 inline UnitTestResult discreteFuncTests__all()
 {
-  int passed = 0;
-  int all = 5;
+	UnitTestResult result;
+	result.runTest(fftInverseTest);
+	result.runTest(fftRealDomainSymmetryDFTTest);
+	result.runTest(paddingTest);
+	result.runTest(gaborTest);
+	result.runTest(quaternionTest);
 
-  if (fftInverseTest())
-    ++passed;
-  if (fftRealDomainSymmetryDFTTest())
-    ++passed;
-  if (paddingTest())
-    ++passed;
-  if (gaborTest())
-    ++passed;
-  if (quaternionTest())
-    ++passed;
-
-  return UnitTestResult(passed, all);
+	return result;
 
 }

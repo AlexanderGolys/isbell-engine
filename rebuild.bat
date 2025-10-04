@@ -1,2 +1,2 @@
 @echo off
-.\premake5 --scene=nonsense cmake
+.\premake\premake5 --scene=nonsense cmake
