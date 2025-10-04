@@ -96,6 +96,7 @@ namespace logging {
 	void log_info(const string& msg) {
 		log_info("%s", msg.c_str());
 	}
+
 	void log_error(const string& msg) {
 		log_error("%s", msg.c_str());
 	}

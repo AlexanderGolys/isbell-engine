@@ -28,6 +28,12 @@ inline string operator""s(const char* str) {
 	return string(str);
 }
 
+inline string operator""s(char str) {
+	return to_string(str);
+}
+
+
+
 
 inline string vecToString(vec2 v) {
 	return "(" + to_string(v.x) + ", " + to_string(v.y) + ")"; }

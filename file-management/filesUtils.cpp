@@ -7,6 +7,7 @@
 
 #include "configFiles.hpp"
 #include "exceptions.hpp"
+#include "logging.hpp"
 #include "metaUtils.hpp"
 #include "randomUtils.hpp"
 
@@ -15,22 +16,10 @@ using namespace glm;
 
 
 
-DirectoryEntry::DirectoryEntry(const string &p)
-: path(filesystem::absolute(Path(p))) {
-	if (p == "")
-		type = EMPTY_PATH;
-	else if (!filesystem::exists(p))
-		type = FILE_NOT_FOUND;
-	else {
-		auto st = filesystem::symlink_status(p);
-		if (st.type() == filesystem::file_type::symlink)
-			type = SYM_LINK;
-		else if (st.type() == filesystem::file_type::directory)
-			type = DIR;
-		else if (st.type() == filesystem::file_type::regular)
-			type = REG_FILE;
-		else type = UNRECOGNISED;
-	}
+DirectoryEntry::DirectoryEntry(const Path &p)
+: path(filesystem::absolute(p)) {
+	path = path.make_preferred();
+	DirectoryEntry::refresh();
 }
 
 DirectoryEntry::DirectoryEntry(const DirectoryEntry &other)
@@ -43,6 +32,7 @@ DirectoryEntry &DirectoryEntry::operator=(const DirectoryEntry &other) {
 	if (this == &other) return *this;
 	path = other.path;
 	type = other.type;
+	refresh();
 	return *this;
 }
 
@@ -50,15 +40,28 @@ DirectoryEntry &DirectoryEntry::operator=(DirectoryEntry &&other) noexcept {
 	if (this == &other) return *this;
 	path = std::move(other.path);
 	type = other.type;
+	refresh();
 	return *this;
 }
 
 string DirectoryEntry::getName() const {
+	if (type == EMPTY_PATH)
+		return "";
+
+	THROW_IF(not path.has_filename(), FileSystemError, "Path has no filename: " + path.string());
+
 	return path.filename().string();
 }
 
-DirectoryEntry::DirectoryEntry(const Path &p)
-: DirectoryEntry(p.string()) {}
+DirectoryEntry::DirectoryEntry(const string &p)
+: DirectoryEntry(Path(p)) {}
+
+DirectoryEntry::DirectoryEntry(): DirectoryEntry(filesystem::current_path()) {
+	try {
+		path = path.parent_path().parent_path().parent_path().parent_path();
+		DirectoryEntry::refresh();
+	} catch (...) {}
+}
 
 Path DirectoryEntry::getPath() const {
 	return path;
@@ -78,13 +81,13 @@ DirectoryEntry DirectoryEntry::copyTo(const Path &destination) {
 }
 
 void DirectoryEntry::moveTo(const Path &destination) {
-	filesystem::rename(path, destination);
-	path = destination;
+	filesystem::rename(path, destination / getName());
+	setPath(destination / getName());
 }
 
 void DirectoryEntry::rename(const string &newName) {
 	filesystem::rename(path, path.parent_path() / newName);
-	path = path.parent_path() / newName;
+	setPath(path.parent_path() / newName);
 }
 
 void DirectoryEntry::remove() {
@@ -93,16 +96,20 @@ void DirectoryEntry::remove() {
 }
 
 void DirectoryEntry::refresh() {
-	if (path == "")
+	if (path == Path())
 		type = EMPTY_PATH;
 	else if (!filesystem::exists(path))
 		type = FILE_NOT_FOUND;
 	else {
 		auto st = filesystem::symlink_status(path);
-		if (st.type() == filesystem::file_type::symlink) type = SYM_LINK;
-		else if (st.type() == filesystem::file_type::directory) type = DIR;
-		else if (st.type() == filesystem::file_type::regular) type = REG_FILE;
-		else type = UNRECOGNISED;
+		if (st.type() == filesystem::file_type::symlink)
+			type = SYM_LINK;
+		else if (st.type() == filesystem::file_type::directory)
+			type = DIR;
+		else if (st.type() == filesystem::file_type::regular)
+			type = REG_FILE;
+		else
+			type = UNRECOGNISED;
 	}
 }
 
@@ -128,12 +135,43 @@ bool DirectoryEntry::hasParent() const {
 	return path.has_parent_path();
 }
 
+void DirectoryEntry::setPath(const Path &newPath) {
+	path = newPath;
+	path = filesystem::absolute(path).make_preferred();
+	refresh();
+}
+
 bool DirectoryEntry::isFile() const {
 	return type == REG_FILE or type == SYM_LINK;
 }
 
 bool DirectoryEntry::isDirectory() const {
 	return type == DIR;
+}
+
+DirectoryEntry DirectoryEntry::operator/(const string &subpath) const {
+	return DirectoryEntry(path / subpath);
+}
+
+DirectoryEntry DirectoryEntry::operator/(const char* subpath) const {
+	return DirectoryEntry(path / string(subpath));
+}
+
+DirectoryEntry& DirectoryEntry::operator/=(const string &subpath) {
+	return operator/=(Path(subpath));
+
+}
+
+DirectoryEntry& DirectoryEntry::operator/=(const Path &subpath) {
+	setPath(path / subpath);
+	return *this;}
+
+DirectoryEntry& DirectoryEntry::operator/=(const char *subpath) {
+	return operator/=(Path(subpath));
+}
+
+DirectoryEntry DirectoryEntry::operator/(const Path &subpath) const {
+	return DirectoryEntry(path / subpath);
 }
 
 filesystem::directory_entry DirectoryEntry::getStdDirectoryEntry() const {
@@ -244,14 +282,56 @@ bool isValidFilenameCharacter(char c) {
 	return false;
 }
 
+DirectoryDescriptor DirectoryDescriptor::operator/(const string &subpath) const {
+	return DirectoryDescriptor(path / subpath);
+}
+
+DirectoryDescriptor DirectoryDescriptor::operator/(const Path &subpath) const {
+	return DirectoryDescriptor(path / subpath);
+}
+
+DirectoryDescriptor DirectoryDescriptor::operator/(const char *subpath) const {
+	return *this / string(subpath);
+}
+
+DirectoryDescriptor & DirectoryDescriptor::operator/=(const Path &subpath) {
+	setPath(path / subpath);
+	return *this;
+}
+
+DirectoryDescriptor & DirectoryDescriptor::operator/=(const string &subpath) {
+	return *this /= Path(subpath);
+}
+
+DirectoryDescriptor & DirectoryDescriptor::operator/=(const char *subpath) {
+	return *this /= string(subpath);
+}
+
+FileDescriptor DirectoryDescriptor::operator+(const Path &subpath) const {
+	return FileDescriptor(*this / subpath);
+}
+
+FileDescriptor DirectoryDescriptor::operator+(const string &subpath) const {
+	return *this + Path(subpath);
+}
+
+FileDescriptor DirectoryDescriptor::operator+(const char *subpath) const {
+	return *this + string(subpath);
+}
 
 
-bool DirectoryDescriptor::FileIterator::_points_to_file() const {
-	return it->is_regular_file() or it->is_symlink();
+
+bool DirectoryDescriptor::FileIterator::_points_wrong_thing() const {
+	return not isEnd() and not (it->is_regular_file() or it->is_symlink());
 }
 
 void DirectoryDescriptor::FileIterator::_make_end_independent() {
 	it = filesystem::end(filesystem::directory_iterator());
+}
+
+void DirectoryDescriptor::FileIterator::_end_check() {
+	if (isEnd())
+		_make_end_independent();
 }
 
 bool DirectoryDescriptor::FileIterator::isEnd() const {
@@ -260,21 +340,22 @@ bool DirectoryDescriptor::FileIterator::isEnd() const {
 
 DirectoryDescriptor::FileIterator::FileIterator(const DirectoryDescriptor &dir)
 : it(dir.getPath()) {
-	while (it != filesystem::end(it) and !_points_to_file())
+	while (_points_wrong_thing())
 		++it;
+	_end_check();
 }
 
 DirectoryDescriptor::FileIterator::FileIterator()
-: it(std::filesystem::end(std::filesystem::directory_iterator())) {}
+: it(filesystem::end(filesystem::directory_iterator())) {}
 
 DirectoryDescriptor::FileIterator & DirectoryDescriptor::FileIterator::operator++() {
-	if (isEnd())
-		return *this;
-	while (++it != filesystem::end(it) and !_points_to_file()) {}
-	if (isEnd())
-		_make_end_independent();
+	THROW_IF(isEnd(), IteratorEndIncrementError);
+	do ++it; while (_points_wrong_thing());
+	_end_check();
 	return *this;
 }
+
+void DirectoryDescriptor::FileIterator::inc() { operator++(); }
 
 FileDescriptor DirectoryDescriptor::FileIterator::operator*() const {
 	THROW_IF(isEnd(), IteratorEndReferenceError, "Dereferencing end iterator");
@@ -282,6 +363,8 @@ FileDescriptor DirectoryDescriptor::FileIterator::operator*() const {
 }
 
 bool DirectoryDescriptor::FileIterator::operator!=(const FileIterator &other) const {
+	if (isEnd() and other.isEnd())
+		return false;
 	return it != other.it;
 }
 
@@ -289,16 +372,21 @@ DirectoryDescriptor::FileIterator DirectoryDescriptor::beginFiles() const {
 	return FileIterator(*this);
 }
 
-DirectoryDescriptor::FileIterator DirectoryDescriptor::EndFiles() const {
+DirectoryDescriptor::FileIterator DirectoryDescriptor::endFiles() const {
 	return FileIterator();
 }
 
-bool DirectoryDescriptor::SubdirectoryIterator::_points_to_dir() const {
-	return it->is_directory();
+bool DirectoryDescriptor::SubdirectoryIterator::_points_wrong_thing() const {
+	return not isEnd() and not it->is_directory();
 }
 
 void DirectoryDescriptor::SubdirectoryIterator::_make_end_independent() {
 	it = filesystem::end(filesystem::directory_iterator());
+}
+
+void DirectoryDescriptor::SubdirectoryIterator::_end_check() {
+	if (isEnd())
+		_make_end_independent();
 }
 
 bool DirectoryDescriptor::SubdirectoryIterator::isEnd() const {
@@ -306,33 +394,33 @@ bool DirectoryDescriptor::SubdirectoryIterator::isEnd() const {
 }
 
 DirectoryDescriptor::SubdirectoryIterator::SubdirectoryIterator(const DirectoryDescriptor &dir)
-: it(dir.getPath()) {
-	while (it != filesystem::end(it) and !_points_to_dir())
+: it(dir.getPath())
+{
+	while (_points_wrong_thing())
 		++it;
-	if (isEnd())
-		_make_end_independent();
+	_end_check();
 }
 
 DirectoryDescriptor::SubdirectoryIterator::SubdirectoryIterator()
-: it(std::filesystem::end(std::filesystem::directory_iterator())) {}
+: it(filesystem::end(filesystem::directory_iterator())) {}
 
-DirectoryDescriptor::SubdirectoryIterator & DirectoryDescriptor::SubdirectoryIterator::operator++() {
-	while (++it != filesystem::end(it) and !_points_to_dir()) {}
-	if (it == filesystem::end(it))
-		_make_end_independent();
+DirectoryDescriptor::SubdirectoryIterator& DirectoryDescriptor::SubdirectoryIterator::operator++() {
+	THROW_IF(isEnd(), IteratorEndIncrementError);
+	++it;
+	while (_points_wrong_thing())
+		++it;
+	_end_check();
 	return *this;
 }
 
 DirectoryDescriptor DirectoryDescriptor::SubdirectoryIterator::operator*() const {
+	THROW_IF(isEnd(), IteratorEndReferenceError);
 	return DirectoryDescriptor(*it);
 }
 
-DirectoryDescriptor::SubdirectoryIterator & DirectoryDescriptor::SubdirectoryIterator::reset() {
-	it = filesystem::begin(it);
-	return *this;
+void DirectoryDescriptor::SubdirectoryIterator::inc() {
+	operator++();
 }
-
-void DirectoryDescriptor::SubdirectoryIterator::inc() { ++it; }
 
 
 bool DirectoryDescriptor::SubdirectoryIterator::operator!=(const SubdirectoryIterator &other) const {
@@ -347,85 +435,102 @@ DirectoryDescriptor::SubdirectoryIterator DirectoryDescriptor::endDir() const {
 	return SubdirectoryIterator();
 }
 
+
+
+
 void DirectoryDescriptor::RecursiveSubdirectoryIterator::_make_new_child() {
+	THROW_IF(isEnd(), IteratorEndReferenceError, "Creating new child from end iterator");
 	child = make_shared<RecursiveSubdirectoryIterator>(*it);
 }
 
-void DirectoryDescriptor::RecursiveSubdirectoryIterator::_inc_child() {
-	THROW_IF(child == nullptr, IteratorError, "Child not set, nullptr cannot be increased");
-	child->inc();
-}
 
-void DirectoryDescriptor::RecursiveSubdirectoryIterator::_inc_it() {
-	THROW_IF(it.isEnd(), IteratorEndIncrementError, "Incrementing terminal iterator is not allowed");
-	++it;
-}
-
-
-DirectoryDescriptor::RecursiveSubdirectoryIterator::RecursiveSubdirectoryIterator(const DirectoryDescriptor &dir): it(dir), child(nullptr) {}
+DirectoryDescriptor::RecursiveSubdirectoryIterator::RecursiveSubdirectoryIterator(const DirectoryDescriptor &dir)
+: it(dir), child(nullptr) {}
 
 DirectoryDescriptor::RecursiveSubdirectoryIterator & DirectoryDescriptor::RecursiveSubdirectoryIterator::operator++() {
 	THROW_IF(isEnd(), IteratorEndIncrementError, "Incrementing terminal iterator is not allowed");
 
-	if (pointingToSelf())
+	if (child == nullptr)
 		_make_new_child();
 
-	else if (not childEnded())
-		_inc_child();
+	else if (not child->isEnd())
+		child->inc();
 
-	if (childEnded() and not isEnd()) {
-		_inc_it();
-		_make_new_child();
+	if (child->isEnd()) {
+		++it;
+		child = nullptr;
 	}
-
 	return *this;
 }
 
-void DirectoryDescriptor::RecursiveSubdirectoryIterator::inc() { operator++(); }
+void DirectoryDescriptor::RecursiveSubdirectoryIterator::inc() {
+	operator++();
+}
 
 DirectoryDescriptor DirectoryDescriptor::RecursiveSubdirectoryIterator::operator*() const {
 	THROW_IF(isEnd(), IteratorEndReferenceError);
-	if (pointingToSelf())
+	if (child == nullptr)
 		return *it;
+	THROW_IF(child->isEnd(), IteratorEndReferenceError, "Child iterator is at end");
 	return **child;
 }
 
 bool DirectoryDescriptor::RecursiveSubdirectoryIterator::operator!=(const RecursiveSubdirectoryIterator &other) const {
-	if (pointingToSelf() != other.pointingToSelf() or it != other.it)
+	if (child == nullptr and other.child == nullptr)
+		return it != other.it;
+	if (child == nullptr xor other.child == nullptr)
 		return true;
-	if (pointingToSelf())
-		return false;
-	return *child != *(other.child);
+	return *child != *other.child or it != other.it;
 }
 
 bool DirectoryDescriptor::RecursiveSubdirectoryIterator::isEnd() const {
-	return it.isEnd() and childEnded();
+	return it.isEnd();
 }
 
-bool DirectoryDescriptor::RecursiveSubdirectoryIterator::pointingToSelf() const {
-	return child == nullptr;
+
+
+
+
+DirectoryDescriptor::RecursiveSubdirectoryIterator DirectoryDescriptor::beginRecursiveDir() const {
+	return RecursiveSubdirectoryIterator(*this);
 }
 
-bool DirectoryDescriptor::RecursiveSubdirectoryIterator::childEnded() const {
-	return not pointingToSelf() and child->isEnd();
+DirectoryDescriptor::RecursiveSubdirectoryIterator DirectoryDescriptor::endRecursiveDir() const {
+	return RecursiveSubdirectoryIterator();
 }
 
-DirectoryDescriptor::RecursiveSubdirectoryIterator DirectoryDescriptor::beginRecursiveDir() const { return RecursiveSubdirectoryIterator(*this); }
+void DirectoryDescriptor::RecursiveFileIterator::_next_dir() {
+	THROW_IF(dir_it.isEnd(), IteratorEndIncrementError, "No more directories to iterate");
 
-DirectoryDescriptor::RecursiveSubdirectoryIterator DirectoryDescriptor::endRecursiveDir() const { return RecursiveSubdirectoryIterator(); }
+	if (rootDirIter)
+		rootDirIter = false;
+	else
+		++dir_it;
 
-DirectoryDescriptor::RecursiveFileIterator::RecursiveFileIterator(const DirectoryDescriptor &dir): dir_it(dir), file_it(dir) {
-	while (not dir_it.isEnd() and file_it.isEnd())
-		if (not (++dir_it).isEnd())
-			file_it = FileIterator(*dir_it);
+	if (dir_it.isEnd()) {
+		file_it = FileIterator();
+		return;
+	}
+
+	file_it = FileIterator(*dir_it);
+
+	if (file_it.isEnd())
+		_next_dir();
+
 }
 
-DirectoryDescriptor::RecursiveFileIterator & DirectoryDescriptor::RecursiveFileIterator::operator++() {
+DirectoryDescriptor::RecursiveFileIterator::RecursiveFileIterator(const DirectoryDescriptor &dir)
+: dir_it(dir), file_it(dir), rootDirIter(true)
+{
+	if (file_it.isEnd() and not dir_it.isEnd())
+		_next_dir();
+}
+
+DirectoryDescriptor::RecursiveFileIterator& DirectoryDescriptor::RecursiveFileIterator::operator++() {
 	THROW_IF(isEnd(), IteratorEndIncrementError);
 	++file_it;
-	while (not dir_it.isEnd() and file_it.isEnd())
-		if (not (++dir_it).isEnd())
-			file_it = FileIterator(*dir_it);
+	if (file_it.isEnd() and not dir_it.isEnd())
+		_next_dir();
 	return *this;
 }
 
@@ -435,11 +540,11 @@ FileDescriptor DirectoryDescriptor::RecursiveFileIterator::operator*() const {
 }
 
 bool DirectoryDescriptor::RecursiveFileIterator::operator!=(const RecursiveFileIterator &other) const {
-	return dir_it != other.dir_it or file_it != other.file_it;
+	return file_it != other.file_it or dir_it != other.dir_it;
 }
 
 bool DirectoryDescriptor::RecursiveFileIterator::isEnd() const {
-	return file_it.isEnd();
+	return dir_it.isEnd() and file_it.isEnd();
 }
 
 DirectoryDescriptor::RecursiveFileIterator DirectoryDescriptor::beginRecursiveFiles() const {
@@ -459,7 +564,9 @@ DirectoryDescriptor::RecursiveFileIterator DirectoryDescriptor::end() const {
 }
 
 size_t DirectoryDescriptor::getSize() const {
-	return std::accumulate(begin(), end(), size_t(0), [](size_t sum, const FileDescriptor &f) { return sum + f.getSize(); });
+	return std::accumulate(begin(), end(), size_t(0), [](size_t sum, const FileDescriptor &f){
+		return sum + f.getSize();
+	});
 }
 
 
@@ -473,15 +580,18 @@ bool isValidFilename(const string &filename) {
 	bool contains_sth_after_dot = false;
 
 	for (char c: filename) {
-		if (!isValidFilenameCharacter(c)) return false;
-
-		if (contains_dot) contains_sth_after_dot = true;
-
-		if (c == '.') contains_dot = true;
+		if (!isValidFilenameCharacter(c))
+			return false;
+		if (contains_dot)
+			contains_sth_after_dot = true;
+		if (c == '.')
+			contains_dot = true;
 	}
 
 	return contains_sth_after_dot;
 }
+FileDescriptor::FileDescriptor(const Path &filePath)
+: FileDescriptor(DirectoryEntry(filePath)) {}
 
 FileDescriptor::FileDescriptor(const DirectoryEntry &filePath)
 : DirectoryEntry(filePath), bytesize(0) {
@@ -489,6 +599,9 @@ FileDescriptor::FileDescriptor(const DirectoryEntry &filePath)
 		bytesize = filesystem::file_size(path);
 	else if (type != FILE_NOT_FOUND)
 		THROW(FileSystemError, "Invalid file type");
+	// if (not DirectoryEntry::exists())
+	// 	THROW(FileNotFoundError, getPath().string());
+
 }
 
 DirectoryEntry FileDescriptor::copyTo(const Path &destination) {
@@ -501,9 +614,11 @@ DirectoryEntry FileDescriptor::copyTo(const Path &destination) {
 	return copied;
 }
 
-FileDescriptor::FileDescriptor(const string &path) : FileDescriptor(DirectoryEntry(path)) {}
+FileDescriptor::FileDescriptor(const string &path)
+: FileDescriptor(DirectoryEntry(path)) {}
 
-FileDescriptor::FileDescriptor(const char *path) : FileDescriptor(string(path)) {}
+FileDescriptor::FileDescriptor(const char *path)
+: FileDescriptor(string(path)) {}
 
 void *FileDescriptor::getAddress() {
 	if (address == nullptr)
@@ -517,21 +632,9 @@ FileDescriptor &FileDescriptor::operator=(const FileDescriptor &other) {
 		closeFile();
 		path = other.path;
 		bytesize = other.bytesize;
-		address = nullptr;
-		fileHandle = nullptr;
-		mappingHandle = nullptr;
-	}
-	return *this;
-}
-
-FileDescriptor &FileDescriptor::operator=(FileDescriptor &&other) noexcept {
-	if (this != &other) {
-		closeFile();
-		path = std::move(other.path);
-		bytesize = other.bytesize;
-		address = nullptr;
-		fileHandle = nullptr;
-		mappingHandle = nullptr;
+		refresh();
+		if (other.isMapped())
+			mapFile();
 	}
 	return *this;
 }
