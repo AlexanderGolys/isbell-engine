@@ -44,15 +44,7 @@ void printVector(vector<T> v, string title="vector")
 }
 
 
-inline vector<string> split(const string &s, char delim) {
-	vector<string> res;
-	std::stringstream ss(s);
-	string item;
-	while (std::getline(ss, item, delim)) {
-		res.push_back(item);
-	}
-	return res;
-}
+
 
 inline vector<string> split(const string &s, const string &delim) {
 	vector<string> res;
@@ -65,4 +57,8 @@ inline vector<string> split(const string &s, const string &delim) {
 	}
 	res.push_back(s.substr(start, end));
 	return res;
+}
+
+inline vector<string> split(const string &s, char delim) {
+	return split(s, string(1, delim));
 }
