@@ -122,7 +122,7 @@ bool DirectoryEntry::operator==(const DirectoryEntry &other) const {
 }
 
 bool DirectoryEntry::operator<=(const DirectoryEntry &other) const {
-	return other.getPath().string().contains(getPath().string());
+	return getPath().string().contains(other.getPath().string());
 }
 
 string DirectoryEntry::to_str() const {
