@@ -121,6 +121,10 @@ bool DirectoryEntry::operator==(const DirectoryEntry &other) const {
 	return path == other.path;
 }
 
+bool DirectoryEntry::operator<=(const DirectoryEntry &other) const {
+	return other.getPath().string().contains(getPath().string());
+}
+
 string DirectoryEntry::to_str() const {
 	return path.string();
 }
