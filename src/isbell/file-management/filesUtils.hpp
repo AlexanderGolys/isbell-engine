@@ -45,6 +45,7 @@ public:
 	virtual size_t getSize() const;
 
 	bool operator==(const DirectoryEntry &other) const;
+	bool operator<=(const DirectoryEntry &other) const;
 	string to_str() const;
 	DirectoryDescriptor getParent() const;
 	bool hasParent() const;
@@ -60,6 +61,7 @@ public:
 	DirectoryEntry& operator/=(const string &subpath);
 	DirectoryEntry& operator/=(const Path &subpath);
 	DirectoryEntry& operator/=(const char* subpath);
+
 
 	filesystem::directory_entry getStdDirectoryEntry() const;
 	filesystem::file_status getStdFileStatus() const;
