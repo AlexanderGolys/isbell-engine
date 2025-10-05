@@ -659,42 +659,31 @@ string CodeFileDescriptor::extension() const {
 }
 
 string CodeFileDescriptor::getCode() {
-	std::ifstream shaderStream(getPath().string(), std::ios::in);
-	if (shaderStream.is_open()) {
-		string code;
-		std::stringstream sstr;
-		sstr << shaderStream.rdbuf();
-		code = sstr.str();
-		shaderStream.close();
-		return code;
-	}
-
-	THROW(FileNotFoundError, getPath().string());
+	return readCode();
 }
 
 string CodeFileDescriptor::readCode() const {
-	std::ifstream shaderStream(getPath().string(), std::ios::in);
-	if (shaderStream.is_open()) {
+	std::ifstream stream(getPath().string(), std::ios::in);
+	if (stream.is_open()) {
 		string code;
 		std::stringstream sstr;
-		sstr << shaderStream.rdbuf();
+		sstr << stream.rdbuf();
 		code = sstr.str();
-		shaderStream.close();
+		stream.close();
 		return code;
 	}
-
 	THROW(FileNotFoundError, getPath().string());
 }
 
 bool CodeFileDescriptor::exists() const {
-	return getPath().empty() ? false : filesystem::exists(getPath());
+	return filesystem::exists(getPath());
 }
 
 void CodeFileDescriptor::writeCode(const string &code) const {
-	std::ofstream shaderStream(getPath().string(), std::ios::out);
-	if (shaderStream.is_open()) {
-		shaderStream << code;
-		shaderStream.close();
+	std::ofstream stream(getPath().string(), std::ios::out);
+	if (stream.is_open()) {
+		stream << code;
+		stream.close();
 		return;
 	}
 
@@ -732,9 +721,11 @@ CodeFileDescriptor::CodeFileDescriptor(const string &filename, const string &dir
 CodeFileDescriptor::CodeFileDescriptor(const string &path, bool rootRelative)
 : CodeFileDescriptor(Path(path), rootRelative) {}
 
-CodeFileDescriptor::CodeFileDescriptor(const CodeFileDescriptor &other): file(other.file.getPath()) {}
+CodeFileDescriptor::CodeFileDescriptor(const CodeFileDescriptor &other)
+: file(other.file.getPath()) {}
 
-CodeFileDescriptor::CodeFileDescriptor(CodeFileDescriptor &&other) noexcept: file(std::move(other.file.getPath())) {}
+CodeFileDescriptor::CodeFileDescriptor(CodeFileDescriptor &&other) noexcept
+: file(std::move(other.file.getPath())) {}
 
 void CodeFileDescriptor::changeLine(const string &line, int lineNumber) {
 	std::ifstream file_stream(getPath().string());
