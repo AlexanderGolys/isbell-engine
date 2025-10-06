@@ -25,10 +25,10 @@ inline mat4 getMat(const buff4x4 &buff, int index) {
 
 
 struct Stds {
-	BUFF3 positions;
-	BUFF3 normals;
-	BUFF2 uvs;
-	BUFF4 colors;
+	vector<vec3> positions;
+	vector<vec3> normals;
+	vector<vec2> uvs;
+	vector<vec4> colors;
 };
 
 
@@ -69,12 +69,12 @@ const std::set DEFAULT_ACTIVE_BUFFERS = {POSITION, NORMAL, UV, COLOR, INDEX};
 
 class BufferManager {
 	unique_ptr<Stds> stds;
-	unique_ptr<BUFF4> extra0;
-	unique_ptr<BUFF4> extra1;
-	unique_ptr<BUFF4> extra2;
-	unique_ptr<BUFF4> extra3;
-	unique_ptr<BUFF4> extra4;
-	unique_ptr<IBUFF3> indices;
+	unique_ptr<vector<vec4>> extra0;
+	unique_ptr<vector<vec4>> extra1;
+	unique_ptr<vector<vec4>> extra2;
+	unique_ptr<vector<vec4>> extra3;
+	unique_ptr<vector<vec4>> extra4;
+	unique_ptr<vector<ivec3>> indices;
 	std::set<CommonBufferType> activeBuffers;
 	vector<string> extraBufferNames;
 	void insertValueToSingleBuffer(CommonBufferType type, void *valueAddress);
@@ -579,4 +579,41 @@ public:
 	FoliatedParametricSurfaceMesh(FoliatedParametricSurfaceMesh &&other) noexcept;
 	FoliatedParametricSurfaceMesh &operator=(const FoliatedParametricSurfaceMesh &other);
 	FoliatedParametricSurfaceMesh &operator=(FoliatedParametricSurfaceMesh &&other) noexcept;
+};
+
+
+template<typename VertexStruct>
+struct GeneralTriangle {
+	VertexStruct v0, v1, v2;
+	GeneralTriangle(VertexStruct v0, VertexStruct v1, VertexStruct v2) : v0(v0), v1(v1), v2(v2) {}
+	VertexStruct &operator[](int i) {
+		if (i == 0) return v0;
+		if (i == 1) return v1;
+		if (i == 2) return v2;
+		throw std::out_of_range("Index out of range in GeneralTriangle");
+	}
+	VertexStruct operator[](int i) const {
+		if (i == 0) return v0;
+		if (i == 1) return v1;
+		if (i == 2) return v2;
+		throw std::out_of_range("Index out of range in GeneralTriangle");
+	}
+};
+
+template<typename VertexStruct>
+struct GeneralIndexedMeshData {
+	vector<VertexStruct> vertices;
+	vector<ivec3> indices;
+
+	GeneralIndexedMeshData() : vertices() {}
+	GeneralIndexedMeshData(GeneralIndexedMeshData &other) = delete;
+	GeneralIndexedMeshData(const vector<VertexStruct> &vertices, const vector<ivec3> &indices) : vertices(vertices), indices(indices) {}
+};
+
+
+
+template<typename VertexStruct>
+class GeneralIndexedMesh {
+	unique_ptr<GeneralIndexedMeshData<VertexStruct>> data;
+
 };

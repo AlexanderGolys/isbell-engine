@@ -198,6 +198,7 @@ public:
 	Attribute(const string &name, GLSLType type, int inputNumber, CommonBufferType bufferType);
 	virtual ~Attribute();
 
+
 	virtual void initBuffer();
 	virtual void enable();
 	virtual void disable();
@@ -296,10 +297,9 @@ public:
 class Renderer {
 protected:
 	float last_time_capture = 0;
-	float since_last_scr = 0;
+	GLuint vao;
 
 	unique_ptr<Window> window;
-	GLuint vao;
 	vector<shared_ptr<RenderingStep>> renderingSteps;
 
 	shared_ptr<Camera> camera;
@@ -307,6 +307,7 @@ protected:
 
 	float time = 0;
     float dt = 0;
+
 	END(float) animSpeed;
 	std::function<void(float, float)> perFrameFunction;
 	RenderSettings settings;
