@@ -983,7 +983,7 @@ void BufferManager::insertDefaultValueToSingleBuffer(CommonBufferType type) {
 
 BufferManager::BufferManager(const BufferManager &other) :
     stds(std::make_unique<Stds>(*other.stds)),
-    extra0(std::make_unique<BUFF4>(*other.extra0)),
+    extra0(std::make_unique<vector<vec4>>(*other.extra0)),
 	extra1(std::make_unique<BUFF4>(*other.extra1)),
 	extra2(std::make_unique<BUFF4>(*other.extra2)),
 	extra3(std::make_unique<BUFF4>(*other.extra3)),
