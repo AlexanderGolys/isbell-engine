@@ -1,2 +1,2 @@
 #pragma once
-#include "../physics/generic.hpp"
+#include "generic.hpp"

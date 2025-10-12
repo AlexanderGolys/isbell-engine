@@ -7,7 +7,7 @@
 inline bool descriptorsTest() {
 	bool passed = true;
 	DirectoryDescriptor d = DirectoryDescriptor();
-	passed &= assertEqual_UT(d.getName(), "core");
+	passed &= assertEqual_UT(d.getName(), "isbell");
 	d /= "src/tests/test_dir/d1";
 	FileDescriptor f2 = d + "f2.txt";
 	return passed;
@@ -17,7 +17,6 @@ inline bool filesystemIteratorsTest()
 {
 	bool passed = true;
 	DirectoryDescriptor d = DirectoryDescriptor() / "src" / "tests" / "test_dir";
-
 	int files = 0;
 	int dirs = 0;
 	int rec_dirs = 0;

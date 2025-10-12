@@ -1,7 +1,7 @@
 #pragma once
 #include <cassert>
 
-#include "../utils/logging.hpp"
+#include "logging.hpp"
 
 template <typename T, typename... Args>
 bool assertEqual_UT_(const T& A0, const Args&... args) {
