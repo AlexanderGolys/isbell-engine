@@ -33,25 +33,22 @@ if selectedScene == "isbell" then error("Scene name 'isbell' is reserved.") end
 
 
 local inc = {
-    ".",
-    "src",
-    "src/isbell",
-    "src/isbell/utils",
-    "src/isbell/engine",
-    "src/isbell/engine/sdf-rendering",
-    "src/isbell/geometry",
-    "src/isbell/physics",
-    "src/isbell/file-management",
-    "src/isbell/openglAPI",
     "src/isbell/include",
+    "src/isbell/include/utils",
+    "src/isbell/include/engine",
+    "src/isbell/include/engine/sdf-rendering",
+    "src/isbell/include/geometry",
+    "src/isbell/include/physics",
+    "src/isbell/include/file-management",
+    "src/isbell/include/openglAPI",
+    "src/isbell/include/include",
 
-    "src/render-projects",
     "src/tests",
 
-    "./external/glew-2.1.0/include",
-    "./external/glfw-3.4/include",
-    "./external/glm-0.9.1.7",
-    "./external/spdlog-1.x/include",
+    ".external/glew-2.1.0/include",
+    ".external/glfw-3.4/include",
+    ".external/glm-0.9.1.7",
+    ".external/spdlog-1.x/include",
 }
 
 
