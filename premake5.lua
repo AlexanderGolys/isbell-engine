@@ -20,7 +20,7 @@ newoption {
     value = "SCENE_NAME",
     description = "Single .cpp file to build from src/render-projects"
 }
-local configFile = "config/build_config.json"
+local configFile = "config/build_config.lua"
 local config = dofile(configFile)
 if not config then error("Failed to read/parse config file: " .. configFile) end
 
@@ -45,10 +45,10 @@ local inc = {
 
     "src/tests",
 
-    ".external/glew-2.1.0/include",
-    ".external/glfw-3.4/include",
-    ".external/glm-0.9.1.7",
-    ".external/spdlog-1.x/include",
+    "external/glew-2.1.0/include",
+    "external/glfw-3.4/include",
+    "external/glm-0.9.1.7",
+    "external/spdlog-1.x/include",
 }
 
 
