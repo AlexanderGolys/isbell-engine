@@ -38,19 +38,20 @@ local inc = {
     "src/isbell",
     "src/isbell/utils",
     "src/isbell/engine",
+    "src/isbell/engine/sdf-rendering",
     "src/isbell/geometry",
     "src/isbell/physics",
     "src/isbell/file-management",
     "src/isbell/openglAPI",
     "src/isbell/include",
 
-    "src/render-projects/",
+    "src/render-projects",
     "src/tests",
 
-    "external/glew-2.1.0/include",
-    "external/glfw-3.4/include",
-    "external/glm-0.9.1.7",
-    "external/spdlog-1.x/include",
+    "./external/glew-2.1.0/include",
+    "./external/glfw-3.4/include",
+    "./external/glm-0.9.1.7",
+    "./external/spdlog-1.x/include",
 }
 
 
@@ -142,11 +143,10 @@ project "unitTests"
 
     links { "engine" }
 
-
     targetdir ("build/tests/bin/build-%{cfg.architecture}")
     objdir    ("build/tests/obj/build-%{cfg.architecture}")
 
-    files { "src/tests/runTests.cpp", "src/tests/**.hpp"}
+    files { "src/tests/runTests.cpp", "src/tests/**.cpp", "src/tests/**.hpp" }
 
     includedirs(inc)
 

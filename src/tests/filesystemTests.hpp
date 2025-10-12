@@ -1,7 +1,9 @@
 #pragma once
 #include "unittests.hpp"
 #include "isbell.hpp"
+#include "filesUtils.hpp"
 
+#include "../isbell/file-management/filesUtils.hpp"
 
 inline bool descriptorsTest() {
 	bool passed = true;

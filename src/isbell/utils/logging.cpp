@@ -29,6 +29,7 @@ namespace logging {
 	}
 
 	static spdlog::logger* get_logger(void* handle) {
+
 		auto logger_ = static_cast<spdlog::logger*>(handle);
 		logger_->set_pattern("[%H:%M:%S.%e] [%^E%$: %l] %s %v");
 		return logger_;
@@ -69,6 +70,8 @@ namespace logging {
 	}
 
 	void log_info(const char* fmt, ...) {
+		if (Logger::engine_logger == nullptr)
+			Logger::init();
 		char buf[1024];
 		va_list args;
 		va_start(args, fmt);
@@ -77,6 +80,8 @@ namespace logging {
 		get_logger(Logger::engine_logger)->info(buf);
 	}
 	void log_error(const char* fmt, ...) {
+		if (Logger::engine_logger == nullptr)
+			Logger::init();
 		char buf[1024];
 		va_list args;
 		va_start(args, fmt);
@@ -85,6 +90,8 @@ namespace logging {
 		get_logger(Logger::engine_logger)->error(buf);
 	}
 	void log_warn(const char* fmt, ...) {
+		if (Logger::engine_logger == nullptr)
+			Logger::init();
 		char buf[1024];
 		va_list args;
 		va_start(args, fmt);
@@ -104,6 +111,8 @@ namespace logging {
 		log_warn("%s", msg.c_str());
 	}
 	void log_test_ok(const char* fmt, ...) {
+		if (Logger::engine_logger == nullptr)
+			Logger::init();
 		char buf[1024];
 		va_list args;
 		va_start(args, fmt);
@@ -112,6 +121,8 @@ namespace logging {
 		get_test_logger(Logger::test_logger)->info(buf);
 	}
 	void log_test_fail(const char* fmt, ...) {
+		if (Logger::engine_logger == nullptr)
+			Logger::init();
 		char buf[1024];
 		va_list args;
 		va_start(args, fmt);
@@ -129,6 +140,8 @@ namespace logging {
 	}
 
 	void log_info_pure(const char* fmt, ...) {
+		if (Logger::engine_logger == nullptr)
+			Logger::init();
 		char buf[1024];
 		va_list args;
 		va_start(args, fmt);
@@ -137,6 +150,8 @@ namespace logging {
 		get_pure_logger(Logger::pure_logger)->info(buf);
 	}
 	void log_error_pure(const char* fmt, ...) {
+		if (Logger::engine_logger == nullptr)
+			Logger::init();
 		char buf[1024];
 		va_list args;
 		va_start(args, fmt);
@@ -145,6 +160,8 @@ namespace logging {
 		get_pure_logger(Logger::pure_logger)->error(buf);
 	}
 	void log_warn_pure(const char* fmt, ...) {
+		if (Logger::engine_logger == nullptr)
+			Logger::init();
 		char buf[1024];
 		va_list args;
 		va_start(args, fmt);

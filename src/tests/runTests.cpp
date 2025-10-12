@@ -4,8 +4,10 @@
 #include "experimentalTests.hpp"
 #include "filesystemTests.hpp"
 #include "quatGLSLModuleTests.hpp"
+#include "shaderParsingTests.hpp"
 
-#include "../utils/logging.hpp"
+
+#include "logging.hpp"
 
 int main()
   {
@@ -18,6 +20,7 @@ int main()
 	runTest("Experimental Tests", experimentalTests__all, total_result);
 	runTest("Filesystem Tests", filesystemTests__all, total_result);
 	runTest("Quaternion GLSL Module Tests", quatGLSLModuleTests__all, total_result);
+	runTest("Shader Parsing Tests", shaderParsingTests__all, total_result);
 	LOG_PURE("--------------------------------");
 	printTestResult("All Tests", total_result);
   }

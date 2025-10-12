@@ -98,11 +98,11 @@ public:
  * changing their states dynamically during animation without recompiling shader source code.
  */
 class ShaderMethodTemplateFromUniform : public ShaderMethodTemplate {
-	string arrayName;  //!< Name of the uniform array in GLSL code
-	int _firstIndex; //! index of first parameter in the array
-	vector<string> keys; //! Keys describing the parameters in a way meaningful from CPU side.
-	std::map<string, string> generateTemplateDict(); //! generating mapping of parameters to array elements.
-	string parameterInCodeStr(int i) const; //! GLSL code accessing i-th element of the array
+	string arrayName;
+	int _firstIndex;
+	vector<string> keys;
+	std::map<string, string> generateTemplateDict();
+	string parameterInCodeStr(int i) const;
 public:
 	ShaderMethodTemplateFromUniform(const string &returnType, const string &name, const string &arguments, const string &body, const string &returnCode, const vector<string> &keys={}, int firstIndex=0, const string &arrayName="params");
 	ShaderMethodTemplateFromUniform(const string &returnType, const string &name, const string &arguments, const string &returnCode);

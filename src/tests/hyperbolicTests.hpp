@@ -1,8 +1,7 @@
 #pragma once
-#include "../utils/func.hpp"
-#include <cassert>
+#include "func.hpp"
 #include "unittests.hpp"
-#include <iostream>
+
 
 using namespace glm;
 

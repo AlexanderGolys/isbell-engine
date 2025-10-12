@@ -21,7 +21,7 @@ struct GLSLPrimitiveType {
 	} type;
 
 	string typeName() const;
-	GLSLPrimitiveType(BuiltInType t) : type(t) {}
+	GLSLPrimitiveType(BuiltInType t);
 	bool operator==(const GLSLPrimitiveType &other) const;
 };
 
@@ -47,9 +47,10 @@ struct GLSLValidType
 {
     variant<shared_ptr<GLSLStruct>, GLSLParameterType> type;
 
-	GLSLValidType(shared_ptr<GLSLStruct> t) : type(t) {}
-	GLSLValidType(const GLSLParameterType &t) : type(t) {}
-	GLSLValidType(const GLSLPrimitiveType &t) : type(GLSLParameterType(t)) {}
+	GLSLValidType(shared_ptr<GLSLStruct> t);
+	GLSLValidType(const GLSLParameterType &t);
+	GLSLValidType(const GLSLPrimitiveType &t);
+	GLSLValidType(GLSLPrimitiveType::BuiltInType t);
 
 	string typeName() const;
 	bool isStruct() const;
@@ -59,6 +60,7 @@ struct GLSLValidType
 	bool operator==(const GLSLPrimitiveType &other) const;
 	bool operator==(const GLSLPrimitiveType::BuiltInType &other) const;
 
+	string declarationCode() const;
 };
 
 
@@ -74,57 +76,81 @@ struct GLSLStruct
     string declarationCode() const;
     string typeName() const;
 	bool operator==(const GLSLStruct &other) const;
+	GLSLValidType operator[](const string &memberName) const;
 };
 
 
 class SDFStateStruct : public GLSLStruct {
 public:
-	SDFStateStruct(const GLSLStruct &base);
+	SDFStateStruct(const GLSLValidType &base);
 };
 
-
-
-class GLSLFunction {
-public:
+class GLSLFunctionSignature {
 	string name;
 	GLSLValidType returnType;
 	vector<pair<GLSLValidType, string>> arguments;
+public:
+	GLSLFunctionSignature(const string &name, const GLSLValidType &returnType, const vector<pair<GLSLValidType, string>> &arguments);
+
+	GLSLValidType getReturnType() const;
+	string getName() const;
+	vector<pair<GLSLValidType, string>> getArguments() const;
+	vector<GLSLValidType> getArgumentTypes() const;
+	vector<string> getArgumentNames() const;
+	string generateDeclarationCode() const;
+
+	string generateCall(const vector<string> &argNames) const;
+};
+
+class GLSLFunction {
+public:
+	GLSLFunctionSignature signature;
 	string body;
 	string returnLine;
 
+	GLSLFunction(const GLSLFunctionSignature &signature, const string &body, const string &returnLine);
 	GLSLFunction(const string &name, const GLSLValidType &returnType, const vector<pair<GLSLValidType, string>> &arguments, const string &body, const string &returnLine);
 
 	string generateCode() const;
 	string getName() const;
-
+	GLSLValidType getReturnType() const;
+	vector<pair<GLSLValidType, string>> getArguments() const;
+	vector<GLSLValidType> getArgumentTypes() const;
+	vector<string> getArgumentNames() const;
 };
 
 
-struct SDFPrimitiveCentered {
-	GLSLStruct sdfParametersStatic;
-	GLSLFunction sdfFunction;
-	SDFPrimitiveCentered(const GLSLStruct &sdfParametersStatic, const GLSLFunction &sdfFunction);
+class SDFFunction : public GLSLFunction {
+public:
+	SDFFunction(const string &name, const string &body, const string &returnLine) ;
 };
 
+class SDFFunctionParameterised : public GLSLFunction {
+	GLSLValidType _parameterType;
+public:
+	SDFFunctionParameterised(const string &name, const GLSLValidType &parameters, const string &body, const string &returnLine);
 
-
-/*
- * This transforms SDF function using action of isometry group of R3 SE3 on itself.
- * Recall that every group action indiuces opposite side action after applying any contravariant functor, in particular on function space C(R3,R).
- * Similarly covariant functors induce same side actions, so paramedterised function spaces follow. As SDF is well behaved wrt isometries, this extends
- * for free the parameter space of the object we need to specify ourselves, e.g. now torus depends only on its 2 radii, not the center and rotation.
- *
- * The action of SE3 on R3 is implemented in quat.glsl module that need to be included in the shader code for this to work.
- */
-struct SDFPrimitive {
-	SDFStateStruct sdfState;
-	GLSLFunction sdfFunction;
-	SDFPrimitive(const SDFPrimitiveCentered &SDFDefaultPositioned);
+	SDFFunctionParameterised motionWrapper(const string &name) const;
+	SDFFunction addIsometriesAndSubstitute(const string &name, const string &stateStructName) const;
+	SDFFunction substituteParameters(const string &name, const string &paramStructName) const;
+	GLSLValidType getParameterType() const;
 };
-
 
 
 class SDFObj {
-	GLSLFunction sdf;
-	SDFStateStruct state;
+	SDFFunction sdfPure;
+	SE3 transform;
+
 };
+
+
+
+
+
+
+
+// class GLSLSmoothBinaryOperator : public GLSLFunction {
+// 	GLSLValidType _parameterType;
+// public:
+// 	GLSLSmoothBinaryOperator(const string &name, const GLSLValidType &parameters, const string &body, const string &returnLine);
+// };

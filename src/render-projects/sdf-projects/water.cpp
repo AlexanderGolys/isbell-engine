@@ -1,4 +1,4 @@
-#include "common/SDFRendering.hpp"
+#include "SDFRendering.hpp"
 
 using namespace glm;
 using std::vector, std::string, std::shared_ptr, std::unique_ptr, std::pair, std::make_unique, std::make_shared;

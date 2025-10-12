@@ -10,6 +10,126 @@ inline string removeWhitespace(const string &s) {
 	return res;
 }
 
+inline bool isIdentStart(char c) {
+	return (c == '_') || (c >= 'A' && c <= 'Z') || (c >= 'a' && c <= 'z');
+}
+
+
+inline bool isIdentChar(char c) {
+	return isIdentStart(c) || (c >= '0' && c <= '9');
+}
+
+
+inline string removeComments(const string &s) {
+	string out;
+	out.reserve(s.size());
+
+	bool inBlock = false;
+	bool inLine = false;
+	bool inString = false;
+
+	for (size_t i = 0; i < s.size(); ) {
+		char c = s[i];
+
+		if (inLine) {
+			if (c == '\n') {
+				inLine = false;
+				out += c;
+				i++;
+				continue;
+			}
+			i++;
+			continue;
+		}
+
+		if (inBlock) {
+			if (c == '*' && i + 1 < s.size() && s[i + 1] == '/') {
+				inBlock = false;
+				i += 2;
+				continue;
+			}
+			i++;
+			continue;
+		}
+
+		if (inString) {
+			if (c == '\\' && i + 1 < s.size()) {
+				out += s[i];
+				out += s[i + 1];
+				i += 2;
+				continue;
+			}
+			out += c;
+			if (c == '"')
+				inString = false;
+			i++;
+			continue;
+		}
+
+		if (c == '/' && i + 1 < s.size() && s[i + 1] == '/') {
+			inLine = true;
+			i += 2;
+			continue;
+		}
+		if (c == '/' && i + 1 < s.size() && s[i + 1] == '*') {
+			inBlock = true;
+			i += 2;
+			continue;
+		}
+		if (c == '"') {
+			inString = true;
+			out += c;
+			i++;
+			continue;
+		}
+
+		out += c;
+		i++;
+	}
+
+	return out;
+}
+
+
+inline string stripCurlyBlocks(const string &s) {
+	string out;
+	out.reserve(s.size());
+	int depth = 0;
+
+	for (size_t i = 0; i < s.size(); i++) {
+		char c = s[i];
+		if (c == '{') {
+			depth++;
+			out += ' ';
+			i++;
+			while (i < s.size() && depth > 0) {
+				if (s[i] == '{')
+					depth++;
+				else if (s[i] == '}')
+					depth--;
+				i++;
+			}
+			if (i > 0)
+				i--;
+			continue;
+		}
+		if (depth == 0)
+			out += c;
+	}
+
+	return out;
+}
+
+
+inline string trim(const string &line) {
+	size_t a = 0;
+	size_t b = line.size();
+	while (a < b && (line[a] == ' ' || line[a] == '\t' || line[a] == '\r'))
+		a++;
+	while (b > a && (line[b - 1] == ' ' || line[b - 1] == '\t' || line[b - 1] == '\r' || line[b - 1] == '\n'))
+		b--;
+	return line.substr(a, b - a);
+}
 
 
 
@@ -89,4 +209,13 @@ inline string remove(const string &s, const string &key) {
 
 inline string removeRecursive(const string &s, const string &key) {
 	return replaceRecursive(s, key, "");
+}
+
+inline string join(const string &delim, const vector<string> &parts) {
+	string res;
+	for (int i = 0; i < parts.size(); i++) {
+		res += parts[i];
+		if (i < parts.size() - 1) res += delim;
+	}
+	return res;
 }

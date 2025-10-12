@@ -22,6 +22,26 @@ string GLSLPrimitiveType::typeName() const {
 	}
 }
 
+GLSLPrimitiveType::GLSLPrimitiveType(BuiltInType t): type(t) {}
+
+GLSLValidType::GLSLValidType(shared_ptr<GLSLStruct> t): type(t) {}
+
+GLSLValidType::GLSLValidType(const GLSLParameterType &t): type(t) {}
+
+GLSLValidType::GLSLValidType(const GLSLPrimitiveType &t): type(GLSLParameterType(t)) {
+}
+
+GLSLValidType::GLSLValidType(GLSLPrimitiveType::BuiltInType t): type(GLSLParameterType(t)) {
+}
+
+SDFFunctionParameterised::SDFFunctionParameterised(const string &name, const GLSLValidType &parameters, const string &body, const string &returnLine):
+GLSLFunction(name, GLSLValidType(GLSLPrimitiveType::GLSL_FLOAT), { {parameters, "p"}, {GLSLValidType(GLSLPrimitiveType::GLSL_VEC3), "x"}}, body, returnLine),
+_parameterType(parameters) {}
+
+
+
+
+
 bool GLSLPrimitiveType::operator==(const GLSLPrimitiveType &other) const {
 	return type == other.type;
 }
@@ -38,6 +58,10 @@ string GLSLParameterType::typeName() const { return glslParameterTypeName(*this)
 
 bool GLSLParameterType::operator==(const GLSLParameterType &other) const {
 	return type.typeName() == other.type.typeName();
+}
+
+string glslPrimitiveTypeName(GLSLPrimitiveType t) {
+	return t.typeName();
 }
 
 string glslParameterTypeName(GLSLParameterType t) {
@@ -70,6 +94,12 @@ bool GLSLValidType::operator==(const GLSLPrimitiveType::BuiltInType &other) cons
 	return !isStruct() && other == get<GLSLParameterType>(type).type.type;
 }
 
+string GLSLValidType::declarationCode() const {
+	if (isStruct())
+		return get<shared_ptr<GLSLStruct>>(type)->declarationCode();
+	return "";
+}
+
 
 GLSLStruct::GLSLStruct(const string &name, const dict(string, GLSLValidType) &members): name(name), members(members) {}
 
@@ -89,6 +119,10 @@ bool GLSLStruct::operator==(const GLSLStruct &other) const {
 	return declarationCode() == other.declarationCode();
 }
 
+GLSLValidType GLSLStruct::operator[](const string &memberName) const {
+	return members.at(memberName);
+}
+
 string GLSLValidType::typeName() const {
 	if (holds_alternative<GLSLParameterType>(type))
 		return get<GLSLParameterType>(type).typeName();
@@ -99,42 +133,91 @@ bool GLSLValidType::isStruct() const {
 	return not holds_alternative<GLSLParameterType>(type);
 }
 
-GLSLFunction::GLSLFunction(const string &name, const GLSLValidType &returnType, const vector<pair<GLSLValidType, string>> &arguments, const string &body, const string &returnLine)
-: name(name), returnType(returnType), arguments(arguments), body(body), returnLine(returnLine) {}
+
+
+GLSLFunctionSignature::GLSLFunctionSignature(const string &name, const GLSLValidType &returnType, const vector<pair<GLSLValidType, string>> &arguments): name(name), returnType(returnType), arguments(arguments) {}
+
+GLSLValidType GLSLFunctionSignature::getReturnType() const { return returnType; }
+
+string GLSLFunctionSignature::getName() const { return name; }
+
+vector<pair<GLSLValidType, string>> GLSLFunctionSignature::getArguments() const { return arguments; }
+
+vector<GLSLValidType> GLSLFunctionSignature::getArgumentTypes() const {
+	return map<pair<GLSLValidType, string>, GLSLValidType>(arguments, [](const pair<GLSLValidType, string> &p) { return p.first; });
+}
+
+vector<string> GLSLFunctionSignature::getArgumentNames() const {
+	return map<pair<GLSLValidType, string>, string>(arguments, [](const pair<GLSLValidType, string> &p) { return p.second; });
+}
+
+string GLSLFunctionSignature::generateDeclarationCode() const {
+	return returnType.typeName() + " " + name + "(" + join(", ", map<pair<GLSLValidType, string>, string>(arguments, [](const pair<GLSLValidType, string> &p) { return p.first.typeName() + " " + p.second; })) + ")";
+}
+
+string GLSLFunctionSignature::generateCall(const vector<string> &argNames) const {
+	if (argNames.size() != arguments.size())
+		THROW(ValueError, "Number of arguments does not match in function call to " + name);
+	return name + "(" + join(", ", argNames) + ")";
+}
+
+GLSLFunction::GLSLFunction(const GLSLFunctionSignature &signature, const string &body, const string &returnLine): signature(signature), body(body), returnLine(returnLine) {}
+
+GLSLFunction::GLSLFunction(const string &name, const GLSLValidType &returnType, const vector<pair<GLSLValidType, string>> &arguments, const string &body, const string &returnLine): GLSLFunction(GLSLFunctionSignature(name, returnType, arguments), body, returnLine) {}
+
+string GLSLFunction::generateCode() const {
+	string code = signature.generateDeclarationCode() + "{\n";
+	code += body + "\n";
+	code += "\treturn " + returnLine + ";\n";
+	code += "}\n";
+	return replaceAll(code, "\n\n", "\n");
+}
 
 string GLSLFunction::getName() const {
-	return name;
+	return signature.getName();
 }
 
-
-
-
-SDFPrimitiveCentered::SDFPrimitiveCentered(const GLSLStruct &sdfParametersStatic, const GLSLFunction &sdfFunction)
-: sdfParametersStatic(sdfParametersStatic), sdfFunction(sdfFunction) {
-	if (sdfFunction.returnType != GLSLPrimitiveType::GLSL_FLOAT)
-		THROW(ValueError, "SDF function must return float.");
-	if (sdfFunction.arguments.size() != 2)
-		THROW(ValueError, "SDF function must take exactly two arguments: a vec3 point and a struct of parameters.");
-	if (sdfFunction.arguments.at(0).second != "param")
-		THROW(ValueError, "Fi.at(0) argument of SDF function must be a parameter struct named 'param'.");
-	if (sdfFunction.arguments.at(1).first != GLSLPrimitiveType::GLSL_VEC3 || sdfFunction.arguments[1].second != "x")
-		THROW(ValueError, "Second argument of SDF function must be the position vector (vec3) named x");
+GLSLValidType GLSLFunction::getReturnType() const {
+	return signature.getReturnType();
 }
 
-SDFStateStruct::SDFStateStruct(const GLSLStruct &base):
-GLSLStruct("State_" + base.name,
+vector<pair<GLSLValidType, string>> GLSLFunction::getArguments() const {
+	return signature.getArguments();
+}
+
+vector<GLSLValidType> GLSLFunction::getArgumentTypes() const {
+	return signature.getArgumentTypes();
+}
+
+vector<string> GLSLFunction::getArgumentNames() const {
+	return signature.getArgumentNames();
+}
+
+SDFFunctionParameterised SDFFunctionParameterised::motionWrapper(const string &name) const {
+	return SDFFunctionParameterised(name, GLSLValidType(make_shared<SDFStateStruct>(_parameterType)), "", this->signature.generateCall({"p.params", "act_SE3(inv_SE3(p.g), x)"}));
+}
+
+SDFFunction SDFFunctionParameterised::addIsometriesAndSubstitute(const string &name, const string &stateStructName) const {
+	return SDFFunction(name, "", this->signature.generateCall({stateStructName + ".params", "act_SE3(inv_SE3(" + stateStructName + ".g), x)"}));
+}
+
+SDFFunction SDFFunctionParameterised::substituteParameters(const string &name, const string &paramStructName) const {
+	return SDFFunction(name, "", this->signature.generateCall({paramStructName, "x"}));
+}
+
+GLSLValidType SDFFunctionParameterised::getParameterType() const {
+	return _parameterType;
+}
+
+SDFFunction::SDFFunction(const string &name, const string &body, const string &returnLine)
+: GLSLFunction(name, GLSLValidType(GLSLPrimitiveType::GLSL_FLOAT), { {GLSLValidType(GLSLPrimitiveType::GLSL_VEC3), "x"} }, body, returnLine) {}
+
+
+
+
+SDFStateStruct::SDFStateStruct(const GLSLValidType &base):
+GLSLStruct("State_" + base.typeName(),
 			dict(string, GLSLValidType){
-				{"transform", GLSLValidType(GLSLParameterType(GLSLPrimitiveType::SE3_STRUCT))},
-				{"params", GLSLValidType(make_shared<GLSLStruct>(base))}
+				{"g", GLSLValidType(GLSLPrimitiveType::SE3_STRUCT)},
+				{"params", base}
 			}) {}
-
-
-SDFPrimitive::SDFPrimitive(const SDFPrimitiveCentered &SDFDefaultPositioned)
-: sdfState(SDFDefaultPositioned.sdfParametersStatic), sdfFunction(SDFDefaultPositioned.sdfFunction)
-{
-	sdfFunction.arguments[0].second += "__";
-	sdfFunction.arguments[1].second += "__";
-	auto param_struct_name = SDFDefaultPositioned.sdfParametersStatic.name;
-
-	sdfFunction.body = "SE3 g = param__.transform;\n " + param_struct_name + " param = param__.params;\n" + "vec3 x = act_SE3(inv_SE3(g), x__);\n" + sdfFunction.body;
-}
