@@ -12,7 +12,7 @@ CMakeLists.txt
 CMakeSettings.json
 Makefile
 .idea
-src/isbell/shaders/auto-generated-shaders/**
+src/core/shaders/auto-generated-shaders/**
 .clang-format
 .clang-tidy
 /docs/

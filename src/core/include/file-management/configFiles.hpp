@@ -2,7 +2,7 @@
 #include "filesUtils.hpp"
 #include "metaUtils.hpp"
 
-#define DEFAULT_CONFIG_PATH "../../../config.json"
+#define DEFAULT_CONFIG_PATH "../../../../config.json"
 
 class JSONParser : public CodeFileDescriptor {
 	using CodeFileDescriptor::CodeFileDescriptor;

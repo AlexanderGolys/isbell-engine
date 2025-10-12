@@ -5,7 +5,7 @@
 
 inline UnitTestResult shaderParsingTests__all() {
 	UnitTestResult res;
-	ShaderFunctionModule mod(Path("../../../../src/isbell/shaders/glsl-macro-modules/lightTools.glsl"), "lightTools");
+	ShaderFunctionModule mod(Path("../../../../src/core/shaders/glsl-macro-modules/lightTools.glsl"), "lightTools");
 
 	res.runTest([&]() {
 		return assertTrue_UT_(mod.containsFunction("parsePointLight"));

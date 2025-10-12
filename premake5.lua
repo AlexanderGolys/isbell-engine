@@ -29,46 +29,44 @@ local project_dirs = config.projects_dir or "src/render-projects"
 
 local selectedScene = _OPTIONS["scene"]
 if selectedScene == "tests" then error("Scene name 'tests' is reserved.") end
-if selectedScene == "isbell" then error("Scene name 'isbell' is reserved.") end
+if selectedScene == "core" then error("Scene name 'core' is reserved.") end
 
 
 local inc = {
-    "src/isbell/include",
-    "src/isbell/include/utils",
-    "src/isbell/include/engine",
-    "src/isbell/include/engine/sdf-rendering",
-    "src/isbell/include/geometry",
-    "src/isbell/include/physics",
-    "src/isbell/include/file-management",
-    "src/isbell/include/openglAPI",
-    "src/isbell/include/include",
-
-    "src/tests",
+    ".",
+    "src/core/include",
+    "src/core/include/utils",
+    "src/core/include/engine",
+    "src/core/include/engine/sdf-rendering",
+    "src/core/include/geometry",
+    "src/core/include/physics",
+    "src/core/include/file-management",
+    "src/core/include/openglAPI",
 
     "external/glew-2.1.0/include",
     "external/glfw-3.4/include",
-    "external/glm-0.9.1.7",
+    "external/glm-0.9.7.1",
     "external/spdlog-1.x/include",
 }
 
 
 project "engine"
-    location "build/isbell"
+    location "build/core"
     kind "StaticLib"
     language "C++"
     cppdialect(dialect)
     staticruntime "off"
-    targetdir ("build/isbell/%{cfg.architecture}/bin")
-    objdir    ("build/isbell/%{cfg.architecture}/obj")
+    targetdir ("build/core/%{cfg.architecture}/bin")
+    objdir    ("build/core/%{cfg.architecture}/obj")
 
     files {
-        "src/isbell/**.hpp",
-        "src/isbell/**.cpp",
+        "src/core/**.hpp",
+        "src/core/**.cpp",
         "external/glew-2.1.0/src/glew.c",
         "external/glfw-3.4/src/**.c",
-        "external/glm-0.9.7.1/glm/**.hpp",
+        "external/glm-0.9.7.1/**.hpp",
     }
-    removefiles { "src/isbell/**_dep.**" }
+    removefiles { "src/core/**_dep.**" }
 
     includedirs(inc)
 
