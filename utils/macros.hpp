@@ -30,7 +30,7 @@ using std::vector, std::variant, std::optional, std::array, std::unordered_map, 
 using std::shared_ptr, std::unique_ptr, std::make_unique, std::make_shared, std::weak_ptr;
 using std::string, std::endl, std::format, std::to_string, std::cout, std::printf;
 using std::expected, std::unexpected, std::bad_expected_access;
-
+using std::exp, std::log, std::cos, std::sin, std::cosh, std::sinh, std::sqrt, std::pow, std::atan2, std::abs;
 namespace filesystem = std::filesystem;
 
 constexpr float PI = 3.14159265359f;

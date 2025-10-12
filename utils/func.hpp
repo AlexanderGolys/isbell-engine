@@ -8,7 +8,7 @@
 #include <utility>
 #include <variant>
 
-#include "file-management/filesUtils.hpp"
+// #include "file-management/filesUtils.hpp"
 #include "mat.hpp"
 #include "randomUtils.hpp"
 
@@ -1225,7 +1225,6 @@ public:
 };
 
 
-DiscreteRealFunction loadSequence(const CodeFileDescriptor &file, vec2 domain);
 
 inline float clamp(float x, float a=0, float b=1) { return std::max(a, std::min(b, x));}
 

@@ -7,6 +7,7 @@
 
 #include "configFiles.hpp"
 #include "exceptions.hpp"
+#include "func.hpp"
 #include "logging.hpp"
 #include "metaUtils.hpp"
 #include "randomUtils.hpp"
@@ -594,8 +595,8 @@ bool isValidFilename(const string &filename) {
 
 	return contains_sth_after_dot;
 }
-FileDescriptor::FileDescriptor(const Path &filePath)
-: FileDescriptor(DirectoryEntry(filePath)) {}
+FileDescriptor::FileDescriptor(const Path &path)
+: FileDescriptor(DirectoryEntry(path)) {}
 
 FileDescriptor::FileDescriptor(const DirectoryEntry &filePath)
 : DirectoryEntry(filePath), bytesize(0) {
@@ -680,6 +681,11 @@ bool CodeFileDescriptor::exists() const {
 }
 
 void CodeFileDescriptor::writeCode(const string &code) const {
+	if (!exists()) {
+		DirectoryDescriptor dir = getDirectory();
+		if (!dir.exists())
+			filesystem::create_directories(dir.getPath());
+	}
 	std::ofstream stream(getPath().string(), std::ios::out);
 	if (stream.is_open()) {
 		stream << code;
@@ -793,3 +799,5 @@ string CodeFileDescriptor::getFilename() const {
 Path CodeFileDescriptor::getDirectory() const {
 	return file.getPath().parent_path();
 }
+
+DiscreteRealFunction loadSequence(const CodeFileDescriptor &file, vec2 domain);

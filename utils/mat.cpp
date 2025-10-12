@@ -10,7 +10,6 @@
 
 
 using namespace glm;
-using std::vector, std::string, std::set, std::array, std::pair, std::exp, std::log, std::cos, std::sin, std::cosh, std::sinh, std::sqrt, std::pow, std::atan2, std::abs;
 
 
 FloatMatrix::operator tvec2<float>() {
@@ -411,9 +410,9 @@ Quaternion Quaternion::pow(int p) const {
 }
 
 vec3 Quaternion::rotate(vec3 im_x) const {
-	auto q = normalise();
+	auto qt = normalise();
 	auto x = Quaternion(im_x);
-	return (q * x * q.conj()).im();
+	return (qt * x * qt.conj()).im();
 }
 
 std::function<vec3(vec3)> Quaternion::rotation() const {
@@ -588,6 +587,10 @@ pair<vec3, vec3> orthogonalComplementBasis(vec3 v) {
 	vec3 b2 = cross(normalise(v), b1);
 	mat3 frame = GramSchmidtProcess(mat3(normalise(v), b1, b2));
 	return std::make_pair(frame[1], frame[2]);
+}
+
+bool SO2::check() const {
+	return nearlyEqual<mat2>(tmat2x2(determinant(mat2())), 1.f) && isClose(mat2() * transpose(mat2()), mat2(1));
 }
 
 float pseudorandomizer(float x, float seed) {

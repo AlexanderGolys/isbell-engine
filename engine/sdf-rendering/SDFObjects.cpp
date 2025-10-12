@@ -342,6 +342,7 @@ SDFObject planeSDF(const string &name) {
 	ShaderRealFunctionR3 main = ShaderRealFunctionR3(name, "", "x.z", {});
 	return SDFObject(d_, main);
 }
+
 SDFObject roundBoxSDF(vec3 size, float r,  const string &name) {
 	 auto d_ = RealFunctionR3([size, r](vec3 p) {
 				vec3 q = abs(p) - size+ vec3(r);

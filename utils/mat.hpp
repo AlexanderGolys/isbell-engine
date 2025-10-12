@@ -10,7 +10,7 @@
 
 #include "metaUtils.hpp"
 
-
+using namespace glm;
 
 template<typename vec>
 vector<float> vecToVecHeHe(vec v) {
@@ -19,6 +19,26 @@ vector<float> vecToVecHeHe(vec v) {
 		res.push_back(v[i]);
 	return res;
 };
+
+template<typename T>
+bool nearlyEqual(T a) { return norm(a) < 1e-6; }
+
+
+template<typename T>
+T normalise(T v) {
+	return norm(v) < 1e-6 ? v * 0.f : v / norm(v);
+}
+
+template<typename T, typename U=T>
+bool nearlyEqual(T a, U b) {
+	return norm(a - b) < 1e-4;
+}
+
+template<typename M>
+bool nearlyEqual_mat(M a, M b) {
+	return a.nearly_equal(b);
+}
+
 
 
 
@@ -832,6 +852,7 @@ public:
 
 
 
+
 template<Rng R=float, RModule<R> M=R>
 class GenericTensor {
 	vector<M> data;
@@ -1073,6 +1094,11 @@ public:
 	explicit operator string() const { return std::format("{0}+{1}i+{2}j+{3}k", q.x, q.y, q.z, q.w); }
 	constexpr float re() const { return q.x; }
 	constexpr vec3 im() const { return vec3(q.y, q.z, q.w); }
+	float x() const { return q.x; }
+	float y() const { return q.y; }
+	float z() const { return q.z; }
+	float w() const { return q.w; }
+	float operator[](int i) const { return q[i]; }
 
 	Quaternion conj() const { return Quaternion(q.x, -q.y, -q.z, -q.w); }
 	Quaternion normalise() const { return *this / norm(); }
@@ -1098,6 +1124,68 @@ const Quaternion j_H = Quaternion::j();
 const Quaternion k_H = Quaternion::k();
 
 
+class SO2 : mat2 {
+public:
+	explicit SO2(mat2 m) : mat2(m) {};
+	explicit SO2() : SO2(mat2(1, 0, 0, 1)) {}
+	explicit SO2(Complex z) : mat2(z.re(), -z.im(), z.im(), z.re()) {}
+	explicit SO2(float angle) : SO2(Complex(cos(angle), sin(angle))) {}
+	explicit operator Complex() const { return Complex((*this)[0][0], (*this)[1][0]); }
+	SO2 inverse() const { return SO2(glm::transpose(*this)); }
+	// explicit operator mat2();
+	bool check() const;
+
+	static SO2 one() { return SO2(); }
+	static SO2 I() { return SO2(); }
+
+};
+
+
+
+
+inline mat3 doubleCoverSO3(Quaternion q) {
+	float x0 = q.x();
+	float x1 = -q.y();
+	float x2 = -q.z();
+	float x3 = -q.w();
+
+	return mat3(
+	   x0*x0 + x1*x1 - x2*x2 - x3*x3, 2.0*(x1*x2 - x0*x3), 2.0*(x1*x3 + x0*x2),
+		 2.0*(x1*x2 + x0*x3), x0*x0 - x1*x1 + x2*x2 - x3*x3, 2.0*(x2*x3 - x0*x1),
+		 2.0*(x1*x3 - x0*x2), 2.0*(x2*x3 + x0*x1), x0*x0 - x1*x1 - x2*x2 + x3*x3
+	);
+}
+
+class SO3 : public mat3 {
+public:
+	using mat3::mat3;
+	explicit SO3(const mat3 &m) : mat3(m) {};
+	explicit SO3() : SO3(mat3(1)) {}
+	explicit SO3(vec3 axis, float angle);
+	explicit SO3(Quaternion q) : SO3(doubleCoverSO3(q)) {}
+	bool check() const { return isClose(determinant(*this), 1.f) && isClose(transpose(*this) * (*this), mat3(1)); }
+	bool operator==(const SO3 &other) const { return isClose(*this, other); }
+	SO3 inv() const { return SO3(glm::transpose(*this)); }
+	SO3 operator*(const SO3 &other) const { return SO3(mat3(*this) * mat3(other)); }
+	int dim() const { return 3; }
+};
+
+class SE3 {
+	Quaternion q;
+	vec3 t;
+
+	public:
+	SE3(Quaternion q, vec3 t) : q(q), t(t) {}
+	SE3() : SE3(Quaternion::one(), vec3(0)) {}
+	SE3 operator*(const SE3 &other) const { return SE3(q * other.q, t + q.rotate(other.t)); }
+	vec3 operator*(vec3 v) const { return q.rotate(v) + t; }
+	SE3 inv() const { Quaternion q_inv = q.inv(); return SE3(q_inv, q_inv.rotate(-t)); }
+	mat4 toMat4() const;
+	int dim() const { return 6;};
+	Quaternion rotation() const { return q; };
+	vec3 translation() const { return t; }
+};
+
 
 
 inline float frac(float x) { return x - std::floor(x); }
@@ -1113,31 +1201,11 @@ float det(const M &m) {
 	return determinant(m);
 }
 
-template<typename T>
-T normalise(T v) {
-	return norm(v) < 1e-6 ? v * 0.f : v / norm(v);
-}
-
-template<typename T, typename U=T>
-bool nearlyEqual(T a, U b) {
-	return norm(a - b) < 1e-4;
-}
-
-template<typename M>
-bool nearlyEqual_mat(M a, M b) {
-	return a.nearly_equal(b);
-}
-
-
 
 
 
 // inline bool nearlyEqual(float a, int b) { return norm(a - b) < 1e-6; }
 // inline bool nearlyEqual(int a, float b) { return norm(a - b) < 1e-6; }
-
-template<typename T>
-bool nearlyEqual(T a) { return norm(a) < 1e-6; }
-
 
 
 template<typename vec>
