@@ -1,2 +1,2 @@
 @echo off
-git subtree push --prefix=src/isbell origin isbell-core
+git subtree push --prefix=src/core origin isbell-core
