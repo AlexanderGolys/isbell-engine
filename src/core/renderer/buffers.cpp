@@ -1,5 +1,7 @@
 #include "buffers.hpp"
-
+#include "renderer.hpp"
+#include "exceptions.hpp"
+#include "buffersOpenGL.hpp"
 
 size_t sizeOfAttributeType(AttributeType type) {
 	switch (type) {
@@ -53,3 +55,51 @@ int lengthOfAttributeType(AttributeType type) {
 
 ShaderAttribute::ShaderAttribute(const string &name, AttributeType type):
 name(name), type(type), size(sizeOfAttributeType(type)), length(lengthOfAttributeType(type)) {}
+
+shared_ptr<AttributeBuffer> AttributeBuffer::init(const ShaderAttribute &attribute, int length) {
+	RenderAPI api = Renderer::getAPI();
+	if (api == NO_RENDERING)
+		THROW(RendererError, "Rendering API not set.");
+	if (api == OPENGL)
+		return make_shared<AttributeBufferGL>(attribute, length);
+	if (api == VULKAN) {
+		THROW(NotImplementedVariantError, "Vulkan API", "Rendering API");
+	}
+	THROW(UnknownVariantError, "Rendering API not recognized.");
+}
+
+shared_ptr<IndexBuffer> IndexBuffer::init(int length)
+{
+	RenderAPI api = Renderer::getAPI();
+	if (api == NO_RENDERING)
+		THROW(RendererError, "Rendering API not set.");
+	if (api == OPENGL)
+		return make_shared<IndexBufferGL>(length);
+	if (api == VULKAN)
+		THROW(NotImplementedVariantError, "Vulkan API", "Rendering API");
+	THROW(UnknownVariantError, "Rendering API not recognized.");
+}
+
+shared_ptr<VertexArray> VertexArray::init()
+{
+	RenderAPI api = Renderer::getAPI();
+	if (api == NO_RENDERING)
+		THROW(RendererError, "Rendering API not set.");
+	if (api == OPENGL)
+		return make_shared<VertexArrayObjectGL>();
+	if (api == VULKAN)
+		THROW(NotImplementedVariantError, "Vulkan API", "Rendering API");
+	THROW(UnknownVariantError, "Rendering API not recognized.");
+}
+
+shared_ptr<StorageBuffer> StorageBuffer::init(size_t size, const void* data)
+{
+	RenderAPI api = Renderer::getAPI();
+	if (api == NO_RENDERING)
+		THROW(RendererError, "Rendering API not set.");
+	if (api == OPENGL)
+		return make_shared<ShaderStorageBufferObjectGL>(size, data);
+	if (api == VULKAN)
+		THROW(NotImplementedVariantError, "Vulkan API", "Rendering API");
+	THROW(UnknownVariantError, "Rendering API not recognized.");
+}

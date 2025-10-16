@@ -38,3 +38,10 @@ enum UniformType {
 	U_MAT3x4,
 	U_MAT4x3,
 };
+
+enum ShaderType {
+	VERTEX_SHADER,
+	GEOMETRY_SHADER,
+	FRAGMENT_SHADER,
+	COMPUTE_SHADER
+};

@@ -161,3 +161,15 @@ public:
     ZeroDivisionError(const string& msg, const char* file, int line)
         : ValueError(msg, file, line) {}
 };
+
+class RendererError : public ErrorClassWrapper {
+public:
+	RendererError(const string& msg, const char* file, int line)
+		: ErrorClassWrapper(msg, file, line) {}
+};
+
+class CompilationError : public ErrorClassWrapper {
+public:
+	CompilationError(const string& msg, const char* file, int line)
+		: ErrorClassWrapper(msg, file, line) {}
+};
