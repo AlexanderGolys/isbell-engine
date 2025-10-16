@@ -14,3 +14,10 @@ void ComputeShaderProgram::linkComputeShader() {
 	glAttachShader(programID, computeShader->getID());
 	glLinkProgram(programID);
 }
+
+void ComputeShaderProgram::run(int numGroupsX, int numGroupsY, int numGroupsZ) {
+	use();
+	glDispatchCompute(numGroupsX, numGroupsY, numGroupsZ);
+	glMemoryBarrier(GL_SHADER_IMAGE_ACCESS_BARRIER_BIT);
+	glFinish();
+}

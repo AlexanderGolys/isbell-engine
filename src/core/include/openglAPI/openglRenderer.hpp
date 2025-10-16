@@ -1,15 +1,15 @@
 #pragma once
 
-#include "bufferUtils.hpp"
+#include "buffersOpenGL.hpp"
 #include "logging.hpp"
 #include "macroParsing.hpp"
 
 
 namespace openglAPI {
+
+
 	void key_callback(GLFWwindow* window, int key, int scancode, int action, int mods);
-
 	void openGL_API_init();
-
 	GLuint bindVAO();
 	void disableAttributeArrays(int how_many=4);
 	mat4 generateMVP(vec3 camPosition, vec3 camLookAt, vec3 upVector, float fov, float aspectRatio, float clippingRangeMin, float clippingRangeMax, const mat4 &modelTransform);
@@ -31,7 +31,7 @@ namespace openglAPI {
 
 	enum ShaderType {
 		CLASSIC,
-		GEOMETRY1,
+		GEOMETRY,
 		COMPUTE
 	};
 
@@ -72,13 +72,6 @@ namespace openglAPI {
 	};
 
 
-
-
-
-
-
-
-
 	class Shader {
 	protected:
 		GLenum shaderType;
@@ -94,8 +87,8 @@ namespace openglAPI {
 
 		Shader(const Shader &other);
 		Shader(Shader &&other) noexcept;
-		Shader & operator=(const Shader &other);
-		Shader & operator=(Shader &&other) noexcept;
+		Shader& operator=(const Shader &other);
+		Shader& operator=(Shader &&other) noexcept;
 		virtual ~Shader() = default;
 
 
@@ -114,22 +107,19 @@ namespace openglAPI {
 		shared_ptr<Shader> geometryShader;
 		ShaderType shaderType;
 
-	public:
 		unordered_map<string, GLuint> uniformLocations;
 		unordered_map<string, GLSLType> uniformTypes;
 		GLuint programID;
 
+	public:
 		ShaderProgram(const shared_ptr<Shader> &vertexShader, const shared_ptr<Shader> &fragmentShader);
 		ShaderProgram(const shared_ptr<Shader> &vertexShader, const shared_ptr<Shader> &fragmentShader, const shared_ptr<Shader> &geometryShader);
 		ShaderProgram(const string &vertexPath, const string &fragPath);
+		explicit ShaderProgram(const string &standard_file_path);
 		ShaderProgram() = default;
-
+		virtual ~ShaderProgram();
 
 		void linkShaders();
-
-		explicit ShaderProgram(const string &standard_file_path);
-		~ShaderProgram();
-
 		void use();
 		void initUniforms(const unordered_map<string, GLSLType> &uniforms);
 
@@ -142,8 +132,8 @@ namespace openglAPI {
 		void setUniform(const string &uniformName, vec4 uniformValue);
 		void setUniform(const string &uniformName, mat2 uniformValue);
 		void setUniform(const string &uniformName, mat3 uniformValue);
-		void setUniform(const string& uniformName, mat4 uniformValue);
-		void setUniform(const string& uniformName, float x, float y);
+		void setUniform(const string &uniformName, mat4 uniformValue);
+		void setUniform(const string &uniformName, float x, float y);
 		void setUniform(const string &uniformName, float x, float y, float z);
 		void setUniform(const string &uniformName, float x, float y, float z, float w);
 	};

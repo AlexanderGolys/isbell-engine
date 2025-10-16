@@ -1,6 +1,6 @@
 #pragma once
-#include "../geometry/smoothImplicit.hpp"
-#include "../utils/macros.hpp"
+#include "smoothImplicit.hpp"
+#include "macros.hpp"
 
 #include <array>
 #include <map>
@@ -12,24 +12,11 @@
 #include <memory>
 #include <optional>
 
-#include <GL/glew.h>
+// #include <GL/glew.h>
 
 
 
 
-enum GLSLType {
-	FLOAT,
-	INT,
-	VEC2,
-	VEC3,
-	VEC4,
-	MAT2,
-	MAT3,
-	MAT4,
-	SAMPLER1D,
-	SAMPLER2D,
-	SAMPLER3D
-};
 
 // TODO: check if textures are not copied
 class Texture {

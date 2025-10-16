@@ -1,6 +1,6 @@
 #pragma once
 #include "indexedRendering.hpp"
-#include "../geometry/pde.hpp"
+#include "pde.hpp"
 
 class DynamicalInterface : public IndexedMesh {
 public:

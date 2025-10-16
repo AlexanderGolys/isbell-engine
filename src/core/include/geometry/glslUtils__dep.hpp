@@ -1,21 +1,33 @@
 #pragma once
 
 #include "indexedRendering.hpp"
-#include "renderingUtils.hpp"
-#include "file-management/filesUtils.hpp"
+// #include "renderingUtils.hpp"
+#include "filesUtils.hpp"
 #include "utils/logging.hpp"
 
 #include <cstdio>
 #include <cstdlib>
-#include <GL/glew.h>
-#include <GLFW/glfw3.h>
+// #include <GL/glew.h>
+// #include <GLFW/glfw3.h>
 
 #include "macroParsing.hpp"
 
 
 
+enum ShaderDataType {
+	FLOAT,
+	INT,
+	VEC2,
+	VEC3,
+	VEC4,
+	MAT2,
+	MAT3,
+	MAT4,
+	SAMPLER1D,
+	SAMPLER2D,
+	SAMPLER3D
+};
 
-class Texture;
 
 void error_callback(int error, const char* description);
 void key_callback(GLFWwindow* window, int key, int scancode, int action, int mods);
@@ -64,9 +76,9 @@ public:
 
 
 
-size_t sizeOfGLSLType(GLSLType type);
-int lengthOfGLSLType(GLSLType type);
-GLenum primitiveGLSLType(GLSLType type);
+size_t sizeOfGLSLType(ShaderDataType type);
+int lengthOfGLSLType(ShaderDataType type);
+GLenum primitiveGLSLType(ShaderDataType type);
 
 enum ShaderType {
 	CLASSIC,
@@ -90,8 +102,8 @@ public:
 
 	Shader(const Shader &other);
 	Shader(Shader &&other) noexcept;
-	Shader & operator=(const Shader &other);
-	Shader & operator=(Shader &&other) noexcept;
+	Shader& operator=(const Shader &other);
+	Shader& operator=(Shader &&other) noexcept;
 	virtual ~Shader() = default;
 
 
@@ -107,13 +119,12 @@ class ShaderProgram {
 protected:
 	Shader vertexShader;
 	Shader fragmentShader;
-	std::optional<Shader> geometryShader;
-
+	optional<Shader> geometryShader;
 	ShaderType shaderType;
 
 public:
-	std::unordered_map<string, GLuint> uniformLocations;
-	std::unordered_map<string, GLSLType> uniformTypes;
+	unordered_map<string, GLuint> uniformLocations;
+	unordered_map<string, ShaderDataType> uniformTypes;
 
 	GLuint programID;
 
@@ -128,7 +139,7 @@ public:
 	~ShaderProgram();
 
 	void use();
-	void initUniforms(const std::unordered_map<string, GLSLType> &uniforms);
+	void initUniforms(const std::unordered_map<string, ShaderDataType> &uniforms);
 	void initTextureSampler(const Texture* texture);
 
 	void setTextureSampler(const Texture* texture) const;
@@ -141,8 +152,8 @@ public:
 	void setUniform(const string &uniformName, vec4 uniformValue);
 	void setUniform(const string &uniformName, mat2 uniformValue);
 	void setUniform(const string &uniformName, mat3 uniformValue);
-	void setUniform(const string& uniformName, mat4 uniformValue);
-	void setUniform(const string& uniformName, float x, float y);
+	void setUniform(const string &uniformName, mat4 uniformValue);
+	void setUniform(const string &uniformName, float x, float y);
 	void setUniform(const string &uniformName, float x, float y, float z);
 	void setUniform(const string &uniformName, float x, float y, float z, float w);
 };
@@ -189,13 +200,13 @@ public:
 	string name;
 	GLuint bufferAddress;
 	size_t size;
-	GLSLType type;
+	ShaderDataType type;
 	int inputNumber;
 	bool enabled;
 	bool bufferInitialized;
 	CommonBufferType bufferType;
 
-	Attribute(const string &name, GLSLType type, int inputNumber, CommonBufferType bufferType);
+	Attribute(const string &name, ShaderDataType type, int inputNumber, CommonBufferType bufferType);
 	virtual ~Attribute();
 
 
@@ -228,7 +239,7 @@ public:
 
 	virtual ~RenderingStep();
 
-	std::map<string, GLSLType> uniforms;
+	std::map<string, ShaderDataType> uniforms;
 	std::map<string, shared_ptr<std::function<void(float, shared_ptr<ShaderProgram>)>>> uniformSetters;
 	std::function<void(float)> customStep;
 
@@ -253,8 +264,8 @@ public:
     bool weakSuperLoaded() const;
 	virtual void init(const shared_ptr<Camera> &cam, const vector<Light> &lights);
 
-	void addUniforms(const std::map<string, GLSLType> &uniforms, std::map<string, shared_ptr<std::function<void(float, shared_ptr<ShaderProgram>)>>> setters);
-	void addUniform(string uniformName, GLSLType uniformType, shared_ptr<std::function<void(float, shared_ptr<ShaderProgram>)>> setter);
+	void addUniforms(const std::map<string, ShaderDataType> &uniforms, std::map<string, shared_ptr<std::function<void(float, shared_ptr<ShaderProgram>)>>> setters);
+	void addUniform(string uniformName, ShaderDataType uniformType, shared_ptr<std::function<void(float, shared_ptr<ShaderProgram>)>> setter);
 	void addConstFloats(const std::map<string, float>& uniforms);
 	void addConstVec4(const string& name, vec4 value);
 	void addConstColor(const string &name, vec4 value);
@@ -336,10 +347,10 @@ public:
 	float initFrame();
 	float lastDeltaTime() const;
 
-	void addPerFrameUniforms(const std::map<string, GLSLType> &uniforms, const std::map<string, shared_ptr<std::function<void(float, shared_ptr<ShaderProgram>)>>> &setters);
-	void addPerFrameUniform(const string &uniformName, GLSLType uniformType, const shared_ptr<std::function<void(float, shared_ptr<ShaderProgram>)>> &setter);
-	void addConstUniforms(const std::map<string, GLSLType>& uniforms, std::map<string, shared_ptr<std::function<void(shared_ptr<ShaderProgram>)>>> setters);
-	void addConstUniform(const string &uniformName, GLSLType uniformType, shared_ptr<std::function<void(shared_ptr<ShaderProgram>)>> setter);
+	void addPerFrameUniforms(const std::map<string, ShaderDataType> &uniforms, const std::map<string, shared_ptr<std::function<void(float, shared_ptr<ShaderProgram>)>>> &setters);
+	void addPerFrameUniform(const string &uniformName, ShaderDataType uniformType, const shared_ptr<std::function<void(float, shared_ptr<ShaderProgram>)>> &setter);
+	void addConstUniforms(const std::map<string, ShaderDataType>& uniforms, std::map<string, shared_ptr<std::function<void(shared_ptr<ShaderProgram>)>>> setters);
+	void addConstUniform(const string &uniformName, ShaderDataType uniformType, shared_ptr<std::function<void(shared_ptr<ShaderProgram>)>> setter);
 	void addTimeUniform();
 	void addConstFloats(const std::map<string, float> &uniforms);
 	void addCustomAction(std::function<void(float)> action);

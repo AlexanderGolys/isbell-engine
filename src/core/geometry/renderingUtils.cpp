@@ -3,8 +3,8 @@
 #include <stdio.h>
 #include <stdlib.h>
 // #include <glm/glm.hpp>
-#include <GL/glew.h>
-#include <GLFW/glfw3.h>
+// #include <GL/glew.h>
+// #include <GLFW/glfw3.h>
 // #include <glm/glm.hpp>
 #include <string>
 #include <vector>

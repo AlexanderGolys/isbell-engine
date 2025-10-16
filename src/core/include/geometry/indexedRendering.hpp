@@ -1,11 +1,11 @@
 #pragma once
 
 #include "renderingUtils.hpp"
-// #include "../geometry/pde.hpp"
+// #include "../math/pde.hpp"
 
 #include <set>
 
-#include "../utils/randomUtils.hpp"
+#include "randomUtils.hpp"
 
 
 
@@ -61,7 +61,7 @@ const std::map<CommonBufferType, int> bufferTypeLength = {
 };
 
 inline int bufferElementLength(CommonBufferType type) { return bufferTypeLength.at(type); }
-inline size_t bufferElementSize(CommonBufferType type) { return type != INDEX ? bufferElementLength(type) * sizeof(FLOAT) : bufferElementLength(type) * sizeof(unsigned int); }
+inline size_t bufferElementSize(CommonBufferType type) { return type != INDEX ? bufferElementLength(type) * sizeof(float) : bufferElementLength(type) * sizeof(unsigned int); }
 
 
 const vector<string> DEFAULT_EXTRA_BUFS = {"extra0", "extra1", "extra2", "extra3", "extra4"};

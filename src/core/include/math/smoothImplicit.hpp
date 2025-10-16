@@ -5,7 +5,7 @@
 #include <utility>
 #include <vector>
 
-//#include "src/engine/indexedRendering.hpp"
+//#include "src/geometry/indexedRendering.hpp"
 
 #include "smoothParametric.hpp"
 
