@@ -1,5 +1,8 @@
 #include "shadersOpenGL.hpp"
 #include "exceptions.hpp"
+#include "filesUtils.hpp"
+
+#include "renderer/shaders.hpp"
 
 
 GLenum gl_shader_type(ShaderType type) {

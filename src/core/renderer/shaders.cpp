@@ -1,7 +1,10 @@
 #include "shaders.hpp"
 #include "renderer.hpp"
 #include "exceptions.hpp"
+#include "filesUtils.hpp"
 #include "shadersOpenGL.hpp"
+
+#include "renderer/shaderTypes.hpp"
 
 
 ShaderType identify_shader_extension(const string &extension) {
