@@ -3,7 +3,10 @@
 
 
 class Shader {
+public:
+	virtual ~Shader() = default;
+	virtual void bind();
+	virtual void unbind();
 
-
-	void setUniform(const string &uniformName, const float* uniformValue);
+	virtual void setUniform(const string &uniformName, float value);
 };
