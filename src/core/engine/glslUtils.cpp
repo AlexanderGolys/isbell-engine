@@ -706,7 +706,7 @@ mat4 Camera::mvp(float t, const mat4 &modelTransform)
 }
 
 
-Attribute::Attribute(const string &name, GLSLType type, int inputNumber, CommonBufferType bufferType)
+AttributeBuffer::AttributeBuffer(const string &name, GLSLType type, int inputNumber)
 {
 	this->name = name;
 	this->type = type;
@@ -715,16 +715,15 @@ Attribute::Attribute(const string &name, GLSLType type, int inputNumber, CommonB
 	this->enabled = false;
 	this->bufferInitialized = false;
 	this->inputNumber = inputNumber;
-	this->bufferType = bufferType;
 }
 
-Attribute::~Attribute()
+AttributeBuffer::~AttributeBuffer()
 {
-	if (enabled) Attribute::disable();
-	if (bufferInitialized) Attribute::freeBuffer();
+	if (enabled) AttributeBuffer::disable();
+	if (bufferInitialized) AttributeBuffer::freeBuffer();
 }
 
-void Attribute::initBuffer()
+void AttributeBuffer::initBuffer()
 {
 	this->bufferInitialized = true;
 	GLuint buffer;
@@ -733,7 +732,7 @@ void Attribute::initBuffer()
     // glBufferData(GL_ARRAY_BUFFER, bufferLength * this->size, firstElementAdress, GL_STATIC_DRAW);
 }
 
-void Attribute::enable()
+void AttributeBuffer::enable()
 {
 	glEnableVertexAttribArray(this->inputNumber);
 	glBindBuffer(GL_ARRAY_BUFFER, this->bufferAddress);
@@ -741,29 +740,27 @@ void Attribute::enable()
 	glVertexAttribPointer(this->inputNumber, lengthOfGLSLType(this->type), GL_FLOAT, GL_FALSE, 0, (void *)0);
 }
 
-void Attribute::disable()
+void AttributeBuffer::disable()
 {
 	glDisableVertexAttribArray(this->inputNumber);
 	this->enabled = false;
 }
 
-void Attribute::load(const void *firstElementAdress, int bufferLength)
+void AttributeBuffer::load(const void *firstElementAdress, int bufferLength)
 {
 	if (!bufferInitialized) {
 	    initBuffer();
 	    glBindBuffer(GL_ARRAY_BUFFER, this->bufferAddress);
-	    glBufferData(GL_ARRAY_BUFFER, bufferLength * this->size, firstElementAdress, GL_STATIC_DRAW);
+	    glBufferData(GL_ARRAY_BUFFER, bufferLength * this->size, firstElementAdress, GL_DYNAMIC_DRAW);
 	    return;
 	}
 	glBindBuffer(GL_ARRAY_BUFFER, this->bufferAddress);
-     glBufferData(GL_ARRAY_BUFFER, bufferLength * this->size, firstElementAdress, GL_STATIC_DRAW);
-    // void *ptr = glMapBuffer(GL_ARRAY_BUFFER, GL_WRITE_ONLY);
-    // memcpy(ptr, firstElementAdress, bufferLength * this->size);
-    // glUnmapBuffer(GL_ARRAY_BUFFER);
+     glBufferData(GL_ARRAY_BUFFER, bufferLength * this->size, firstElementAdress, GL_DYNAMIC_DRAW);
+
 
 }
 
-void Attribute::freeBuffer() {
+void AttributeBuffer::freeBuffer() {
     glDeleteBuffers(1, &this->bufferAddress);
     this->bufferAddress = -1;
     this->bufferInitialized = false;
@@ -773,7 +770,7 @@ void Attribute::freeBuffer() {
 RenderingStep::RenderingStep(const shared_ptr<ShaderProgram> &shader)
 {
 	this->shader = shader;
-	this->attributes = vector<shared_ptr<Attribute>>();
+	this->attributes = vector<shared_ptr<AttributeBuffer>>();
 	this->uniforms = std::map<string, GLSLType>();
 	this->uniformSetters = std::map<string, shared_ptr<std::function<void(float, shared_ptr<ShaderProgram>)>>>();
 	this->customStep = [](float t) {};
@@ -843,21 +840,21 @@ void RenderingStep::loadElementBuffer() {
 
 void RenderingStep::initStdAttributes()
 {
-	this->attributes.push_back(make_shared<Attribute>("position", VEC3, 0, POSITION));
-	this->attributes.push_back(make_shared<Attribute>("normal", VEC3, 1, NORMAL));
-	this->attributes.push_back(make_shared<Attribute>("uv", VEC2, 2, UV));
-	this->attributes.push_back(make_shared<Attribute>("color", VEC4, 3, COLOR));
+	this->attributes.push_back(make_shared<AttributeBuffer>("position", VEC3, 0));
+	this->attributes.push_back(make_shared<AttributeBuffer>("normal", VEC3, 1));
+	this->attributes.push_back(make_shared<AttributeBuffer>("uv", VEC2, 2));
+	this->attributes.push_back(make_shared<AttributeBuffer>("color", VEC4, 3));
 
 	if (weak_super->hasExtra0())
-		this->attributes.push_back(std::make_shared<Attribute>("extra0", VEC4, 4, EXTRA0));
+		this->attributes.push_back(std::make_shared<AttributeBuffer>("extra0", VEC4, 4));
 	if (weak_super->hasExtra1())
-		this->attributes.push_back(std::make_shared<Attribute>("extra1", VEC4, 5, EXTRA1));
+		this->attributes.push_back(std::make_shared<AttributeBuffer>("extra1", VEC4, 5));
 	if (weak_super->hasExtra2())
-		this->attributes.push_back(std::make_shared<Attribute>("extra2", VEC4, 6, EXTRA2));
+		this->attributes.push_back(std::make_shared<AttributeBuffer>("extra2", VEC4, 6));
 	if (weak_super->hasExtra3())
-		this->attributes.push_back(std::make_shared<Attribute>("extra3", VEC4, 7, EXTRA3));
+		this->attributes.push_back(std::make_shared<AttributeBuffer>("extra3", VEC4, 7));
 	if (weak_super->hasExtra4())
-		this->attributes.push_back(std::make_shared<Attribute>("extra4", VEC4, 8, EXTRA4));
+		this->attributes.push_back(std::make_shared<AttributeBuffer>("extra4", VEC4, 8));
 
 	for (const auto& attribute : attributes)
 		attribute->initBuffer();
@@ -869,7 +866,7 @@ void RenderingStep::resetAttributeBuffers()
 		attribute->freeBuffer();
 }
 
-void RenderingStep::initUnusualAttributes(const std::vector<shared_ptr<Attribute>>& attributes) {
+void RenderingStep::initUnusualAttributes(const std::vector<shared_ptr<AttributeBuffer>>& attributes) {
     this->attributes.insert(this->attributes.end(), attributes.begin(), attributes.end());
     for (const auto &attribute: attributes)
 		attribute->initBuffer();

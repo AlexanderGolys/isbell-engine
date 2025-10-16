@@ -184,7 +184,7 @@ public:
 	mat4 vp(float t);
 };
 
-class Attribute {
+class AttributeBuffer {
 public:
 	string name;
 	GLuint bufferAddress;
@@ -193,10 +193,10 @@ public:
 	int inputNumber;
 	bool enabled;
 	bool bufferInitialized;
-	CommonBufferType bufferType;
 
-	Attribute(const string &name, GLSLType type, int inputNumber, CommonBufferType bufferType);
-	virtual ~Attribute();
+
+	AttributeBuffer(const string &name, GLSLType type, int inputNumber);
+	virtual ~AttributeBuffer();
 
 
 	virtual void initBuffer();
@@ -209,12 +209,10 @@ public:
 
 
 
-
-
 class RenderingStep {
 protected:
 	shared_ptr<ShaderProgram> shader;
-	vector<shared_ptr<Attribute>> attributes;
+	vector<shared_ptr<AttributeBuffer>> attributes;
 	shared_ptr<IndexedMesh> weak_super = nullptr;
 	GLuint elementBufferLoc = 0;
 	shared_ptr<MaterialPhong> material = nullptr;
@@ -238,7 +236,7 @@ public:
 	void initStdAttributes();
     void initElementBuffer();
 	void resetAttributeBuffers();
-	void initUnusualAttributes(const vector<shared_ptr<Attribute>>& attributes);
+	void initUnusualAttributes(const vector<shared_ptr<AttributeBuffer>>& attributes);
 	void initWeakMeshAttributes();
 
 	void loadMeshAttributes();

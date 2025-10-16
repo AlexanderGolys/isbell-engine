@@ -668,7 +668,7 @@ int IndexedMesh::bufferIndexLength() const {
 	return boss->bufferLength(INDEX);
 }
 
-const void * IndexedMesh::getBufferLocation(CommonBufferType type) const {
+const void* IndexedMesh::getBufferLocation(CommonBufferType type) const {
 	return boss->firstElementAddress(type);
 }
 
