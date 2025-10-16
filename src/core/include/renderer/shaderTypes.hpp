@@ -37,7 +37,4 @@ enum UniformType {
 	U_MAT4x2,
 	U_MAT3x4,
 	U_MAT4x3,
-	U_SAMPLER1D,
-	U_SAMPLER2D,
-	U_SAMPLER3D
 };

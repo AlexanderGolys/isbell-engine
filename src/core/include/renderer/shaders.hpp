@@ -1,4 +1,5 @@
 #pragma once
+
 #include "exceptions.hpp"
 
 
@@ -8,5 +9,6 @@ public:
 	virtual void bind();
 	virtual void unbind();
 
-	virtual void setUniform(const string &uniformName, float value);
+	virtual void setUniform(const string &uniformName, std::any uniformValue
 };
+private:
