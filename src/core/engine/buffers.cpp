@@ -192,6 +192,92 @@ bool AttributeDataArray::isDirty() const {
 	return dirty;
 }
 
+VertexData::VertexData(std::initializer_list<pair<string, unsigned char>> attributeInfos) {
+	for (const auto &attrInfo: attributeInfos)
+		attributes.emplace_back(attrInfo.first, attrInfo.second);
+}
+
+void VertexData::reserve(unsigned int numberOfVertices, unsigned int numberOfTriangles) {
+	for (auto &attr: attributes)
+		attr.reserveSpace(numberOfVertices);
+	indices.reserve(numberOfTriangles);
+}
+
+void VertexData::setVertexAttribute(int vertexIndex, const string &attributeName, float value) {
+	if (vertexIndex < 0)
+		vertexIndex += vertexCount();
+	THROW_IF(vertexIndex < 0 || vertexIndex >= vertexCount(), IndexOutOfBounds, vertexIndex, vertexCount(), "VertexData setVertexAttribute float");
+	for (auto &attr: attributes) {
+		if (attr.getName() == attributeName) {
+			THROW_IF(attr.elementLength() != 1, ValueError, "Attribute " + attributeName + " is not of length 1");
+			attr.setElement(vertexIndex, value);
+			return;
+		}
+	}
+	THROW(UnknownVariantError, "Attribute " + attributeName + " not found");
+}
+
+void VertexData::setVertexAttribute(int vertexIndex, const string &attributeName, const vec2 &value) {
+	if (vertexIndex < 0)
+		vertexIndex += vertexCount();
+	THROW_IF(vertexIndex < 0 || vertexIndex >= vertexCount(), IndexOutOfBounds, vertexIndex, vertexCount(), "VertexData setVertexAttribute vec2");
+	for (auto &attr: attributes) {
+		if (attr.getName() == attributeName) {
+			THROW_IF(attr.elementLength() != 2, ValueError, "Attribute " + attributeName + " is not of length 2");
+			attr.setElement(vertexIndex, value);
+			return;
+		}
+	}
+	THROW(UnknownVariantError, "Attribute " + attributeName + " not found");
+}
+
+void VertexData::setVertexAttribute(int vertexIndex, const string &attributeName, const vec3 &value) {
+	if (vertexIndex < 0)
+		vertexIndex += vertexCount();
+	THROW_IF(vertexIndex < 0 || vertexIndex >= vertexCount(), IndexOutOfBounds, vertexIndex, vertexCount(), "VertexData setVertexAttribute vec3");
+	for (auto &attr: attributes) {
+		if (attr.getName() == attributeName) {
+			THROW_IF(attr.elementLength() != 3, ValueError, "Attribute " + attributeName + " is not of length 3");
+			attr.setElement(vertexIndex, value);
+			return;
+		}
+	}
+	THROW(UnknownVariantError, "Attribute " + attributeName + " not found");
+}
+
+void VertexData::setVertexAttribute(int vertexIndex, const string &attributeName, const vec4 &value) {
+	if (vertexIndex < 0)
+		vertexIndex += vertexCount();
+	THROW_IF(vertexIndex < 0 || vertexIndex >= vertexCount(), IndexOutOfBounds, vertexIndex, vertexCount(), "VertexData setVertexAttribute vec4");
+	for (auto &attr: attributes) {
+		if (attr.getName() == attributeName) {
+			THROW_IF(attr.elementLength() != 4, ValueError, "Attribute " + attributeName + " is not of length 4");
+			attr.setElement(vertexIndex, value);
+			return;
+		}
+	}
+	THROW(UnknownVariantError, "Attribute " + attributeName + " not found");
+}
+
+void VertexData::addTriangle(int v1, int v2, int v3) {
+	int vertCount = vertexCount();
+	indices.emplace_back(v1, v2, v3);
+}
+
+void VertexData::addTriangle(const ivec3 &triangle) {
+	addTriangle(triangle.x, triangle.y, triangle.z);
+}
+
+unsigned int VertexData::vertexCount() const {
+	if (attributes.empty())
+		return 0;
+	return attributes[0].length();
+}
+
+unsigned int VertexData::triangleCount() const {
+	return indices.size();
+}
+
 
 
 AttributeBuffer::AttributeBuffer(const string &name, ShaderDataType type, int inputNumber)

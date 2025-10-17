@@ -2,27 +2,6 @@
 #include "renderingUtils.hpp"
 #include "shaderDataTypes.hpp"
 
-// Modern OpenGL buffer management using Direct State Access (DSA) API
-//
-// Usage example:
-//
-//   VertexData vertexData({{"position", 3}, {"normal", 3}, {"uv", 2}});
-//   vertexData.reserve(100, 50);
-//
-//   auto vao = make_shared<VAO>();
-//   auto posBuffer = make_shared<AttributeBuffer>("position", VEC3, 0);
-//   auto normalBuffer = make_shared<AttributeBuffer>("normal", VEC3, 1);
-//
-//   vao->addAttribute(0, posBuffer, 3, GL_FLOAT, sizeof(float) * 3, 0);
-//   vao->addAttribute(1, normalBuffer, 3, GL_FLOAT, sizeof(float) * 3, 0);
-//   vao->uploadIndices(vertexData.indices);
-//
-//   In render loop:
-//   vao->updateDirtyBuffers(vertexData);
-//   vao->bind();
-//   glDrawElements(GL_TRIANGLES, vao->getIndexCount(), GL_UNSIGNED_INT, 0);
-//
-
 
 
 class AttributeDataArray {
@@ -78,161 +57,36 @@ public:
 	vector<AttributeDataArray> attributes;
 	vector<ivec3> indices;
 
-	VertexData(std::initializer_list<pair<string, unsigned char>> attributeInfos) {
-		for (const auto &attrInfo: attributeInfos)
-			attributes.emplace_back(attrInfo.first, attrInfo.second);
-	}
-
-	void reserve(unsigned int numberOfVertices, unsigned int numberOfTriangles) {
-		for (auto &attr: attributes)
-			attr.reserveSpace(numberOfVertices);
-		indices.reserve(numberOfTriangles);
-	}
+	VertexData(std::initializer_list<pair<string, unsigned char>> attributeInfos);
+	void reserve(unsigned int numberOfVertices, unsigned int numberOfTriangles);
 
 	template<typename VertexStruct>
 	vector<VertexStruct> toVertexArray() const;
 
 	template<typename VertexStruct>
-	void addVertex(const VertexStruct &vertex) {
-		for (auto &attr: attributes) {
-			if (attr.elementLength() == 1)
-				attr.append(vertex.getAttribute1f(attr.getName()));
-			else if (attr.elementLength() == 2)
-				attr.append(vertex.getAttribute2f(attr.getName()));
-			else if (attr.elementLength() == 3)
-				attr.append(vertex.getAttribute3f(attr.getName()));
-			else if (attr.elementLength() == 4)
-				attr.append(vertex.getAttribute4f(attr.getName()));
-			else
-				THROW(UnknownVariantError, "Unsupported attribute length in addVertex");
-		}
-	}
+	void addVertex(const VertexStruct &vertex);
 
 	template<typename VertexStruct>
-	void fromVertexArray(const vector<VertexStruct> &vertexArray) {
-		for (const auto &vertex: vertexArray) {
-			addVertex(vertex);
-		}
-	}
+	void fromVertexArray(const vector<VertexStruct> &vertexArray);
 
 	template<typename VertexStruct>
-	void setVertex(int index, const VertexStruct &vertex) {
-		if (index < 0)
-			index += vertexCount();
-		THROW_IF(index < 0 || index >= vertexCount(), IndexOutOfBounds, index, vertexCount(), "VertexData setVertex");
-		for (auto &attr: attributes) {
-			if (attr.elementLength() == 1)
-				attr.setElement(index, vertex.getAttribute1f(attr.getName()));
-			else if (attr.elementLength() == 2)
-				attr.setElement(index, vertex.getAttribute2f(attr.getName()));
-			else if (attr.elementLength() == 3)
-				attr.setElement(index, vertex.getAttribute3f(attr.getName()));
-			else if (attr.elementLength() == 4)
-				attr.setElement(index, vertex.getAttribute4f(attr.getName()));
-			else
-				THROW(UnknownVariantError, "Unsupported attribute length in setVertex");
-		}
-	}
+	void setVertex(int index, const VertexStruct &vertex);
 
-	void setVertexAttribute(int vertexIndex, const string &attributeName, float value) {
-		if (vertexIndex < 0)
-			vertexIndex += vertexCount();
-		THROW_IF(vertexIndex < 0 || vertexIndex >= vertexCount(), IndexOutOfBounds, vertexIndex, vertexCount(), "VertexData setVertexAttribute float");
-		for (auto &attr: attributes) {
-			if (attr.getName() == attributeName) {
-				THROW_IF(attr.elementLength() != 1, ValueError, "Attribute " + attributeName + " is not of length 1");
-				attr.setElement(vertexIndex, value);
-				return;
-			}
-		}
-		THROW(UnknownVariantError, "Attribute " + attributeName + " not found");
-	}
-
-	void setVertexAttribute(int vertexIndex, const string &attributeName, const vec2 &value) {
-		if (vertexIndex < 0)
-			vertexIndex += vertexCount();
-		THROW_IF(vertexIndex < 0 || vertexIndex >= vertexCount(), IndexOutOfBounds, vertexIndex, vertexCount(), "VertexData setVertexAttribute vec2");
-		for (auto &attr: attributes) {
-			if (attr.getName() == attributeName) {
-				THROW_IF(attr.elementLength() != 2, ValueError, "Attribute " + attributeName + " is not of length 2");
-				attr.setElement(vertexIndex, value);
-				return;
-			}
-		}
-		THROW(UnknownVariantError, "Attribute " + attributeName + " not found");
-	}
-
-	void setVertexAttribute(int vertexIndex, const string &attributeName, const vec3 &value) {
-		if (vertexIndex < 0)
-			vertexIndex += vertexCount();
-		THROW_IF(vertexIndex < 0 || vertexIndex >= vertexCount(), IndexOutOfBounds, vertexIndex, vertexCount(), "VertexData setVertexAttribute vec3");
-		for (auto &attr: attributes) {
-			if (attr.getName() == attributeName) {
-				THROW_IF(attr.elementLength() != 3, ValueError, "Attribute " + attributeName + " is not of length 3");
-				attr.setElement(vertexIndex, value);
-				return;
-			}
-		}
-		THROW(UnknownVariantError, "Attribute " + attributeName + " not found");
-	}
-
-	void setVertexAttribute(int vertexIndex, const string &attributeName, const vec4 &value) {
-		if (vertexIndex < 0)
-			vertexIndex += vertexCount();
-		THROW_IF(vertexIndex < 0 || vertexIndex >= vertexCount(), IndexOutOfBounds, vertexIndex, vertexCount(), "VertexData setVertexAttribute vec4");
-		for (auto &attr: attributes) {
-			if (attr.getName() == attributeName) {
-				THROW_IF(attr.elementLength() != 4, ValueError, "Attribute " + attributeName + " is not of length 4");
-				attr.setElement(vertexIndex, value);
-				return;
-			}
-		}
-		THROW(UnknownVariantError, "Attribute " + attributeName + " not found");
-	}
-
+	void setVertexAttribute(int vertexIndex, const string &attributeName, float value);
+	void setVertexAttribute(int vertexIndex, const string &attributeName, const vec2 &value);
+	void setVertexAttribute(int vertexIndex, const string &attributeName, const vec3 &value);
+	void setVertexAttribute(int vertexIndex, const string &attributeName, const vec4 &value);
 
 
 	template<typename VertexStruct>
-	VertexStruct getVertex(int index) const {
-		if (index < 0)
-			index += vertexCount();
-		THROW_IF(index < 0 || index >= vertexCount(), IndexOutOfBounds, index, vertexCount(), "VertexData getVertex");
+	VertexStruct getVertex(int index) const;
 
-		VertexStruct vertex;
-		for (const auto &attr: attributes) {
-			if (attr.elementLength() == 1)
-				vertex.setAttribute1f(attr.getName(), attr.getElement1f(index));
-			else if (attr.elementLength() == 2)
-				vertex.setAttribute2f(attr.getName(), attr.getElement2f(index));
-			else if (attr.elementLength() == 3)
-				vertex.setAttribute3f(attr.getName(), attr.getElement3f(index));
-			else if (attr.elementLength() == 4)
-				vertex.setAttribute4f(attr.getName(), attr.getElement4f(index));
-			else
-				THROW(UnknownVariantError, "Unsupported attribute length in getVertex");
-		}
-		return vertex;
-	}
-
-	void addTriangle(int v1, int v2, int v3) {
-		int vertCount = vertexCount();
-		indices.emplace_back(v1, v2, v3);
-	}
-
-	void addTriangle(const ivec3 &triangle) {
-		addTriangle(triangle.x, triangle.y, triangle.z);
-	}
-
-	unsigned int vertexCount() const {
-		if (attributes.empty())
-			return 0;
-		return attributes[0].length();
-	}
-
-	unsigned int triangleCount() const {
-		return indices.size();
-	}
+	void addTriangle(int v1, int v2, int v3);
+	void addTriangle(const ivec3 &triangle);
+	unsigned int vertexCount() const;
+	unsigned int triangleCount() const;
 };
+
 
 
 
@@ -290,3 +144,75 @@ public:
 	unsigned int getIndexCount() const;
 	bool isInitialized() const;
 };
+
+
+
+
+
+
+
+
+
+template<typename VertexStruct>
+void VertexData::addVertex(const VertexStruct &vertex) {
+	for (auto &attr: attributes) {
+		if (attr.elementLength() == 1)
+			attr.append(vertex.getAttribute1f(attr.getName()));
+		else if (attr.elementLength() == 2)
+			attr.append(vertex.getAttribute2f(attr.getName()));
+		else if (attr.elementLength() == 3)
+			attr.append(vertex.getAttribute3f(attr.getName()));
+		else if (attr.elementLength() == 4)
+			attr.append(vertex.getAttribute4f(attr.getName()));
+		else
+			THROW(UnknownVariantError, "Unsupported attribute length in addVertex");
+	}
+}
+
+template<typename VertexStruct>
+void VertexData::fromVertexArray(const vector<VertexStruct> &vertexArray) {
+	for (const auto &vertex: vertexArray) {
+		addVertex(vertex);
+	}
+}
+
+template<typename VertexStruct>
+void VertexData::setVertex(int index, const VertexStruct &vertex) {
+	if (index < 0)
+		index += vertexCount();
+	THROW_IF(index < 0 || index >= vertexCount(), IndexOutOfBounds, index, vertexCount(), "VertexData setVertex");
+	for (auto &attr: attributes) {
+		if (attr.elementLength() == 1)
+			attr.setElement(index, vertex.getAttribute1f(attr.getName()));
+		else if (attr.elementLength() == 2)
+			attr.setElement(index, vertex.getAttribute2f(attr.getName()));
+		else if (attr.elementLength() == 3)
+			attr.setElement(index, vertex.getAttribute3f(attr.getName()));
+		else if (attr.elementLength() == 4)
+			attr.setElement(index, vertex.getAttribute4f(attr.getName()));
+		else
+			THROW(UnknownVariantError, "Unsupported attribute length in setVertex");
+	}
+}
+
+template<typename VertexStruct>
+VertexStruct VertexData::getVertex(int index) const {
+	if (index < 0)
+		index += vertexCount();
+	THROW_IF(index < 0 || index >= vertexCount(), IndexOutOfBounds, index, vertexCount(), "VertexData getVertex");
+
+	VertexStruct vertex;
+	for (const auto &attr: attributes) {
+		if (attr.elementLength() == 1)
+			vertex.setAttribute1f(attr.getName(), attr.getElement1f(index));
+		else if (attr.elementLength() == 2)
+			vertex.setAttribute2f(attr.getName(), attr.getElement2f(index));
+		else if (attr.elementLength() == 3)
+			vertex.setAttribute3f(attr.getName(), attr.getElement3f(index));
+		else if (attr.elementLength() == 4)
+			vertex.setAttribute4f(attr.getName(), attr.getElement4f(index));
+		else
+			THROW(UnknownVariantError, "Unsupported attribute length in getVertex");
+	}
+	return vertex;
+}
