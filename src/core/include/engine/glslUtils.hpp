@@ -10,6 +10,7 @@
 #include <GL/glew.h>
 #include <GLFW/glfw3.h>
 
+#include "buffers.hpp"
 #include "macroParsing.hpp"
 
 
@@ -184,27 +185,7 @@ public:
 	mat4 vp(float t);
 };
 
-class AttributeBuffer {
-public:
-	string name;
-	GLuint bufferAddress;
-	size_t size;
-	GLSLType type;
-	int inputNumber;
-	bool enabled;
-	bool bufferInitialized;
 
-
-	AttributeBuffer(const string &name, GLSLType type, int inputNumber);
-	virtual ~AttributeBuffer();
-
-
-	virtual void initBuffer();
-	virtual void enable();
-	virtual void disable();
-	virtual void load(const void* firstElementAdress, int bufferLength);
-	virtual void freeBuffer();
-};
 
 
 

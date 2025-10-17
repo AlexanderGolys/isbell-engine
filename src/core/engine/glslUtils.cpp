@@ -706,67 +706,6 @@ mat4 Camera::mvp(float t, const mat4 &modelTransform)
 }
 
 
-AttributeBuffer::AttributeBuffer(const string &name, GLSLType type, int inputNumber)
-{
-	this->name = name;
-	this->type = type;
-	this->bufferAddress = 0;
-	this->size = sizeOfGLSLType(type);
-	this->enabled = false;
-	this->bufferInitialized = false;
-	this->inputNumber = inputNumber;
-}
-
-AttributeBuffer::~AttributeBuffer()
-{
-	if (enabled) AttributeBuffer::disable();
-	if (bufferInitialized) AttributeBuffer::freeBuffer();
-}
-
-void AttributeBuffer::initBuffer()
-{
-	this->bufferInitialized = true;
-	GLuint buffer;
-	glGenBuffers(1, &buffer);
-	this->bufferAddress = buffer;
-    // glBufferData(GL_ARRAY_BUFFER, bufferLength * this->size, firstElementAdress, GL_STATIC_DRAW);
-}
-
-void AttributeBuffer::enable()
-{
-	glEnableVertexAttribArray(this->inputNumber);
-	glBindBuffer(GL_ARRAY_BUFFER, this->bufferAddress);
-	this->enabled = true;
-	glVertexAttribPointer(this->inputNumber, lengthOfGLSLType(this->type), GL_FLOAT, GL_FALSE, 0, (void *)0);
-}
-
-void AttributeBuffer::disable()
-{
-	glDisableVertexAttribArray(this->inputNumber);
-	this->enabled = false;
-}
-
-void AttributeBuffer::load(const void *firstElementAdress, int bufferLength)
-{
-	if (!bufferInitialized) {
-	    initBuffer();
-	    glBindBuffer(GL_ARRAY_BUFFER, this->bufferAddress);
-	    glBufferData(GL_ARRAY_BUFFER, bufferLength * this->size, firstElementAdress, GL_DYNAMIC_DRAW);
-	    return;
-	}
-	glBindBuffer(GL_ARRAY_BUFFER, this->bufferAddress);
-     glBufferData(GL_ARRAY_BUFFER, bufferLength * this->size, firstElementAdress, GL_DYNAMIC_DRAW);
-
-
-}
-
-void AttributeBuffer::freeBuffer() {
-    glDeleteBuffers(1, &this->bufferAddress);
-    this->bufferAddress = -1;
-    this->bufferInitialized = false;
-    this->enabled = false;
-}
-
 RenderingStep::RenderingStep(const shared_ptr<ShaderProgram> &shader)
 {
 	this->shader = shader;

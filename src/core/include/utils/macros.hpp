@@ -159,7 +159,7 @@ std::function<A(std::function<B(C)>)> curr(std::function<A(B, C)> f) {
 // }
 
 #define THROW(ErrType, ...) throw ErrType(__VA_ARGS__ __VA_OPT__(,) __FILE__, __LINE__)
-#define THROW_IF(cond, ErrType, ...) if (cond) THROW(ErrType, __VA_ARGS__)
+#define THROW_IF(cond, ErrType, ...) if (cond) throw ErrType(__VA_ARGS__ __VA_OPT__(,) __FILE__, __LINE__)
 
 
 #ifdef _WIN32

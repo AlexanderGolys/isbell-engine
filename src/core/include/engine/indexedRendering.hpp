@@ -93,7 +93,6 @@ public:
 	size_t bufferSize(CommonBufferType type) const;
 	void *firstElementAddress(CommonBufferType type) const;
 	bool isActive(CommonBufferType type) const;
-	bool hasMaterial() const;
 
 	string getExtraBufferName(int slot) const;
 	vector<string> getExtraBufferNames() const;

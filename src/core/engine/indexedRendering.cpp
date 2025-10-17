@@ -89,8 +89,6 @@ void *BufferManager::firstElementAddress(CommonBufferType type) const {
 
 bool BufferManager::isActive(CommonBufferType type) const { return activeBuffers.contains(type); }
 
-bool BufferManager::hasMaterial() const { return isActive(MATERIAL1); }
-
 string BufferManager::getExtraBufferName(int slot) const { return extraBufferNames[slot]; }
 
 vector<string> BufferManager::getExtraBufferNames() const { return extraBufferNames; }

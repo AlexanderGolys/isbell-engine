@@ -1000,10 +1000,10 @@ public:
 	float x() const { return re(); }
 	float y() const { return im(); }
 
-	auto square() const -> Complex;
-	auto sqrt() const -> Complex;
+	Complex square() const;
+	Complex sqrt() const;
 
-	explicit operator glm::vec2() const;
+	explicit operator vec2() const;
 	explicit operator string() const;
 
 	bool nearlyEqual(Complex c) const;
