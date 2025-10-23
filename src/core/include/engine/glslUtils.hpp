@@ -39,31 +39,6 @@ int predefinedWidth(Resolution res);
 int predefinedHeight(Resolution res);
 
 
-class Window {
-public:
-	GLFWwindow* window;
-	int width;
-	int height;
-	float aspectRatio;
-	Window(int width, int height, const char* title);
-	Window(Resolution resolution, const char* title);
-	~Window();
-	int destroy();
-
-	void initViewport();
-
-	void showCursor();
-	void disableCursor();
-	void hideCursorWithinWindow();
-	void stickyKeys(bool sticky);
-	void stickyMouseButtons(bool sticky);
-	void setCallbacks(const GLFWkeyfun* keyCallback = nullptr, const GLFWcharfun* charCallback = nullptr, const GLFWmousebuttonfun* mouseButtonCallback = nullptr, GLFWcursorposfun* cursorPosCallback = nullptr, GLFWcursorenterfun* cursorEnterCallback = nullptr, GLFWscrollfun* scrollCallback = nullptr, GLFWdropfun* dropCallback = nullptr);
-	bool isOpen();
-
-	void renderFramebufferToScreen();
-};
-
-
 
 size_t sizeOfGLSLType(GLSLType type);
 int lengthOfGLSLType(GLSLType type);
