@@ -15,15 +15,12 @@
 #include "logging.hpp"
 
 
-class Texture;
-
 void error_callback(int error, const char* description);
 void key_callback(GLFWwindow* window, int key, int scancode, int action, int mods);
 
 GLuint bindVAO();
 void disableAttributeArrays(int how_many=4);
 mat4 generateMVP(vec3 camPosition, vec3 camLookAt, vec3 upVector, float fov, float aspectRatio, float clippingRangeMin, float clippingRangeMax, const mat4 &modelTransform);
-GLuint LoadShaders(const char* vertex_file_path, const char* fragment_file_path);
 void setUniformTextureSampler(GLuint programID, Texture* texture, int textureSlot);
 
 
@@ -90,8 +87,8 @@ public:
 
 	Shader(const Shader &other);
 	Shader(Shader &&other) noexcept;
-	Shader & operator=(const Shader &other);
-	Shader & operator=(Shader &&other) noexcept;
+	Shader& operator=(const Shader &other);
+	Shader& operator=(Shader &&other) noexcept;
 	virtual ~Shader() = default;
 
 
@@ -107,13 +104,13 @@ class ShaderProgram {
 protected:
 	Shader vertexShader;
 	Shader fragmentShader;
-	std::optional<Shader> geometryShader;
+	optional<Shader> geometryShader;
 
 	ShaderType shaderType;
 
 public:
-	std::unordered_map<string, GLuint> uniformLocations;
-	std::unordered_map<string, GLSLType> uniformTypes;
+	unordered_map<string, GLuint> uniformLocations;
+	unordered_map<string, GLSLType> uniformTypes;
 
 	GLuint programID;
 
@@ -121,18 +118,17 @@ public:
 	ShaderProgram(const Shader &vertexShader, const Shader &fragmentShader, const Shader &geometryShader);
 	ShaderProgram(const string &vertexPath, const string &fragPath);
 
-
 	void linkShaders();
 
 	explicit ShaderProgram(const string &standard_file_path);
 	~ShaderProgram();
 
 	void use();
-	void initUniforms(const std::unordered_map<string, GLSLType> &uniforms);
+	void initUniforms(const unordered_map<string, GLSLType> &uniforms);
 	void initTextureSampler(const Texture* texture);
 
 	void setTextureSampler(const Texture* texture) const;
-	void setUniforms(const std::unordered_map<string, const GLfloat*> &uniformValues);
+	void setUniforms(const unordered_map<string, const GLfloat*> &uniformValues);
 	void setUniform(const string &uniformName, const GLfloat* uniformValue);
 	void setUniform(const string &uniformName, float uniformValue);
 	void setUniform(const string &uniformName, int uniformValue);
@@ -197,8 +193,7 @@ public:
 
 	Attribute(const string &name, GLSLType type, int inputNumber, CommonBufferType bufferType);
 	virtual ~Attribute();
-
-
+	
 	virtual void initBuffer();
 	virtual void enable();
 	virtual void disable();
@@ -234,20 +229,20 @@ public:
 
 	void setWeakSuperMesh(const shared_ptr<IndexedMesh> &super);
 
-	int findAttributeByName(const string &name);
+	int findAttributeByName(const string &name) const;
 	void initStdAttributes();
     void initElementBuffer();
-	void resetAttributeBuffers();
+	void resetAttributeBuffers() const;
 	void initUnusualAttributes(const vector<shared_ptr<Attribute>>& attributes);
 	void initWeakMeshAttributes();
 
-	void loadMeshAttributes();
-    void loadElementBuffer();
-	void enableAttributes();
-	void disableAttributes();
+	void loadMeshAttributes() const;
+    void loadElementBuffer() const;
+	void enableAttributes() const;
+	void disableAttributes() const;
 
 	void initMaterialTextures();
-	void bindTextures();
+	void bindTextures() const;
 
 	void addCustomAction(const std::function<void(float)> &action);
     bool weakSuperLoaded() const;
@@ -328,7 +323,7 @@ public:
 	void setLightWithMesh(const Light &light, const shared_ptr<MaterialPhong> &material, const ShaderProgram &shader, float radius);
 	void setLightsWithMesh(const vector<Light> &lights, const shared_ptr<MaterialPhong> &material, const ShaderProgram &shader, float radius);
 	void setLightWithMesh(const Light &light, float ambient, float diff, float spec, float shine, const ShaderProgram &shader, float radius);
-	void setLightsWithMesh(const vector<Light> &lights, float ambient, float diff, float spec, float shine, const ShaderProgram &shader, float radius);
+	void setLightsWithMesh(const vector<Light> &lights_, float ambient, float diff, float spec, float shine, const ShaderProgram &shader, float radius);
 
 	void addRenderingStep(shared_ptr<RenderingStep> renderingStep);
 	void addMeshStep(const ShaderProgram& shader, const shared_ptr<IndexedMesh> &model, const shared_ptr<MaterialPhong>& material);

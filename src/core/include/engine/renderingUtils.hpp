@@ -7,7 +7,6 @@
 #include <variant>
 #include <vector>
 #include <string>
-// #include <glm/glm.hpp>
 
 #include <memory>
 #include <optional>
@@ -31,7 +30,6 @@ enum GLSLType {
 	SAMPLER3D
 };
 
-// TODO: check if textures are not copied
 class Texture {
 public:
 	int width, height;

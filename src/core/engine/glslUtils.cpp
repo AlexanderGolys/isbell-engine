@@ -451,7 +451,7 @@ void ShaderProgram::use()
 	glUseProgram(this->programID);
 }
 
-void ShaderProgram::initUniforms(const std::unordered_map<string, GLSLType> &uniforms)
+void ShaderProgram::initUniforms(const unordered_map<string, GLSLType> &uniforms)
 {
 	for (auto uni : uniforms)
 		this->uniformTypes[uni.first] = uni.second;
@@ -477,7 +477,7 @@ void ShaderProgram::setTextureSampler(const Texture *texture) const
 	glUniform1i(uniformLocation, texture->abs_slot);
 }
 
-void ShaderProgram::setUniforms(const std::unordered_map<string, const GLfloat *> &uniformValues)
+void ShaderProgram::setUniforms(const unordered_map<string, const GLfloat *> &uniformValues)
 {
 	for (auto const &uniform : uniformValues)
 		setUniform(uniform.first, uniform.second);
@@ -806,7 +806,7 @@ void RenderingStep::setWeakSuperMesh(const shared_ptr<IndexedMesh> &super) {
     this-> weak_super = super;
 }
 
-int RenderingStep::findAttributeByName(const string &name) {
+int RenderingStep::findAttributeByName(const string &name) const {
 	for (int i = 0; i < attributes.size(); i++)
 		if (attributes[i]->name == name)
 			return i;
@@ -820,7 +820,7 @@ void RenderingStep::initMaterialTextures() {
 	shader->initTextureSampler(material->texture_specular.get());
 }
 
-void RenderingStep::bindTextures() {
+void RenderingStep::bindTextures() const {
 	material->bindTextures();
 	shader->setTextureSampler(material->texture_ambient.get());
 	shader->setTextureSampler(material->texture_diffuse.get());
@@ -835,7 +835,7 @@ void RenderingStep::initElementBuffer() {
 
 }
 
-void RenderingStep::loadElementBuffer() {
+void RenderingStep::loadElementBuffer() const {
     if (!weakSuperLoaded())
         throw std::invalid_argument("Element buffer can only be loaded for weak super mesh");
     glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, elementBufferLoc);
@@ -864,8 +864,7 @@ void RenderingStep::initStdAttributes()
 		attribute->initBuffer();
 }
 
-void RenderingStep::resetAttributeBuffers()
-{
+void RenderingStep::resetAttributeBuffers() const {
 	for (const auto& attribute : attributes)
 		attribute->freeBuffer();
 }
@@ -879,7 +878,7 @@ void RenderingStep::initUnusualAttributes(const std::vector<shared_ptr<Attribute
 
 
 
-void RenderingStep::loadMeshAttributes() {
+void RenderingStep::loadMeshAttributes() const {
 	for (const auto& attribute : attributes)
 		attribute->load(weak_super->getBufferLocation(attribute->bufferType), weak_super->getBufferLength(attribute->bufferType));
 }
@@ -888,14 +887,12 @@ void RenderingStep::initWeakMeshAttributes() {
 	initStdAttributes();
 }
 
-void RenderingStep::enableAttributes()
-{
+void RenderingStep::enableAttributes() const {
 	for (const auto& attribute : attributes)
 		attribute->enable();
 }
 
-void RenderingStep::disableAttributes()
-{
+void RenderingStep::disableAttributes() const {
 	for (const auto& attribute : attributes)
 		attribute->disable();
 }
@@ -1007,9 +1004,9 @@ void RenderingStep::init(const shared_ptr<Camera> &cam, const std::vector<Light>
     	addMaterialUniforms();
 		addCameraUniforms(cam);
     	addLightsUniforms(lights);
-
         loadMeshAttributes();
         loadElementBuffer();
+    	enableAttributes();
     }
 }
 
@@ -1030,14 +1027,14 @@ bool RenderingStep::weakSuperLoaded() const {
 
 
 void RenderingStep::weakMeshRenderStep(float t) {
+	shader->use();
+	enableAttributes();
     loadMeshAttributes();
     customStep(t);
     setUniforms(t);
     loadElementBuffer();
-	// bindTextures();
 
-    enableAttributes();
-    glDrawElements(GL_TRIANGLES, weak_super->bufferIndexSize(), GL_UNSIGNED_INT, 0);
+    glDrawElements(GL_TRIANGLES, weak_super->bufferIndexSize(), GL_UNSIGNED_INT, nullptr);
     disableAttributes();
 }
 
@@ -1179,8 +1176,8 @@ void Renderer::setLightsWithMesh(const std::vector<Light> &lights, const shared_
 void Renderer::setLightWithMesh(const Light &light, float ambient, float diff, float spec, float shine, const ShaderProgram &shader, float radius) {
 	setLightWithMesh(light, make_shared<MaterialPhong>(light.getColor(), light.getColor(), WHITE, ambient, diff, spec, shine), shader, radius);
 }
-void Renderer::setLightsWithMesh(const std::vector<Light> &lights, float ambient, float diff, float spec, float shine, const ShaderProgram &shader, float radius) {
-	for (const auto &light : lights)
+void Renderer::setLightsWithMesh(const std::vector<Light> &lights_, float ambient, float diff, float spec, float shine, const ShaderProgram &shader, float radius) {
+	for (const auto &light : lights_)
 		setLightWithMesh(light, ambient, diff, spec, shine, shader, radius);
 }
 
