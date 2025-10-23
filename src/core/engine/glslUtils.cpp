@@ -1023,9 +1023,7 @@ Renderer::Renderer(float animSpeed, vec4 bgColor, const string &screenshotDirect
 	this->lights = std::vector<Light>();
 	logging::Logger::init();
 
-	glfwSetErrorCallback([](int error, const char* description) {
-        std::cerr << "GLFW Error " << error << ": " << description << std::endl;
-    });
+
     if (!glfwInit()) {
         throw SystemError("Failed to initialize GLFW", __FILE__, __LINE__);
     }

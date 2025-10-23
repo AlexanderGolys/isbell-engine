@@ -1,9 +1,8 @@
 #include "buffers.hpp"
 #include "exceptions.hpp"
 
-AttributeDataArray::AttributeDataArray(const string &name, unsigned char elementLength)
-	: name(name)
-	, elementLen(elementLength) {
+AttributeDataArray::AttributeDataArray(const string& name, unsigned char elementLength)
+: name(name), elementLen(elementLength) {
 	THROW_IF(elementLength < 1, ValueError, "Attribute type must be real vector space of dimension at least 1");
 	THROW_IF(elementLength > 4, ValueError, "Attribute type must be real vector space of dimension at most 4, got" + to_string(elementLength));
 }
@@ -11,60 +10,65 @@ AttributeDataArray::AttributeDataArray(const string &name, unsigned char element
 unsigned char AttributeDataArray::elementLength() const {
 	return elementLen;
 }
+
 size_t AttributeDataArray::elementSize() const {
 	return elementLen * sizeof(float);
 }
+
 unsigned int AttributeDataArray::length() const {
 	return data.size() / elementLen;
 }
+
 size_t AttributeDataArray::size() const {
 	return data.size() * sizeof(float);
 }
-const string &AttributeDataArray::getName() const {
+
+const string& AttributeDataArray::getName() const {
 	return name;
 }
-const float *AttributeDataArray::getDataPointer() const {
+
+const float* AttributeDataArray::getDataPointer() const {
 	return data.data();
 }
 
-void AttributeDataArray::setData(const vector<float> &new_data) {
+void AttributeDataArray::setData(const vector<float>& new_data) {
 	THROW_IF(elementLen != 1, ValueError, "to set data with vector<float>, element type must be float");
 	this->data = new_data;
 	markDirty();
 }
 
-void AttributeDataArray::setData(const vector<vec2> &new_data) {
+void AttributeDataArray::setData(const vector<vec2>& new_data) {
 	THROW_IF(elementLen != 2, ValueError, "to set data with vector<vec2>, element type must be vec2");
 	if (new_data.size() == 0) {
 		this->data = {};
 		markDirty();
 		return;
 	}
-	const float *ptr = reinterpret_cast<const float *>(new_data.data());
+	const float* ptr = reinterpret_cast<const float*>(new_data.data());
 	this->data = vector(ptr, ptr + 2 * new_data.size());
 	markDirty();
 }
 
-void AttributeDataArray::setData(const vector<vec3> &new_data) {
+void AttributeDataArray::setData(const vector<vec3>& new_data) {
 	THROW_IF(elementLen != 3, ValueError, "to set data with vector<vec3>, element type must be vec3");
 	if (new_data.size() == 0) {
 		this->data = {};
 		markDirty();
 		return;
 	}
-	const float *ptr = reinterpret_cast<const float *>(new_data.data());
+	const float* ptr = reinterpret_cast<const float*>(new_data.data());
 	this->data = vector(ptr, ptr + 3 * new_data.size());
 	markDirty();
 }
 
-void AttributeDataArray::setData(const vector<vec4> &new_data) {
+void AttributeDataArray::setData(const vector<vec4>& new_data) {
 	THROW_IF(elementLen != 4, ValueError, "to set data with vector<vec4>, element type must be vec4");
 	if (new_data.size() == 0) {
 		this->data = {};
 		markDirty();
 		return;
 	}
-	const float *ptr = reinterpret_cast<const float *>(new_data.data());
+	const float* ptr = reinterpret_cast<const float*>(new_data.data());
 	this->data = vector(ptr, ptr + 4 * new_data.size());
 	markDirty();
 }
@@ -74,12 +78,14 @@ void AttributeDataArray::append(float value) {
 	data.push_back(value);
 	markDirty();
 }
+
 void AttributeDataArray::append(vec2 value) {
 	THROW_IF(elementLen != 2, ValueError, "to append vec2, element type must have len 2, not " + to_string(elementLen));
 	data.push_back(value.x);
 	data.push_back(value.y);
 	markDirty();
 }
+
 void AttributeDataArray::append(vec3 value) {
 	THROW_IF(elementLen != 3, ValueError, "to append vec3, element type must have len 3, not " + to_string(elementLen));
 	data.push_back(value.x);
@@ -87,6 +93,7 @@ void AttributeDataArray::append(vec3 value) {
 	data.push_back(value.z);
 	markDirty();
 }
+
 void AttributeDataArray::append(vec4 value) {
 	THROW_IF(elementLen != 4, ValueError, "to append vec4, element type must have len 4, not " + to_string(elementLen));
 	data.push_back(value.x);
@@ -153,6 +160,7 @@ vec2 AttributeDataArray::getElement2f(int index) const {
 	THROW_IF(elementLen != 2, ValueError, "to get element as vec2, element type must be vec2");
 	return vec2(data[index * 2], data[index * 2 + 1]);
 }
+
 vec3 AttributeDataArray::getElement3f(int index) const {
 	if (index < 0)
 		index += length();
@@ -160,6 +168,7 @@ vec3 AttributeDataArray::getElement3f(int index) const {
 	THROW_IF(elementLen != 3, ValueError, "to get element as vec3, element type must be vec3");
 	return vec3(data[index * 3], data[index * 3 + 1], data[index * 3 + 2]);
 }
+
 vec4 AttributeDataArray::getElement4f(int index) const {
 	if (index < 0)
 		index += length();
@@ -192,22 +201,31 @@ bool AttributeDataArray::isDirty() const {
 	return dirty;
 }
 
+void AttributeDataArray::reserveSpace(unsigned int newLength) {
+	data.reserve(newLength * elementLen);
+}
+
 VertexData::VertexData(std::initializer_list<pair<string, unsigned char>> attributeInfos) {
-	for (const auto &attrInfo: attributeInfos)
+	for (const auto& attrInfo : attributeInfos)
 		attributes.emplace_back(attrInfo.first, attrInfo.second);
 }
 
 void VertexData::reserve(unsigned int numberOfVertices, unsigned int numberOfTriangles) {
-	for (auto &attr: attributes)
+	for (auto& attr : attributes)
 		attr.reserveSpace(numberOfVertices);
 	indices.reserve(numberOfTriangles);
 }
 
-void VertexData::setVertexAttribute(int vertexIndex, const string &attributeName, float value) {
+void VertexData::addAttribute(const string& name, unsigned char elementLength) {
+	THROW_IF(vertexCount() > 0, ValueError, "Cannot add attribute after vertices have been added");
+	attributes.emplace_back(name, elementLength);
+}
+
+void VertexData::setVertexAttribute(int vertexIndex, const string& attributeName, float value) {
 	if (vertexIndex < 0)
 		vertexIndex += vertexCount();
 	THROW_IF(vertexIndex < 0 || vertexIndex >= vertexCount(), IndexOutOfBounds, vertexIndex, vertexCount(), "VertexData setVertexAttribute float");
-	for (auto &attr: attributes) {
+	for (auto& attr : attributes) {
 		if (attr.getName() == attributeName) {
 			THROW_IF(attr.elementLength() != 1, ValueError, "Attribute " + attributeName + " is not of length 1");
 			attr.setElement(vertexIndex, value);
@@ -217,11 +235,11 @@ void VertexData::setVertexAttribute(int vertexIndex, const string &attributeName
 	THROW(UnknownVariantError, "Attribute " + attributeName + " not found");
 }
 
-void VertexData::setVertexAttribute(int vertexIndex, const string &attributeName, const vec2 &value) {
+void VertexData::setVertexAttribute(int vertexIndex, const string& attributeName, const vec2& value) {
 	if (vertexIndex < 0)
 		vertexIndex += vertexCount();
 	THROW_IF(vertexIndex < 0 || vertexIndex >= vertexCount(), IndexOutOfBounds, vertexIndex, vertexCount(), "VertexData setVertexAttribute vec2");
-	for (auto &attr: attributes) {
+	for (auto& attr : attributes) {
 		if (attr.getName() == attributeName) {
 			THROW_IF(attr.elementLength() != 2, ValueError, "Attribute " + attributeName + " is not of length 2");
 			attr.setElement(vertexIndex, value);
@@ -231,11 +249,11 @@ void VertexData::setVertexAttribute(int vertexIndex, const string &attributeName
 	THROW(UnknownVariantError, "Attribute " + attributeName + " not found");
 }
 
-void VertexData::setVertexAttribute(int vertexIndex, const string &attributeName, const vec3 &value) {
+void VertexData::setVertexAttribute(int vertexIndex, const string& attributeName, const vec3& value) {
 	if (vertexIndex < 0)
 		vertexIndex += vertexCount();
 	THROW_IF(vertexIndex < 0 || vertexIndex >= vertexCount(), IndexOutOfBounds, vertexIndex, vertexCount(), "VertexData setVertexAttribute vec3");
-	for (auto &attr: attributes) {
+	for (auto& attr : attributes) {
 		if (attr.getName() == attributeName) {
 			THROW_IF(attr.elementLength() != 3, ValueError, "Attribute " + attributeName + " is not of length 3");
 			attr.setElement(vertexIndex, value);
@@ -245,11 +263,11 @@ void VertexData::setVertexAttribute(int vertexIndex, const string &attributeName
 	THROW(UnknownVariantError, "Attribute " + attributeName + " not found");
 }
 
-void VertexData::setVertexAttribute(int vertexIndex, const string &attributeName, const vec4 &value) {
+void VertexData::setVertexAttribute(int vertexIndex, const string& attributeName, const vec4& value) {
 	if (vertexIndex < 0)
 		vertexIndex += vertexCount();
 	THROW_IF(vertexIndex < 0 || vertexIndex >= vertexCount(), IndexOutOfBounds, vertexIndex, vertexCount(), "VertexData setVertexAttribute vec4");
-	for (auto &attr: attributes) {
+	for (auto& attr : attributes) {
 		if (attr.getName() == attributeName) {
 			THROW_IF(attr.elementLength() != 4, ValueError, "Attribute " + attributeName + " is not of length 4");
 			attr.setElement(vertexIndex, value);
@@ -260,11 +278,10 @@ void VertexData::setVertexAttribute(int vertexIndex, const string &attributeName
 }
 
 void VertexData::addTriangle(int v1, int v2, int v3) {
-	int vertCount = vertexCount();
 	indices.emplace_back(v1, v2, v3);
 }
 
-void VertexData::addTriangle(const ivec3 &triangle) {
+void VertexData::addTriangle(const ivec3& triangle) {
 	addTriangle(triangle.x, triangle.y, triangle.z);
 }
 
@@ -279,18 +296,15 @@ unsigned int VertexData::triangleCount() const {
 }
 
 
-
-AttributeBuffer::AttributeBuffer(const string &name, ShaderDataType type, int inputNumber)
-	: name(name)
-	, type(type)
-	, inputNumber(inputNumber) {}
+AttributeBuffer::AttributeBuffer(const string& name, ShaderDataType type, int inputNumber)
+: name(name), type(type), inputNumber(inputNumber) {}
 
 AttributeBuffer::~AttributeBuffer() {
 	if (initialized)
 		free();
 }
 
-const string &AttributeBuffer::getName() const {
+const string& AttributeBuffer::getName() const {
 	return name;
 }
 
@@ -318,17 +332,17 @@ void AttributeBuffer::init() {
 	initialized = true;
 }
 
-void AttributeBuffer::uploadData(const AttributeDataArray &dataArray) {
+void AttributeBuffer::uploadData(const AttributeDataArray& dataArray) {
 	if (!initialized)
 		init();
 
 	THROW_IF(dataArray.getBaseType() != type, ValueError,
-			 "AttributeBuffer " + name + " type mismatch: expected " + to_string(type) + " but got " + to_string(dataArray.getBaseType()));
+			 "AttributeBuffer " + name + " type mismatch: expected " + to_string(type) + " but got " + to_string( dataArray.getBaseType()));
 
 	glNamedBufferData(vboID, dataArray.size(), dataArray.getDataPointer(), GL_DYNAMIC_DRAW);
 }
 
-void AttributeBuffer::uploadDataIfDirty(AttributeDataArray &dataArray) {
+void AttributeBuffer::uploadDataIfDirty(AttributeDataArray& dataArray) {
 	if (!dataArray.isDirty())
 		return;
 
@@ -353,19 +367,15 @@ VAO::~VAO() {
 		free();
 }
 
-VAO::VAO(VAO &&other) noexcept
-	: vaoID(other.vaoID)
-	, eboID(other.eboID)
-	, attributes(std::move(other.attributes))
-	, initialized(other.initialized)
-	, indexCount(other.indexCount) {
+VAO::VAO(VAO&& other) noexcept
+: vaoID(other.vaoID), eboID(other.eboID), attributes(std::move(other.attributes)), initialized(other.initialized), indexCount(other.indexCount) {
 	other.vaoID = 0;
 	other.eboID = 0;
 	other.initialized = false;
 	other.indexCount = 0;
 }
 
-VAO &VAO::operator=(VAO &&other) noexcept {
+VAO& VAO::operator=(VAO&& other) noexcept {
 	if (this != &other) {
 		if (initialized)
 			free();
@@ -396,7 +406,7 @@ void VAO::init() {
 	initialized = true;
 }
 
-void VAO::addAttribute(int location, shared_ptr<AttributeBuffer> buffer, int components, GLenum type, int stride, int offset) {
+void VAO::addAttribute(int location, const shared_ptr<AttributeBuffer>& buffer, int components, GLenum type, int stride, int offset) {
 	if (!initialized)
 		init();
 
@@ -411,7 +421,7 @@ void VAO::addAttribute(int location, shared_ptr<AttributeBuffer> buffer, int com
 	attributes.push_back(buffer);
 }
 
-void VAO::uploadIndices(const vector<ivec3> &indices) {
+void VAO::uploadIndices(const vector<ivec3>& indices) {
 	if (!initialized)
 		init();
 
@@ -419,7 +429,7 @@ void VAO::uploadIndices(const vector<ivec3> &indices) {
 	glNamedBufferData(eboID, indices.size() * sizeof(ivec3), indices.data(), GL_STATIC_DRAW);
 }
 
-void VAO::uploadIndices(const void *data, unsigned int count) {
+void VAO::uploadIndices(const void* data, unsigned int count) {
 	if (!initialized)
 		init();
 
@@ -427,9 +437,9 @@ void VAO::uploadIndices(const void *data, unsigned int count) {
 	glNamedBufferData(eboID, count * sizeof(unsigned int), data, GL_STATIC_DRAW);
 }
 
-void VAO::updateDirtyBuffers(VertexData &vertexData) {
-	for (auto &buffer: attributes) {
-		for (auto &attrData: vertexData.attributes) {
+void VAO::updateDirtyBuffers(VertexData& vertexData) {
+	for (auto& buffer : attributes) {
+		for (auto& attrData : vertexData.attributes) {
 			if (attrData.getName() == buffer->getName()) {
 				buffer->uploadDataIfDirty(attrData);
 				break;

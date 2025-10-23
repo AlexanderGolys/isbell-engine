@@ -36,6 +36,7 @@ local inc = {
     ".",
     "src/core/include",
     "src/core/include/utils",
+    "src/core/include/application",
     "src/core/include/engine",
     "src/core/include/engine/sdf-rendering",
     "src/core/include/geometry",

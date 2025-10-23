@@ -46,9 +46,7 @@ public:
 	void markClean();
 	bool isDirty() const;
 
-	void reserveSpace(unsigned int newLength) {
-		data.reserve(newLength * elementLen);
-	}
+	void reserveSpace(unsigned int newLength);
 };
 
 
@@ -59,6 +57,7 @@ public:
 
 	VertexData(std::initializer_list<pair<string, unsigned char>> attributeInfos);
 	void reserve(unsigned int numberOfVertices, unsigned int numberOfTriangles);
+	void addAttribute(const string &name, unsigned char elementLength);
 
 	template<typename VertexStruct>
 	vector<VertexStruct> toVertexArray() const;
@@ -131,7 +130,7 @@ public:
 	VAO &operator=(VAO &&other) noexcept;
 
 	void init();
-	void addAttribute(int location, shared_ptr<AttributeBuffer> buffer, int components, GLenum type, int stride, int offset);
+	void addAttribute(int location, const shared_ptr<AttributeBuffer>& buffer, int components, GLenum type, int stride, int offset);
 	void uploadIndices(const vector<ivec3> &indices);
 	void uploadIndices(const void *data, unsigned int count);
 	void updateDirtyBuffers(VertexData &vertexData);
@@ -171,9 +170,9 @@ void VertexData::addVertex(const VertexStruct &vertex) {
 
 template<typename VertexStruct>
 void VertexData::fromVertexArray(const vector<VertexStruct> &vertexArray) {
-	for (const auto &vertex: vertexArray) {
+	for (const auto &vertex: vertexArray)
 		addVertex(vertex);
-	}
+
 }
 
 template<typename VertexStruct>
