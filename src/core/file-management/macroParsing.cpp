@@ -67,45 +67,6 @@ string JSONParser::operator[](const string &key) const {
 	return code.substr(valueStart + 1, valueEnd - valueStart - 1);
 }
 
-ConfigFile::ConfigFile(const string &configPath) : jsonParser(configPath) {}
-
-string ConfigFile::operator[](const string &key) const {
-	return jsonParser[key];
-}
-
-string ConfigFile::at(const string &key) const {return jsonParser[key];}
-
-Path ConfigFile::getRoot() const {
-	return Path(at("root_rel_build"));
-}
-
-Path ConfigFile::getMainShaderDirectory() const {
-	return Path(at("shadersDir"));
-}
-
-Path ConfigFile::getSDFMacroShader() const {
-	return Path(at("templateShaders"));
-}
-
-Path ConfigFile::getMathToolsShaderMacro() const {
-	return Path(at("mathToolsShaderMacro"));
-}
-
-Path ConfigFile::getLightToolsShaderMacro() const {
-	return Path(at("lightToolsShaderMacro"));
-}
-
-Path ConfigFile::getStructsShaderMacro() const {
-	return Path(at("structsShaderMacro"));
-}
-
-Path ConfigFile::getShadersDir() const {
-	return Path(at("shadersDir"));
-}
-
-Path ConfigFile::getScreenshotsDir() const {
-	return Path(at("screenshotsDir"));
-}
 
 TemplateCodeFile::TemplateCodeFile(const CodeFileDescriptor &templateCode, const CodeFileDescriptor &target, const vector<CodeMacro> &macros)
 : templateCode(templateCode), target(target), macros(macros) {}

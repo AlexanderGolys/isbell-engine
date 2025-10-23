@@ -1,9 +1,5 @@
 #pragma once
 
-#include "indexedRendering.hpp"
-#include "renderingUtils.hpp"
-#include "file-management/filesUtils.hpp"
-#include "utils/logging.hpp"
 
 #include <cstdio>
 #include <cstdlib>
@@ -13,6 +9,10 @@
 #include "macroParsing.hpp"
 
 
+#include "indexedRendering.hpp"
+#include "renderingUtils.hpp"
+#include "filesUtils.hpp"
+#include "logging.hpp"
 
 
 class Texture;

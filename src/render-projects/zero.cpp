@@ -1,5 +1,5 @@
-#include "../engine/specific.hpp"
-#include "../engine/interface.hpp"
+#include "specific.hpp"
+#include "interface.hpp"
 
 using namespace glm;
 using std::vector, std::string, std::shared_ptr, std::unique_ptr, std::pair, std::make_unique, std::make_shared, std::cout, std::endl;
@@ -29,8 +29,8 @@ int main() {
 	vec4 blue = BLUE_PALLETTE[5];
 	blue.w = .8;
 
-	auto floormat = MaterialPhong(blue, .25, .71536, .2112348, 1.0);
-	auto material_curve = MaterialPhong(REDPINK_PALLETTE[5], .15, .71536, .35112348, 15.0);
+	auto floormat = make_shared<MaterialPhong>(blue, .25, .71536, .2112348, 1.0);
+	auto material_curve = make_shared<MaterialPhong>(REDPINK_PALLETTE[5], .15, .71536, .35112348, 15.0);
 
 	auto hyperbola2 = DiscreteRealFunctionNonUniform(1.0f/X_R, .01, .001, vec2(.2, 8), true);
 	auto hyperbola = DiscreteRealFunctionNonUniform(1.0f/X_R, .01, .001, vec2(-8, -.2), true);
@@ -48,13 +48,13 @@ int main() {
 
 
 	auto shader_curve = ShaderProgram(
-		R"(C:\Users\PC\Desktop\ogl-master\src\shaders\shaders2\curve.vert)",
-		R"(C:\Users\PC\Desktop\ogl-master\src\shaders\shaders2\basic_alpha1.frag)");
+		R"(C:\Users\shitstem\Desktop\cppProjects\isbell-engine\src\core\shaders\shaders2\curve.vert)",
+		R"(C:\Users\shitstem\Desktop\cppProjects\isbell-engine\src\core\shaders\shaders2\basic_alpha1.frag)");
 
 
 	auto shader_floor = ShaderProgram(
-	R"(C:\Users\PC\Desktop\ogl-master\src\shaders\shaders2\basic.vert)",
-	R"(C:\Users\PC\Desktop\ogl-master\src\shaders\shaders2\basic.frag)");
+	R"(C:\Users\shitstem\Desktop\cppProjects\isbell-engine\src\core\shaders\shaders2\basic.vert)",
+	R"(C:\Users\shitstem\Desktop\cppProjects\isbell-engine\src\core\shaders\shaders2\basic.frag)");
 
 	shared_ptr<Camera> camera = make_shared<Camera>(
 		make_shared<SmoothParametricCurve>([](float t) { return vec3(8, -5, 9); }),

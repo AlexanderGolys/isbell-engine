@@ -1,7 +1,7 @@
 #pragma once
-#include "engine/specific.hpp"
-#include "file-management/filesUtils.hpp"
-#include "engine/glslUtils.hpp"
+#include "specific.hpp"
+#include "filesUtils.hpp"
+#include "glslUtils.hpp"
 
 
 

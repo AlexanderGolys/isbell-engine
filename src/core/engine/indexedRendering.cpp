@@ -6,7 +6,7 @@
 #include <ranges>
 #include<sstream>
 
-#include "utils/randomUtils.hpp"
+#include "randomUtils.hpp"
 
 using namespace glm;
 

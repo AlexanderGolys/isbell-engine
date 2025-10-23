@@ -2,7 +2,7 @@
 
 
 Path ConfigFile::getRoot() const {
-	return Path(at("root"));
+	return Path(at("root_rel_build"));
 }
 
 Path ConfigFile::getMainShaderDirectory() const {

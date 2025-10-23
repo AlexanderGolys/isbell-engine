@@ -1,6 +1,6 @@
 #pragma once
-#include "../geometry/smoothImplicit.hpp"
-#include "../utils/macros.hpp"
+#include "smoothImplicit.hpp"
+#include "macros.hpp"
 
 #include <array>
 #include <map>

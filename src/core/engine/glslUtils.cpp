@@ -259,7 +259,7 @@ mat4 generateMVP(vec3 camPosition, vec3 camLookAt, vec3 upVector, float fov, flo
 
 Window::Window(int width, int height, const char *title)
 {
-    // glfwInit() removed; handled by Renderer
+    // glfwInit();
 	glfwWindowHint(GLFW_SAMPLES, 4);
 	glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 3);
 	glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 3);
@@ -279,6 +279,7 @@ Window::Window(int width, int height, const char *title)
 
 Window::Window(Resolution resolution, const char *title)
 {
+	// glfwInit();
 	glfwWindowHint(GLFW_SAMPLES, 4);
 	glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 3);
 	glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 3);
@@ -1080,11 +1081,7 @@ Renderer::Renderer(float animSpeed, vec4 bgColor, const string &screenshotDirect
 		   UNKNOWN,
 		   screenshotFrequency) {
 
-	this->window = nullptr;
-	this->vao = 0;
-	this->camera = nullptr;
-	this->time = 0;
-	this->lights = std::vector<Light>();
+
 	logging::Logger::init();
 
 	glfwSetErrorCallback([](int error, const char* description) {
@@ -1093,7 +1090,11 @@ Renderer::Renderer(float animSpeed, vec4 bgColor, const string &screenshotDirect
     if (!glfwInit()) {
         throw SystemError("Failed to initialize GLFW", __FILE__, __LINE__);
     }
-
+	this->window = nullptr;
+	this->vao = 0;
+	this->camera = nullptr;
+	this->time = 0;
+	this->lights = std::vector<Light>();
 	this->animSpeed = [animSpeed](float t) { return animSpeed; };
 	this->perFrameFunction = [](float t, float delta) {};
 

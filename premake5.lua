@@ -59,10 +59,14 @@ project "engine"
     targetdir ("build/core/%{cfg.architecture}/bin")
     objdir    ("build/core/%{cfg.architecture}/obj")
 
+    links { "opengl32" }
+
     files {
         "src/core/**.hpp",
         "src/core/**.cpp",
-        "external/glew-2.1.0/src/glew.c",
+        "external/spdlog-1.x/include/**.h",
+        "external/glew-2.1.0/include/**.h",
+        "external/glew-2.1.0/src/**.c",
         "external/glfw-3.4/src/**.c",
         "external/glm-0.9.7.1/**.hpp",
     }
@@ -90,8 +94,6 @@ project "engine"
 
 if selectedScene then
 
-    scenePath = path.join(project_dirs, selectedScene .. ".cpp")
-
     project(selectedScene)
         location ("build/" .. selectedScene)
         language "C++"
@@ -99,13 +101,13 @@ if selectedScene then
         staticruntime "off"
         kind "ConsoleApp"
 
-        links { "engine" } -- Link the static library
+        links { "engine" }
 
 
         targetdir ("build/" .. selectedScene .. "/bin/build-%{cfg.architecture}")
         objdir    ("build/" .. selectedScene .. "/obj/build-%{cfg.architecture}")
 
-        files { scenePath }
+        files { project_dirs .. "/" .. selectedScene .. ".cpp"}
         includedirs(inc)
 
         filter "configurations:Debug"

@@ -2,7 +2,7 @@
 #include "filesUtils.hpp"
 #include "metaUtils.hpp"
 
-#define DEFAULT_CONFIG_PATH "../../../../config.json"
+#define DEFAULT_CONFIG_PATH "../../../../config/config.json"
 
 class JSONParser : public CodeFileDescriptor {
 	using CodeFileDescriptor::CodeFileDescriptor;
@@ -14,11 +14,13 @@ public:
 class ConfigFile{
 	JSONParser jsonParser;
 public:
-	ConfigFile(const string &configPath = DEFAULT_CONFIG_PATH);
-	string operator[](const string &key) const;
+	explicit ConfigFile(const string &configPath = DEFAULT_CONFIG_PATH) : jsonParser(configPath) {}
+	string operator[](const string &key) const { return jsonParser[key]; }
 
 
-	string at(const string &key) const;
+	string at(const string &key) const {
+		return jsonParser[key];
+	}
 
 	Path getRoot() const;
 
