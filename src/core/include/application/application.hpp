@@ -1,40 +1,39 @@
 #pragma once
-#include "events.hpp"
+#include "layers.hpp"
 #include "window.hpp"
-#include "logging.hpp"
-
-class Layer {
-public:
-    virtual ~Layer();
-
-    virtual void onUpdate(float time, float dt) {}
-    virtual void onEvent(Event &event) {}
-    virtual void onRender() = 0;
-	virtual void attach() {}
-	virtual void detach() {}
-
-};
 
 
 struct AppSettings {
 	WindowSettings windowSettings;
+	bool measureFPS;
+	float fpsUpdateInterval; // seconds
 };
 
 class App {
-    AppSettings settings;
-	shared_ptr<Window> window;
-	vector<unique_ptr<Layer>> layers;
-	bool running = false;
+	AppSettings settings;
+	unique_ptr<Window> window;
+	vector<unique_ptr<LayerABC>> layers;
+	bool running;
+	float time, dt; // ms
+	float fpsFlushAccumulator = 0;
+	int frameCount = 0;
+	float worstFrameTime = 0;
+
 public:
-	explicit App(const AppSettings &settings = AppSettings());
+	explicit App(const AppSettings& settings);
 	void run();
 	void stop();
-	shared_ptr<Window> getWindow() const;
-	void pushLayer(unique_ptr<Layer> layer);
-	void onEvent(Event &event) {
-		for (auto &layer : layers)
-			layer->onEvent(event);
-		if (event.getType() == EventType::EVENT_WINDOW_CLOSE)
-			stop();
-	}
+	void fpsUpdate();
+	void onEvent(Event& event);
+
+	template <ImplementsLayer L, class... Args>
+	void pushLayer(Args&&... args);
 };
+
+
+template <ImplementsLayer L, class... Args>
+void App::pushLayer(Args&&... args) {
+	auto layer = make_unique<L>(std::forward<Args>(args)...);
+	layer->attach();
+	layers.push_back(std::move(layer));
+}

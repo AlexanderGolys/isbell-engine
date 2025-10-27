@@ -190,7 +190,7 @@ class Disk3D : public IndexedMesh {
 	float radius;
 	PolyGroupID id;
 public:
-	Disk3D(const std::vector<Vertex> &nodes, const std::vector<ivec3> &faceInds, vec3 center, vec3 forward, vec3 down, PolyGroupID id);
+	Disk3D(const std::vector<Vertex3DSmart> &nodes, const std::vector<ivec3> &faceInds, vec3 center, vec3 forward, vec3 down, PolyGroupID id);
 	Disk3D(const char* filename, vec3 center, vec3 forward, vec3 down, PolyGroupID id);
 	Disk3D(float r, vec3 center, vec3 forward, vec3 down, int radial_res, int vertical_res, const PolyGroupID &id);
 	void move(vec3 center, vec3 forward, vec3 down, bool scaleWidth);

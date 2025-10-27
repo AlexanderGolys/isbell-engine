@@ -15,6 +15,7 @@
 #include <string_view>
 #include <exception>
 #include <expected>
+#include <type_traits>
 
 #include "colors.hpp"
 

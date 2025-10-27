@@ -3,7 +3,6 @@
 #include "shaderDataTypes.hpp"
 
 
-
 class AttributeDataArray {
 	string name;
 	vector<float> data;
@@ -11,19 +10,19 @@ class AttributeDataArray {
 	bool dirty = true;
 
 public:
-	AttributeDataArray(const string &name, unsigned char elementLength);
+	AttributeDataArray(const string& name, unsigned char elementLength);
 
 	unsigned char elementLength() const;
 	size_t elementSize() const;
 	unsigned int length() const;
 	size_t size() const;
-	const string &getName() const;
-	const float *getDataPointer() const;
+	const string& getName() const;
+	const float* getDataPointer() const;
 
-	void setData(const vector<float> &new_data);
-	void setData(const vector<vec2> &new_data);
-	void setData(const vector<vec3> &new_data);
-	void setData(const vector<vec4> &new_data);
+	void setData(const vector<float>& new_data);
+	void setData(const vector<vec2>& new_data);
+	void setData(const vector<vec3>& new_data);
+	void setData(const vector<vec4>& new_data);
 
 	void append(float value);
 	void append(vec2 value);
@@ -57,36 +56,33 @@ public:
 
 	VertexData(std::initializer_list<pair<string, unsigned char>> attributeInfos);
 	void reserve(unsigned int numberOfVertices, unsigned int numberOfTriangles);
-	void addAttribute(const string &name, unsigned char elementLength);
+	void addAttribute(const string& name, unsigned char elementLength);
 
-	template<typename VertexStruct>
+	template <typename VertexStruct>
 	vector<VertexStruct> toVertexArray() const;
 
-	template<typename VertexStruct>
-	void addVertex(const VertexStruct &vertex);
+	template <typename VertexStruct>
+	void addVertex(const VertexStruct& vertex);
 
-	template<typename VertexStruct>
-	void fromVertexArray(const vector<VertexStruct> &vertexArray);
+	template <typename VertexStruct>
+	void fromVertexArray(const vector<VertexStruct>& vertexArray);
 
-	template<typename VertexStruct>
-	void setVertex(int index, const VertexStruct &vertex);
+	template <typename VertexStruct>
+	void setVertex(int index, const VertexStruct& vertex);
 
-	void setVertexAttribute(int vertexIndex, const string &attributeName, float value);
-	void setVertexAttribute(int vertexIndex, const string &attributeName, const vec2 &value);
-	void setVertexAttribute(int vertexIndex, const string &attributeName, const vec3 &value);
-	void setVertexAttribute(int vertexIndex, const string &attributeName, const vec4 &value);
+	void setVertexAttribute(int vertexIndex, const string& attributeName, float value);
+	void setVertexAttribute(int vertexIndex, const string& attributeName, const vec2& value);
+	void setVertexAttribute(int vertexIndex, const string& attributeName, const vec3& value);
+	void setVertexAttribute(int vertexIndex, const string& attributeName, const vec4& value);
 
-
-	template<typename VertexStruct>
+	template <typename VertexStruct>
 	VertexStruct getVertex(int index) const;
 
 	void addTriangle(int v1, int v2, int v3);
-	void addTriangle(const ivec3 &triangle);
+	void addTriangle(const ivec3& triangle);
 	unsigned int vertexCount() const;
 	unsigned int triangleCount() const;
 };
-
-
 
 
 class AttributeBuffer {
@@ -97,18 +93,18 @@ class AttributeBuffer {
 	bool initialized = false;
 
 public:
-	AttributeBuffer(const string &name, ShaderDataType type, int inputNumber);
+	AttributeBuffer(const string& name, ShaderDataType type, int inputNumber);
 	~AttributeBuffer();
 
-	const string &getName() const;
+	const string& getName() const;
 	GLuint getVBO() const;
 	ShaderDataType getType() const;
 	int getInputNumber() const;
 	bool isInitialized() const;
 
 	void init();
-	void uploadData(const AttributeDataArray &dataArray);
-	void uploadDataIfDirty(AttributeDataArray &dataArray);
+	void uploadData(const AttributeDataArray& dataArray);
+	void uploadDataIfDirty(AttributeDataArray& dataArray);
 	void free();
 };
 
@@ -124,16 +120,16 @@ public:
 	VAO();
 	~VAO();
 
-	VAO(const VAO &) = delete;
-	VAO &operator=(const VAO &) = delete;
-	VAO(VAO &&other) noexcept;
-	VAO &operator=(VAO &&other) noexcept;
+	VAO(const VAO&) = delete;
+	VAO& operator=(const VAO&) = delete;
+	VAO(VAO&& other) noexcept;
+	VAO& operator=(VAO&& other) noexcept;
 
 	void init();
-	void addAttribute(int location, const shared_ptr<AttributeBuffer>& buffer, int components, GLenum type, int stride, int offset);
-	void uploadIndices(const vector<ivec3> &indices);
-	void uploadIndices(const void *data, unsigned int count);
-	void updateDirtyBuffers(VertexData &vertexData);
+	void addAttribute(const shared_ptr<AttributeBuffer>& buffer, int components, GLenum type);
+	void uploadIndices(const vector<ivec3>& indices);
+	void uploadIndices(const void* data, unsigned int count);
+	void updateDirtyBuffers(VertexData& vertexData);
 	void bind() const;
 	void unbind() const;
 	void free();
@@ -145,16 +141,9 @@ public:
 };
 
 
-
-
-
-
-
-
-
-template<typename VertexStruct>
-void VertexData::addVertex(const VertexStruct &vertex) {
-	for (auto &attr: attributes) {
+template <typename VertexStruct>
+void VertexData::addVertex(const VertexStruct& vertex) {
+	for (auto& attr : attributes) {
 		if (attr.elementLength() == 1)
 			attr.append(vertex.getAttribute1f(attr.getName()));
 		else if (attr.elementLength() == 2)
@@ -168,19 +157,18 @@ void VertexData::addVertex(const VertexStruct &vertex) {
 	}
 }
 
-template<typename VertexStruct>
-void VertexData::fromVertexArray(const vector<VertexStruct> &vertexArray) {
-	for (const auto &vertex: vertexArray)
+template <typename VertexStruct>
+void VertexData::fromVertexArray(const vector<VertexStruct>& vertexArray) {
+	for (const auto& vertex : vertexArray)
 		addVertex(vertex);
-
 }
 
-template<typename VertexStruct>
-void VertexData::setVertex(int index, const VertexStruct &vertex) {
+template <typename VertexStruct>
+void VertexData::setVertex(int index, const VertexStruct& vertex) {
 	if (index < 0)
 		index += vertexCount();
 	THROW_IF(index < 0 || index >= vertexCount(), IndexOutOfBounds, index, vertexCount(), "VertexData setVertex");
-	for (auto &attr: attributes) {
+	for (auto& attr : attributes) {
 		if (attr.elementLength() == 1)
 			attr.setElement(index, vertex.getAttribute1f(attr.getName()));
 		else if (attr.elementLength() == 2)
@@ -194,14 +182,14 @@ void VertexData::setVertex(int index, const VertexStruct &vertex) {
 	}
 }
 
-template<typename VertexStruct>
+template <typename VertexStruct>
 VertexStruct VertexData::getVertex(int index) const {
 	if (index < 0)
 		index += vertexCount();
 	THROW_IF(index < 0 || index >= vertexCount(), IndexOutOfBounds, index, vertexCount(), "VertexData getVertex");
 
 	VertexStruct vertex;
-	for (const auto &attr: attributes) {
+	for (const auto& attr : attributes) {
 		if (attr.elementLength() == 1)
 			vertex.setAttribute1f(attr.getName(), attr.getElement1f(index));
 		else if (attr.elementLength() == 2)

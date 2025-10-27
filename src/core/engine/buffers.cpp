@@ -400,23 +400,24 @@ void VAO::init() {
 
 	glCreateVertexArrays(1, &vaoID);
 	glCreateBuffers(1, &eboID);
-
 	glVertexArrayElementBuffer(vaoID, eboID);
 
 	initialized = true;
 }
 
-void VAO::addAttribute(int location, const shared_ptr<AttributeBuffer>& buffer, int components, GLenum type, int stride, int offset) {
+void VAO::addAttribute(const shared_ptr<AttributeBuffer>& buffer, int components, GLenum type) {
 	if (!initialized)
 		init();
 
 	if (!buffer->isInitialized())
 		buffer->init();
 
+	int location = attributes.size();
+
 	glEnableVertexArrayAttrib(vaoID, location);
-	glVertexArrayAttribFormat(vaoID, location, components, type, GL_FALSE, offset);
+	glVertexArrayAttribFormat(vaoID, location, components, type, GL_FALSE, 0);
 	glVertexArrayAttribBinding(vaoID, location, location);
-	glVertexArrayVertexBuffer(vaoID, location, buffer->getVBO(), 0, stride);
+	glVertexArrayVertexBuffer(vaoID, location, buffer->getVBO(), 0, 0);
 
 	attributes.push_back(buffer);
 }

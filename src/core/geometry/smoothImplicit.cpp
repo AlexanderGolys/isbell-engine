@@ -937,14 +937,14 @@ IndexedMesh MarchingCubeChunk::generateMesh(bool tetra, float tolerance, int max
 
 
 void MarchingCubeChunk::addToMesh(IndexedMesh &mesh) {
-	vector<Vertex> vertices_hard = {};
+	vector<Vertex3DSmart> vertices_hard = {};
 	for (ivec3 v: this->vertices)
 		vertices_hard.emplace_back(vertexPosition(v), vec2(1.f*v.x/res.x, 1.f*v.y/res.y), surface->normal(vertexPosition(v)));
 	mesh.addNewPolygroup(vertices_hard, triangles, id);
 }
 
 void MarchingCubeChunk::addToMesh(IndexedMesh &mesh,  float tolerance, int maxIter){
-	vector<Vertex> vertices_hard = {};
+	vector<Vertex3DSmart> vertices_hard = {};
 	for (ivec3 v: this->vertices) {
 		vec3 p = surface->newtonStepProject(vertexPosition(v), tolerance, maxIter);
 		vertices_hard.emplace_back(p, vec2(1.f*v.x/res.x, 1.f*v.y/res.y), surface->normal(p));

@@ -198,9 +198,9 @@ SmoothParametricCurve circle(float r, vec3 center, vec3 v1, vec3 v2, float eps) 
 
 IndexedMesh singleTrig(vec3 v0, vec3 v1, vec3 v2, std::variant<int, std::string> id) {
 	vec3 normal          = normalize(cross(v1 - v0, v2 - v0));
-	vector<Vertex> nodes = {Vertex(v0, vec2(0, 0), normal),
-							Vertex(v1, vec2(1, 0), normal),
-							Vertex(v2, vec2(0, 1), normal)};
+	vector<Vertex3DSmart> nodes = {Vertex3DSmart(v0, vec2(0, 0), normal),
+							Vertex3DSmart(v1, vec2(1, 0), normal),
+							Vertex3DSmart(v2, vec2(0, 1), normal)};
 	return IndexedMesh(nodes, {{0, 1, 2}}, id);
 }
 
@@ -212,11 +212,11 @@ IndexedMesh singleQuadShadeSmooth(vec3 outer1, vec3 inner1, vec3 inner2, vec3 ou
 	if (dot(n1, n2) < 0) n2 = -n2;
 	if (dot(n1, n3) < 0) n3 = -n3;
 	if (dot(n1, n4) < 0) n4 = -n4;
-	vector<Vertex> verts = {
-	Vertex(outer1, vec2(0, 0), n1, BLACK),
-	Vertex(inner1, vec2(1, 0), n2, BLACK),
-	Vertex(inner2, vec2(0, 1), n3, BLACK),
-	Vertex(outer2, vec2(1, 1), n4, BLACK),
+	vector<Vertex3DSmart> verts = {
+	Vertex3DSmart(outer1, vec2(0, 0), n1, BLACK),
+	Vertex3DSmart(inner1, vec2(1, 0), n2, BLACK),
+	Vertex3DSmart(inner2, vec2(0, 1), n3, BLACK),
+	Vertex3DSmart(outer2, vec2(1, 1), n4, BLACK),
 	};
 	vector<ivec3> tris = {
 	ivec3(0, 1, 2),
@@ -257,18 +257,18 @@ SmoothParametricCurve sphericalSpiral(float a, float r, float t_max, PolyGroupID
 
 IndexedMesh singleTrig(vec3 v0, vec3 v1, vec3 v2, MaterialPhongConstColor &material, PolyGroupID id) {
     vec3 n = normalize(cross(v1 - v0, v2 - v0));
-    vector nodes = {Vertex(v0, vec2(0, 0), n, BLACK, {}, material),
-                    Vertex(v1, vec2(0, 1), n, BLACK, {}, material),
-                    Vertex(v2, vec2(1, 1), n, BLACK, {}, material)};
+    vector nodes = {Vertex3DSmart(v0, vec2(0, 0), n, BLACK, {}, material),
+                    Vertex3DSmart(v1, vec2(0, 1), n, BLACK, {}, material),
+                    Vertex3DSmart(v2, vec2(1, 1), n, BLACK, {}, material)};
     return IndexedMesh(nodes, {ivec3(0, 1, 2)}, id);
 }
 
 
 IndexedMesh singleTrig(vec3 v0, vec3 v1, vec3 v2, MaterialPhongConstColor &material1, MaterialPhongConstColor &material2, MaterialPhongConstColor &material3, PolyGroupID id) {
     vec3 n = normalize(cross(v1 - v0, v2 - v0));
-    vector nodes = {Vertex(v0, vec2(0, 0), n, BLACK, {}, material1),
-                    Vertex(v1, vec2(0, 1), n, BLACK, {}, material2),
-                    Vertex(v2, vec2(1, 1), n, BLACK, {}, material3)};
+    vector nodes = {Vertex3DSmart(v0, vec2(0, 0), n, BLACK, {}, material1),
+                    Vertex3DSmart(v1, vec2(0, 1), n, BLACK, {}, material2),
+                    Vertex3DSmart(v2, vec2(1, 1), n, BLACK, {}, material3)};
     return IndexedMesh(nodes, {ivec3(0, 1, 2)}, id);
 }
 IndexedMesh singleQuadShadeSmooth(vec3 outer1, vec3 inner1, vec3 inner2, vec3 outer2, MaterialPhongConstColor &material,
@@ -279,10 +279,10 @@ IndexedMesh singleQuadShadeSmooth(vec3 outer1, vec3 inner1, vec3 inner2, vec3 ou
     float w2 = norm(cross(inner2-outer2, inner2-inner1));
     vec3 nin = normalize(w1*inner1 + w2*inner2);
 
-    vector nodes = {Vertex(outer1, vec2(0, 0), n1out, BLACK, {}, material),
-                    Vertex(inner1, vec2(0, 1), nin, BLACK, {}, material),
-                    Vertex(inner2, vec2(1, 0), nin, BLACK, {}, material),
-                    Vertex(outer2, vec2(1, 1), n2out, BLACK, {}, material)};
+    vector nodes = {Vertex3DSmart(outer1, vec2(0, 0), n1out, BLACK, {}, material),
+                    Vertex3DSmart(inner1, vec2(0, 1), nin, BLACK, {}, material),
+                    Vertex3DSmart(inner2, vec2(1, 0), nin, BLACK, {}, material),
+                    Vertex3DSmart(outer2, vec2(1, 1), n2out, BLACK, {}, material)};
     return IndexedMesh(nodes, {ivec3(0, 1, 2), ivec3(3, 1, 2)}, id);
 }
 
@@ -291,12 +291,12 @@ IndexedMesh singleQuadShadeFlat(vec3 outer1, vec3 inner1, vec3 inner2, vec3 oute
     vec3 n1 = normalize(cross(outer1 - inner1, outer1 - inner2));
     vec3 n2 = normalize(cross(outer2 - inner2, outer2 - inner1));
 
-    vector nodes = {Vertex(outer1, vec2(0, 0), n1, BLACK, {}, material),
-                    Vertex(inner1, vec2(0, 1), n1, BLACK, {}, material),
-                    Vertex(inner2, vec2(1, 1), n1, BLACK, {}, material),
-                    Vertex(inner1, vec2(0, 1), n2, BLACK, {}, material),
-                    Vertex(inner2, vec2(1, 1), n2, BLACK, {}, material),
-                    Vertex(outer2, vec2(1, 1), n2, BLACK, {}, material)};
+    vector nodes = {Vertex3DSmart(outer1, vec2(0, 0), n1, BLACK, {}, material),
+                    Vertex3DSmart(inner1, vec2(0, 1), n1, BLACK, {}, material),
+                    Vertex3DSmart(inner2, vec2(1, 1), n1, BLACK, {}, material),
+                    Vertex3DSmart(inner1, vec2(0, 1), n2, BLACK, {}, material),
+                    Vertex3DSmart(inner2, vec2(1, 1), n2, BLACK, {}, material),
+                    Vertex3DSmart(outer2, vec2(1, 1), n2, BLACK, {}, material)};
     return IndexedMesh(nodes, {ivec3(0, 1, 2), ivec3(3, 4, 5)}, id);
 }
 
@@ -305,9 +305,9 @@ IndexedMesh singleQuadShadeFlat(vec3 outer1, vec3 inner1, vec3 inner2, vec3 oute
     vec3 n1 = normalize(cross(outer1 - inner1, outer1 - inner2));
     vec3 n2 = normalize(cross(outer2 - inner2, outer2 - inner1));
 
-    vector nodes = {Vertex(outer1, vec2(0, 0), n1, BLACK, {}, material1), Vertex(inner1, vec2(0, 1), n1, BLACK, {}, material1),
-                    Vertex(inner2, vec2(1, 1), n1, BLACK, {}, material1), Vertex(inner1, vec2(0, 1), n2, BLACK, {}, material2),
-                    Vertex(inner2, vec2(1, 1), n2, BLACK, {}, material2), Vertex(outer2, vec2(1, 1), n2, BLACK, {}, material2)};
+    vector nodes = {Vertex3DSmart(outer1, vec2(0, 0), n1, BLACK, {}, material1), Vertex3DSmart(inner1, vec2(0, 1), n1, BLACK, {}, material1),
+                    Vertex3DSmart(inner2, vec2(1, 1), n1, BLACK, {}, material1), Vertex3DSmart(inner1, vec2(0, 1), n2, BLACK, {}, material2),
+                    Vertex3DSmart(inner2, vec2(1, 1), n2, BLACK, {}, material2), Vertex3DSmart(outer2, vec2(1, 1), n2, BLACK, {}, material2)};
     return IndexedMesh(nodes, {ivec3(0, 1, 2), ivec3(3, 4, 5)}, id);
 }
 
@@ -404,20 +404,20 @@ SmoothParametricSurface twistedTorus(float a, float m, float n, int dommul1, int
 inline IndexedMesh icosahedron(float r, vec3 center, std::variant<int, std::string> id) {
     float phi = (1.f + sqrt(5)) / 2;
     vector verts_ = {
-        Vertex(vec3(1, phi, 0),  vec2(1, 0),  normalise(vec3(1, phi, 0)),     BLACK     ),
-        Vertex(vec3(-1, phi, 0), vec2(-1, 0), normalise(vec3(-1, phi, 0)),   BLACK   ),
-        Vertex(vec3(1, -phi, 0), vec2(1, 0), normalise(vec3(1, -phi, 0)),   BLACK   ),
-        Vertex(vec3(-1, -phi, 0),vec2(-1, 0), normalise(vec3(-1, -phi, 0)), BLACK ),
-        Vertex(vec3(0, 1, phi),  vec2(0, phi), normalise(vec3(0, 1, phi)),     BLACK     ),
-        Vertex(vec3(0, -1, phi), vec2(0, phi), normalise(vec3(0, -1, phi)),   BLACK   ),
-        Vertex(vec3(0, 1, -phi), vec2(0, -phi), normalise(vec3(0, 1, -phi)),   BLACK   ),
-        Vertex(vec3(0, -1, -phi),vec2(0, -phi), normalise(vec3(0, -1, -phi)), BLACK ),
-        Vertex(vec3(phi, 0, 1),  vec2(phi, 1), normalise(vec3(phi, 0, 1)),     BLACK     ),
-        Vertex(vec3(-phi, 0, 1), vec2(-phi, 1), normalise(vec3(-phi, 0, 1)),   BLACK   ),
-        Vertex(vec3(phi, 0, -1), vec2(phi, -1), normalise(vec3(phi, 0, -1)),   BLACK   ),
-        Vertex(vec3(-phi, 0, -1),vec2(-phi, -1), normalise(vec3(-phi, 0, -1)), BLACK )
+        Vertex3DSmart(vec3(1, phi, 0),  vec2(1, 0),  normalise(vec3(1, phi, 0)),     BLACK     ),
+        Vertex3DSmart(vec3(-1, phi, 0), vec2(-1, 0), normalise(vec3(-1, phi, 0)),   BLACK   ),
+        Vertex3DSmart(vec3(1, -phi, 0), vec2(1, 0), normalise(vec3(1, -phi, 0)),   BLACK   ),
+        Vertex3DSmart(vec3(-1, -phi, 0),vec2(-1, 0), normalise(vec3(-1, -phi, 0)), BLACK ),
+        Vertex3DSmart(vec3(0, 1, phi),  vec2(0, phi), normalise(vec3(0, 1, phi)),     BLACK     ),
+        Vertex3DSmart(vec3(0, -1, phi), vec2(0, phi), normalise(vec3(0, -1, phi)),   BLACK   ),
+        Vertex3DSmart(vec3(0, 1, -phi), vec2(0, -phi), normalise(vec3(0, 1, -phi)),   BLACK   ),
+        Vertex3DSmart(vec3(0, -1, -phi),vec2(0, -phi), normalise(vec3(0, -1, -phi)), BLACK ),
+        Vertex3DSmart(vec3(phi, 0, 1),  vec2(phi, 1), normalise(vec3(phi, 0, 1)),     BLACK     ),
+        Vertex3DSmart(vec3(-phi, 0, 1), vec2(-phi, 1), normalise(vec3(-phi, 0, 1)),   BLACK   ),
+        Vertex3DSmart(vec3(phi, 0, -1), vec2(phi, -1), normalise(vec3(phi, 0, -1)),   BLACK   ),
+        Vertex3DSmart(vec3(-phi, 0, -1),vec2(-phi, -1), normalise(vec3(-phi, 0, -1)), BLACK )
         };
-	vector<Vertex> verts = {};
+	vector<Vertex3DSmart> verts = {};
     vector<ivec3> faceInds = {};
     for (int i = 0; i < verts_.size()-2; i++) {
         for (int j = i+1; j < verts_.size()-1; j++) {
@@ -462,7 +462,7 @@ IndexedMesh icosphere(float r, int n, vec3 center, PolyGroupID id, vec4 color) {
 }
 
 IndexedMesh disk3d(float r, vec3 center, vec3 v1, vec3 v2, int radial_res, int vertical_res, const std::variant<int, std::string> &id) {
-    auto vert = vector<Vertex>();
+    auto vert = vector<Vertex3DSmart>();
     vector<ivec3> inds = {};
     vec3 n = normalise(cross(v1, v2));
 
@@ -491,10 +491,10 @@ IndexedMesh singleQuadShadeFlat(vec3 inner1, vec3 outer1, vec3 inner2, vec3 oute
 
 IndexedMesh singleQuadShadeFlat(vec3 inner1, vec3 outer1, vec3 inner2, vec3 outer2, vec4 color, std::variant<int, std::string> id) {
 	vec3 normal          = normalize(cross(outer1 - inner1, inner2 - inner1));
-	vector<Vertex> nodes = {Vertex(inner1, vec2(0, 0), normal, color),
-							Vertex(outer1, vec2(1, 0), normal, color),
-							Vertex(inner2, vec2(1, 1), normal, color),
-							Vertex(outer2, vec2(0, 1), normal, color)};
+	vector<Vertex3DSmart> nodes = {Vertex3DSmart(inner1, vec2(0, 0), normal, color),
+							Vertex3DSmart(outer1, vec2(1, 0), normal, color),
+							Vertex3DSmart(inner2, vec2(1, 1), normal, color),
+							Vertex3DSmart(outer2, vec2(0, 1), normal, color)};
 	return IndexedMesh(nodes, {{0, 1, 2}, {0, 3, 2}}, id);
 }
 
@@ -502,7 +502,7 @@ IndexedMesh singleQuadShadeFlat(const vector<vec3> &corners, std::variant<int, s
 	return singleQuadShadeFlat(corners[0], corners[1], corners[2], corners[3], id);
 }
 
-Disk3D::Disk3D(const std::vector<Vertex> &nodes, const std::vector<ivec3> &faceInds, vec3 center, vec3 forward, vec3 down, std::variant<int, std::string> id) :
+Disk3D::Disk3D(const std::vector<Vertex3DSmart> &nodes, const std::vector<ivec3> &faceInds, vec3 center, vec3 forward, vec3 down, std::variant<int, std::string> id) :
     IndexedMesh(nodes, faceInds, id), center(center), forward(forward), down(down), normal(normalise(cross(forward, down))), radius(0) , id(id){
 
     setEmpiricalRadius();

@@ -5,10 +5,10 @@
 enum FACE {DOWN = 0, UP = 1, RIGHT = 2, LEFT = 3, FRONT = 4, BACK = 5};
 
 class Quadrilateral {
-	Vertex p0, p1, p2, p3;
+	Vertex3DSmart p0, p1, p2, p3;
 public:
 	Quadrilateral(vec3 p0, vec3 p1, vec3 p2, vec3 p3) : p0(p0), p1(p1), p2(p2), p3(p3) {}
-	std::array<Vertex, 4> getVertices() const;
+	std::array<Vertex3DSmart, 4> getVertices() const;
 	static std::array<glm::ivec3, 2> getTriangles() { return {glm::ivec3(0, 1, 2), glm::ivec3(0, 2, 3)}; }
 };
 
@@ -33,10 +33,10 @@ typedef std::array<vec3, 3> arr33;
 
 class IndexedQuadrilateral {
 	glm::ivec4 indices;
-	HOM(int, Vertex) bufferManagerInterface;
+	HOM(int, Vertex3DSmart) bufferManagerInterface;
 public:
-	IndexedQuadrilateral(glm::ivec4 indices, HOM(int, Vertex) bufferManagerInterface) : indices(indices), bufferManagerInterface(std::move(bufferManagerInterface)) {}
-	std::array<Vertex, 4> getVertices() const { return {bufferManagerInterface(indices[0]), bufferManagerInterface(indices[1]), bufferManagerInterface(indices[2]), bufferManagerInterface(indices[3])}; }
+	IndexedQuadrilateral(glm::ivec4 indices, HOM(int, Vertex3DSmart) bufferManagerInterface) : indices(indices), bufferManagerInterface(std::move(bufferManagerInterface)) {}
+	std::array<Vertex3DSmart, 4> getVertices() const { return {bufferManagerInterface(indices[0]), bufferManagerInterface(indices[1]), bufferManagerInterface(indices[2]), bufferManagerInterface(indices[3])}; }
 	std::array<glm::ivec3, 2> getTriangles() const { return {glm::ivec3(indices[0], indices[1], indices[2]), glm::ivec3(indices[0], indices[2], indices[3])}; }
 	std::array<std::array<vec3, 3>, 2> getTriangleVertexPositions() const { return {bufferManagerInterface(indices[0]).getPosition(), bufferManagerInterface(indices[1]).getPosition(), bufferManagerInterface(indices[2]).getPosition()}; }
 	float surfaceArea() const { std::array<arr33, 2> v = getTriangleVertexPositions(); return abs(det(toMat3(v[0]))) +  abs(det(toMat3(v[1]))); }
@@ -68,7 +68,7 @@ public:
 	IndexedQuadrilateral getFaceFront()const  { return faceSampler(facesInd[4]); }
 	IndexedQuadrilateral getFaceBack() const  { return faceSampler(facesInd[5]); }
 	int vertexIndex(int i) const { return i < 5 ? getFaceDown().vertexIndex(i) : getFaceUp().vertexIndex(i-4); }
-	std::array<Vertex, 8> getVertices() const { return {getFaceDown().getVertices()[0], getFaceDown().getVertices()[1], getFaceDown().getVertices()[2], getFaceDown().getVertices()[3], getFaceUp().getVertices()[0], getFaceUp().getVertices()[1], getFaceUp().getVertices()[2], getFaceUp().getVertices()[3]}; }
+	std::array<Vertex3DSmart, 8> getVertices() const { return {getFaceDown().getVertices()[0], getFaceDown().getVertices()[1], getFaceDown().getVertices()[2], getFaceDown().getVertices()[3], getFaceUp().getVertices()[0], getFaceUp().getVertices()[1], getFaceUp().getVertices()[2], getFaceUp().getVertices()[3]}; }
 	std::array<vec3, 8> getVerticesPos() const {return {getFaceDown().getVertices()[0].getPosition(), getFaceDown().getVertices()[1].getPosition(), getFaceDown().getVertices()[2].getPosition(), getFaceDown().getVertices()[3].getPosition(), getFaceUp().getVertices()[0].getPosition(), getFaceUp().getVertices()[1].getPosition(), getFaceUp().getVertices()[2].getPosition(), getFaceUp().getVertices()[3].getPosition()}; }
 	std::array<IndexedQuadrilateral, 6> getFaces() const { return {getFaceDown(), getFaceUp(), getFaceRight(), getFaceLeft(), getFaceFront(), getFaceBack()}; }
 	IndexedQuadrilateral getFace(FACE fc) const { return fc == DOWN ? getFaceDown() : fc == UP ? getFaceUp() : fc == RIGHT ? getFaceRight() : fc == LEFT ? getFaceLeft() : fc == FRONT ? getFaceFront() : getFaceBack(); }
@@ -119,15 +119,15 @@ public:
 
 
 class IndexedHexahedralVolumetricMesh {
-	std::vector<Vertex> vertices;
+	std::vector<Vertex3DSmart> vertices;
 	std::vector<HexahedronWithNbhd> hexahedra;
 	std::vector<IndexedQuadrilateral> faces;
-	HOM(int, Vertex) bufferManagerAccess;
+	HOM(int, Vertex3DSmart) bufferManagerAccess;
 	HOM(int, IndexedQuadrilateral) bufferManagerFace;
 	HOM(int, HexahedronWithNbhd*) bufferManagerHexa;
 public:
-	IndexedHexahedralVolumetricMesh(const std::vector<HexahedronWithNbhd>& hexahedra, std::vector<IndexedQuadrilateral> faces, std::vector<Vertex> vertices);
-	IndexedHexahedralVolumetricMesh(const std::vector<ivec6>& hexahedra, const std::vector<glm::ivec4> &faces, std::vector<Vertex> vertices);
+	IndexedHexahedralVolumetricMesh(const std::vector<HexahedronWithNbhd>& hexahedra, std::vector<IndexedQuadrilateral> faces, std::vector<Vertex3DSmart> vertices);
+	IndexedHexahedralVolumetricMesh(const std::vector<ivec6>& hexahedra, const std::vector<glm::ivec4> &faces, std::vector<Vertex3DSmart> vertices);
 
 	IndexedQuadrilateral initFace(glm::ivec4 indices) const { return IndexedQuadrilateral(indices, bufferManagerAccess); }
 //	HexahedronWithNbhd initHexahedron(const ivec6 &ind) const { return HexahedronWithNbhd(ind, bufferManagerAccess, bufferManagerHexa, {}); }
@@ -135,7 +135,7 @@ public:
 
 //	void addNeighbour(int nbhdInd, int target, FACE side) { hexahedra[target].setNeighbour(side, &nbhdInd); }
 
-	void addVertex(const Vertex& v) { vertices.push_back(v); }
+	void addVertex(const Vertex3DSmart& v) { vertices.push_back(v); }
 	void addCell(const HexahedronWithNbhd& h, const std::map<FACE, int>& nbhdFaces);
 	void addFace(const IndexedQuadrilateral &q, bool bd);
 	int size() const { return hexahedra.size(); }
@@ -146,11 +146,11 @@ public:
 
 	HexahedronWithNbhd getCell(int i) const { return hexahedra[i]; }
 	IndexedQuadrilateral getFace(int i) const { return faces[i]; }
-	Vertex getVertex(int i) const { return vertices[i]; }
+	Vertex3DSmart getVertex(int i) const { return vertices[i]; }
 	std::map<FACE, IndexedQuadrilateral> getCellFaces(int i) const { return { {DOWN, hexahedra[i].getFaceDown()}, {UP, hexahedra[i].getFaceUp()}, {RIGHT, hexahedra[i].getFaceRight()}, {LEFT, hexahedra[i].getFaceLeft()}, {FRONT, hexahedra[i].getFaceFront()}, {BACK, hexahedra[i].getFaceBack()} }; }
 	std::map<FACE, HexahedronWithNbhd*> getCellNeighbours(int i) const { return { {DOWN, hexahedra[i].getNeighbour(DOWN)}, {UP, hexahedra[i].getNeighbour(UP)}, {RIGHT, hexahedra[i].getNeighbour(RIGHT)}, {LEFT, hexahedra[i].getNeighbour(LEFT)}, {FRONT, hexahedra[i].getNeighbour(FRONT)}, {BACK, hexahedra[i].getNeighbour(BACK)} }; }
-	std::array<Vertex, 8> getCellVertices(int i) const { return hexahedra[i].getVertices(); }
-	std::array<Vertex, 4> getFaceVertices(int i) const { return faces[i].getVertices(); }
+	std::array<Vertex3DSmart, 8> getCellVertices(int i) const { return hexahedra[i].getVertices(); }
+	std::array<Vertex3DSmart, 4> getFaceVertices(int i) const { return faces[i].getVertices(); }
 
 	IndexedHexahedralVolumetricMesh coproduct(const IndexedHexahedralVolumetricMesh &M) const;
 	IndexedHexahedralVolumetricMesh glueFaces(const IndexedHexahedralVolumetricMesh &M, std::vector<glm::ivec2> glueMap) const;
@@ -171,7 +171,7 @@ public:
 	PolyGroupID boundaryPolygroup = 0;
 
 	explicit HexVolumetricMeshWithBoundary(const std::vector<ivec6> &hexahedra, const std::vector<glm::ivec4> &faces,
-		const std::vector<Vertex> &vertices,
+		const std::vector<Vertex3DSmart> &vertices,
 		const std::vector<int>& bdVertices);
 
 	std::vector<int> getBoundaryCellIndsOfVertex(int i) const { return bdVerticesCells.at(i); }
@@ -224,7 +224,7 @@ public:
 
 	std::vector<FACE> getBdDirections() const { return bdFaces; }
 	std::vector<std::array<vec3, 4>> getBdFaces() const;
-	std::vector<std::array<Vertex, 4>> getBdVertices() const;
+	std::vector<std::array<Vertex3DSmart, 4>> getBdVertices() const;
 	bool isBdCell() const { return !bdFaces.empty(); }
 	bool isBd(FACE i) const { return std::ranges::find(bdFaces, i) != bdFaces.end(); }
 

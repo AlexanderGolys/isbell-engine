@@ -5,7 +5,7 @@
 #include "dynamicalSystems.hpp"
 
 AreaUnderWave::AreaUnderWave(RealFunctionR2 f, vec2 dom, int sampling_res, float h): f(std::move(f)), id(randomID()) {
-	vector<Vertex> vertices = {};
+	vector<Vertex3DSmart> vertices = {};
 	vector<ivec3> faceIndices = {};
 	float x0 = dom.x;
 	float x1 = dom.y;
@@ -40,7 +40,7 @@ void AreaUnderWave::update(float t) {
 MovingCurve::MovingCurve(RealFunctionR2 f, vec2 dom, int sampling_res, float h, float r, int radial_res)
 : f(std::move(f)), id(randomID()), r(r), h(h), radial_res(radial_res), sampling_res(sampling_res)
 {
-	vector<Vertex> vertices = {};
+	vector<Vertex3DSmart> vertices = {};
 	vector<ivec3> faceIndices = {};
 	float x0 = dom.x;
 	float x1 = dom.y;

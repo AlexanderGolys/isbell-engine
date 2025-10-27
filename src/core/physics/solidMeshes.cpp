@@ -107,14 +107,14 @@ void IndexedHexahedralVolumetricMesh::subdivideCell(int i) {
 HexVolumetricMeshWithBoundary::HexVolumetricMeshWithBoundary(
 	const vector<ivec6> &hexahedra,
 	const vector<ivec4> &faces,
-	const vector<Vertex> &vertices,
+	const vector<Vertex3DSmart> &vertices,
 	const vector<int> &bdVertices):
 
 mesh(hexahedra, faces, vertices),
 bdVertices(bdVertices)
 
 {
-	vector<Vertex> bdVerticesRealised = {};
+	vector<Vertex3DSmart> bdVerticesRealised = {};
 	bdVerticesRealised.reserve(bdVertices.size());
 	vector<ivec3> bdTrs = {};
 	std::map<int, int> newBdIndices = {};
@@ -188,14 +188,14 @@ std::vector<std::array<vec3, 4>> Cell::getBdFaces() const {
 		res.push_back(getFaceCorners(f));
 	return res;
 }
-std::vector<std::array<Vertex, 4>> Cell::getBdVertices() const {
-	vector<std::array<Vertex, 4>> res = {};
+std::vector<std::array<Vertex3DSmart, 4>> Cell::getBdVertices() const {
+	vector<std::array<Vertex3DSmart, 4>> res = {};
 	for (auto &f : getBdFaces()) {
 		vec3 normal = normalise(cross(f[1] - f[0], f[2] - f[0]));
-		res.push_back({Vertex(f[0], vec2(0, 0), normal),
-						    Vertex(f[1], vec2(1, 0), normal),
-							Vertex(f[2], vec2(0, 1), normal),
-							Vertex(f[3], vec2(1, 1), normal)});
+		res.push_back({Vertex3DSmart(f[0], vec2(0, 0), normal),
+						    Vertex3DSmart(f[1], vec2(1, 0), normal),
+							Vertex3DSmart(f[2], vec2(0, 1), normal),
+							Vertex3DSmart(f[3], vec2(1, 1), normal)});
 	}
 	return res;
 }
@@ -247,7 +247,7 @@ IndexedMesh CellMesh::bdMesh(const std::vector<std::string>& attrSavedAsColor) c
 	for (auto &cell : cells) {
 		auto bdVertices = cell.getBdVertices();
 		if (!bdVertices.empty()) {
-			vector<Vertex> vertices = {};
+			vector<Vertex3DSmart> vertices = {};
 			vector<ivec3> trs = {};
 			vec4 color = colorFromAttributes(cell, attrSavedAsColor);
 			for (auto &v : bdVertices) {
@@ -284,7 +284,7 @@ void CellMesh::removeCell(int i) {
 
 
 
-IndexedHexahedralVolumetricMesh::IndexedHexahedralVolumetricMesh(const std::vector<HexahedronWithNbhd>& hexahedra, std::vector<IndexedQuadrilateral> faces, std::vector<Vertex> vertices) {
+IndexedHexahedralVolumetricMesh::IndexedHexahedralVolumetricMesh(const std::vector<HexahedronWithNbhd>& hexahedra, std::vector<IndexedQuadrilateral> faces, std::vector<Vertex3DSmart> vertices) {
 	throw std::logic_error("Not implemented");
 }
 
@@ -295,7 +295,7 @@ HexahedronWithNbhd IndexedHexahedralVolumetricMesh::initHexahedron(const ivec6 &
 IndexedHexahedralVolumetricMesh::IndexedHexahedralVolumetricMesh(
 	const std::vector<ivec6>& hexahedra,
 	const std::vector<ivec4> &faces,
-	std::vector<Vertex> vertices) {
+	std::vector<Vertex3DSmart> vertices) {
 
 	this->vertices = std::move(vertices);
 	this->faces = {};
