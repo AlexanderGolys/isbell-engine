@@ -646,86 +646,44 @@ mat4 Camera::mvp(float t, const mat4& modelTransform) {
 }
 
 
-Attribute::Attribute(const string& name, GLSLType type, int inputNumber, CommonBufferType bufferType) {
-	this->name = name;
-	this->type = type;
-	this->bufferAddress = 0;
-	this->size = sizeOfGLSLType(type);
-	this->enabled = false;
-	this->bufferInitialized = false;
-	this->inputNumber = inputNumber;
-	this->bufferType = bufferType;
+AttributeBuffer::AttributeBuffer(const string& name, GLSLType type, int inputNumber)
+: name(name), type(type), inputNumber(inputNumber), bufferAddress(0), size(sizeOfGLSLType(type)) {
+	glCreateBuffers(1, &bufferAddress);
 }
 
-Attribute::~Attribute() {
-	if (enabled)
-		Attribute::disable();
-	if (bufferInitialized)
-		Attribute::freeBuffer();
+AttributeBuffer::~AttributeBuffer() {
+	glDeleteBuffers(1, &bufferAddress);
 }
 
-void Attribute::initBuffer() {
-	this->bufferInitialized = true;
-	GLuint buffer;
-	glGenBuffers(1, &buffer);
-	this->bufferAddress = buffer;
-	// glBufferData(GL_ARRAY_BUFFER, bufferLength * this->size, firstElementAdress, GL_STATIC_DRAW);
-}
 
-void Attribute::enable() {
+void AttributeBuffer::enable() const {
 	glEnableVertexAttribArray(this->inputNumber);
 	glBindBuffer(GL_ARRAY_BUFFER, this->bufferAddress);
-	this->enabled = true;
 	glVertexAttribPointer(this->inputNumber, lengthOfGLSLType(this->type), GL_FLOAT, GL_FALSE, 0, (void*)0);
 }
 
-void Attribute::disable() {
+void AttributeBuffer::disable() const {
 	glDisableVertexAttribArray(this->inputNumber);
-	this->enabled = false;
 }
 
-void Attribute::load(const void* firstElementAdress, int bufferLength) {
-	if (!bufferInitialized) {
-		initBuffer();
-		glBindBuffer(GL_ARRAY_BUFFER, this->bufferAddress);
-		glBufferData(GL_ARRAY_BUFFER, bufferLength * this->size, firstElementAdress, GL_STATIC_DRAW);
-		return;
-	}
-	glBindBuffer(GL_ARRAY_BUFFER, this->bufferAddress);
-	glBufferData(GL_ARRAY_BUFFER, bufferLength * this->size, firstElementAdress, GL_STATIC_DRAW);
-	// void *ptr = glMapBuffer(GL_ARRAY_BUFFER, GL_WRITE_ONLY);
-	// memcpy(ptr, firstElementAdress, bufferLength * this->size);
-	// glUnmapBuffer(GL_ARRAY_BUFFER);
+void AttributeBuffer::load(const void* firstElementAdress, int bufferLength) const {
+	glBindBuffer(GL_ARRAY_BUFFER, bufferAddress);
+	glBufferData(GL_ARRAY_BUFFER, bufferLength * size, firstElementAdress, GL_DYNAMIC_DRAW);
 }
 
-void Attribute::freeBuffer() {
-	glDeleteBuffers(1, &this->bufferAddress);
-	this->bufferAddress = -1;
-	this->bufferInitialized = false;
-	this->enabled = false;
+void AttributeBuffer::update(const void* firstElementAdress, int bufferLength) const {
+	glBindBuffer(GL_ARRAY_BUFFER, bufferAddress);
+	glBufferSubData(GL_ARRAY_BUFFER, 0, bufferLength * size, firstElementAdress);
 }
 
-RenderingStep::RenderingStep(const shared_ptr<ShaderProgram>& shader) {
+
+RenderingStep::RenderingStep(const shared_ptr<ShaderProgram>& shader, const shared_ptr<MaterialPhong>& material, const shared_ptr<IndexedMesh>& mesh)
+: customStep([](float){}) {
 	this->shader = shader;
-	this->attributes = vector<shared_ptr<Attribute>>();
-	this->uniforms = std::map<string, GLSLType>();
-	this->uniformSetters = std::map<string, shared_ptr<std::function<void(float, shared_ptr<ShaderProgram>)>>>();
-	this->customStep = [](float t) {};
-}
-
-RenderingStep::RenderingStep(const shared_ptr<ShaderProgram>& shader, const shared_ptr<MaterialPhong>& material)
-: RenderingStep(shader) {
 	this->material = material;
+	this->mesh = mesh;
 }
 
-RenderingStep::RenderingStep(const RenderingStep& other) {
-	this->shader = other.shader;
-	this->attributes = other.attributes;
-	this->uniforms = other.uniforms;
-	this->uniformSetters = other.uniformSetters;
-	this->customStep = other.customStep;
-	this->material = other.material;
-}
 
 RenderingStep::~RenderingStep() {
 	for (auto attribute : attributes)
@@ -733,18 +691,9 @@ RenderingStep::~RenderingStep() {
 	shader.reset();
 }
 
-void RenderingStep::setWeakSuperMesh(const shared_ptr<IndexedMesh>& super) {
-	this->weak_super = super;
-}
 
-int RenderingStep::findAttributeByName(const string& name) const {
-	for (int i = 0; i < attributes.size(); i++)
-		if (attributes[i]->name == name)
-			return i;
-	throw std::invalid_argument("Attribute not found");
-}
 
-void RenderingStep::initMaterialTextures() {
+void RenderingStep::initMaterialTextures() const {
 	material->initTextures();
 	shader->initTextureSampler(material->texture_ambient.get());
 	shader->initTextureSampler(material->texture_diffuse.get());
@@ -761,58 +710,34 @@ void RenderingStep::bindTextures() const {
 void RenderingStep::initElementBuffer() {
 	glGenBuffers(1, &elementBufferLoc);
 	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, elementBufferLoc);
-	glBufferData(GL_ELEMENT_ARRAY_BUFFER, weak_super->bufferIndexSize(), weak_super->bufferIndexLocation(), GL_DYNAMIC_DRAW);
+	glBufferData(GL_ELEMENT_ARRAY_BUFFER, mesh->bufferIndexSize(), mesh->bufferIndexLocation(), GL_DYNAMIC_DRAW);
 	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, elementBufferLoc);
 }
 
 void RenderingStep::loadElementBuffer() const {
-	if (!weakSuperLoaded())
-		throw std::invalid_argument("Element buffer can only be loaded for weak super mesh");
 	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, elementBufferLoc);
-	glBufferData(GL_ELEMENT_ARRAY_BUFFER, weak_super->bufferIndexSize(), weak_super->bufferIndexLocation(), GL_DYNAMIC_DRAW);
+	glBufferData(GL_ELEMENT_ARRAY_BUFFER, mesh->bufferIndexSize(), mesh->bufferIndexLocation(), GL_DYNAMIC_DRAW);
 }
 
-void RenderingStep::initStdAttributes() {
-	this->attributes.push_back(make_shared<Attribute>("position", VEC3, 0, POSITION));
-	this->attributes.push_back(make_shared<Attribute>("normal", VEC3, 1, NORMAL));
-	this->attributes.push_back(make_shared<Attribute>("uv", VEC2, 2, UV));
-	this->attributes.push_back(make_shared<Attribute>("color", VEC4, 3, COLOR));
+void RenderingStep::initAttributes() {
+	attributes.push_back(make_shared<AttributeBuffer>("position", VEC3, 0));
+	attributes.push_back(make_shared<AttributeBuffer>("normal", VEC3, 1));
+	attributes.push_back(make_shared<AttributeBuffer>("uv", VEC2, 2));
+	int nextInputNumber = 2;
+	for (const string& attribute : mesh->getActiveExtraBuffers())
+		attributes.push_back(make_shared<AttributeBuffer>(attribute, VEC4, ++nextInputNumber));
 
-	if (weak_super->hasExtra0())
-		this->attributes.push_back(make_shared<Attribute>("extra0", VEC4, 4, EXTRA0));
-	if (weak_super->hasExtra1())
-		this->attributes.push_back(make_shared<Attribute>("extra1", VEC4, 5, EXTRA1));
-	if (weak_super->hasExtra2())
-		this->attributes.push_back(make_shared<Attribute>("extra2", VEC4, 6, EXTRA2));
-	if (weak_super->hasExtra3())
-		this->attributes.push_back(make_shared<Attribute>("extra3", VEC4, 7, EXTRA3));
-	if (weak_super->hasExtra4())
-		this->attributes.push_back(make_shared<Attribute>("extra4", VEC4, 8, EXTRA4));
 
-	for (const auto& attribute : attributes)
-		attribute->initBuffer();
-}
-
-void RenderingStep::resetAttributeBuffers() const {
-	for (const auto& attribute : attributes)
-		attribute->freeBuffer();
-}
-
-void RenderingStep::initUnusualAttributes(const std::vector<shared_ptr<Attribute>>& attributes) {
-	this->attributes.insert(this->attributes.end(), attributes.begin(), attributes.end());
-	for (const auto& attribute : attributes)
-		attribute->initBuffer();
 }
 
 
 void RenderingStep::loadMeshAttributes() const {
 	for (const auto& attribute : attributes)
-		attribute->load(weak_super->getBufferLocation(attribute->bufferType), weak_super->getBufferLength(attribute->bufferType));
+		attribute->load(
+			mesh->getBufferLocation(attribute->bufferType),
+			mesh->getBufferLength(attribute->bufferType));
 }
 
-void RenderingStep::initWeakMeshAttributes() {
-	initStdAttributes();
-}
 
 void RenderingStep::enableAttributes() const {
 	for (const auto& attribute : attributes)
@@ -882,13 +807,11 @@ void RenderingStep::setUniforms(float t) {
 }
 
 void RenderingStep::addCameraUniforms(const shared_ptr<Camera>& camera) {
-	std::function<void(float, shared_ptr<ShaderProgram>)> MVPsetter;
 
-	if (weakSuperLoaded())
-		MVPsetter = [camera, this](float t, const shared_ptr<ShaderProgram>& shader) {
-			mat4 mvp = camera->mvp(t, mat4(mat3(1)));
-			shader->setUniform("mvp", mvp);
-		};
+	auto MVPsetter = [camera, this](float t, const shared_ptr<ShaderProgram>& shader) {
+		mat4 mvp = camera->mvp(t, mat4(mat3(1)));
+		shader->setUniform("mvp", mvp);
+	};
 
 	auto positionSetter = [camera, this](float t, const shared_ptr<ShaderProgram>& shader) {
 		vec3 camPos = camera->position(t);
@@ -914,17 +837,16 @@ void RenderingStep::addLightsUniforms(const std::vector<Light>& lights) {
 
 
 void RenderingStep::init(const shared_ptr<Camera>& cam, const std::vector<Light>& lights) {
-	if (weakSuperLoaded()) {
-		shader->use();
-		initElementBuffer();
-		initWeakMeshAttributes();
-		addMaterialUniforms();
-		addCameraUniforms(cam);
-		addLightsUniforms(lights);
-		enableAttributes();
-		loadMeshAttributes();
-		loadElementBuffer();
-	}
+	shader->use();
+	initElementBuffer();
+	initAttributes();
+	addMaterialUniforms();
+	addCameraUniforms(cam);
+	addLightsUniforms(lights);
+	enableAttributes();
+	loadMeshAttributes();
+	loadElementBuffer();
+
 }
 
 void RenderingStep::addUniforms(const std::map<string, GLSLType>& uniforms, std::map<string, shared_ptr<std::function<void(float, shared_ptr<ShaderProgram>)>>> setters) {
@@ -936,12 +858,13 @@ void RenderingStep::addCustomAction(const std::function<void(float)>& action) {
 	this->customStep = action;
 }
 
-bool RenderingStep::weakSuperLoaded() const {
-	return weak_super != nullptr;
-}
 
 
-void RenderingStep::weakMeshRenderStep(float t) {
+
+
+
+
+void RenderingStep::renderStep(float t) {
 	shader->use();
 	enableAttributes();
 	// loadMeshAttributes();
@@ -949,17 +872,8 @@ void RenderingStep::weakMeshRenderStep(float t) {
 	setUniforms(t);
 	loadElementBuffer();
 
-	glDrawElements(GL_TRIANGLES, weak_super->bufferIndexSize(), GL_UNSIGNED_INT, nullptr);
+	glDrawElements(GL_TRIANGLES, mesh->bufferIndexSize(), GL_UNSIGNED_INT, nullptr);
 	disableAttributes();
-}
-
-
-void RenderingStep::renderStep(float t) {
-	shader->use();
-	if (weakSuperLoaded())
-		weakMeshRenderStep(t);
-	else
-		throw ValueError("Mesh not loaded correctly", __FILE__, __LINE__);
 }
 
 RenderSettings::RenderSettings(vec4 bgColor, bool alphaBlending, bool depthTest, bool timeUniform, float speed, int maxFPS, bool takeScreenshots, Resolution resolution,
@@ -1034,8 +948,7 @@ void Renderer::addRenderingStep(shared_ptr<RenderingStep> renderingStep) {
 }
 
 void Renderer::addMeshStep(const ShaderProgram& shader, const shared_ptr<IndexedMesh>& model, const shared_ptr<MaterialPhong>& material) {
-	auto renderingStep = make_shared<RenderingStep>(make_shared<ShaderProgram>(shader), material);
-	renderingStep->setWeakSuperMesh(model);
+	auto renderingStep = make_shared<RenderingStep>(make_shared<ShaderProgram>(shader), material, model);
 	addRenderingStep(renderingStep);
 }
 
@@ -1124,13 +1037,10 @@ void Renderer::initRendering() {
 		addTimeUniform();
 	}
 
-	for (const auto& renderingStep : renderingSteps) {
-		if (renderingStep->weakSuperLoaded())
-			renderingStep->init(camera, lights);
-		else {
-			throw ValueError("Rendering step does not have a weak super mesh set", __FILE__, __LINE__);
-		}
-	}
+	for (const auto& renderingStep : renderingSteps)
+		renderingStep->init(camera, lights);
+
+
 
 	LOG("OpenGL renderer initialized: " + string((const char *)glGetString(GL_RENDERER)));
 }

@@ -185,68 +185,52 @@ public:
 	mat4 vp(float t);
 };
 
-class Attribute {
+class AttributeBuffer {
 public:
 	string name;
 	GLuint bufferAddress;
 	size_t size;
 	GLSLType type;
 	int inputNumber;
-	bool enabled;
-	bool bufferInitialized;
-	CommonBufferType bufferType;
 
-	Attribute(const string& name, GLSLType type, int inputNumber, CommonBufferType bufferType);
-	virtual ~Attribute();
+	AttributeBuffer(const string& name, GLSLType type, int inputNumber);
+	~AttributeBuffer();
 
-	virtual void initBuffer();
-	virtual void enable();
-	virtual void disable();
-	virtual void load(const void* firstElementAdress, int bufferLength);
-	virtual void freeBuffer();
+	void enable() const;
+	void disable() const;
+	void load(const void* firstElementAdress, int bufferLength) const;
+	void update(const void* firstElementAdress, int bufferLength) const;
+
 };
 
 
 class RenderingStep {
 protected:
 	shared_ptr<ShaderProgram> shader;
-	vector<shared_ptr<Attribute>> attributes;
-	shared_ptr<IndexedMesh> weak_super = nullptr;
+	vector<shared_ptr<AttributeBuffer>> attributes;
+	shared_ptr<IndexedMesh> mesh = nullptr;
 	GLuint elementBufferLoc = 0;
 	shared_ptr<MaterialPhong> material = nullptr;
-
-	void weakMeshRenderStep(float t);
-
-public:
-	explicit RenderingStep(const shared_ptr<ShaderProgram>& shader);
-	RenderingStep(const shared_ptr<ShaderProgram>& shader, const shared_ptr<MaterialPhong>& material);
-	RenderingStep(const RenderingStep& other);
-
-	virtual ~RenderingStep();
 
 	std::map<string, GLSLType> uniforms;
 	std::map<string, shared_ptr<std::function<void(float, shared_ptr<ShaderProgram>)>>> uniformSetters;
 	std::function<void(float)> customStep;
+public:
+	RenderingStep(const shared_ptr<ShaderProgram>& shader, const shared_ptr<MaterialPhong>& material, const shared_ptr<IndexedMesh>& mesh);
+	virtual ~RenderingStep();
 
-	void setWeakSuperMesh(const shared_ptr<IndexedMesh>& super);
-
-	int findAttributeByName(const string& name) const;
-	void initStdAttributes();
+	void initAttributes();
 	void initElementBuffer();
-	void resetAttributeBuffers() const;
-	void initUnusualAttributes(const vector<shared_ptr<Attribute>>& attributes);
-	void initWeakMeshAttributes();
 
 	void loadMeshAttributes() const;
 	void loadElementBuffer() const;
 	void enableAttributes() const;
 	void disableAttributes() const;
 
-	void initMaterialTextures();
+	void initMaterialTextures() const;
 	void bindTextures() const;
 
 	void addCustomAction(const std::function<void(float)>& action);
-	bool weakSuperLoaded() const;
 	virtual void init(const shared_ptr<Camera>& cam, const vector<Light>& lights);
 
 	void addUniforms(const std::map<string, GLSLType>& uniforms, std::map<string, shared_ptr<std::function<void(float, shared_ptr<ShaderProgram>)>>> setters);
