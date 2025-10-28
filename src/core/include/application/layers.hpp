@@ -3,9 +3,9 @@
 #include "events.hpp"
 
 
-class LayerABC {
+class Layer {
 public:
-	virtual ~LayerABC();
+	virtual ~Layer();
 
 	virtual void onUpdate(float time, float dt) {}
 	virtual void onEvent(Event& event) {}
@@ -15,5 +15,5 @@ public:
 };
 
 template <typename L>
-concept ImplementsLayer = std::is_base_of_v<LayerABC, L>;
+concept ImplementsLayer = std::is_base_of_v<Layer, L>;
 

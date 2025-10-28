@@ -1,6 +1,6 @@
 #pragma once
 #include "filesUtils.hpp"
-#include "GL/glew.h"
+#include "uniforms.hpp"
 
 class Shader {
 	GLenum shaderType;
@@ -15,12 +15,15 @@ public:
 };
 
 
+
 class ShaderProgram {
 public:
 	virtual ~ShaderProgram();
 	virtual GLuint getProgramID() const = 0;
 	virtual void bind() const = 0;
 	virtual void unbind() const = 0;
+
+	void setUniform(const Uniform& uniform) const;
 };
 
 class ClassicShaderProgram : public ShaderProgram {
@@ -62,3 +65,4 @@ public:
 	void unbind() const override;
 	void run(int numGroupsX, int numGroupsY = 1, int numGroupsZ = 1) const;
 };
+

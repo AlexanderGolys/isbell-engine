@@ -16,7 +16,7 @@
 #include <exception>
 #include <expected>
 #include <type_traits>
-
+#include <set>
 #include "colors.hpp"
 
 
@@ -28,6 +28,7 @@ using glm::vec2, glm::vec3, glm::vec4;
 using glm::mat2, glm::mat3, glm::mat4, glm::mat2x3;
 using glm::ivec2, glm::ivec3, glm::ivec4;
 using std::vector, std::variant, std::optional, std::array, std::unordered_map, std::pair;
+using std::initializer_list, std::is_base_of_v;
 using std::shared_ptr, std::unique_ptr, std::make_unique, std::make_shared, std::weak_ptr;
 using std::string, std::endl, std::format, std::to_string, std::cout, std::printf;
 using std::expected, std::unexpected, std::bad_expected_access;

@@ -45,7 +45,19 @@ enum CommonBufferType {
 
 
 const std::map<CommonBufferType, int> bufferTypeLength = {
-	{POSITION, 3}, {NORMAL, 3}, {UV, 2}, {COLOR, 4}, {MATERIAL1, 4}, {MATERIAL2, 4}, {MATERIAL3, 4}, {MATERIAL4, 4}, {INDEX, 3}, {EXTRA0, 4}, {EXTRA1, 4}, {EXTRA2, 4}, {EXTRA3, 4},
+	{POSITION, 3},
+	{NORMAL, 3},
+	{UV, 2},
+	{COLOR, 4},
+	{MATERIAL1, 4},
+	{MATERIAL2, 4},
+	{MATERIAL3, 4},
+	{MATERIAL4, 4},
+	{INDEX, 3},
+	{EXTRA0, 4},
+	{EXTRA1, 4},
+	{EXTRA2, 4},
+	{EXTRA3, 4},
 	{EXTRA4, 4}
 };
 

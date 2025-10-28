@@ -12,7 +12,7 @@ struct AppSettings {
 class App {
 	AppSettings settings;
 	unique_ptr<Window> window;
-	vector<unique_ptr<LayerABC>> layers;
+	vector<unique_ptr<Layer>> layers;
 	bool running;
 	float time, dt; // ms
 	float fpsFlushAccumulator = 0;

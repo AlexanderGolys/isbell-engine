@@ -82,7 +82,7 @@ public:
 
 	vec4 compressIntencities() const;
 	void initTextures();
-	void bindTextures();
+	void bindTextures() const;
 
 	virtual bool textured() const;
 

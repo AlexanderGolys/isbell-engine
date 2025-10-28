@@ -916,7 +916,7 @@ void MaterialPhong::initTextures() {
 	texture_specular->load();
 }
 
-void MaterialPhong::bindTextures() {
+void MaterialPhong::bindTextures() const {
 	texture_ambient->bind();
 	texture_diffuse->bind();
 	texture_specular->bind();

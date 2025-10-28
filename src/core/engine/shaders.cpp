@@ -56,6 +56,10 @@ GLenum Shader::getType() const {
 	return shaderType;
 }
 
+void ShaderProgram::setUniform(const Uniform& uniform) const {
+	uniform.set(getProgramID());
+}
+
 ClassicShaderProgram::ClassicShaderProgram(const shared_ptr<Shader>& vertexShader, const shared_ptr<Shader>& fragmentShader) {
 	this->vertexShader = vertexShader;
 	THROW_IF(vertexShader == nullptr, SystemError, "Vertex shader cannot be null");
@@ -81,7 +85,7 @@ ClassicShaderProgram::ClassicShaderProgram(const shared_ptr<Shader>& vertexShade
 
 	if (InfoLogLength > 0) {
 		vector<char> ProgramErrorMessage(InfoLogLength + 1);
-		glGetProgramInfoLog(programID, InfoLogLength, NULL, &ProgramErrorMessage[0]);
+		glGetProgramInfoLog(programID, InfoLogLength, nullptr, &ProgramErrorMessage[0]);
 		THROW(SystemError, &ProgramErrorMessage[0]);
 	}
 	glDetachShader(this->programID, vertexShader->getID());
@@ -134,7 +138,7 @@ GeometryShaderProgram::GeometryShaderProgram(const shared_ptr<Shader>& vertexSha
 
 	if (InfoLogLength > 0) {
 		vector<char> ProgramErrorMessage(InfoLogLength + 1);
-		glGetProgramInfoLog(programID, InfoLogLength, NULL, &ProgramErrorMessage[0]);
+		glGetProgramInfoLog(programID, InfoLogLength, nullptr, &ProgramErrorMessage[0]);
 		THROW(SystemError, &ProgramErrorMessage[0]);
 	}
 	glDetachShader(this->programID, vertexShader->getID());
@@ -178,7 +182,7 @@ ComputeShaderProgram::ComputeShaderProgram(const shared_ptr<Shader>& computeShad
 
 	if (InfoLogLength > 0) {
 		vector<char> ProgramErrorMessage(InfoLogLength + 1);
-		glGetProgramInfoLog(programID, InfoLogLength, NULL, &ProgramErrorMessage[0]);
+		glGetProgramInfoLog(programID, InfoLogLength, nullptr, &ProgramErrorMessage[0]);
 		THROW(SystemError, &ProgramErrorMessage[0]);
 	}
 }

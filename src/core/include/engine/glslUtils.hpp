@@ -22,50 +22,6 @@ GLuint LoadShaders(const char* vertex_file_path, const char* fragment_file_path)
 void setUniformTextureSampler(GLuint programID, Texture* texture, int textureSlot);
 
 
-class ShaderProgram {
-protected:
-	Shader vertexShader;
-	Shader fragmentShader;
-	optional<Shader> geometryShader;
-
-	ShaderType shaderType;
-
-public:
-	unordered_map<string, GLuint> uniformLocations;
-	unordered_map<string, GLSLType> uniformTypes;
-
-	GLuint programID;
-
-	ShaderProgram(const Shader& vertexShader, const Shader& fragmentShader);
-	ShaderProgram(const Shader& vertexShader, const Shader& fragmentShader, const Shader& geometryShader);
-	ShaderProgram(const string& vertexPath, const string& fragPath);
-
-
-	void linkShaders();
-
-	explicit ShaderProgram(const string& standard_file_path);
-	~ShaderProgram();
-
-	void use();
-	void initUniforms(const std::unordered_map<string, GLSLType>& uniforms);
-	void initTextureSampler(const Texture* texture);
-
-	void setTextureSampler(const Texture* texture) const;
-	void setUniforms(const std::unordered_map<string, const GLfloat*>& uniformValues);
-	void setUniform(const string& uniformName, const GLfloat* uniformValue);
-	void setUniform(const string& uniformName, float uniformValue);
-	void setUniform(const string& uniformName, int uniformValue);
-	void setUniform(const string& uniformName, vec2 uniformValue);
-	void setUniform(const string& uniformName, vec3 uniformValue);
-	void setUniform(const string& uniformName, vec4 uniformValue);
-	void setUniform(const string& uniformName, mat2 uniformValue);
-	void setUniform(const string& uniformName, mat3 uniformValue);
-	void setUniform(const string& uniformName, mat4 uniformValue);
-	void setUniform(const string& uniformName, float x, float y);
-	void setUniform(const string& uniformName, float x, float y, float z);
-	void setUniform(const string& uniformName, float x, float y, float z, float w);
-};
-
 class Camera {
 public:
 	float fov_x;

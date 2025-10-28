@@ -593,6 +593,22 @@ bool SO2::check() const {
 	return nearlyEqual<mat2>(tmat2x2(determinant(mat2())), 1.f) && isClose(mat2() * transpose(mat2()), mat2(1));
 }
 
+SE3::SE3(Quaternion q, vec3 t): q(q), t(t) {}
+
+SE3::SE3(): SE3(Quaternion::one(), vec3(0)) {}
+
+SE3 SE3::operator*(const SE3& other) const { return SE3(q * other.q, t + q.rotate(other.t)); }
+
+vec3 SE3::operator*(vec3 v) const { return q.rotate(v) + t; }
+
+SE3 SE3::inv() const { Quaternion q_inv = q.inv(); return SE3(q_inv, q_inv.rotate(-t)); }
+
+int SE3::dim() const { return 6;}
+
+Quaternion SE3::rotation() const { return q; }
+
+vec3 SE3::translation() const { return t; }
+
 float pseudorandomizer(float x, float seed) {
 	return frac(sin(x + seed) * 43758.5453f + seed);
 }

@@ -1064,9 +1064,7 @@ class Quaternion {
 
 public:
 	explicit Quaternion(vec4 q) : q(q) {}
-	Quaternion(Complex z) : q(vec4(z.re(), z.im(), 0, 0)) {}
-
-
+	explicit Quaternion(Complex z) : q(vec4(z.re(), z.im(), 0, 0)) {}
 	Quaternion(float x, float y, float z, float w) : q(vec4(x, y, z, w)) {}
 	explicit Quaternion(float x) : q(vec4(x, 0, 0, 0)) {}
 	explicit Quaternion(vec3 im) : q(vec4(0, im)) {}
@@ -1175,15 +1173,20 @@ class SE3 {
 	vec3 t;
 
 	public:
-	SE3(Quaternion q, vec3 t) : q(q), t(t) {}
-	SE3() : SE3(Quaternion::one(), vec3(0)) {}
-	SE3 operator*(const SE3 &other) const { return SE3(q * other.q, t + q.rotate(other.t)); }
-	vec3 operator*(vec3 v) const { return q.rotate(v) + t; }
-	SE3 inv() const { Quaternion q_inv = q.inv(); return SE3(q_inv, q_inv.rotate(-t)); }
+	SE3(Quaternion q, vec3 t);
+	SE3();
+
+	SE3 operator*(const SE3 &other) const;
+	vec3 operator*(vec3 v) const;
+	SE3 inv() const;
 	mat4 toMat4() const;
-	int dim() const { return 6;};
-	Quaternion rotation() const { return q; };
-	vec3 translation() const { return t; }
+	int dim() const;;
+	Quaternion rotation() const;;
+	vec3 translation() const;
+
+	static SE3 identity() { return SE3(); }
+	static SE3 translation(vec3 t) { return SE3(Quaternion::one(), t); }
+	static SE3 rotation(Quaternion q) { return SE3(q, vec3(0)); }
 };
 
 
