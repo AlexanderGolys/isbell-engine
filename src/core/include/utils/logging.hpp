@@ -7,12 +7,6 @@ namespace logging {
 	#ifdef LOG
 	#undef LOG
 	#endif
-	#ifdef ERROR
-	#undef ERROR
-	#endif
-	#ifdef WARN
-	#undef WARN
-	#endif
 
 	class Logger {
 	public:

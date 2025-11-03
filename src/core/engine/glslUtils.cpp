@@ -734,8 +734,8 @@ void RenderingStep::initAttributes() {
 void RenderingStep::loadMeshAttributes() const {
 	for (const auto& attribute : attributes)
 		attribute->load(
-			mesh->getBufferLocation(attribute->bufferType),
-			mesh->getBufferLength(attribute->bufferType));
+			mesh->getBufferLocation(attribute->name),
+			mesh->getBufferLength());
 }
 
 
@@ -762,11 +762,11 @@ void RenderingStep::addConstFloats(const std::map<string, float>& uniforms) {
 		}));
 }
 
-void RenderingStep::addConstVec4(const string& uniformName, vec4 value) {
-	auto uniformSetter = [value, uniformName](float t, const shared_ptr<ShaderProgram>& shader) {
-		shader->setUniform(uniformName, value);
+void RenderingStep::addConstVec4(const string& name, vec4 value) {
+	auto uniformSetter = [value, name](float t, const shared_ptr<ShaderProgram>& shader) {
+		shader->setUniform(name, value);
 	};
-	addUniform(uniformName, VEC4, make_shared<std::function<void(float, shared_ptr<ShaderProgram>)>>(uniformSetter));
+	addUniform(name, VEC4, make_shared<std::function<void(float, shared_ptr<ShaderProgram>)>>(uniformSetter));
 }
 
 void RenderingStep::addConstColor(const string& name, vec4 value) {
@@ -830,13 +830,13 @@ void RenderingStep::addLightUniform(const Light& pointLight, int lightIndex) {
 	addUniform(lightName, MAT4, make_shared<std::function<void(float, shared_ptr<ShaderProgram>)>>(lightSetter));
 }
 
-void RenderingStep::addLightsUniforms(const std::vector<Light>& lights) {
+void RenderingStep::addLightsUniforms(const vector<Light>& lights) {
 	for (int i = 1; i <= lights.size(); i++)
 		addLightUniform(lights[i - 1], i);
 }
 
 
-void RenderingStep::init(const shared_ptr<Camera>& cam, const std::vector<Light>& lights) {
+void RenderingStep::init(const shared_ptr<Camera>& cam, const vector<Light>& lights) {
 	shader->use();
 	initElementBuffer();
 	initAttributes();
@@ -867,7 +867,7 @@ void RenderingStep::addCustomAction(const std::function<void(float)>& action) {
 void RenderingStep::renderStep(float t) {
 	shader->use();
 	enableAttributes();
-	// loadMeshAttributes();
+	loadMeshAttributes();
 	customStep(t);
 	setUniforms(t);
 	loadElementBuffer();
@@ -899,7 +899,7 @@ Renderer::Renderer(float animSpeed, vec4 bgColor, const string& screenshotDirect
 	this->vao = 0;
 	this->camera = nullptr;
 	this->time = 0;
-	this->lights = std::vector<Light>();
+	this->lights = vector<Light>();
 	this->animSpeed = [animSpeed](float t) {
 		return animSpeed;
 	};
@@ -957,7 +957,7 @@ void Renderer::setCamera(const shared_ptr<Camera>& camera) {
 	this->camera = camera;
 }
 
-void Renderer::setLights(const std::vector<Light>& lights) {
+void Renderer::setLights(const vector<Light>& lights) {
 	this->lights = lights;
 }
 
@@ -966,7 +966,7 @@ void Renderer::setLightWithMesh(const Light& light, const shared_ptr<MaterialPho
 	addMeshStep(shader, make_shared<IndexedMesh>(icosphere(radius, 2, light.getPosition(), randomID())), material);
 }
 
-void Renderer::setLightsWithMesh(const std::vector<Light>& lights, const shared_ptr<MaterialPhong>& material, const ShaderProgram& shader, float radius) {
+void Renderer::setLightsWithMesh(const vector<Light>& lights, const shared_ptr<MaterialPhong>& material, const ShaderProgram& shader, float radius) {
 	for (const auto& light : lights)
 		setLightWithMesh(light, material, shader, radius);
 }
@@ -975,7 +975,7 @@ void Renderer::setLightWithMesh(const Light& light, float ambient, float diff, f
 	setLightWithMesh(light, make_shared<MaterialPhong>(light.getColor(), light.getColor(), WHITE, ambient, diff, spec, shine), shader, radius);
 }
 
-void Renderer::setLightsWithMesh(const std::vector<Light>& lights_, float ambient, float diff, float spec, float shine, const ShaderProgram& shader, float radius) {
+void Renderer::setLightsWithMesh(const vector<Light>& lights_, float ambient, float diff, float spec, float shine, const ShaderProgram& shader, float radius) {
 	for (const auto& light : lights_)
 		setLightWithMesh(light, ambient, diff, spec, shine, shader, radius);
 }

@@ -110,13 +110,11 @@ protected:
 	Shader vertexShader;
 	Shader fragmentShader;
 	optional<Shader> geometryShader;
-
 	ShaderType shaderType;
 
 public:
 	unordered_map<string, GLuint> uniformLocations;
 	unordered_map<string, GLSLType> uniformTypes;
-
 	GLuint programID;
 
 	ShaderProgram(const Shader& vertexShader, const Shader& fragmentShader);
@@ -124,7 +122,6 @@ public:
 	ShaderProgram(const string& vertexPath, const string& fragPath);
 
 	void linkShaders();
-
 	explicit ShaderProgram(const string& standard_file_path);
 	~ShaderProgram();
 

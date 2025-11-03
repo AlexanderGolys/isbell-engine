@@ -29,8 +29,8 @@ class FluidParticle {
 	vec3 forces = vec3(0.0f);
 	vector<float> attributes;
 	float mass;
-	RP1 density = UNDEFINED;
-	RP1 pressure = UNDEFINED;
+	optional<float> density = UNDEFINED;
+	optional<float> pressure = UNDEFINED;
 	float viscosity;
 
 public:

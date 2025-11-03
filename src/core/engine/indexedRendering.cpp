@@ -1,96 +1,154 @@
+// ReSharper disable CppMemberFunctionMayBeConst
 #include "indexedRendering.hpp"
 
 #include <stdio.h>
 #include <vector>
-#include<fstream>
+#include <fstream>
 #include <ranges>
-#include<sstream>
+#include <sstream>
 
-#include "randomUtils.hpp"
+#include "logging.hpp"
+#include "SDFObjects.hpp"
+#include "SDFObjects.hpp"
 
 using namespace glm;
+using namespace BufferNames;
 
-BufferManager::BufferManager(const std::set<CommonBufferType>& activeBuffers, const vector<string>& extra_names)
+unique_ptr<vector<vec4>>& BufferManager::extraBufferPtrAt(int slot)  {
+	THROW_IF(slot >= extraBufferNames.size(), ValueError, "No extra buffer at slot " + to_string(slot) + ".");
+	switch (slot) {
+	case 0: return extra0;
+	case 1: return extra1;
+	case 2: return extra2;
+	case 3: return extra3;
+	case 4: return extra4;
+	}
+	THROW(IndexError, "No slot " + to_string(slot) + " for extra buffers available.");
+}
+
+vec4 BufferManager::extraElementAt(int index, int slot) const {
+	if (slot >= extraBufferNames.size())
+		THROW(ValueError, "No extra buffer at slot " + to_string(slot) + ".");
+	switch (slot) {
+	case 0: return extra0->at(index);
+	case 1: return extra1->at(index);
+	case 2: return extra2->at(index);
+	case 3: return extra3->at(index);
+	case 4: return extra4->at(index);
+	}
+	THROW(IndexError, "No slot " + to_string(slot) + " for extra buffers available.");}
+
+unique_ptr<vector<vec4>>& BufferManager::extraBufferPtrByName(const string& name)  {
+	return extraBufferPtrAt(indexOfExtraBuffer(name));
+}
+
+void BufferManager::setElementAt(int index, float value, int slot, int component) {
+	switch (slot) {
+	case 0: (*extra0)[index][component] = value; return;
+	case 1: (*extra1)[index][component] = value; return;
+	case 2: (*extra2)[index][component] = value; return;
+	case 3: (*extra3)[index][component] = value; return;
+	case 4: (*extra4)[index][component] = value; return;
+	}
+	THROW(IndexError, "No slot " + to_string(slot) + " for extra buffers available.");
+}
+
+void BufferManager::setElementAt(int index, vec4 value, int slot) {
+	switch (slot) {
+	case 0: (*extra0)[index] = value; return;
+	case 1: (*extra1)[index] = value; return;
+	case 2: (*extra2)[index] = value; return;
+	case 3: (*extra3)[index] = value; return;
+	case 4: (*extra4)[index] = value; return;
+	}
+	THROW(IndexError, "No slot " + to_string(slot) + " for extra buffers available.");
+}
+
+BufferManager::BufferManager(const vector<string>& extra_names)
 : extraBufferNames(extra_names) {
+	THROW_IF(extra_names.size() > 5, IllegalArgumentError, "BufferManager supports up to 5 extra attribute buffers.");
+	THROW_IF(not disjoint<string>(extra_names, RESERVED_BUF), IllegalVariantError, "Extra buffer names cannot collide with reserved buffer names.");
+
+	extra0 = extra_names.size() > 0 ? make_unique<vector<vec4>>() : nullptr;
+	extra1 = extra_names.size() > 1 ? make_unique<vector<vec4>>() : nullptr;
+	extra2 = extra_names.size() > 2 ? make_unique<vector<vec4>>() : nullptr;
+	extra3 = extra_names.size() > 3 ? make_unique<vector<vec4>>() : nullptr;
+	extra4 = extra_names.size() > 4 ? make_unique<vector<vec4>>() : nullptr;
+
 	stds = make_unique<Stds>();
-	extra0 = activeBuffers.contains(EXTRA0) ? make_unique<BUFF4>() : nullptr;
-	extra1 = activeBuffers.contains(EXTRA1) ? make_unique<BUFF4>() : nullptr;
-	extra2 = activeBuffers.contains(EXTRA2) ? make_unique<BUFF4>() : nullptr;
-	extra3 = activeBuffers.contains(EXTRA3) ? make_unique<BUFF4>() : nullptr;
-	extra4 = activeBuffers.contains(EXTRA4) ? make_unique<BUFF4>() : nullptr;
+	indices = make_unique<vector<ivec3>>();
+}
 
-	indices = make_unique<IBUFF3>();
-	this->activeBuffers = activeBuffers;
+BufferManager::BufferManager(const string& extra_name): BufferManager(vector<string>{extra_name}) {}
+
+BufferManager::BufferManager(const string& extra_name0, const string& extra_name1): BufferManager(vector<string>{extra_name0, extra_name1}) {}
+
+BufferManager::BufferManager(const string& extra_name0, const string& extra_name1, const string& extra_name2): BufferManager(vector<string>{extra_name0, extra_name1, extra_name2}) {}
+
+BufferManager::BufferManager(const string& extra_name0, const string& extra_name1, const string& extra_name2, const string& extra_name3): BufferManager(vector<string>{extra_name0, extra_name1, extra_name2, extra_name3}) {}
+
+BufferManager::BufferManager(const string& extra_name0, const string& extra_name1, const string& extra_name2, const string& extra_name3, const string& extra_name4): BufferManager(vector<string>{extra_name0, extra_name1, extra_name2, extra_name3, extra_name4}) {}
+
+vs_dim BufferManager::getAttributeDimension(const string& attributeName) const {
+	THROW_IF(not isActive(attributeName), IllegalVariantError, "Attribute " + attributeName + " is not active in this buffer manager.");
+	if (attributeName == POS_BUF or attributeName == NORM_BUF or attributeName == IND_BUF)
+		return 3;
+	if (attributeName == UV_BUF)
+		return 2;
+	return 4;
 }
 
 
-BufferManager::BufferManager(bool materials, const std::set<CommonBufferType>& extras, const vector<string>& extra_names)
-: BufferManager({POSITION, NORMAL, UV, COLOR, INDEX}, extra_names) {
-	extra0 = extras.contains(EXTRA0) ? make_unique<BUFF4>() : nullptr;
-	extra1 = extras.contains(EXTRA1) ? make_unique<BUFF4>() : nullptr;
-	extra2 = extras.contains(EXTRA2) ? make_unique<BUFF4>() : nullptr;
-	extra3 = extras.contains(EXTRA3) ? make_unique<BUFF4>() : nullptr;
-	extra4 = extras.contains(EXTRA4) ? make_unique<BUFF4>() : nullptr;
-
-	this->activeBuffers.insert(extras.begin(), extras.end());
+array_len BufferManager::attributeDataLength() const {
+	return stds->positions.size();
 }
 
-int BufferManager::bufferLength(CommonBufferType type) const {
-	if (!isActive(type))
-		return 0;
-	switch (type) {
-	case POSITION:
-	case NORMAL:
-	case UV:
-	case COLOR:
-	case MATERIAL1:
-	case MATERIAL2:
-	case MATERIAL3:
-	case MATERIAL4:
-	case EXTRA0:
-	case EXTRA1:
-	case EXTRA2:
-	case EXTRA3:
-	case EXTRA4:
-		return stds->positions.size();
-	case INDEX:
-		return indices->size();
+array_len BufferManager::indexDataLength() const {
+	return indices->size();
+}
+
+byte_size BufferManager::attributeDataSize(const string& attributeName) const {
+	THROW_IF(attributeName == IND_BUF, IllegalVariantError, "Index buffer size should be queried using indexDataSize().");
+	return attributeDataLength() * getAttributeDimension(attributeName) * sizeof(GL_FLOAT);
+}
+
+byte_size BufferManager::indexDataSize() const {
+	return indexDataLength() * 3 * sizeof(GL_UNSIGNED_INT);
+}
+
+raw_data_ptr BufferManager::attributeDataPtr(const string& attributeName) const {
+	if (attributeName == POS_BUF)
+		return stds->positions.data();
+	if (attributeName == NORM_BUF)
+		return stds->normals.data();
+	if (attributeName == UV_BUF)
+		return stds->uvs.data();
+	if (attributeName == COL_BUF)
+		return stds->colors.data();
+	if (contains<string>(extraBufferNames, attributeName)) {
+		if (attributeName == extraBufferNames[0])
+			return extra0->data();
+		if (attributeName == extraBufferNames[1])
+			return extra1->data();
+		if (attributeName == extraBufferNames[2])
+			return extra2->data();
+		if (attributeName == extraBufferNames[3])
+			return extra3->data();
+		if (attributeName == extraBufferNames[4])
+			return extra4->data();
 	}
-	throw UnknownVariantError("Buffer not recognised among common types. ", __FILE__, __LINE__);
+	THROW(IllegalVariantError, "Attribute " + attributeName + " is not active in this buffer manager.");
+}
+raw_data_ptr BufferManager::indexDataPtr() const {
+	return indices->data();
 }
 
-size_t BufferManager::bufferSize(CommonBufferType type) const {
-	return bufferLength(type) * bufferElementSize(type);
+bool BufferManager::isActive(const string& attributeName) const {
+	return contains<string>(extraBufferNames, attributeName) or contains<string>(RESERVED_BUF, attributeName);
 }
 
-void* BufferManager::firstElementAddress(CommonBufferType type) const {
-	switch (type) {
-	case POSITION:
-		return &stds->positions[0];
-	case NORMAL:
-		return &stds->normals[0];
-	case UV:
-		return &stds->uvs[0];
-	case COLOR:
-		return &stds->colors[0];
-	case EXTRA0:
-		return &(*extra0)[0];
-	case EXTRA1:
-		return &(*extra1)[0];
-	case EXTRA2:
-		return &(*extra2)[0];
-	case EXTRA3:
-		return &(*extra3)[0];
-	case EXTRA4:
-		return &(*extra4)[0];
-	case INDEX:
-		return &(*indices)[0];
-	}
-	throw UnknownVariantError("Buffer not recognised among common types. ", __FILE__, __LINE__);
-}
-
-bool BufferManager::isActive(CommonBufferType type) const {
-	return activeBuffers.contains(type);
+bool BufferManager::isActive(int i) const {
+	return i < extraBufferNames.size();
 }
 
 string BufferManager::getExtraBufferName(int slot) const {
@@ -101,39 +159,50 @@ vector<string> BufferManager::getExtraBufferNames() const {
 	return extraBufferNames;
 }
 
+vs_dim BufferManager::numberOfExtraBuffers() const {
+	return static_cast<vs_dim>(extraBufferNames.size());
+}
+
+int BufferManager::indexOfExtraBuffer(const string& name) const {
+	for (int i = 0; i < extraBufferNames.size(); i++)
+		if (extraBufferNames[i] == name)
+			return i;
+	THROW(IndexError, "No extra buffer named " + name + " found.");
+}
+
 
 int BufferManager::addTriangleVertexIndices(ivec3 ind, int shift) const {
 	indices->push_back(ind + ivec3(shift));
-	return bufferLength(INDEX) - 1;
+	return indices->size() - 1;
 }
 
 
 int BufferManager::addFullVertexData(const Vertex& v) const {
-	stds->positions.push_back(v.getPosition());
-	stds->normals.push_back(v.getNormal());
-	stds->uvs.push_back(v.getUV());
+	stds->positions.emplace_back(v.getPosition());
+	stds->normals.emplace_back(v.getNormal());
+	stds->uvs.emplace_back(v.getUV());
 	stds->colors.push_back(v.getColor());
-	if (isActive(EXTRA0))
+	if (extraBufferNames.size() > 0)
 		if (v.hasExtraData(extraBufferNames[0]))
 			extra0->push_back(v.getExtraData(extraBufferNames[0]));
 		else
 			extra0->emplace_back(0, 0, 0, 0);
-	if (isActive(EXTRA1))
+	if (extraBufferNames.size() > 1)
 		if (v.hasExtraData(extraBufferNames[1]))
 			extra1->push_back(v.getExtraData(extraBufferNames[1]));
 		else
 			extra1->emplace_back(0, 0, 0, 0);
-	if (isActive(EXTRA2))
+	if (extraBufferNames.size() > 2)
 		if (v.hasExtraData(extraBufferNames[2]))
 			extra2->push_back(v.getExtraData(extraBufferNames[2]));
 		else
 			extra2->emplace_back(0, 0, 0, 0);
-	if (isActive(EXTRA3))
+	if (extraBufferNames.size() > 3)
 		if (v.hasExtraData(extraBufferNames[3]))
 			extra3->push_back(v.getExtraData(extraBufferNames[3]));
 		else
 			extra3->emplace_back(0, 0, 0, 0);
-	if (isActive(EXTRA4))
+	if (extraBufferNames.size() > 4)
 		if (v.hasExtraData(extraBufferNames[4]))
 			extra4->push_back(v.getExtraData(extraBufferNames[4]));
 		else
@@ -192,26 +261,15 @@ vec4 BufferedVertex::getColor() const {
 	return bufferBoss.getColor(index);
 }
 
-vec4 BufferedVertex::getExtra(int slot) const {
+vec4 BufferedVertex::getExtra(const string& slot) const {
 	return bufferBoss.getExtra(index, slot);
-}
-
-vec4 BufferedVertex::getExtra0() const {
-	return bufferBoss.getExtra0(index);
 }
 
 Vertex BufferedVertex::getVertex() const {
 	dict(string, vec4) extraData;
-	if (bufferBoss.isActive(EXTRA0))
-		extraData[bufferBoss.getExtraBufferName(0)] = getExtra0();
-	if (bufferBoss.isActive(EXTRA1))
-		extraData[bufferBoss.getExtraBufferName(1)] = getExtra(1);
-	if (bufferBoss.isActive(EXTRA2))
-		extraData[bufferBoss.getExtraBufferName(2)] = getExtra(2);
-	if (bufferBoss.isActive(EXTRA3))
-		extraData[bufferBoss.getExtraBufferName(3)] = getExtra(3);
-	if (bufferBoss.isActive(EXTRA4))
-		extraData[bufferBoss.getExtraBufferName(4)] = getExtra(4);
+	for (const string& extraName : bufferBoss.getExtraBufferNames()) {
+		extraData[extraName] = getExtra(extraName);
+	}
 
 	return Vertex(getPosition(), getUV(), getNormal(), getColor(), extraData);
 }
@@ -240,20 +298,18 @@ void BufferedVertex::setColor(float value, int i) const {
 	bufferBoss.setColor(index, value, i);
 }
 
-void BufferedVertex::setExtra(vec4 value, int slot) const {
-	bufferBoss.setExtra(index, value, slot);
+void BufferedVertex::setExtra(vec4 value, const string& name) {
+	bufferBoss.setExtra(index, value, name);
 }
 
-void BufferedVertex::setExtra0(vec4 value) {
-	bufferBoss.setExtra0(index, value);
+void BufferedVertex::setExtra(vec3 value, const string& name) {
+	bufferBoss.setExtra(index, value.x, name, 0);
+	bufferBoss.setExtra(index, value.y, name, 1);
+	bufferBoss.setExtra(index, value.z, name, 2);
 }
 
-void BufferedVertex::setExtra(vec3 value, int slot) {
-	bufferBoss.setExtra(index, value, slot);
-}
-
-void BufferedVertex::setExtra(float value, int slot, int component) {
-	bufferBoss.setExtra(index, value, slot, component);
+void BufferedVertex::setExtra(float value, const string& name, int component) {
+	bufferBoss.setExtra(index, value, name, component);
 }
 
 void BufferedVertex::applyFunction(const SpaceEndomorphism& f) {
@@ -272,7 +328,7 @@ void BufferedVertex::setVertex(const Vertex& v) {
 	for (int i = 0; i < extras.size(); i++) {
 		string extraName = extras[i];
 		if (v.hasExtraData(extraName))
-			setExtra(v.getExtraData(extraName), i);
+			setExtra(v.getExtraData(extraName), extraName);
 	}
 }
 
@@ -389,11 +445,11 @@ bool IndexedTriangle::containsEdge(ivec2 edge) const {
 	return containsEdge(edge.x, edge.y);
 }
 
-void IndexedTriangle::setVertexIndices(const ivec3& in) {
+void IndexedTriangle::setVertexIndices(const ivec3& in) const {
 	bufferBoss.setFaceIndices(index, in);
 }
 
-void IndexedTriangle::changeOrientation() {
+void IndexedTriangle::changeOrientation() const {
 	bufferBoss.setFaceIndices(index, ivec3(getVertexIndices().z, getVertexIndices().y, getVertexIndices().x));
 }
 
@@ -429,7 +485,7 @@ IndexedMesh::IndexedMesh(const char* filename, const PolyGroupID& id)
 }
 
 void IndexedMesh::addNewPolygroup(const char* filename, const PolyGroupID& id) {
-	int shift = boss->bufferLength(POSITION);
+	int shift = boss->attributeDataLength();
 	int index = polygroupIndexOrder.size();
 	if (polygroupIndexOrder.contains(id))
 		throw IllegalVariantError("Polygroup ID already exists in mesh. ", __FILE__, __LINE__);
@@ -539,7 +595,7 @@ void IndexedMesh::addNewPolygroup(const vector<Vertex>& hardVertices, const vect
 	if (polygroupIndexOrder.contains(id))
 		throw IllegalVariantError("Polygroup ID already exists in mesh. ", __FILE__, __LINE__);
 
-	int shift = boss->bufferLength(POSITION);
+	int shift = boss->attributeDataLength();
 	int index = polygroupIndexOrder.size();
 	polygroupIndexOrder[id] = index;
 	vertices.emplace_back(vector<BufferedVertex>());
@@ -649,67 +705,35 @@ void IndexedMesh::copyPolygroup(const PolyGroupID& id, const PolyGroupID& newId)
 	addNewPolygroup(vertices, indices, newId);
 }
 
-bool IndexedMesh::hasExtra0() const {
-	return boss->hasExtra0();
-}
-
-bool IndexedMesh::hasExtra1() const {
-	return boss->hasExtra1();
-}
-
-bool IndexedMesh::hasExtra2() const {
-	return boss->hasExtra2();
-}
-
-bool IndexedMesh::hasExtra3() const {
-	return boss->hasExtra3();
-}
-
-bool IndexedMesh::hasExtra4() const {
-	return boss->hasExtra4();
-}
-
-bool IndexedMesh::hasExtra(int slot) const {
-	if (slot == 0)
-		return hasExtra0();
-	if (slot == 1)
-		return hasExtra1();
-	if (slot == 2)
-		return hasExtra2();
-	if (slot == 3)
-		return hasExtra3();
-	if (slot == 4)
-		return hasExtra4();
-	throw std::invalid_argument("slot must be between 0 and 4");
-}
-
 vector<string> IndexedMesh::getActiveExtraBuffers() const {
 	return boss->getExtraBufferNames();
 }
 
-void* IndexedMesh::bufferIndexLocation() const {
-	return boss->firstElementAddress(INDEX);
+raw_data_ptr IndexedMesh::bufferIndexLocation() const {
+	return boss->indexDataPtr();
 }
 
-size_t IndexedMesh::bufferIndexSize() const {
-	return boss->bufferSize(INDEX);
+byte_size IndexedMesh::bufferIndexSize() const {
+	return boss->indexDataSize();
 }
 
-int IndexedMesh::bufferIndexLength() const {
-	return boss->bufferLength(INDEX);
+array_len IndexedMesh::bufferIndexLength() const {
+	return boss->indexDataLength();
 }
 
-const void* IndexedMesh::getBufferLocation(CommonBufferType type) const {
-	return boss->firstElementAddress(type);
+raw_data_ptr IndexedMesh::getBufferLocation(const string& name) const {
+	return boss->attributeDataPtr(name);
 }
 
-unsigned int IndexedMesh::getBufferLength(CommonBufferType type) const {
-	return boss->bufferLength(type);
+array_len IndexedMesh::getBufferLength() const {
+	return boss->attributeDataLength();
 }
 
-size_t IndexedMesh::getBufferSize(CommonBufferType type) const {
-	return boss->bufferSize(type);
+byte_size IndexedMesh::getBufferSize(const string& name) const {
+	return boss->attributeDataSize(name);
 }
+
+
 
 
 vector<PolyGroupID> IndexedMesh::getPolyGroupIDs() const {
@@ -722,10 +746,6 @@ vector<PolyGroupID> IndexedMesh::getPolyGroupIDs() const {
 
 BufferManager& IndexedMesh::getBufferBoss() const {
 	return *boss;
-}
-
-bool IndexedMesh::isActive(CommonBufferType type) const {
-	return boss->isActive(type);
 }
 
 // bool IndexedMesh::hasGlobalTextures() const {
@@ -967,59 +987,10 @@ IndexedMesh IndexedMesh::wireframe(PolyGroupID id, PolyGroupID targetId, float w
 }
 
 
-void BufferManager::insertValueToSingleBuffer(CommonBufferType type, void* valueAddress) {
-	if (type == INDEX) {
-		ivec3* value = static_cast<ivec3*>(valueAddress);
-		indices->push_back(*value);
-	}
-	if (bufferElementLength(type) == 2) {
-		vec2* v = static_cast<vec2*>(valueAddress);
-		BUFF2* b = static_cast<BUFF2*>(firstElementAddress(type));
-		b->push_back(*v);
-		return;
-	}
-	if (bufferElementLength(type) == 3) {
-		vec3* v = static_cast<vec3*>(valueAddress);
-		BUFF3* b = static_cast<BUFF3*>(firstElementAddress(type));
-		b->push_back(*v);
-		return;
-	}
-	if (bufferElementLength(type) == 4) {
-		vec4* v = static_cast<vec4*>(valueAddress);
-		BUFF4* b = static_cast<BUFF4*>(firstElementAddress(type));
-		b->push_back(*v);
-		return;
-	}
-	throw IllegalVariantError("Buffer element has illegal length.", __FILE__, __LINE__);
-}
-
-void BufferManager::insertDefaultValueToSingleBuffer(CommonBufferType type) {
-	if (type == INDEX) {
-		indices->emplace_back(0, 0, 0);
-		return;
-	}
-	if (bufferElementLength(type) == 2) {
-		auto* b = static_cast<BUFF2*>(firstElementAddress(type));
-		b->emplace_back(0, 0);
-		return;
-	}
-	if (bufferElementLength(type) == 3) {
-		BUFF3* b = static_cast<BUFF3*>(firstElementAddress(type));
-		b->emplace_back(0, 0, 0);
-		return;
-	}
-	if (bufferElementLength(type) == 4) {
-		BUFF4* b = static_cast<BUFF4*>(firstElementAddress(type));
-		b->emplace_back(0, 0, 0, 0);
-		return;
-	}
-	throw IllegalVariantError("Buffer element has illegal length.", __FILE__, __LINE__);
-}
-
 BufferManager::BufferManager(const BufferManager& other)
 : stds(std::make_unique<Stds>(*other.stds)), extra0(std::make_unique<vector<vec4>>(*other.extra0)), extra1(std::make_unique<BUFF4>(*other.extra1)),
   extra2(std::make_unique<BUFF4>(*other.extra2)), extra3(std::make_unique<BUFF4>(*other.extra3)), extra4(std::make_unique<BUFF4>(*other.extra4)),
-  indices(std::make_unique<IBUFF3>(*other.indices)), extraBufferNames(other.extraBufferNames), activeBuffers(other.activeBuffers) {}
+  indices(std::make_unique<IBUFF3>(*other.indices)), extraBufferNames(other.extraBufferNames) {}
 
 BufferManager& BufferManager::operator=(BufferManager&& other) noexcept {
 	if (this == &other)
@@ -1031,7 +1002,6 @@ BufferManager& BufferManager::operator=(BufferManager&& other) noexcept {
 	extra3 = std::move(other.extra3);
 	extra4 = std::move(other.extra4);
 	indices = std::move(other.indices);
-	activeBuffers = std::move(other.activeBuffers);
 	extraBufferNames = std::move(other.extraBufferNames);
 	return *this;
 }
@@ -1039,7 +1009,7 @@ BufferManager& BufferManager::operator=(BufferManager&& other) noexcept {
 
 BufferManager::BufferManager(BufferManager&& other) noexcept
 : stds(std::move(other.stds)), extra0(std::move(other.extra0)), extra1(std::move(other.extra1)), extra2(std::move(other.extra2)), extra3(std::move(other.extra3)),
-  extra4(std::move(other.extra4)), indices(std::move(other.indices)), activeBuffers(std::move(other.activeBuffers)), extraBufferNames(std::move(other.extraBufferNames)) {}
+  extra4(std::move(other.extra4)), indices(std::move(other.indices)),extraBufferNames(std::move(other.extraBufferNames)) {}
 
 BufferManager& BufferManager::operator=(const BufferManager& other) {
 	if (this == &other)
@@ -1051,43 +1021,12 @@ BufferManager& BufferManager::operator=(const BufferManager& other) {
 	extra3 = std::make_unique<BUFF4>(*other.extra3);
 	extra4 = std::make_unique<BUFF4>(*other.extra4);
 	indices = std::make_unique<IBUFF3>(*other.indices);
-	activeBuffers = other.activeBuffers;
 	extraBufferNames = other.extraBufferNames;
 	return *this;
 }
 
 void BufferManager::reserveAdditionalSpaceForIndex(int extraStorage) {
-	reserveSpaceForIndex(bufferLength(INDEX) + extraStorage);
-}
-
-void BufferManager::initialiseExtraBufferSlot(int slot) {
-	switch (slot) {
-	case 0:
-		if (extra0 == nullptr)
-			extra0 = make_unique<BUFF4>();
-		activeBuffers.insert(EXTRA0);
-		return;
-	case 1:
-		if (extra1 == nullptr)
-			extra1 = make_unique<BUFF4>();
-		activeBuffers.insert(EXTRA1);
-		return;
-	case 2:
-		if (extra2 == nullptr)
-			extra2 = make_unique<BUFF4>();
-		activeBuffers.insert(EXTRA2);
-		return;
-	case 3:
-		if (extra3 == nullptr)
-			extra3 = make_unique<BUFF4>();
-		activeBuffers.insert(EXTRA3);
-		return;
-	case 4:
-		if (extra4 == nullptr)
-			extra4 = make_unique<BUFF4>();
-		activeBuffers.insert(EXTRA4);
-	default: ;
-	}
+	reserveSpaceForIndex(indexDataLength() + extraStorage);
 }
 
 vec3 BufferManager::getPosition(int index) const {
@@ -1098,6 +1037,7 @@ vec3 BufferManager::getNormal(int index) const {
 	return stds->normals[index];
 }
 
+
 vec2 BufferManager::getUV(int index) const {
 	return stds->uvs[index];
 }
@@ -1106,29 +1046,9 @@ vec4 BufferManager::getColor(int index) const {
 	return stds->colors[index];
 }
 
-vec4 BufferManager::getExtra(int index, int slot) const {
-	switch (slot) {
-	case 0:
-		return (*extra0)[index];
-	case 1:
-		return (*extra1)[index];
-	case 2:
-		return (*extra2)[index];
-	case 3:
-		return (*extra3)[index];
-	case 4:
-		return (*extra4)[index];
-	default: ;
-	}
-	throw UnknownVariantError("Extra slot not recognised. ", __FILE__, __LINE__);
-}
+vec4 BufferManager::getExtra(int index, const string& name) const {
+	return extraElementAt(index, indexOfExtraBuffer(name));
 
-vec4 BufferManager::getExtra0(int index) const {
-	return (*extra0)[index];
-}
-
-float BufferManager::getExtraSlot(int index, int slot, int component) const {
-	return getExtra(index, slot)[component];
 }
 
 ivec3 BufferManager::getFaceIndices(int index) const {
@@ -1137,16 +1057,8 @@ ivec3 BufferManager::getFaceIndices(int index) const {
 
 Vertex BufferManager::getVertex(int index) const {
 	dict(string, vec4) extraData = {};
-	if (hasExtra0())
-		extraData[extraBufferNames[0]] = getExtra0(index);
-	if (hasExtra1())
-		extraData[extraBufferNames[1]] = getExtra(index, 1);
-	if (hasExtra2())
-		extraData[extraBufferNames[2]] = getExtra(index, 2);
-	if (hasExtra3())
-		extraData[extraBufferNames[3]] = getExtra(index, 3);
-	if (hasExtra4())
-		extraData[extraBufferNames[4]] = getExtra(index, 4);
+	for (const string& name : extraBufferNames)
+		extraData[name] = getExtra(index, name);
 	return Vertex(getPosition(index), getUV(index), getNormal(index), getColor(index), extraData);
 }
 
@@ -1178,110 +1090,47 @@ void BufferManager::setFaceIndices(int index, const ivec3& in) {
 	indices->at(index) = in;
 }
 
-void BufferManager::setExtra0(int index, vec4 v) {
-	(*extra0)[index] = v;
+void BufferManager::setExtra(int index, vec4 value, const string& name) {
+	int slot = indexOfExtraBuffer(name);
+	setElementAt(index, value, slot);
 }
 
-void BufferManager::setExtra0(int index, float value, int component) {
-	(*extra0)[index][component] = value;
+void BufferManager::setExtra(int index, vec3 value, const string& name) {
+	int slot = indexOfExtraBuffer(name);
+	setElementAt(index, value[0], slot, 0);
+	setElementAt(index, value[1], slot, 1);
+	setElementAt(index, value[2], slot, 2);
 }
 
-
-void BufferManager::setExtra(int index, vec4 value, int slot) {
-	switch (slot) {
-	case 0:
-		(*extra0)[index] = value;
-		return;
-	case 1:
-		(*extra1)[index] = value;
-		return;
-	case 2:
-		(*extra2)[index] = value;
-		return;
-	case 3:
-		(*extra3)[index] = value;
-		return;
-	case 4:
-		(*extra4)[index] = value;
-		return;
-	}
-	throw UnknownVariantError("Extra slot not recognised. ", __FILE__, __LINE__);
+void BufferManager::setExtra(int index, float value, const string& name, int component) {
+	int slot = indexOfExtraBuffer(name);
+	setElementAt(index, value, slot, component);
 }
 
-void BufferManager::setExtra(int index, vec3 value, int slot) {
-	setExtra(index, value.x, slot, 0);
-	setExtra(index, value.y, slot, 1);
-	setExtra(index, value.z, slot, 2);
-}
-
-void BufferManager::setExtra(int index, float value, int slot, int component) {
-	switch (slot) {
-	case 0:
-		(*extra0)[index][component] = value;
-		return;
-	case 1:
-		(*extra1)[index][component] = value;
-		return;
-	case 2:
-		(*extra2)[index][component] = value;
-		return;
-	case 3:
-		(*extra3)[index][component] = value;
-		return;
-	case 4:
-		(*extra4)[index][component] = value;
-		return;
-	default:
-		throw UnknownVariantError("Extra slot not recognised. ", __FILE__, __LINE__);
-	}
-}
-
-bool BufferManager::hasExtra0() const {
-	return activeBuffers.contains(EXTRA0);
-}
-
-bool BufferManager::hasExtra1() const {
-	return activeBuffers.contains(EXTRA1);
-}
-
-bool BufferManager::hasExtra2() const {
-	return activeBuffers.contains(EXTRA2);
-}
-
-bool BufferManager::hasExtra3() const {
-	return activeBuffers.contains(EXTRA3);
-}
-
-bool BufferManager::hasExtra4() const {
-	return activeBuffers.contains(EXTRA4);
-}
-
-void BufferManager::reserveSpace(int targetSize) {
+void BufferManager::reserveSpace(int targetSize) const {
 	stds->positions.reserve(targetSize);
 	stds->normals.reserve(targetSize);
 	stds->uvs.reserve(targetSize);
 	stds->colors.reserve(targetSize);
 
-	if (isActive(EXTRA0))
+	if (extra0)
 		extra0->reserve(targetSize);
-	if (isActive(EXTRA1))
+	if (extra1)
 		extra1->reserve(targetSize);
-	if (isActive(EXTRA2))
+	if (extra2)
 		extra2->reserve(targetSize);
-	if (isActive(EXTRA3))
+	if (extra3)
 		extra3->reserve(targetSize);
-	if (isActive(EXTRA4))
+	if (extra4)
 		extra4->reserve(targetSize);
-
-	// indices->reserve(targetSize);
 }
 
-void BufferManager::reserveSpaceForIndex(int targetSize) {
+void BufferManager::reserveSpaceForIndex(int targetSize) const {
 	indices->reserve(targetSize);
 }
 
-void BufferManager::reserveAdditionalSpace(int extraStorage) {
-	reserveSpace(bufferLength(POSITION) + extraStorage);
+void BufferManager::reserveAdditionalSpace(int extraStorage) const {
+	reserveSpace(attributeDataLength() + extraStorage);
 }
 
 vec3 IndexedMesh::centerOfMass(PolyGroupID id) const {
@@ -1352,7 +1201,7 @@ vec2 Wireframe::getSurfaceParameters(const BufferedVertex& v) const {
 PlanarFlowLines::PlanarFlowLines(const VectorFieldR2& X, float dt, int steps, const std::function<float(float, float, float, vec2, vec2)>& width,
 								 const std::function<vec4(float, float, float, vec2, vec2)>& color)
 : IndexedMesh(), X(X), dt(dt), steps(steps), width(width), color(color) {
-	boss = make_unique<BufferManager>(std::set({POSITION, NORMAL, UV, COLOR, INDEX, EXTRA0}));
+	boss = make_unique<BufferManager>("extra0");
 }
 
 
@@ -1431,7 +1280,7 @@ float PlanarFlowLines::getTimeRelative(const BufferedVertex& v) {
 }
 
 float PlanarFlowLines::getT0(const BufferedVertex& v) {
-	return v.getExtra(0).x;
+	return v.getExtra("extra0").x;
 }
 
 float PlanarFlowLines::getTimeAbsolute(const BufferedVertex& v) {
@@ -1443,7 +1292,7 @@ vec2 PlanarFlowLines::getPos(const BufferedVertex& v) {
 }
 
 vec2 PlanarFlowLines::getStartPoint(const BufferedVertex& v) {
-	return vec2(v.getExtra(0).y, v.getExtra(0).z);
+	return vec2(v.getExtra("extra0").y, v.getExtra("extra0").z);
 }
 
 float PlanarFlowLines::getSpeed(const BufferedVertex& v) {
@@ -1451,7 +1300,7 @@ float PlanarFlowLines::getSpeed(const BufferedVertex& v) {
 }
 
 float PlanarFlowLines::getLength(const BufferedVertex& v) {
-	return v.getExtra(0).w;
+	return v.getExtra("extra0").w;
 }
 
 vec4 PlanarFlowLines::getColor(const BufferedVertex& v) {
@@ -1521,7 +1370,7 @@ PipeCurveVertexShader::PipeCurveVertexShader(const SmoothParametricCurve& curve,
 
 PipeCurveVertexShader::PipeCurveVertexShader(const RealFunction& plot, vec2 dom, float r, int horRes, int radialRes, const PolyGroupID& id)
 : id(id), settings(r, horRes, radialRes) {
-	boss = make_unique<BufferManager>(std::set({POSITION, NORMAL, UV, COLOR, INDEX, EXTRA0}));
+	boss = make_unique<BufferManager>("extra0");
 	auto params = linspace(dom.x, dom.y, horRes);
 
 	vector<Vertex> verts = vector<Vertex>();
@@ -1533,9 +1382,9 @@ PipeCurveVertexShader::PipeCurveVertexShader(const RealFunction& plot, vec2 dom,
 		vec3 p = vec3(t, 0, plot(t));
 		vec3 b = e2;
 		vec3 n = normalise(vec3(plot.df(t), 0, -1));
-		for (float theta : linspace(0.f, TAU, radialRes)) {
+		for (float theta : linspace(0.f, TAU, radialRes))
 			verts.emplace_back(p, vec2(t, theta), n, vec4(b.x, b.y, b.z, r), dict(string, vec4)({{"extra0", vec4(0)}}));
-		}
+
 		if (i < horRes - 1) {
 			for (int j = 0; j < radialRes; j++) {
 				inds.emplace_back(i * radialRes + j, (i + 1) * radialRes + j, i * radialRes + (j + 1) % radialRes);
@@ -1548,7 +1397,7 @@ PipeCurveVertexShader::PipeCurveVertexShader(const RealFunction& plot, vec2 dom,
 
 PipeCurveVertexShader::PipeCurveVertexShader(const DiscreteRealFunction& plot, float r, int radialRes, const PolyGroupID& id)
 : id(id), settings(r, plot.samples(), radialRes) {
-	boss = make_unique<BufferManager>(std::set({POSITION, NORMAL, UV, COLOR, INDEX, EXTRA0}));
+	boss = make_unique<BufferManager>("extra0");
 
 
 	vec2 dom = plot.getDomain();
@@ -1565,9 +1414,9 @@ PipeCurveVertexShader::PipeCurveVertexShader(const DiscreteRealFunction& plot, f
 		vec3 p = vec3(t, 0, plot(t));
 		vec3 b = e2;
 		vec3 n = normalise(vec3(df(t), 0, -1));
-		for (float theta : linspace(0.f, TAU, radialRes)) {
+		for (float theta : linspace(0.f, TAU, radialRes))
 			verts.emplace_back(p, vec2(t, theta), n, vec4(b.x, b.y, b.z, r), dict(string, vec4)({{"extra0", vec4(0)}}));
-		}
+
 		if (i < horRes - 1) {
 			for (int j = 0; j < radialRes; j++) {
 				inds.emplace_back(i * radialRes + j, (i + 1) * radialRes + j, i * radialRes + (j + 1) % radialRes);
@@ -1580,7 +1429,7 @@ PipeCurveVertexShader::PipeCurveVertexShader(const DiscreteRealFunction& plot, f
 
 PipeCurveVertexShader::PipeCurveVertexShader(const DiscreteRealFunctionNonUniform& plot, float r, int radialRes, const PolyGroupID& id)
 : id(id), settings(r, plot.samples(), radialRes) {
-	boss = make_unique<BufferManager>(std::set({POSITION, NORMAL, UV, COLOR, INDEX, EXTRA0}));
+	boss = make_unique<BufferManager>("extra0");
 
 	auto params = plot.args_vector();
 	int horRes = params.size();
@@ -1610,18 +1459,8 @@ PipeCurveVertexShader::PipeCurveVertexShader(const DiscreteRealFunctionNonUnifor
 
 PipeCurveVertexShader::PipeCurveVertexShader(const SmoothParametricCurve& curve, const PIPE_SETTINGS& s, const std::variant<int, std::string>& id)
 : id(id), settings(s) {
-	auto buffers = std::set({POSITION, NORMAL, UV, COLOR, INDEX});
-	if (s.extra_defaults.contains("extra0"))
-		buffers.insert(EXTRA0);
-	if (s.extra_defaults.contains("extra1"))
-		buffers.insert(EXTRA1);
-	if (s.extra_defaults.contains("extra2"))
-		buffers.insert(EXTRA2);
-	if (s.extra_defaults.contains("extra3"))
-		buffers.insert(EXTRA3);
-	if (s.extra_defaults.contains("extra4"))
-		buffers.insert(EXTRA4);
-	boss = make_unique<BufferManager>(buffers);
+
+	boss = make_unique<BufferManager>("extra0");
 
 	auto params = linspace(curve.getT0(), curve.getT1(), s.horRes);
 	vector<vec3> normals = vector<vec3>();
@@ -1788,7 +1627,7 @@ float PipeCurveVertexShader::getParameter(const BufferedVertex& v) {
 }
 
 vec4 PipeCurveVertexShader::getExtra(const BufferedVertex& v) {
-	return v.getExtra0();
+	return v.getExtra("extra0");
 }
 
 void PipeCurveVertexShader::setBinormal(BufferedVertex& v, vec3 b) {
@@ -1807,10 +1646,6 @@ void PipeCurveVertexShader::setRadius(BufferedVertex& v, float r) {
 
 void PipeCurveVertexShader::setParameter(BufferedVertex& v, float t) {
 	v.setUV(t, 0);
-}
-
-void PipeCurveVertexShader::setExtra0(BufferedVertex& v, vec4 extra) {
-	v.setExtra0(extra);
 }
 
 void PipeCurveVertexShader::setExtra(BufferedVertex& v, float value, int extra_index) {
@@ -2110,7 +1945,7 @@ FoliatedParametricSurfaceMesh::FoliatedParametricSurfaceMesh(ParametricSurfaceFo
 : IndexedMesh(), foliation(foliation), special_leaves(special_leaves), continuous_leaves(continuous_leaves), leaf_radial_res(leaf_radial_res), leaf_hor_res(leaf_hor_res),
   color_map(color_map), special_leaf_colors(special_leaf_colors), leaf_radius_map(leaf_radius_map), special_leaf_radii(special_leaf_radii), extra1_map(extra1_map),
   special_extra1s(special_extra1s) {
-	boss = make_unique<BufferManager>(std::set({POSITION, NORMAL, UV, COLOR, INDEX, EXTRA0, EXTRA1}));
+	boss = make_unique<BufferManager>("extra0", "extra1");
 
 	int i = 0;
 	for (float t : linspace(foliation.getDomain()[0], foliation.getDomain()[1], continuous_leaves, false)) {

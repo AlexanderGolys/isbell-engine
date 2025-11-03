@@ -29,7 +29,7 @@ public:
 	SmoothParametricCurve(const Foo13 &f,   vec2 dom, PolyGroupID id=DFLT_CURV, bool periodic=false, float epsilon=0.01f) : SmoothParametricCurve(f, derivativeOperator(f, epsilon), id, dom.x, dom.y, periodic, epsilon) {}
 
 	SmoothParametricCurve( const RealFunction& fx, const RealFunction& fy, const RealFunction& fz, PolyGroupID id=DFLT_CURV, float t0=0, float t1=TAU, bool periodic=true, float epsilon=0.01f);
-    SmoothParametricCurve(Foo13 f, std::function<Foo13(int)> derivativeOperator, PolyGroupID id=DFLT_CURV, float t0=0, RP1 t1=TAU, bool periodic=true, float epsilon=0.01f);
+    SmoothParametricCurve(Foo13 f, std::function<Foo13(int)> derivativeOperator, PolyGroupID id=DFLT_CURV, float t0=0, optional<float> t1=TAU, bool periodic=true, float epsilon=0.01f);
     SmoothParametricCurve(Foo13 f, std::vector<Foo13> derivatives, PolyGroupID id=DFLT_CURV, float t0=0, float t1=TAU, bool periodic=true, float epsilon=0.01f);
     SmoothParametricCurve(const SmoothParametricCurve &other);
     SmoothParametricCurve(SmoothParametricCurve &&other) noexcept;
@@ -43,8 +43,8 @@ public:
     void copyID (const SmoothParametricCurve &other) { this->id = other.id; }
 
 	SmoothParametricCurve shift(vec3 v) const {return precompose(SpaceEndomorphism::translation(v));}
-	SmoothParametricCurve rotate(vec3 axis, float angle, vec3 center=ORIGIN) const {return precompose(SpaceAutomorphism::rotation(axis, angle).applyWithShift(center));}
-	SmoothParametricCurve scale(float a, vec3 center=ORIGIN) const {return precompose(SpaceAutomorphism::scaling(a, center));}
+	SmoothParametricCurve rotate(vec3 axis, float angle, vec3 center=ORIGIN_R3) const {return precompose(SpaceAutomorphism::rotation(axis, angle).applyWithShift(center));}
+	SmoothParametricCurve scale(float a, vec3 center=ORIGIN_R3) const {return precompose(SpaceAutomorphism::scaling(a, center));}
 
 
 	vec3 derivative(float t) const { return _df(t); }
@@ -143,8 +143,8 @@ public:
 	friend SmoothParametricSurface operator & (const SmoothParametricSurface &S, const PlaneAutomorphism &c) { return S.precompose(c); }
 
 	SmoothParametricSurface shift(vec3 v) const;
-	SmoothParametricSurface rotate(vec3 axis, float angle, vec3 center=ORIGIN) const;
-	SmoothParametricSurface scale(float a, vec3 center=ORIGIN) const;
+	SmoothParametricSurface rotate(vec3 axis, float angle, vec3 center=ORIGIN_R3) const;
+	SmoothParametricSurface scale(float a, vec3 center=ORIGIN_R3) const;
 
 	SmoothParametricCurve restrictToInterval(vec2 p0, vec2 p1, PolyGroupID id=420) const;
 	SmoothParametricCurve restrictToInterval(vec2 p0, vec2 p1, bool periodic, PolyGroupID id=420) const;

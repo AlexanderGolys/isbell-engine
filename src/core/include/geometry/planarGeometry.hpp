@@ -11,8 +11,8 @@ class SmoothParametricPlaneCurve {
     std::function<Foo12(int)> _der_higher = [this](int n)
             {return n == 0 ? _f : n == 1 ? _df : n == 2 ? _ddf : derivativeOperator(_der_higher(n-1), this->eps);};
     float eps = 0.01;
-    RP1 t0 = std::nullopt;
-    RP1 t1 = std::nullopt;
+    optional<float> t0 = std::nullopt;
+    optional<float> t1 = std::nullopt;
     bool periodic = true;
 public:
 	explicit SmoothParametricPlaneCurve(const Foo12& curve, float t0=0, float t1=TAU, bool period=true, float epsilon=0.01);
@@ -38,7 +38,7 @@ public:
 	std::vector<vec2> sample(float t0, float t1, int n) const;
 	std::vector<vec2> sample(int n) const {return sample(t0.value_or(-1), t1.value_or(1), n);}
 	std::vector<vec3> adjacency_lines_buffer(float t0, float t1, int n, float z=0) const;
-    SmoothParametricCurve embedding(vec3 v1=e1, vec3 v2=e2, vec3 pivot=ORIGIN) const;
+    SmoothParametricCurve embedding(vec3 v1=e1, vec3 v2=e2, vec3 pivot=ORIGIN_R3) const;
     vec2 bounds() const { return vec2(t0.value_or(-1), t1.value_or(1)); }
 	bool isPeriodic() const { return periodic; }
 };

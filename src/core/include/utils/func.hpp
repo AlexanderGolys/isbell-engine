@@ -512,7 +512,7 @@ public:
 	CompactlySupportedRealFunction(const RealFunction &f, const RealFunction &df, const RealFunction &ddf, vec2 support, float epsilon);
 
 	CompactlySupportedRealFunction df() const;
-	float improper_integral(RP1 a, RP1 b, int prec) const;
+	float improper_integral(optional<float> a, optional<float> b, int prec) const;
 	float full_domain_integral(int prec) const;
 	CompactlySupportedRealFunction antiderivative(float a, int prec) const;
 

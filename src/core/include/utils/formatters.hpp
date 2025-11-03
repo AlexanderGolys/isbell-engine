@@ -10,7 +10,9 @@ namespace std
 	template<>
 	struct formatter<Complex>
 	{
-		constexpr format_parse_context::const_iterator parse(format_parse_context &ctx) { return ctx.begin(); }
+		constexpr format_parse_context::const_iterator parse(format_parse_context &ctx) {
+			return ctx.begin();
+		}
 
 		template<typename FormatContext>
 		std::format_context::iterator format(const Complex& c, FormatContext& ctx) const{

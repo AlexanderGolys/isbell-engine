@@ -146,11 +146,11 @@ public:
 };
 
 
-SDFObjectInstance sphereSDF(const SDFMaterialPlus &material, float radius, vec3 center=ORIGIN, const string &name = "sphere_sdf");
-SDFObjectInstance boxSDF(const SDFMaterialPlus &material, vec3 size, vec3 center=ORIGIN, mat3 rotation = mat3(1), string name = "sdf");
+SDFObjectInstance sphereSDF(const SDFMaterialPlus &material, float radius, vec3 center=ORIGIN_R3, const string &name = "sphere_sdf");
+SDFObjectInstance boxSDF(const SDFMaterialPlus &material, vec3 size, vec3 center=ORIGIN_R3, mat3 rotation = mat3(1), string name = "sdf");
 SDFObjectInstance planeSDF(const SDFMaterialPlus &material, vec3 normal=e3, float d=0, const string &name = "sdf");
-SDFObjectInstance roundBoxSDF(const SDFMaterialPlus &material, vec3 size, float r, vec3 center=ORIGIN, mat3 rotation=mat3(1), string name = "sdf");
-SDFObjectInstance torusSDF(const SDFMaterialPlus &material, float r, float R, vec3 center=ORIGIN, mat3 rotation=mat3(1), string name = "sdf");
-SDFObjectInstance smoothTubeSDF(const SDFMaterialPlus &material, float r1, float r2, float R, float k, vec3 center=ORIGIN, const mat3 &rotation=mat3(1), const string &name="sdf");
+SDFObjectInstance roundBoxSDF(const SDFMaterialPlus &material, vec3 size, float r, vec3 center=ORIGIN_R3, mat3 rotation=mat3(1), string name = "sdf");
+SDFObjectInstance torusSDF(const SDFMaterialPlus &material, float r, float R, vec3 center=ORIGIN_R3, mat3 rotation=mat3(1), string name = "sdf");
+SDFObjectInstance smoothTubeSDF(const SDFMaterialPlus &material, float r1, float r2, float R, float k, vec3 center=ORIGIN_R3, const mat3 &rotation=mat3(1), const string &name="sdf");
 SDFObjectInstance triangleSDF(const SDFMaterialPlus &material, vec3 a, vec3 b, vec3 c, string name = "sdf");
 SDFObjectInstance quadSDF(const SDFMaterialPlus &material, vec3 a, vec3 b, vec3 c, vec3 d, string name = "sdf");

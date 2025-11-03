@@ -193,10 +193,10 @@ SmoothParametricPlaneCurve pentoid(float r, float eps) { return hypocycloid(r, 5
 SmoothParametricPlaneCurve exoid(float r, float eps) { return hypocycloid(r, 6*r, eps); }
 
 SmoothParametricCurve circle(float r, vec3 center, vec3 v1, vec3 v2, float eps) {
-    return circle(r, PLANE_ORIGIN, eps).embedding(v1, v2, center);
+    return circle(r, ORIGIN_R2, eps).embedding(v1, v2, center);
 }
 
-IndexedMesh singleTrig(vec3 v0, vec3 v1, vec3 v2, std::variant<int, std::string> id) {
+IndexedMesh singleTrig(vec3 v0, vec3 v1, vec3 v2, PolyGroupID id) {
 	vec3 normal          = normalize(cross(v1 - v0, v2 - v0));
 	vector<Vertex> nodes = {Vertex(v0, vec2(0, 0), normal),
 							Vertex(v1, vec2(1, 0), normal),
@@ -204,7 +204,7 @@ IndexedMesh singleTrig(vec3 v0, vec3 v1, vec3 v2, std::variant<int, std::string>
 	return IndexedMesh(nodes, {{0, 1, 2}}, id);
 }
 
-IndexedMesh singleQuadShadeSmooth(vec3 outer1, vec3 inner1, vec3 inner2, vec3 outer2, std::variant<int, std::string> id) {
+IndexedMesh singleQuadShadeSmooth(vec3 outer1, vec3 inner1, vec3 inner2, vec3 outer2, PolyGroupID id) {
 	auto n1 = normalize(cross(inner1 - outer1, inner2 - outer1));
 	auto n2 = normalize(normalize(cross(inner2 - inner1, outer1 - inner1)) + normalize(cross(inner2 - inner1, outer2 - inner1)));
 	auto n3 = normalize(normalize(cross(inner1 - inner2, outer1 - inner2)) + normalize(cross(inner1 - inner2, outer2 - inner2)));
@@ -255,65 +255,9 @@ SmoothParametricCurve sphericalSpiral(float a, float r, float t_max, PolyGroupID
     return SmoothParametricCurve([a, r](float t) {return vec3(cos(t), sin(t), -a*t)*r/sqrt(1+a*a*t*t); },id,  -t_max, t_max, false, eps);
 }
 
-IndexedMesh singleTrig(vec3 v0, vec3 v1, vec3 v2, MaterialPhongConstColor &material, PolyGroupID id) {
-    vec3 n = normalize(cross(v1 - v0, v2 - v0));
-    vector nodes = {Vertex(v0, vec2(0, 0), n, BLACK, {}, material),
-                    Vertex(v1, vec2(0, 1), n, BLACK, {}, material),
-                    Vertex(v2, vec2(1, 1), n, BLACK, {}, material)};
-    return IndexedMesh(nodes, {ivec3(0, 1, 2)}, id);
-}
 
 
-IndexedMesh singleTrig(vec3 v0, vec3 v1, vec3 v2, MaterialPhongConstColor &material1, MaterialPhongConstColor &material2, MaterialPhongConstColor &material3, PolyGroupID id) {
-    vec3 n = normalize(cross(v1 - v0, v2 - v0));
-    vector nodes = {Vertex(v0, vec2(0, 0), n, BLACK, {}, material1),
-                    Vertex(v1, vec2(0, 1), n, BLACK, {}, material2),
-                    Vertex(v2, vec2(1, 1), n, BLACK, {}, material3)};
-    return IndexedMesh(nodes, {ivec3(0, 1, 2)}, id);
-}
-IndexedMesh singleQuadShadeSmooth(vec3 outer1, vec3 inner1, vec3 inner2, vec3 outer2, MaterialPhongConstColor &material,
-                                    std::variant<int, std::string> id) {
-    vec3 n1out = normalize(cross(outer1 - inner1, outer1 - inner2));
-    vec3 n2out = normalize(cross(outer2 - inner2, outer2 - inner1));
-    float w1 = norm(cross(inner1-outer1, inner1-inner2));
-    float w2 = norm(cross(inner2-outer2, inner2-inner1));
-    vec3 nin = normalize(w1*inner1 + w2*inner2);
-
-    vector nodes = {Vertex(outer1, vec2(0, 0), n1out, BLACK, {}, material),
-                    Vertex(inner1, vec2(0, 1), nin, BLACK, {}, material),
-                    Vertex(inner2, vec2(1, 0), nin, BLACK, {}, material),
-                    Vertex(outer2, vec2(1, 1), n2out, BLACK, {}, material)};
-    return IndexedMesh(nodes, {ivec3(0, 1, 2), ivec3(3, 1, 2)}, id);
-}
-
-IndexedMesh singleQuadShadeFlat(vec3 outer1, vec3 inner1, vec3 inner2, vec3 outer2, MaterialPhongConstColor &material,
-                                  std::variant<int, std::string> id) {
-    vec3 n1 = normalize(cross(outer1 - inner1, outer1 - inner2));
-    vec3 n2 = normalize(cross(outer2 - inner2, outer2 - inner1));
-
-    vector nodes = {Vertex(outer1, vec2(0, 0), n1, BLACK, {}, material),
-                    Vertex(inner1, vec2(0, 1), n1, BLACK, {}, material),
-                    Vertex(inner2, vec2(1, 1), n1, BLACK, {}, material),
-                    Vertex(inner1, vec2(0, 1), n2, BLACK, {}, material),
-                    Vertex(inner2, vec2(1, 1), n2, BLACK, {}, material),
-                    Vertex(outer2, vec2(1, 1), n2, BLACK, {}, material)};
-    return IndexedMesh(nodes, {ivec3(0, 1, 2), ivec3(3, 4, 5)}, id);
-}
-
-IndexedMesh singleQuadShadeFlat(vec3 outer1, vec3 inner1, vec3 inner2, vec3 outer2, MaterialPhongConstColor &material1,
-                                  MaterialPhongConstColor &material2, std::variant<int, std::string> id) {
-    vec3 n1 = normalize(cross(outer1 - inner1, outer1 - inner2));
-    vec3 n2 = normalize(cross(outer2 - inner2, outer2 - inner1));
-
-    vector nodes = {Vertex(outer1, vec2(0, 0), n1, BLACK, {}, material1), Vertex(inner1, vec2(0, 1), n1, BLACK, {}, material1),
-                    Vertex(inner2, vec2(1, 1), n1, BLACK, {}, material1), Vertex(inner1, vec2(0, 1), n2, BLACK, {}, material2),
-                    Vertex(inner2, vec2(1, 1), n2, BLACK, {}, material2), Vertex(outer2, vec2(1, 1), n2, BLACK, {}, material2)};
-    return IndexedMesh(nodes, {ivec3(0, 1, 2), ivec3(3, 4, 5)}, id);
-}
-
-
-
-IndexedMesh pyramid(const vector<vec3> &cornersDown, vec3 apex, std::variant<int, std::string> id) {
+IndexedMesh pyramid(const vector<vec3> &cornersDown, vec3 apex, PolyGroupID id) {
 	auto m = singleQuadShadeFlat(cornersDown, id);
 	m.merge(singleTrig(cornersDown[0], cornersDown[1], apex, id));
 	m.merge(singleTrig(cornersDown[1], cornersDown[2], apex, id));
@@ -401,7 +345,7 @@ SmoothParametricSurface twistedTorus(float a, float m, float n, int dommul1, int
 	}, vec2(0, TAU*dommul1), vec2(0, TAU*dommul2), true, true, eps);
 }
 
-inline IndexedMesh icosahedron(float r, vec3 center, std::variant<int, std::string> id) {
+inline IndexedMesh icosahedron(float r, vec3 center, PolyGroupID id) {
     float phi = (1.f + sqrt(5)) / 2;
     vector verts_ = {
         Vertex(vec3(1, phi, 0),  vec2(1, 0),  normalise(vec3(1, phi, 0)),     BLACK     ),
@@ -461,7 +405,7 @@ IndexedMesh icosphere(float r, int n, vec3 center, PolyGroupID id, vec4 color) {
     return unitSphere;
 }
 
-IndexedMesh disk3d(float r, vec3 center, vec3 v1, vec3 v2, int radial_res, int vertical_res, const std::variant<int, std::string> &id) {
+IndexedMesh disk3d(float r, vec3 center, vec3 v1, vec3 v2, int radial_res, int vertical_res, const PolyGroupID &id) {
     auto vert = vector<Vertex>();
     vector<ivec3> inds = {};
     vec3 n = normalise(cross(v1, v2));
@@ -485,11 +429,11 @@ IndexedMesh disk3d(float r, vec3 center, vec3 v1, vec3 v2, int radial_res, int v
     return IndexedMesh(vert, inds, id);
 }
 
-IndexedMesh singleQuadShadeFlat(vec3 inner1, vec3 outer1, vec3 inner2, vec3 outer2, std::variant<int, std::string> id) {
+IndexedMesh singleQuadShadeFlat(vec3 inner1, vec3 outer1, vec3 inner2, vec3 outer2, PolyGroupID id) {
 	return singleQuadShadeFlat(inner1, outer1, inner2, outer2, BLACK, id);
 }
 
-IndexedMesh singleQuadShadeFlat(vec3 inner1, vec3 outer1, vec3 inner2, vec3 outer2, vec4 color, std::variant<int, std::string> id) {
+IndexedMesh singleQuadShadeFlat(vec3 inner1, vec3 outer1, vec3 inner2, vec3 outer2, vec4 color, PolyGroupID id) {
 	vec3 normal          = normalize(cross(outer1 - inner1, inner2 - inner1));
 	vector<Vertex> nodes = {Vertex(inner1, vec2(0, 0), normal, color),
 							Vertex(outer1, vec2(1, 0), normal, color),
@@ -498,18 +442,18 @@ IndexedMesh singleQuadShadeFlat(vec3 inner1, vec3 outer1, vec3 inner2, vec3 oute
 	return IndexedMesh(nodes, {{0, 1, 2}, {0, 3, 2}}, id);
 }
 
-IndexedMesh singleQuadShadeFlat(const vector<vec3> &corners, std::variant<int, std::string> id) {
+IndexedMesh singleQuadShadeFlat(const vector<vec3> &corners, PolyGroupID id) {
 	return singleQuadShadeFlat(corners[0], corners[1], corners[2], corners[3], id);
 }
 
-Disk3D::Disk3D(const std::vector<Vertex> &nodes, const std::vector<ivec3> &faceInds, vec3 center, vec3 forward, vec3 down, std::variant<int, std::string> id) :
+Disk3D::Disk3D(const std::vector<Vertex> &nodes, const std::vector<ivec3> &faceInds, vec3 center, vec3 forward, vec3 down, PolyGroupID id) :
     IndexedMesh(nodes, faceInds, id), center(center), forward(forward), down(down), normal(normalise(cross(forward, down))), radius(0) , id(id){
 
     setEmpiricalRadius();
     setColorInfo();
     }
 
-Disk3D::Disk3D(const char *filename, vec3 center, vec3 forward, vec3 down, std::variant<int, std::string> id)
+Disk3D::Disk3D(const char *filename, vec3 center, vec3 forward, vec3 down, PolyGroupID id)
     : IndexedMesh(filename, id), center(center), forward(forward), down(down), normal(normalise(cross(forward, down))), radius(0), id(id) {
 
     setEmpiricalRadius();
@@ -517,7 +461,7 @@ Disk3D::Disk3D(const char *filename, vec3 center, vec3 forward, vec3 down, std::
 
 }
 
-Disk3D::Disk3D(float r, vec3 center, vec3 forward, vec3 down, int radial_res, int vertical_res, const std::variant<int, std::string> &id) : IndexedMesh(disk3d(r, center, forward, down, radial_res, vertical_res, id)) {
+Disk3D::Disk3D(float r, vec3 center, vec3 forward, vec3 down, int radial_res, int vertical_res, const PolyGroupID &id) : IndexedMesh(disk3d(r, center, forward, down, radial_res, vertical_res, id)) {
     this->center = center;
     this->forward = forward;
     this->down = down;
@@ -726,7 +670,7 @@ SmoothImplicitSurface planeImplicit(vec3 normal, float d, vec3 center, float eps
 	}, eps);
 }
 
-IndexedMesh arrow(vec3 start, vec3 head, float radius, float head_len, float head_radius, int radial, int straight, float eps, std::variant<int, std::string> id) {
+IndexedMesh arrow(vec3 start, vec3 head, float radius, float head_len, float head_radius, int radial, int straight, float eps, PolyGroupID id) {
 	vec3 direction     = normalise(head - start);
 	auto w  = orthogonalComplementBasis(direction);
 	vec3 w1  = w.first;
@@ -753,7 +697,7 @@ IndexedMesh arrow(vec3 start, vec3 head, float radius, float head_len, float hea
 }
 
 IndexedMesh drawArrows(const vector<vec3> &points, const vector<vec3> &directions, float radius, float head_len, float head_radius, int radial, int straight, float eps,
-						 const std::variant<int, std::string> &id) {
+						 const PolyGroupID &id) {
 	IndexedMesh mesh;
 	for (int i = 0; i < points.size(); i++)
 		mesh.merge(arrow(points[i], directions[i], radius, head_len, head_radius, radial, straight, eps,  randomID()));
@@ -761,7 +705,7 @@ IndexedMesh drawArrows(const vector<vec3> &points, const vector<vec3> &direction
 }
 
 IndexedMesh drawArrows(const vector<vec3> &points, const VectorField &field, const std::function<float(float)>& radius,const std::function<float(float)>& len, const std::function<float(float)> &head_len, const std::function<float(float)> &head_radius,
-		int radial, int straight, float eps, const std::variant<int, std::string> &id) {
+		int radial, int straight, float eps, const PolyGroupID &id) {
 	IndexedMesh mesh;
 	for (int i = 0; i < points.size(); i++) {
 		float size = length(field(points[i]));
@@ -771,7 +715,7 @@ IndexedMesh drawArrows(const vector<vec3> &points, const VectorField &field, con
 }
 
 IndexedMesh drawVectorFieldArrows(const VectorField &field, const vector<vec3> &points, const std::function<float(float)>& len, const std::function<float(float)> &radius, const std::function<float(float)>& head_len,
-		const std::function<float(float)>& head_radius, int radial, int straight, float eps, const std::variant<int, std::string> &id) {
+		const std::function<float(float)>& head_radius, int radial, int straight, float eps, const PolyGroupID &id) {
 	IndexedMesh mesh;
 	for (auto point : points) {
 		float s = norm(field(point));
@@ -792,9 +736,9 @@ vec3 getArrayDirection(const BufferedVertex &v) {
 	return getArrayHead(v) - getArrayStart(v);
 }
 
-vec3 getArrayHead(const std::variant<int, std::string>& id, IndexedMesh &mesh) {return getArrayHead(mesh.getAnyVertexFromPolyGroup(id));}
-vec3 getArrayStart(const std::variant<int, std::string>& id, IndexedMesh &mesh) {return getArrayStart(mesh.getAnyVertexFromPolyGroup(id));}
-vec3 getArrayDirection(const std::variant<int, std::string>& id, IndexedMesh &mesh) {return getArrayDirection(mesh.getAnyVertexFromPolyGroup(id));}
+vec3 getArrayHead(const PolyGroupID& id, IndexedMesh &mesh) {return getArrayHead(mesh.getAnyVertexFromPolyGroup(id));}
+vec3 getArrayStart(const PolyGroupID& id, IndexedMesh &mesh) {return getArrayStart(mesh.getAnyVertexFromPolyGroup(id));}
+vec3 getArrayDirection(const PolyGroupID& id, IndexedMesh &mesh) {return getArrayDirection(mesh.getAnyVertexFromPolyGroup(id));}
 
 
 SmoothParametricCurve PLCurve(std::vector<vec3> points) {
@@ -868,7 +812,7 @@ IndexedMesh generate_random_particle_mesh(int n, vec3 bound1, vec3 bound2, float
 	return mesh;
 }
 
-IndexedMesh box(vec3 size, vec3 center, vec4 color, std::variant<int, std::string> id) {
+IndexedMesh box(vec3 size, vec3 center, vec4 color, PolyGroupID id) {
 	vec3 dx = vec3(size.x/2, 0, 0);
 	vec3 dy = vec3(0, size.y/2, 0);
 	vec3 dz = vec3(0, 0, size.z/2);
@@ -879,7 +823,7 @@ IndexedMesh box(vec3 size, vec3 center, vec4 color, std::variant<int, std::strin
 	return b;
 }
 
-IndexedMesh box(vec3 size, vec3 center, std::variant<int, std::string> id) {
+IndexedMesh box(vec3 size, vec3 center, PolyGroupID id) {
 	return box(size, center, vec4(0, 0, 0, 0), id);
 }
 

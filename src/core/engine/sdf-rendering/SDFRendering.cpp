@@ -256,7 +256,7 @@ void SDFScene::addMainParameterToObject(const string &name, int objectIndex, con
 
 
 SDFRenderingStep::SDFRenderingStep(const std::shared_ptr<ShaderProgram> &shader, const SDFScene &object)
-		: RenderingStep(shader) {
+		: RenderingStep(shader, nullptr, nullptr) {
 	paramsData = object.getParameterBuffer();
 	paramsSize = object.getParameterSize();
 	materialData = object.getMaterialBuffer();
@@ -282,8 +282,8 @@ void SDFRenderingStep::init(const std::shared_ptr<Camera> &cam, const std::vecto
 	addCameraUniforms(cam);
 	addLightsUniforms(lights);
 	addSDFUniforms();
-	attributes = {std::make_shared<AttributeBuffer>("position", VEC3, 0, POSITION)};
-	attributes[0]->initBuffer();
+	attributes = {std::make_shared<AttributeBuffer>("position", VEC3, 0)};
+	// attributes[0]->initBuffer();
 	attributes[0]->load(&trs[0][0], 6);
 	loadSDFUniforms();
 }

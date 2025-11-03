@@ -22,7 +22,7 @@
  * @brief Planar surfaces with boundary
  */
 PlanarMeshWithBoundary PlanarUnitDisk(int radial_res, int vertical_res);
-PlanarMeshWithBoundary PlanarConvexPolygon(const std::vector<vec2> &verts);
+PlanarMeshWithBoundary PlanarConvexPolygon(const vector<vec2> &verts);
 PlanarMeshWithBoundary PlanarRing(int radial_res, int vertical_res, vec2 center, float radiusBig, float radiusSmall);
 
 
@@ -30,8 +30,8 @@ PlanarMeshWithBoundary PlanarRing(int radial_res, int vertical_res, vec2 center,
 /**
  * \brief Planar curves
  */
-SmoothParametricPlaneCurve circle(float r, vec2 center=PLANE_ORIGIN, float eps=.01);
-SmoothParametricPlaneCurve ellipse(float a, float b, vec2 center=PLANE_ORIGIN, float eps=.01);
+SmoothParametricPlaneCurve circle(float r, vec2 center=ORIGIN_R2, float eps=.01);
+SmoothParametricPlaneCurve ellipse(float a, float b, vec2 center=ORIGIN_R2, float eps=.01);
 SmoothParametricPlaneCurve epitrochoid(float r, float R, float d, float eps = .01);
 SmoothParametricPlaneCurve epicycloid(float r, float R, float eps = .01);
 SmoothParametricPlaneCurve cardioid(float r, float eps=.01);
@@ -58,7 +58,7 @@ SmoothParametricCurve trefoil(float r, float R, float eps = .01);
 SmoothParametricCurve torusKnot23(float scale, float R, float eps = .01);
 SmoothParametricCurve torusKnot_pq(int p, int q,  float R, float scale, float eps = .01);
 SmoothParametricCurve circle(float r, vec3 center, vec3 v1 = e1, vec3 v2 = e2, float eps = .01);
-SmoothParametricCurve PLCurve(std::vector<vec3> points);
+SmoothParametricCurve PLCurve(vector<vec3> points);
 SmoothParametricCurve segment(vec3 p0, vec3 p1, float t0=0, float t1=1);
 SmoothParametricCurve segment(vec3 p0, vec3 p1, float t0, float t1);
 
@@ -68,9 +68,6 @@ SmoothParametricCurve segment(vec3 p0, vec3 p1, float t0, float t1);
  */
 IndexedMesh singleTrig(vec3 v0, vec3 v1, vec3 v2, PolyGroupID id=randomID());
 IndexedMesh singleQuadShadeSmooth(vec3 outer1, vec3 inner1, vec3 inner2, vec3 outer2, PolyGroupID id);
-IndexedMesh singleQuadShadeFlat(vec3 outer1, vec3 inner1, vec3 inner2, vec3 outer2, MaterialPhong &material, PolyGroupID id);
-IndexedMesh singleQuadShadeFlat(vec3 outer1, vec3 inner1, vec3 inner2, vec3 outer2, MaterialPhong &material1, MaterialPhong &material2, PolyGroupID id);
-IndexedMesh singleQuad(vec3 outer1, vec3 inner1, vec3 inner2, vec3 outer2, MaterialPhong &materiaInner1, MaterialPhong &materialInner2, MaterialPhong &materialOuter1, MaterialPhong &materialOuter2, bool shadeSmooth, PolyGroupID id);
 IndexedMesh singleQuadShadeFlat(vec3 inner1, vec3 outer1, vec3 inner2, vec3 outer2, PolyGroupID id=randomID());
 IndexedMesh singleQuadShadeFlat(vec3 inner1, vec3 outer1, vec3 inner2, vec3 outer2, vec4 color, PolyGroupID id=randomID());
 IndexedMesh singleQuadShadeFlat(const vector<vec3> &corners, PolyGroupID id=randomID());
@@ -90,8 +87,8 @@ IndexedMesh pyramid(const vector<vec3> &cornersDown, vec3 apex, PolyGroupID id=r
  * \brief Parametric surfaces
  */
 SmoothParametricSurface plane(vec3 corner, vec3 side1, vec3 side2, float eps=.01);
-SmoothParametricSurface sphere(float r, vec3 center=ORIGIN, float cutdown=0, float eps=.01);
-SmoothParametricSurface ellipsoid(float rx,float ry,float rz, vec3 center=ORIGIN, float eps=.01);
+SmoothParametricSurface sphere(float r, vec3 center=ORIGIN_R3, float cutdown=0, float eps=.01);
+SmoothParametricSurface ellipsoid(float rx,float ry,float rz, vec3 center=ORIGIN_R3, float eps=.01);
 SmoothParametricSurface DupinCyclide(float Ra, float Rb, float r, float delta_r, float eps=.01);
 SmoothParametricSurface disk(float r, vec3 center, vec3 v1, vec3 v2, float eps);
 SmoothParametricSurface cylinder(float r, vec3 c1, vec3 c2, vec3 v1, vec3 v2, float eps);
@@ -120,7 +117,7 @@ SmoothParametricSurface crescent(float eps=.01);
 SmoothParametricSurface seaShell(int n, float a, float b, float c, float eps=.01);
 SmoothParametricSurface cone(const SmoothParametricCurve &base, vec3 apex, float eps);
 SmoothParametricSurface coneSide(float r, float h, vec3 center, vec3 v1, vec3 v2, float eps);
-SmoothParametricSurface torus(float r, float R, vec3 center=ORIGIN, float eps=.01);;
+SmoothParametricSurface torus(float r, float R, vec3 center=ORIGIN_R3, float eps=.01);;
 
 
 /**
@@ -141,7 +138,7 @@ SmoothImplicitSurface genus2Implicit4(float d=.01, float eps=.01);
 SmoothImplicitSurface superellipsoid(float alpha1, float alpha2, float a, float b, float c, float r=1, float eps=.01);
 SmoothImplicitSurface superQuadric(float alpha, float beta, float gamma, float a, float b, float c, float r=1, float eps=.01);
 SmoothImplicitSurface K3Surface222(float eps=.01);
-SmoothImplicitSurface planeImplicit(vec3 normal, float d, vec3 center=ORIGIN, float eps=.01);
+SmoothImplicitSurface planeImplicit(vec3 normal, float d, vec3 center=ORIGIN_R3, float eps=.01);
 
 
 /**
@@ -169,8 +166,8 @@ SurfaceParametricPencil freeSurface(vector<float> a_m, vector<float> phi_m, vect
 /**
  * \brief Implicit volumes
  */
-ImplicitVolume implicitBall(float r, vec3 center=ORIGIN, float eps=.01);
-ImplicitVolume implicitVolumeEllipsoid(float rx, float ry, float rz, vec3 center=ORIGIN, float eps=.01);
+ImplicitVolume implicitBall(float r, vec3 center=ORIGIN_R3, float eps=.01);
+ImplicitVolume implicitVolumeEllipsoid(float rx, float ry, float rz, vec3 center=ORIGIN_R3, float eps=.01);
 
 
 
@@ -180,7 +177,7 @@ ImplicitVolume implicitVolumeEllipsoid(float rx, float ry, float rz, vec3 center
  *
  * But needed for backward compatibility
  */
-SuperCurve circle(float r, std::function<float(float)> w, const std::function<MaterialPhong(float)> &mat, int n, vec3 center=ORIGIN, vec3 v1=e1, vec3 v2=e2, float eps=.01);
+SuperCurve circle(float r, std::function<float(float)> w, const std::function<MaterialPhong(float)> &mat, int n, vec3 center=ORIGIN_R3, vec3 v1=e1, vec3 v2=e2, float eps=.01);
 
 class Disk3D : public IndexedMesh {
 	vec3 center;
@@ -190,7 +187,7 @@ class Disk3D : public IndexedMesh {
 	float radius;
 	PolyGroupID id;
 public:
-	Disk3D(const std::vector<Vertex> &nodes, const std::vector<ivec3> &faceInds, vec3 center, vec3 forward, vec3 down, PolyGroupID id);
+	Disk3D(const vector<Vertex> &nodes, const vector<ivec3> &faceInds, vec3 center, vec3 forward, vec3 down, PolyGroupID id);
 	Disk3D(const char* filename, vec3 center, vec3 forward, vec3 down, PolyGroupID id);
 	Disk3D(float r, vec3 center, vec3 forward, vec3 down, int radial_res, int vertical_res, const PolyGroupID &id);
 	void move(vec3 center, vec3 forward, vec3 down, bool scaleWidth);

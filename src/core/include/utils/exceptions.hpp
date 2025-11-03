@@ -65,12 +65,12 @@ public:
 
 class IndexOutOfBounds : public IndexError {
 public:
-    IndexOutOfBounds(int index, int size, const string &structure_name, const char* file, int line)
-        : IndexError("Index " + to_string(index) + " out of bounds ("+ structure_name + " of size: "+to_string(size)+")", file, line) {}
-    IndexOutOfBounds(int index, const string &size, const string &structure_name, const char* file, int line)
-        : IndexError("Index " + to_string(index) + " out of bounds ("+ structure_name + " of size: "+size+")", file, line) {}
-    IndexOutOfBounds(const string &index, const string &size, const string &structure_name, const char* file, int line)
-    : IndexError("Index " + index + " out of bounds ("+ structure_name + " of size: "+size+")", file, line) {}
+    IndexOutOfBounds(int index, int size, const string &structure_name, const char* file, int line) : IndexError("Index " + to_string(index) + " out of bounds ("+ structure_name + " of size: "+to_string(size)+")", file, line) {}
+    IndexOutOfBounds(int index, const string &size, const string &structure_name, const char* file, int line) : IndexError("Index " + to_string(index) + " out of bounds ("+ structure_name + " of size: "+size+")", file, line) {}
+    IndexOutOfBounds(const string &index, const string &size, const string &structure_name, const char* file, int line) : IndexError("Index " + index + " out of bounds ("+ structure_name + " of size: "+size+")", file, line) {}
+	IndexOutOfBounds(const string &msg, const char* file, int line) : IndexError(msg, file, line) {}
+	IndexOutOfBounds(int index, int bounds, const char* file, int line) : IndexError("Index out of bounds [" + to_string(index) + "/" + to_string(bounds) + "]", file, line) {}
+	IndexOutOfBounds(int index, const char* file, int line) : IndexError("Index out of bounds (" + to_string(index) + ")", file, line) {}
 };
 
 class IteratorError : public IndexError {

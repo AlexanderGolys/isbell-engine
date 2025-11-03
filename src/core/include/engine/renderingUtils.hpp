@@ -240,27 +240,16 @@ class IndexedTriangle;
 class CurveSample;
 
 class Vertex {
-public:
-	Vertex(const Vertex &other);
-	Vertex(Vertex &&other) noexcept;
-	Vertex & operator=(const Vertex &other);
-	Vertex & operator=(Vertex &&other) noexcept;
-
-private:
 	vec3 position;
 	vec3 normal;
 	vec2 uv;
 	vec4 color;
-    maybeMaterial material;
     std::map<string, vec4> extraData = {};
     int index = -1;
     vector<pair<weak_ptr<IndexedTriangle>, int>> triangles = {};
 public:
-	Vertex(vec3 position, vec2 uv, vec3 normal=e3, vec4 color=BLACK, std::map<string, vec4> extraData = {}, optional<MaterialPhongConstColor> material=std::nullopt);
-	explicit Vertex(vec3 position, vec3 normal=e3, vec4 color=BLACK, std::map<string, vec4> extraData = {}, optional<MaterialPhongConstColor> material=std::nullopt);
-
-	// explicit Vertex(vec3 position, vec3 normal=vec3(0,0,1),  vec4 color=vec4(0,0,0,1),  maybeMaterial material=std::nullopt)
-	// : Vertex(position, vec2(position.x, position.y), normal, color, material) {}
+	Vertex(vec3 position, vec2 uv, vec3 normal=e3, vec4 color=BLACK, std::map<string, vec4> extraData = {});
+	explicit Vertex(vec3 position, vec3 normal=e3, vec4 color=BLACK, std::map<string, vec4> extraData = {});
 
 	string hash() const;
 	bool operator<(const Vertex& v) const;
@@ -277,16 +266,13 @@ public:
 	vec3 getNormal() const;
 	vec2 getUV() const;
 	vec4 getColor() const;
-	MaterialPhong getMaterial() const;
-	mat4 getMaterialMat() const;
 	vec4 getExtraData(const string &name) const;
 	vec3 getExtraData_xyz(const string &name) const;
 	float getExtraData(const string &name, int i) const;
 	float getExtraLast(const string &name) const;
 	bool hasExtraData() const;
 	bool hasExtraData(const string &name) const;
-	vector<string> getExtraDataNames();
-    bool hasMaterial() const;
+	vector<string> getExtraDataNames() const;
 
 	void addExtraData(const string &name, vec4 data);
 	void addExtraData(const string &name, vec3 data);
@@ -295,14 +281,11 @@ public:
 	void transform(const SpaceEndomorphism &M);
 	Vertex operator+(vec3 v) const;
 	void operator+=(vec3 v);
-	void setMaterial(MaterialPhongConstColor material);
 	void setPosition(vec3 position);;
     void setNormal(vec3 normal);
 	void setUV(vec2 uv);
 	void setColor(vec4 color);
-	void appendToBuffers(StdAttributeBuffers &buffers, MaterialBuffers &materialBuffers);
-    void appendToBuffers(StdAttributeBuffers &buffers);
-    void appendExtraDataToBuffer(const string &name, vector<vec4> &buffer) const;
+	void appendExtraDataToBuffer(const string &name, vector<vec4> &buffer) const;
 
     void appendToList(vector<Vertex> &list);
     void addTriangle(shared_ptr<IndexedTriangle> triangle, int i);
@@ -312,7 +295,7 @@ public:
     void setCurveTangent(vec3 v) { addExtraData("curveTangent", v); }
     void setCurveNormal(vec3 v) { addExtraData("curveNormal", v); }
     void setCurveNormalAngle(float a) { addExtraData("curveTangent", a); }
-    void setAllParametricCurveExtras(float t, CurveSample &sample);
+    void setAllParametricCurveExtras(float t, const CurveSample &sample);
 
     float getCurveParameter() { return getExtraLast("curvePoint"); }
     vec3 getCurvePosition() { return getExtraData_xyz("curvePoint"); }

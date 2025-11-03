@@ -1,21 +1,9 @@
 #pragma once
 
 #include "renderingUtils.hpp"
-// #include "../geometry/pde.hpp"
-
-#include <set>
-
+#include "pde.hpp"
 #include "randomUtils.hpp"
-
-
-struct buff4x4 {
-	vector<vec4> a, b, c, d;
-};
-
-
-inline mat4 getMat(const buff4x4& buff, int index) {
-	return mat4(buff.a[index], buff.b[index], buff.c[index], buff.d[index]);
-}
+#include "SDFObjects.hpp"
 
 
 struct Stds {
@@ -25,41 +13,18 @@ struct Stds {
 	vector<vec4> colors;
 };
 
+namespace BufferNames {
+	constexpr string COL_BUF = "color";
+	constexpr string POS_BUF = "position";
+	constexpr string NORM_BUF = "normal";
+	constexpr string UV_BUF = "uv";
+	constexpr string IND_BUF = "index";
 
-enum CommonBufferType {
-	POSITION,
-	NORMAL,
-	UV,
-	COLOR,
-	MATERIAL1,
-	MATERIAL2,
-	MATERIAL3,
-	MATERIAL4,
-	INDEX,
-	EXTRA0,
-	EXTRA1,
-	EXTRA2,
-	EXTRA3,
-	EXTRA4
-};
-
-
-const std::map<CommonBufferType, int> bufferTypeLength = {
-	{POSITION, 3}, {NORMAL, 3}, {UV, 2}, {COLOR, 4}, {MATERIAL1, 4}, {MATERIAL2, 4}, {MATERIAL3, 4}, {MATERIAL4, 4}, {INDEX, 3}, {EXTRA0, 4}, {EXTRA1, 4}, {EXTRA2, 4}, {EXTRA3, 4},
-	{EXTRA4, 4}
-};
-
-inline int bufferElementLength(CommonBufferType type) {
-	return bufferTypeLength.at(type);
-}
-
-inline size_t bufferElementSize(CommonBufferType type) {
-	return type != INDEX ? bufferElementLength(type) * sizeof(FLOAT) : bufferElementLength(type) * sizeof(unsigned int);
+	const vector RESERVED_BUF = {COL_BUF, POS_BUF, NORM_BUF, UV_BUF, IND_BUF};
 }
 
 
-const vector<string> DEFAULT_EXTRA_BUFS = {"extra0", "extra1", "extra2", "extra3", "extra4"};
-const std::set DEFAULT_ACTIVE_BUFFERS = {POSITION, NORMAL, UV, COLOR, INDEX};
+
 
 class BufferManager {
 	unique_ptr<Stds> stds;
@@ -69,47 +34,58 @@ class BufferManager {
 	unique_ptr<vector<vec4>> extra3;
 	unique_ptr<vector<vec4>> extra4;
 	unique_ptr<vector<ivec3>> indices;
-	std::set<CommonBufferType> activeBuffers;
 	vector<string> extraBufferNames;
-	void insertValueToSingleBuffer(CommonBufferType type, void* valueAddress);
-	void insertDefaultValueToSingleBuffer(CommonBufferType type);
+
+
+	unique_ptr<vector<vec4>>& extraBufferPtrAt(int slot);
+	vec4 extraElementAt(int index, int slot) const;
+	unique_ptr<vector<vec4>>& extraBufferPtrByName(const string& name);
+	void setElementAt(int index, float value, int slot, int component);
+	void setElementAt(int index, vec4 value, int slot);
 
 public:
-	// BufferManager() = default;
+	explicit BufferManager(const vector<string>& extra_names = {});
+	explicit BufferManager(const string& extra_name);
+	explicit BufferManager(const string& extra_name0, const string& extra_name1);
+	explicit BufferManager(const string& extra_name0, const string& extra_name1, const string& extra_name2);
+	explicit BufferManager(const string& extra_name0, const string& extra_name1, const string& extra_name2, const string& extra_name3);
+	explicit BufferManager(const string& extra_name0, const string& extra_name1, const string& extra_name2, const string& extra_name3, const string& extra_name4);
+
 	BufferManager(const BufferManager& other);
 	BufferManager& operator=(const BufferManager& other);
 	BufferManager(BufferManager&& other) noexcept;
 	BufferManager& operator=(BufferManager&& other) noexcept;
-	explicit BufferManager(const std::set<CommonBufferType>& activeBuffers = DEFAULT_ACTIVE_BUFFERS, const vector<string>& extra_names = DEFAULT_EXTRA_BUFS);
-	explicit BufferManager(bool materials, const std::set<CommonBufferType>& extras = {}, const vector<string>& extra_names = DEFAULT_EXTRA_BUFS);
 
-	int bufferLength(CommonBufferType type) const;
-	size_t bufferSize(CommonBufferType type) const;
-	void* firstElementAddress(CommonBufferType type) const;
-	bool isActive(CommonBufferType type) const;
-	bool hasMaterial() const;
+	vs_dim getAttributeDimension(const string& attributeName) const;
+	array_len attributeDataLength() const;
+	array_len indexDataLength() const;
+	byte_size attributeDataSize(const string& attributeName) const;
+	byte_size indexDataSize() const;
+	raw_data_ptr attributeDataPtr(const string& attributeName) const;
+	raw_data_ptr indexDataPtr() const;
 
+	bool isActive(const string& attributeName) const;
+	bool isActive(int i) const;
 	string getExtraBufferName(int slot) const;
 	vector<string> getExtraBufferNames() const;
+	vs_dim numberOfExtraBuffers() const;
+
+	int indexOfExtraBuffer(const string& name) const;
 
 	int addTriangleVertexIndices(ivec3 ind, int shift = 0) const;
-
 	int addFullVertexData(const Vertex& v) const;
 
-	void reserveSpace(int targetSize);
-	void reserveSpaceForIndex(int targetSize);
-	void reserveAdditionalSpace(int extraStorage);
+	void reserveSpace(int targetSize) const;
+	void reserveSpaceForIndex(int targetSize) const;
+	void reserveAdditionalSpace(int extraStorage) const;
 	void reserveAdditionalSpaceForIndex(int extraStorage);
-	void initialiseExtraBufferSlot(int slot);
 
 	vec3 getPosition(int index) const;
 	vec3 getNormal(int index) const;
 	vec2 getUV(int index) const;
 	vec4 getColor(int index) const;
-	vec4 getExtra(int index, int slot = 1) const;
-	vec4 getExtra0(int index) const;
+	vec4 getExtra(int index, const string& name) const;
 
-	float getExtraSlot(int index, int slot = 1, int component = 3) const;
 	ivec3 getFaceIndices(int index) const;
 	Vertex getVertex(int index) const;
 
@@ -117,22 +93,13 @@ public:
 	void setNormal(int index, vec3 value);
 	void setUV(int index, vec2 value);
 	void setUV(int index, float value, int coord);
-
 	void setColor(int index, vec4 value);
 	void setColor(int index, float value, int component);
-	void setMaterial(int index, mat4 value);
+	void setExtra(int index, vec4 value, const string& name);
+	void setExtra(int index, vec3 value, const string& name);
+	void setExtra(int index, float value, const string& name, int component);
 	void setFaceIndices(int index, const ivec3& in);
 
-	void setExtra0(int index, vec4 v);
-	void setExtra0(int index, float value, int component = 0);
-	void setExtra(int index, vec4 value, int slot = 0);
-	void setExtra(int index, vec3 value, int slot = 0);
-	void setExtra(int index, float value, int slot = 0, int component = 3);
-	bool hasExtra0() const;
-	bool hasExtra1() const;
-	bool hasExtra2() const;
-	bool hasExtra3() const;
-	bool hasExtra4() const;
 };
 
 
@@ -155,27 +122,22 @@ public:
 	vec3 getNormal() const;
 	vec2 getUV() const;
 	vec4 getColor() const;
-	vec4 getExtra(int slot = 1) const;
-	vec4 getExtra0() const;
-
+	vec4 getExtra(const string& slot) const;
 	Vertex getVertex() const;
 
 	void setPosition(vec3 value) const;
 	void setNormal(vec3 value) const;
 	void setUV(vec2 value) const;
 	void setUV(float value, int i) const;
-
 	void setColor(vec4 value) const;
 	void setColor(float value, int i) const;
-	void setMaterial(const mat4& value);
-	void setExtra(vec4 value, int slot = 1) const;
-	void setExtra0(vec4 value);
+	void setExtra(vec4 value, const string& name);
+	void setExtra(vec3 value, const string& name);
+	void setExtra(float value, const string& name, int component);
+	void setVertex(const Vertex& v);
 
-	void setExtra(vec3 value, int slot = 1);
-	void setExtra(float value, int slot = 1, int component = 3);
 	void applyFunction(const SpaceEndomorphism& f);
 
-	void setVertex(const Vertex& v);
 };
 
 
@@ -199,15 +161,15 @@ public:
 	vec2 toPlanar(vec3 v) const;
 	vec3 fromBars(vec2 v) const;
 	vec2 toBars(vec3 v) const;
-	std::array<vec3, 3> borderTriangle(float width) const;
+	array<vec3, 3> borderTriangle(float width) const;
 	vec3 faceNormal() const;
 	vec3 center() const;
 	float area() const;
 
 	bool containsEdge(int i, int j) const;
 	bool containsEdge(ivec2 edge) const;
-	void setVertexIndices(const ivec3& in);
-	void changeOrientation();
+	void setVertexIndices(const ivec3& in) const;
+	void changeOrientation() const;
 };
 
 class SmoothParametricSurface;
@@ -243,23 +205,18 @@ public:
 	void copyPolygroup(const IndexedMesh& other, const PolyGroupID& id, const PolyGroupID& newId);
 	void copyPolygroup(const PolyGroupID& id, const PolyGroupID& newId);
 
-	bool hasExtra0() const;
-	bool hasExtra1() const;
-	bool hasExtra2() const;
-	bool hasExtra3() const;
-	bool hasExtra4() const;
-	bool hasExtra(int slot) const;
 	vector<string> getActiveExtraBuffers() const;
 
-	void* bufferIndexLocation() const;
-	size_t bufferIndexSize() const;
-	int bufferIndexLength() const;
-	const void* getBufferLocation(CommonBufferType type) const;
-	unsigned int getBufferLength(CommonBufferType type) const;
-	size_t getBufferSize(CommonBufferType type) const;
+	raw_data_ptr bufferIndexLocation() const;
+	raw_data_ptr getBufferLocation(const string& name) const;
+
+	byte_size bufferIndexSize() const;
+	array_len bufferIndexLength() const;
+	array_len getBufferLength() const;
+	size_t getBufferSize(const string& name) const;
+
 	vector<PolyGroupID> getPolyGroupIDs() const;
 	BufferManager& getBufferBoss() const;
-	bool isActive(CommonBufferType type) const;
 
 	BufferedVertex& getAnyVertexFromPolyGroup(const PolyGroupID& id);
 
@@ -485,7 +442,6 @@ public:
 	PipeCurveVertexShader(const RealFunction& plot, vec2 dom, const PIPE_SETTINGS& s, const PolyGroupID& id = randomID());
 	PipeCurveVertexShader(const DiscreteRealFunction& plot, const PIPE_SETTINGS& s, const PolyGroupID& id = randomID());
 	PipeCurveVertexShader(const DiscreteRealFunctionNonUniform& plot, const PIPE_SETTINGS& s, const PolyGroupID& id = randomID());
-	virtual ~PipeCurveVertexShader() = default;
 
 	void duplicateCurve(const PolyGroupID& copy_id);
 
@@ -506,7 +462,6 @@ public:
 	static void setAngle(BufferedVertex& v, float theta);
 	static void setRadius(BufferedVertex& v, float r);
 	static void setParameter(BufferedVertex& v, float t);
-	static void setExtra0(BufferedVertex& v, vec4 extra);
 	static void setExtra(BufferedVertex& v, float value, int extra_index);
 
 	void transform(SpaceAutomorphism F);

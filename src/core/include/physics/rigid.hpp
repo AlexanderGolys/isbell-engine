@@ -73,22 +73,22 @@ class RigidBody {
     maybe(FloatMatrix) _dPos; // first derivative of positions
     maybe(FloatMatrix) _ddPos; // second derivative of positions
     maybe(FloatMatrix) _V; // linear velocities
-    vec69 _masses; // linear accelerations
+    vector<float> _masses; // linear accelerations
     maybe(FloatMatrix) _P; // linear momenta
-    maybe(vec69) _L;
+    maybe(vector<float>) _L;
     maybe(mat3) _I; // innertia tensor
     maybe(vec3) _angularVelocity;
     vec3 _centerOfWorld;
     vec3 _centerOfMass;
-    float_hm _potentialEnergy;
-    float_hm _totalEnergy;
-	float_hm _kineticEnergy;
+    optional<float> _potentialEnergy;
+    optional<float> _totalEnergy;
+	optional<float> _kineticEnergy;
     float time;
     float eps=.01;
 
 public:
-    RigidBody(const FloatMatrix& positions, const vec69& masses, const FloatMatrix& linearVelocities, vec3 centerOfWorld, vec3 angularVelocity, float time=0);;
-	RigidBody(const FloatMatrix& positions, const vec69& masses, const FloatMatrix& linearVelocities, vec3 angularVelocity, float time=0);;
+    RigidBody(const FloatMatrix& positions, const vector<float>& masses, const FloatMatrix& linearVelocities, vec3 centerOfWorld, vec3 angularVelocity, float time=0);;
+	RigidBody(const FloatMatrix& positions, const vector<float>& masses, const FloatMatrix& linearVelocities, vec3 angularVelocity, float time=0);;
 
     END(void) addForceField(const RigidForce &field);
     vec3 accumulateForces(vec3 pos);
