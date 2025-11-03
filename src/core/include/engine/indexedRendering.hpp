@@ -19,7 +19,6 @@ namespace BufferNames {
 	constexpr string NORM_BUF = "normal";
 	constexpr string UV_BUF = "uv";
 	constexpr string IND_BUF = "index";
-
 	const vector RESERVED_BUF = {COL_BUF, POS_BUF, NORM_BUF, UV_BUF, IND_BUF};
 }
 
