@@ -38,6 +38,18 @@ namespace filesystem = std::filesystem;
 constexpr float PI = 3.14159265359f;
 constexpr float TAU = 6.28318530718f;
 
+using array_len = std::size_t;
+using byte_size = std::size_t;
+using vs_dim = unsigned short;
+using raw_data_ptr = const void*;
+
+template <typename T>
+using data_ptr = const T*;
+
+template <typename T>
+using data_ptr_mut = T*;
+
+
 // template <typename A, typename B>
 // using dict = std::map<A, B>;
 

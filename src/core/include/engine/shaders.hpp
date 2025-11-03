@@ -17,13 +17,14 @@ public:
 
 
 class ShaderProgram {
+	unordered_map<string, GLint> uniformLocations;
 public:
 	virtual ~ShaderProgram();
 	virtual GLuint getProgramID() const = 0;
 	virtual void bind() const = 0;
 	virtual void unbind() const = 0;
 
-	void setUniform(const Uniform& uniform) const;
+	GLint getUniformLocation(const string& name);
 };
 
 class ClassicShaderProgram : public ShaderProgram {

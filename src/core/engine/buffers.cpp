@@ -5,7 +5,7 @@
 VertexAttribute::VertexAttribute(const string& name, ShaderDataType type)
 : name(name), type(type) {}
 
-unsigned int VertexAttribute::elementLength() const {
+vs_dim VertexAttribute::elementLength() const {
 	if (type == FLOAT)
 		return 1;
 	if (type == VEC2)
@@ -17,7 +17,7 @@ unsigned int VertexAttribute::elementLength() const {
 	THROW(UnknownVariantError, "VertexAttribute has invalid type " + to_string(type));
 }
 
-size_t VertexAttribute::elementSize() const {
+byte_size VertexAttribute::elementSize() const {
 	return elementLength() * 4;
 }
 
@@ -30,14 +30,14 @@ VertexBufferLayout::VertexBufferLayout(initializer_list<pair<string, ShaderDataT
 	}
 }
 
-const void* VertexBufferLayout::offsetAt(int i) const {
+byte_size VertexBufferLayout::offsetAt(int i) const {
 	if (i < 0)
 		i += attributeOffsets.size();
 	THROW_IF(i < 0 || i >= attributeOffsets.size(), IndexOutOfBounds, i, attributeOffsets.size(), "VertexBufferLayout offsetAt");
-	return reinterpret_cast<const void*>(attributeOffsets[i]);
+	return attributeOffsets[i];
 }
 
-unsigned int VertexBufferLayout::length() const {
+unsigned int VertexBufferLayout::numberOfAttributes() const {
 	return attributes.size();
 }
 
@@ -66,17 +66,14 @@ void VertexBuffer::unbind() const {
 	glBindBuffer(GL_ARRAY_BUFFER, 0);
 }
 
-void VertexBuffer::uploadData(const void* data, unsigned int size) const {
+void VertexBuffer::uploadData(raw_data_ptr data, byte_size size) const {
 	glNamedBufferData(id, size, data, GL_STATIC_DRAW);
 }
 
-void VertexBuffer::updateData(const void* data, unsigned int size) const {
+void VertexBuffer::updateData(raw_data_ptr data, byte_size size) const {
 	glNamedBufferSubData(id, 0, size, data);
 }
 
-unsigned int VertexBuffer::length() const {
-	return layout.length();
-}
 
 
 IndexBuffer::IndexBuffer(unsigned int trianglesCount) : count(trianglesCount * 3) {
@@ -142,7 +139,7 @@ void VertexArray::addVertexBuffer(const shared_ptr<VertexBuffer>& vertexBuffer) 
 	vertexBuffer->bind();
 	const VertexBufferLayout& layout = vertexBuffer->getLayout();
 	unsigned int stride = layout.strideBytes;
-	for (int i = 0; i < layout.length(); i++) {
+	for (int i = 0; i < layout.numberOfAttributes(); i++) {
 		VertexAttribute attr = layout.attributes[i];
 		glEnableVertexAttribArray(attributeCount);
 		glVertexAttribPointer(
@@ -151,7 +148,7 @@ void VertexArray::addVertexBuffer(const shared_ptr<VertexBuffer>& vertexBuffer) 
 			GL_FLOAT,
 			GL_FALSE,
 			stride,
-			layout.offsetAt(i));
+			(const void*)layout.offsetAt(i));
 		attributeCount++;
 	}
 }

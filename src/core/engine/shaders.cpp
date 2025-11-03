@@ -56,8 +56,12 @@ GLenum Shader::getType() const {
 	return shaderType;
 }
 
-void ShaderProgram::setUniform(const Uniform& uniform) const {
-	uniform.set(getProgramID());
+GLint ShaderProgram::getUniformLocation(const string& name) {
+	if (uniformLocations.contains(name))
+		return uniformLocations[name];
+	GLint location = glGetUniformLocation(getProgramID(), name.c_str());
+	uniformLocations[name] = location;
+	return location;
 }
 
 ClassicShaderProgram::ClassicShaderProgram(const shared_ptr<Shader>& vertexShader, const shared_ptr<Shader>& fragmentShader) {

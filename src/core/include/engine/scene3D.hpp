@@ -44,8 +44,7 @@ class Mesh3DObject {
 	bool dirty=false;
 
 public:
-	explicit Mesh3DObject(const shared_ptr<DynamicMesh3D>& mesh, const SE3& transform = SE3::identity())
-	: mesh(mesh), transform(transform) {}
+	explicit Mesh3DObject(const shared_ptr<DynamicMesh3D>& mesh, const SE3& transform = SE3::identity()) : mesh(mesh), transform(transform) {}
 	void setTransform(const SE3& newTransform) { transform = newTransform; }
 	const SE3& getTransform() const { return transform; }
 	const shared_ptr<DynamicMesh3D>& getMesh() const { return mesh; }
@@ -82,3 +81,4 @@ class Scene3D : public Layer {
 	Camera camera;
 
 	int activeCameraIndex = 0;
+};

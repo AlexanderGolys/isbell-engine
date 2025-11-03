@@ -8,18 +8,18 @@ struct VertexAttribute {
 	ShaderDataType type;
 
 	VertexAttribute(const string& name, ShaderDataType type);
-	unsigned int elementLength() const;
-	size_t elementSize() const;
+	vs_dim elementLength() const;
+	byte_size elementSize() const;
 };
 
 struct VertexBufferLayout {
 	vector<VertexAttribute> attributes;
-	vector<unsigned int> attributeOffsets;
-	unsigned int strideBytes;
+	vector<byte_size> attributeOffsets;
+	byte_size strideBytes;
 
 	VertexBufferLayout(initializer_list<pair<string, ShaderDataType>> attrs);
-	const void* offsetAt(int i) const;
-	unsigned int length() const;
+	byte_size offsetAt(int i) const;
+	unsigned int numberOfAttributes() const;
 };
 
 
@@ -35,9 +35,8 @@ public:
 	const VertexBufferLayout& getLayout() const;
 	void bind() const;
 	void unbind() const;
-	void uploadData(const void* data, unsigned int size) const;
-	void updateData(const void* data, unsigned int size) const;
-	unsigned int length() const;
+	void uploadData(raw_data_ptr data, byte_size size) const;
+	void updateData(raw_data_ptr data, byte_size size) const;
 };
 
 
