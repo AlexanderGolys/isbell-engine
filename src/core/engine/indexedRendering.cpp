@@ -1649,7 +1649,7 @@ void PipeCurveVertexShader::setParameter(BufferedVertex& v, float t) {
 }
 
 void PipeCurveVertexShader::setExtra(BufferedVertex& v, float value, int extra_index) {
-	v.setExtra(value, extra_index);
+	v.setExtra(value, "extra0", extra_index);
 }
 
 

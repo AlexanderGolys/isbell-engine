@@ -173,7 +173,6 @@ public:
 
 class SmoothParametricSurface;
 
-
 class IndexedMesh {
 protected:
 	unique_ptr<BufferManager> boss;

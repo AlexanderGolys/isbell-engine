@@ -197,7 +197,6 @@ public:
 	void disable() const;
 	void load(const void* firstElementAdress, int bufferLength) const;
 	void update(const void* firstElementAdress, int bufferLength) const;
-
 };
 
 

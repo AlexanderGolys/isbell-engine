@@ -1,5 +1,5 @@
 #pragma once
-// #include "glslUtils.hpp"
+#include "glslUtils.hpp"
 #include "flows.hpp"
 
 
@@ -178,35 +178,3 @@ ImplicitVolume implicitVolumeEllipsoid(float rx, float ry, float rz, vec3 center
  * But needed for backward compatibility
  */
 SuperCurve circle(float r, std::function<float(float)> w, const std::function<MaterialPhong(float)> &mat, int n, vec3 center=ORIGIN_R3, vec3 v1=e1, vec3 v2=e2, float eps=.01);
-
-class Disk3D : public IndexedMesh {
-	vec3 center;
-	vec3 forward;
-	vec3 down;
-	vec3 normal;
-	float radius;
-	PolyGroupID id;
-public:
-	Disk3D(const vector<Vertex> &nodes, const vector<ivec3> &faceInds, vec3 center, vec3 forward, vec3 down, PolyGroupID id);
-	Disk3D(const char* filename, vec3 center, vec3 forward, vec3 down, PolyGroupID id);
-	Disk3D(float r, vec3 center, vec3 forward, vec3 down, int radial_res, int vertical_res, const PolyGroupID &id);
-	void move(vec3 center, vec3 forward, vec3 down, bool scaleWidth);
-
-
-
-	float moveRotate(vec3 center, vec3 forward, vec3 down);
-	void rotate(float angle);
-	static float angle(const BufferedVertex &v) { return v.getColor().x; }
-	static float rParam(const BufferedVertex &v) { return v.getColor().y; }
-	static float width(const BufferedVertex &v) { return v.getColor().z; }
-	static float widthNormalised(const BufferedVertex &v) { return v.getColor().w; }
-	float getR() const {return radius;}
-
-	float rReal(const BufferedVertex &v);
-	void scaleR(float r, bool scaleWidth);
-	void setR(float r);;
-	static void setAbsoluteWidth(BufferedVertex &v, float w) {v.setColor(w, 2);}
-	static void setRelativeWidth(BufferedVertex &v, float w) {v.setColor(w, 3);}
-	void setEmpiricalRadius();
-	void setColorInfo();
-};
