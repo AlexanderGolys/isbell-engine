@@ -2,7 +2,7 @@
 
 #include "renderingUtils.hpp"
 // #include "../geometry/pde.hpp"
-#include "buffers.hpp"
+#include "../renderer/buffers.hpp"
 #include <set>
 
 #include "randomUtils.hpp"

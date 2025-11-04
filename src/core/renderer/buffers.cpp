@@ -1,4 +1,4 @@
-#include "buffers.hpp"
+#include "../include/renderer/buffers.hpp"
 #include "exceptions.hpp"
 
 
@@ -76,9 +76,9 @@ void VertexBuffer::updateData(raw_data_ptr data, byte_size size) const {
 
 
 
-IndexBuffer::IndexBuffer(unsigned int trianglesCount) : count(trianglesCount * 3) {
+IndexBuffer::IndexBuffer(byte_size byteSize) {
 	glCreateBuffers(1, &id);
-	glNamedBufferData(id, trianglesCount * sizeof(uint32_t), nullptr, GL_DYNAMIC_DRAW);
+	glNamedBufferData(id, byteSize, nullptr, GL_DYNAMIC_DRAW);
 }
 
 IndexBuffer::~IndexBuffer() {
@@ -97,15 +97,12 @@ void IndexBuffer::unbind() const {
 	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
 }
 
-void IndexBuffer::uploadData(const vector<ivec3>& indices) {
-	count = indices.size() * 3;
+
+void IndexBuffer::uploadData(raw_data_ptr data, byte_size size) const {
 	bind();
-	glNamedBufferData(id, count*sizeof(uint32_t), indices.data(), GL_STATIC_DRAW);
+	glNamedBufferData(id, size, data, GL_STATIC_DRAW);
 }
 
-unsigned int IndexBuffer::getCount() const {
-	return count;
-}
 
 VertexArray::VertexArray() {
 	glGenVertexArrays(1, &id);

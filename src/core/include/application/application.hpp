@@ -7,6 +7,9 @@ struct AppSettings {
 	WindowSettings windowSettings;
 	bool measureFPS;
 	float fpsUpdateInterval; // seconds
+
+	explicit AppSettings(const WindowSettings& windowSettings) : windowSettings(windowSettings), measureFPS(false), fpsUpdateInterval(1.0f) {}
+	AppSettings(const WindowSettings& windowSettings, float fpsUpdateInterval) : windowSettings(windowSettings), measureFPS(true), fpsUpdateInterval(fpsUpdateInterval) {}
 };
 
 class App {

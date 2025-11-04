@@ -10,7 +10,7 @@
 #include <GL/glew.h>
 #include <GLFW/glfw3.h>
 
-#include "buffers.hpp"
+#include "../renderer/buffers.hpp"
 #include "macroParsing.hpp"
 
 

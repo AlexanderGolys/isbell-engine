@@ -24,19 +24,32 @@ struct Vertex2D {
 };
 
 
+
 template<typename V>
 struct Triangle {
 	V a, b, c;
 	Triangle(const V& a, const V& b, const V& c) : a(a), b(b), c(c) {}
 };
 
+class DynamicMeshInterface {
+public:
+	virtual ~DynamicMeshInterface() = default;
+	virtual raw_data_ptr getVertexData() const = 0;
+	virtual raw_data_ptr getIndexData() const = 0;
+	virtual byte_size vertexDataSize() const = 0;
+	virtual byte_size indexDataSize() const = 0;
+	virtual bool isDirty() const = 0;
+	virtual void markClean() = 0;
+	virtual void markDirty() = 0;
+};
+
 template<typename VertexStruct>
-class DynamicMesh {
+class DynamicMesh : public DynamicMeshInterface {
 	vector<VertexStruct> vertices;
 	vector<ivec3> indices;
+	bool dirty = false;
 public:
 	DynamicMesh();
-	virtual ~DynamicMesh();
 	DynamicMesh(const vector<VertexStruct>& vertices, const vector<ivec3>& indices);
 
 	void addVertex(const VertexStruct& vertex);
@@ -51,8 +64,16 @@ public:
 	void merge(const DynamicMesh& other);
 	void transformVertices(const HOM(const VertexStruct&, VertexStruct)& f);
 	const vector<ivec3>& getIndexArray() const;
-	const void* getVertexData() const;
+
+	raw_data_ptr getVertexData() const override;
+	raw_data_ptr getIndexData() const override;
+	byte_size vertexDataSize() const override { return vertices.size() * sizeof(VertexStruct); }
+	byte_size indexDataSize() const override { return indices.size() * sizeof(ivec3); }
+	bool isDirty() const override;
+
 	size_t size() const;
+	void markClean() override;
+	void markDirty() override;
 };
 
 using DynamicMesh3D = DynamicMesh<Vertex3D>;
@@ -130,12 +151,14 @@ void DynamicMesh<VertexStruct>::merge(const DynamicMesh& other) {
 	for (const auto& idx : other.indices) {
 		indices.emplace_back(idx.x + vertexOffset, idx.y + vertexOffset, idx.z + vertexOffset);
 	}
+	dirty = true;
 }
 
 template <typename VertexStruct>
 void DynamicMesh<VertexStruct>::transformVertices(const std::function<VertexStruct(const VertexStruct&)>& f) {
 	for (auto& v : vertices)
 		v = f(v);
+	dirty = true;
 }
 
 template <typename VertexStruct>
@@ -144,9 +167,24 @@ const vector<ivec3>& DynamicMesh<VertexStruct>::getIndexArray() const {
 }
 
 template <typename VertexStruct>
-const void* DynamicMesh<VertexStruct>::getVertexData() const {
-	return vertices.data();
+raw_data_ptr DynamicMesh<VertexStruct>::getVertexData() const {
+	return &vertices[0];
 }
 
 template <typename VertexStruct>
+raw_data_ptr DynamicMesh<VertexStruct>::getIndexData() const {
+	return &indices[0][0];
+}
+
+
+template <typename VertexStruct>
 size_t DynamicMesh<VertexStruct>::size() const { return vertices.size() * sizeof(VertexStruct); }
+
+template <typename VertexStruct>
+bool DynamicMesh<VertexStruct>::isDirty() const { return dirty; }
+
+template <typename VertexStruct>
+void DynamicMesh<VertexStruct>::markClean() { dirty = false; }
+
+template <typename VertexStruct>
+void DynamicMesh<VertexStruct>::markDirty() { dirty = true; }

@@ -1,4 +1,4 @@
-#include "uniforms.hpp"
+#include "../include/renderer/uniforms.hpp"
 
 
 GLint Uniform::getLocation(const ShaderProgram& prog) const {

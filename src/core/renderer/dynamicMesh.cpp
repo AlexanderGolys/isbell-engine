@@ -1,4 +1,4 @@
-#include "dynamicMesh.hpp"
+#include "../include/renderer/dynamicMesh.hpp"
 
 Vertex3D::Vertex3D(): position(vec3(0, 0, 0)), normal(vec3(0, 0, 1)), uv(vec2(0, 0)), color(vec4(1, 1, 1, 1)) {}
 

@@ -42,18 +42,15 @@ public:
 
 class IndexBuffer {
 	GLuint id = 0;
-	unsigned int count;
 
 public:
-	explicit IndexBuffer(unsigned int trianglesCount);
-	explicit IndexBuffer(const vector<ivec3>& indices);
+	explicit IndexBuffer(byte_size byteSize);
 	~IndexBuffer();
 
 	GLuint eboID() const;
 	void bind() const;
 	void unbind() const;
-	void uploadData(const vector<ivec3>& indices);
-	unsigned int getCount() const;
+	void uploadData(raw_data_ptr data, byte_size size) const;
 };
 
 class VertexArray {

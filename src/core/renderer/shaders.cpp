@@ -1,4 +1,4 @@
-#include "shaders.hpp"
+#include "../include/renderer/shaders.hpp"
 
 #include "logging.hpp"
 

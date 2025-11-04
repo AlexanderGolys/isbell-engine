@@ -1,4 +1,4 @@
-#include "scene3D.hpp"
+#include "../include/renderer/scene3D.hpp"
 
 Camera::Camera(vec3 position, vec3 lookAt, vec3 upVector, float fov, float aspectRatio, float nearClip, float farClip)
 : position(position), lookAt(lookAt), upVector(upVector), fov(fov), aspectRatio(aspectRatio), nearClip(nearClip), farClip(farClip) {}
