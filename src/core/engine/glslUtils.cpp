@@ -30,12 +30,6 @@ using namespace glm;
 // 	std::cerr << message << std::endl;
 // }
 
-void setUniformTextureSampler(GLuint programID, Texture* texture, int textureSlot) {
-	GLuint samplerUniform = glGetUniformLocation(programID, texture->samplerName);
-	glUniform1i(samplerUniform, textureSlot);
-	texture->bind();
-}
-
 int predefinedWidth(Resolution res) {
 	switch (res) {
 	case FHD:
@@ -58,76 +52,6 @@ int predefinedHeight(Resolution res) {
 		return 1440;
 	}
 	throw UnknownVariantError("Resolution not recognized", __FILE__, __LINE__);
-}
-
-size_t sizeOfGLSLType(GLSLType type) {
-	switch (type) {
-	case FLOAT:
-		return sizeof(float);
-	case INT:
-		return sizeof(int);
-	case VEC2:
-		return sizeof(vec2);
-	case VEC3:
-		return sizeof(vec3);
-	case VEC4:
-		return sizeof(vec4);
-	case MAT2:
-		return sizeof(mat2);
-	case MAT3:
-		return sizeof(mat3);
-	case MAT4:
-		return sizeof(mat4);
-	case SAMPLER1D:
-	case SAMPLER2D:
-	case SAMPLER3D:
-		return sizeof(GLuint);
-	}
-	throw UnknownVariantError("GLSL type not recognized", __FILE__, __LINE__);
-}
-
-int lengthOfGLSLType(GLSLType type) {
-	switch (type) {
-	case FLOAT:
-	case INT:
-	case SAMPLER1D:
-	case SAMPLER2D:
-	case SAMPLER3D:
-		return 1;
-	case VEC2:
-		return 2;
-	case VEC3:
-		return 3;
-	case VEC4:
-	case MAT2:
-		return 4;
-	case MAT3:
-		return 9;
-	case MAT4:
-		return 16;
-	}
-	std::cout << "Error: unknown GLSLType" << std::endl;
-	return -1;
-}
-
-GLenum primitiveGLSLType(GLSLType type) {
-	switch (type) {
-	case FLOAT:
-	case VEC2:
-	case VEC3:
-	case VEC4:
-	case MAT2:
-	case MAT3:
-	case MAT4:
-		return GL_FLOAT;
-	case INT:
-	case SAMPLER1D:
-	case SAMPLER2D:
-	case SAMPLER3D:
-		return GL_INT;
-	}
-	std::cout << "Error: unknown GLSLType" << std::endl;
-	return -1;
 }
 
 
@@ -211,33 +135,6 @@ Shader& Shader::operator=(Shader&& other) noexcept {
 	return *this;
 }
 
-
-void error_callback(int error, const char* description) {
-	fprintf(stderr, "Error: %s\n", description);
-}
-
-GLuint bindVAO() {
-	GLuint VertexArrayID;
-	glGenVertexArrays(1, &VertexArrayID);
-	glBindVertexArray(VertexArrayID);
-	return VertexArrayID;
-}
-
-void disableAttributeArrays(int how_many) {
-	for (int i = 0; i < how_many; i++)
-		glDisableVertexAttribArray(i);
-}
-
-void key_callback(GLFWwindow* window, int key, int scancode, int action, int mods) {
-	if (key == GLFW_KEY_ESCAPE && action == GLFW_PRESS)
-		glfwSetWindowShouldClose(window, 1);
-}
-
-mat4 generateMVP(vec3 camPosition, vec3 camLookAt, vec3 upVector, float fov, float aspectRatio, float clippingRangeMin, float clippingRangeMax, const mat4& modelTransform) {
-	mat4 ViewMatrix = lookAt(camPosition, camLookAt, upVector);
-	mat4 ProjectionMatrix = perspective(fov, aspectRatio, clippingRangeMin, clippingRangeMax);
-	return ProjectionMatrix * ViewMatrix * modelTransform;
-}
 
 Window::Window(int width, int height, const char* title) {
 	// glfwInit();
@@ -544,144 +441,15 @@ void ShaderProgram::setUniform(const string& uniformName, float x, float y, floa
 }
 
 
-Camera::Camera() {
-	this->lookAtFunc = make_shared<SmoothParametricCurve>(SmoothParametricCurve::constCurve(vec3(0)));
-	this->up = [](float t) {
-		return vec3(0, 0, 1);
-	};
-	this->fov_x = 45.0f;
-	this->aspectRatio = 16.0f / 9.0f;
-	this->clippingRangeMin = 0.1f;
-	this->clippingRangeMax = 100.0f;
-	this->trajectory = make_shared<SmoothParametricCurve>(SmoothParametricCurve::constCurve(vec3(2.0f, 3.0f, 1.0f)));
-	this->moving = false;
-	this->projectionMatrix = perspective(fov_x, aspectRatio, clippingRangeMin, clippingRangeMax);
-}
-
-Camera::Camera(vec3 position, vec3 lookAtPos, vec3 upVector, float fov_x, float aspectRatio, float clippingRangeMin, float clippingRangeMax) {
-	this->lookAtFunc = make_shared<SmoothParametricCurve>(SmoothParametricCurve::constCurve(lookAtPos));
-	this->up = [upVector](float t) {
-		return upVector;
-	};
-	this->fov_x = fov_x;
-	this->aspectRatio = aspectRatio;
-	this->clippingRangeMin = clippingRangeMin;
-	this->clippingRangeMax = clippingRangeMax;
-	this->trajectory = make_shared<SmoothParametricCurve>(SmoothParametricCurve::constCurve(position));
-	this->moving = false;
-	this->projectionMatrix = perspective(fov_x, aspectRatio, clippingRangeMin, clippingRangeMax);
-}
-
-Camera::Camera(float radius, float speed, float height, vec3 lookAtPos, vec3 upVector, float fov_x, float aspectRatio, float clippingRangeMin, float clippingRangeMax)
-: Camera(make_shared<SmoothParametricCurve>([speed, radius, height](float t) {
-	return vec3(radius * cos(speed * t), radius * sin(speed * t), height);
-}), lookAtPos, upVector, fov_x, aspectRatio, clippingRangeMin, clippingRangeMax) {}
-
-Camera::Camera(const shared_ptr<SmoothParametricCurve>& trajectory, vec3 lookAtPos, vec3 upVector, float fov_x, float aspectRatio, float clippingRangeMin, float clippingRangeMax) {
-	this->lookAtFunc = make_shared<SmoothParametricCurve>(SmoothParametricCurve::constCurve(lookAtPos));
-	this->up = [upVector](float t) {
-		return upVector;
-	};
-	this->fov_x = fov_x;
-	this->aspectRatio = aspectRatio;
-	this->clippingRangeMin = clippingRangeMin;
-	this->clippingRangeMax = clippingRangeMax;
-	this->trajectory = trajectory;
-	this->moving = true;
-	this->projectionMatrix = perspective(fov_x, aspectRatio, clippingRangeMin, clippingRangeMax);
-}
-
-Camera::Camera(const shared_ptr<SmoothParametricCurve>& trajectory, const shared_ptr<SmoothParametricCurve>& lookAtPos, vec3 upVector, float fov_x, float aspectRatio,
-			   float clippingRangeMin, float clippingRangeMax) {
-	this->lookAtFunc = lookAtPos;
-	this->up = [upVector](float t) {
-		return upVector;
-	};
-	this->fov_x = fov_x;
-	this->aspectRatio = aspectRatio;
-	this->clippingRangeMin = clippingRangeMin;
-	this->clippingRangeMax = clippingRangeMax;
-	this->trajectory = trajectory;
-	this->moving = true;
-	this->projectionMatrix = perspective(fov_x, aspectRatio, clippingRangeMin, clippingRangeMax);
-}
-
-Camera::Camera(const shared_ptr<SmoothParametricCurve>& trajectory, const shared_ptr<SmoothParametricCurve>& lookAtPos, const std::function<vec3(float)>& upVector, float fov_x,
-			   float aspectRatio, float clippingRangeMin, float clippingRangeMax) {
-	this->lookAtFunc = lookAtPos;
-	this->up = upVector;
-	this->fov_x = fov_x;
-	this->aspectRatio = aspectRatio;
-	this->clippingRangeMin = clippingRangeMin;
-	this->clippingRangeMax = clippingRangeMax;
-	this->trajectory = trajectory;
-	this->moving = true;
-	this->projectionMatrix = perspective(fov_x, aspectRatio, clippingRangeMin, clippingRangeMax);
-}
-
-vec3 Camera::position(float t) const {
-	return trajectory->operator()(t);
-}
-
-vec3 Camera::lookAtPoint(float t) const {
-	return lookAtFunc->operator()(t);
-}
-
-vec3 Camera::upVector(float t) const {
-	return up(t);
-}
-
-
-mat4 Camera::viewMatrix(float t) {
-	return lookAt(position(t), lookAtPoint(t), upVector(t));
-}
-
-mat4 Camera::vp(float t) {
-	return projectionMatrix * viewMatrix(t);
-}
-
-mat4 Camera::mvp(float t, const mat4& modelTransform) {
-	// return vp(t);
-	return vp(t) * modelTransform;
-}
-
-
-AttributeBuffer::AttributeBuffer(const string& name, GLSLType type, int inputNumber)
-: name(name), type(type), inputNumber(inputNumber), bufferAddress(0), size(sizeOfGLSLType(type)) {
-	glCreateBuffers(1, &bufferAddress);
-}
-
-AttributeBuffer::~AttributeBuffer() {
-	glDeleteBuffers(1, &bufferAddress);
-}
-
-
-void AttributeBuffer::enable() const {
-	glEnableVertexAttribArray(this->inputNumber);
-	glBindBuffer(GL_ARRAY_BUFFER, this->bufferAddress);
-	glVertexAttribPointer(this->inputNumber, lengthOfGLSLType(this->type), GL_FLOAT, GL_FALSE, 0, (void*)0);
-}
-
-void AttributeBuffer::disable() const {
-	glDisableVertexAttribArray(this->inputNumber);
-}
-
-void AttributeBuffer::load(const void* firstElementAdress, int bufferLength) const {
-	glBindBuffer(GL_ARRAY_BUFFER, bufferAddress);
-	glBufferData(GL_ARRAY_BUFFER, bufferLength * size, firstElementAdress, GL_DYNAMIC_DRAW);
-}
-
-void AttributeBuffer::update(const void* firstElementAdress, int bufferLength) const {
-	glBindBuffer(GL_ARRAY_BUFFER, bufferAddress);
-	glBufferSubData(GL_ARRAY_BUFFER, 0, bufferLength * size, firstElementAdress);
-}
 
 
 RenderingStep::RenderingStep(const shared_ptr<ShaderProgram>& shader, const shared_ptr<MaterialPhong>& material, const shared_ptr<IndexedMesh>& mesh)
-: customStep([](float){}) {
+: customStep([](float){}), elementBuffer(nullptr)
+{
 	this->shader = shader;
 	this->material = material;
 	this->mesh = mesh;
+	vao = make_shared<VertexArray>();
 }
 
 
@@ -707,47 +475,36 @@ void RenderingStep::bindTextures() const {
 	shader->setTextureSampler(material->texture_specular.get());
 }
 
-void RenderingStep::initElementBuffer() {
-	glGenBuffers(1, &elementBufferLoc);
-	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, elementBufferLoc);
-	glBufferData(GL_ELEMENT_ARRAY_BUFFER, mesh->bufferIndexSize(), mesh->bufferIndexLocation(), GL_DYNAMIC_DRAW);
-	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, elementBufferLoc);
-}
 
-void RenderingStep::loadElementBuffer() const {
-	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, elementBufferLoc);
-	glBufferData(GL_ELEMENT_ARRAY_BUFFER, mesh->bufferIndexSize(), mesh->bufferIndexLocation(), GL_DYNAMIC_DRAW);
-}
 
 void RenderingStep::initAttributes() {
+	shader->use();
+	vao->bind();
 	attributes.push_back(make_shared<AttributeBuffer>("position", VEC3, 0));
 	attributes.push_back(make_shared<AttributeBuffer>("normal", VEC3, 1));
 	attributes.push_back(make_shared<AttributeBuffer>("uv", VEC2, 2));
 	int nextInputNumber = 2;
-	for (const string& attribute : mesh->getActiveExtraBuffers())
+	for (const string& attribute : mesh->getActiveExtraBuffers()) {
 		attributes.push_back(make_shared<AttributeBuffer>(attribute, VEC4, ++nextInputNumber));
+	}
 
+	for (const auto& attribute : attributes) {
+		vao->addAttributeBuffer(*attribute);
 
-}
-
-
-void RenderingStep::loadMeshAttributes() const {
-	for (const auto& attribute : attributes)
 		attribute->load(
 			mesh->getBufferLocation(attribute->name),
-			mesh->getBufferLength());
+			mesh->getBufferSize(attribute->name)
+		);
+	}
+
+	elementBuffer = make_shared<ElementBuffer>();
+	vao->addElementBuffer(*elementBuffer);
+	elementBuffer->load(
+		mesh->bufferIndexLocation(),
+		mesh->bufferIndexSize()
+	);
 }
 
-
-void RenderingStep::enableAttributes() const {
-	for (const auto& attribute : attributes)
-		attribute->enable();
-}
-
-void RenderingStep::disableAttributes() const {
-	for (const auto& attribute : attributes)
-		attribute->disable();
-}
 
 void RenderingStep::addUniform(string uniformName, GLSLType uniformType, shared_ptr<std::function<void(float, shared_ptr<ShaderProgram>)>> setter) {
 	this->uniforms[uniformName] = uniformType;
@@ -838,15 +595,10 @@ void RenderingStep::addLightsUniforms(const vector<Light>& lights) {
 
 void RenderingStep::init(const shared_ptr<Camera>& cam, const vector<Light>& lights) {
 	shader->use();
-	initElementBuffer();
 	initAttributes();
 	addMaterialUniforms();
 	addCameraUniforms(cam);
 	addLightsUniforms(lights);
-	enableAttributes();
-	loadMeshAttributes();
-	loadElementBuffer();
-
 }
 
 void RenderingStep::addUniforms(const std::map<string, GLSLType>& uniforms, std::map<string, shared_ptr<std::function<void(float, shared_ptr<ShaderProgram>)>>> setters) {
@@ -859,27 +611,18 @@ void RenderingStep::addCustomAction(const std::function<void(float)>& action) {
 }
 
 
-
-
-
-
-
 void RenderingStep::renderStep(float t) {
 	shader->use();
-	enableAttributes();
-	loadMeshAttributes();
+	vao->bind();
 	customStep(t);
 	setUniforms(t);
-	loadElementBuffer();
-
 	glDrawElements(GL_TRIANGLES, mesh->bufferIndexSize(), GL_UNSIGNED_INT, nullptr);
-	disableAttributes();
 }
 
 RenderSettings::RenderSettings(vec4 bgColor, bool alphaBlending, bool depthTest, bool timeUniform, float speed, int maxFPS, bool takeScreenshots, Resolution resolution,
 							   float screenshotFrequency, const string& windowTitle)
-: bgColor(bgColor), alphaBlending(alphaBlending), depthTest(depthTest), timeUniform(timeUniform), speed(speed), maxFPS(maxFPS), takeScreenshots(takeScreenshots),
-  resolution(resolution), screenshotFrequency(screenshotFrequency), windowTitle(windowTitle) {
+: bgColor(bgColor), alphaBlending(alphaBlending), depthTest(depthTest), timeUniform(timeUniform), speed(speed), maxFPS(maxFPS), resolution(resolution),
+  windowTitle(windowTitle), takeScreenshots(takeScreenshots), screenshotFrequency(screenshotFrequency) {
 	if (takeScreenshots)
 		throw NotImplementedError("Screenshot functionality not implemented yet.", __FILE__, __LINE__);
 	this->screenshotFrequency = -1;
@@ -896,7 +639,6 @@ Renderer::Renderer(float animSpeed, vec4 bgColor, const string& screenshotDirect
 	});
 	THROW_IF(not glfwInit(), SystemError, "Failed to initialize GLFW");
 	this->window = nullptr;
-	this->vao = 0;
 	this->camera = nullptr;
 	this->time = 0;
 	this->lights = vector<Light>();
@@ -926,7 +668,6 @@ void Renderer::initMainWindow(int width, int height, const char* title) {
 	this->window = make_unique<Window>(width, height, title);
 	glewExperimental = true;
 	THROW_IF(glewInit() != GLEW_OK, SystemError, "Failed to initialize GLEW");
-	this->vao = bindVAO();
 	LOG("Window initialized with size: " + to_string(width) + "x" + to_string(height));
 }
 
@@ -1019,7 +760,6 @@ void Renderer::addSurfaceFamilyDeformer(SurfaceParametricPencil& pencil, Indexed
 
 void Renderer::initRendering() {
 	window->initViewport();
-	glBindVertexArray(vao);
 
 	glShadeModel(GL_FLAT);
 
@@ -1039,8 +779,6 @@ void Renderer::initRendering() {
 
 	for (const auto& renderingStep : renderingSteps)
 		renderingStep->init(camera, lights);
-
-
 
 	LOG("OpenGL renderer initialized: " + string((const char *)glGetString(GL_RENDERER)));
 }

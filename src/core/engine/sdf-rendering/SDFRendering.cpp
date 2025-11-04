@@ -284,7 +284,7 @@ void SDFRenderingStep::init(const std::shared_ptr<Camera> &cam, const std::vecto
 	addSDFUniforms();
 	attributes = {std::make_shared<AttributeBuffer>("position", VEC3, 0)};
 	// attributes[0]->initBuffer();
-	attributes[0]->load(&trs[0][0], 6);
+	attributes[0]->load(&trs[0][0], 6*sizeof(vec3));
 	loadSDFUniforms();
 }
 
@@ -292,11 +292,9 @@ void SDFRenderingStep::renderStep(float t) {
 	shader->use();
 	setUniforms(t);
 	loadSDFUniforms();
-	attributes[0]->load(&trs[0][0], 6);
+	attributes[0]->load(&trs[0][0], 6*sizeof(vec3));
 
-	enableAttributes();
 	glDrawArrays(GL_TRIANGLES, 0, 6);
-	disableAttributes();
 }
 
 void SDFRenderingStep::addCameraUniforms(const std::shared_ptr<Camera> &camera) {
@@ -321,11 +319,6 @@ void SDFRenderer::renderAllSteps() {
 
 void SDFRenderer::initRendering() {
 	window->initViewport();
-	glBindVertexArray(vao);
-//	glShadeModel(GL_SMOOTH);
-//	glEnable(GL_DEPTH_TEST);
-//	glEnable(GL_BLEND);
-//	glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 	for (const auto &renderingStep: sdfSteps)
 		renderingStep->init(camera, lights);
 }

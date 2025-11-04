@@ -7,21 +7,13 @@
 #include <GLFW/glfw3.h>
 
 #include "macroParsing.hpp"
-
+#include "buffers.hpp"
+#include "sceneRendering.hpp"
 
 #include "indexedRendering.hpp"
 #include "renderingUtils.hpp"
 #include "filesUtils.hpp"
 #include "logging.hpp"
-
-
-void error_callback(int error, const char* description);
-void key_callback(GLFWwindow* window, int key, int scancode, int action, int mods);
-
-GLuint bindVAO();
-void disableAttributeArrays(int how_many = 4);
-mat4 generateMVP(vec3 camPosition, vec3 camLookAt, vec3 upVector, float fov, float aspectRatio, float clippingRangeMin, float clippingRangeMax, const mat4& modelTransform);
-void setUniformTextureSampler(GLuint programID, Texture* texture, int textureSlot);
 
 
 enum Resolution {
@@ -57,14 +49,9 @@ public:
 					  GLFWcursorposfun* cursorPosCallback = nullptr, GLFWcursorenterfun* cursorEnterCallback = nullptr, GLFWscrollfun* scrollCallback = nullptr,
 					  GLFWdropfun* dropCallback = nullptr);
 	bool isOpen();
-
 	void renderFramebufferToScreen();
 };
 
-
-size_t sizeOfGLSLType(GLSLType type);
-int lengthOfGLSLType(GLSLType type);
-GLenum primitiveGLSLType(GLSLType type);
 
 enum ShaderType {
 	CLASSIC,
@@ -81,21 +68,14 @@ protected:
 public:
 	explicit Shader(CodeFileDescriptor& file);
 	explicit Shader(CodeFileDescriptor&& file);
-
-	explicit Shader(const Path& file)
-	: Shader(CodeFileDescriptor(file)) {}
-
-	explicit Shader(const TemplateCodeFile& file)
-	: Shader(file.generatedCodeFile()) {}
-
+	explicit Shader(const Path& file) : Shader(CodeFileDescriptor(file)) {}
+	explicit Shader(const TemplateCodeFile& file) : Shader(file.generatedCodeFile()) {}
 	Shader(const string& code, GLenum shaderType);
-
 	Shader(const Shader& other);
 	Shader(Shader&& other) noexcept;
 	Shader& operator=(const Shader& other);
 	Shader& operator=(Shader&& other) noexcept;
 	virtual ~Shader() = default;
-
 
 	GLuint getID() const;
 	void compile();
@@ -120,9 +100,9 @@ public:
 	ShaderProgram(const Shader& vertexShader, const Shader& fragmentShader);
 	ShaderProgram(const Shader& vertexShader, const Shader& fragmentShader, const Shader& geometryShader);
 	ShaderProgram(const string& vertexPath, const string& fragPath);
+	explicit ShaderProgram(const string& standard_file_path);
 
 	void linkShaders();
-	explicit ShaderProgram(const string& standard_file_path);
 	~ShaderProgram();
 
 	void use();
@@ -145,88 +125,30 @@ public:
 	void setUniform(const string& uniformName, float x, float y, float z, float w);
 };
 
-class Camera {
-public:
-	float fov_x;
-	float aspectRatio;
-	float clippingRangeMin;
-	float clippingRangeMax;
-	bool moving;
-	shared_ptr<SmoothParametricCurve> trajectory;
-	shared_ptr<SmoothParametricCurve> lookAtFunc;
-	std::function<vec3(float)> up;
-	mat4 projectionMatrix;
-
-	Camera();
-
-	Camera(vec3 position, vec3 lookAtPos, vec3 upVector = vec3(0, 0, 1), float fov_x = PI / 4, float aspectRatio = 16 / 9.f, float clippingRangeMin = .01f,
-		   float clippingRangeMax = 100.f);
-
-	Camera(float radius, float speed, float height, vec3 lookAtPos = vec3(0), vec3 upVector = vec3(0, 0, 1), float fov_x = PI / 4, float aspectRatio = 16 / 9.f,
-		   float clippingRangeMin = .01f, float clippingRangeMax = 100.f);
-
-	Camera(const shared_ptr<SmoothParametricCurve>& trajectory, vec3 lookAtPos, vec3 upVector, float fov_x = PI / 4, float aspectRatio = 16 / 9.f, float clippingRangeMin = .01f,
-		   float clippingRangeMax = 100.f);
-
-	Camera(const shared_ptr<SmoothParametricCurve>& trajectory, const shared_ptr<SmoothParametricCurve>& lookAtPos, vec3 upVector, float fov_x = PI / 4,
-		   float aspectRatio = 16 / 9.f, float clippingRangeMin = .01f, float clippingRangeMax = 100.f);
-
-	Camera(const shared_ptr<SmoothParametricCurve>& trajectory, const shared_ptr<SmoothParametricCurve>& lookAtPos, const std::function<vec3(float)>& upVector,
-		   float fov_x = PI / 4, float aspectRatio = 16 / 9.f, float clippingRangeMin = .01f, float clippingRangeMax = 100.f);
-
-	vec3 position(float t) const;
-	vec3 lookAtPoint(float t) const;
-	vec3 upVector(float t) const;
-	mat4 mvp(float t, const mat4& modelTransform);
-	mat4 viewMatrix(float t);
-	mat4 vp(float t);
-};
-
-class AttributeBuffer {
-public:
-	string name;
-	GLuint bufferAddress;
-	size_t size;
-	GLSLType type;
-	int inputNumber;
-
-	AttributeBuffer(const string& name, GLSLType type, int inputNumber);
-	~AttributeBuffer();
-
-	void enable() const;
-	void disable() const;
-	void load(const void* firstElementAdress, int bufferLength) const;
-	void update(const void* firstElementAdress, int bufferLength) const;
-};
-
 
 class RenderingStep {
 protected:
 	shared_ptr<ShaderProgram> shader;
 	vector<shared_ptr<AttributeBuffer>> attributes;
+	shared_ptr<ElementBuffer> elementBuffer;
+	shared_ptr<VertexArray> vao;
+
 	shared_ptr<IndexedMesh> mesh = nullptr;
-	GLuint elementBufferLoc = 0;
 	shared_ptr<MaterialPhong> material = nullptr;
 
 	std::map<string, GLSLType> uniforms;
 	std::map<string, shared_ptr<std::function<void(float, shared_ptr<ShaderProgram>)>>> uniformSetters;
-	std::function<void(float)> customStep;
+	HOM(float, void) customStep;
 public:
 	RenderingStep(const shared_ptr<ShaderProgram>& shader, const shared_ptr<MaterialPhong>& material, const shared_ptr<IndexedMesh>& mesh);
 	virtual ~RenderingStep();
 
 	void initAttributes();
-	void initElementBuffer();
-
-	void loadMeshAttributes() const;
-	void loadElementBuffer() const;
-	void enableAttributes() const;
-	void disableAttributes() const;
 
 	void initMaterialTextures() const;
 	void bindTextures() const;
 
-	void addCustomAction(const std::function<void(float)>& action);
+	void addCustomAction(const HOM(float, void)& action);
 	virtual void init(const shared_ptr<Camera>& cam, const vector<Light>& lights);
 
 	void addUniforms(const std::map<string, GLSLType>& uniforms, std::map<string, shared_ptr<std::function<void(float, shared_ptr<ShaderProgram>)>>> setters);
@@ -245,8 +167,7 @@ public:
 };
 
 
-class RenderSettings {
-public:
+struct RenderSettings {
 	vec4 bgColor;
 	bool alphaBlending;
 	bool depthTest;
@@ -260,15 +181,13 @@ public:
 	float screenshotFrequency;
 	Path screenshotDirectory;
 
-	RenderSettings(vec4 bgColor, bool alphaBlending, bool depthTest, bool timeUniform, float speed, int maxFPS, bool takeScreenshots, Resolution resolution,
-				   float screenshotFrequency = 0.f, const string& windowTitle = "window");
+	RenderSettings(vec4 bgColor, bool alphaBlending, bool depthTest, bool timeUniform, float speed, int maxFPS, bool takeScreenshots, Resolution resolution, float screenshotFrequency = 0.f, const string& windowTitle = "window");
 };
 
 
 class Renderer {
 protected:
 	float last_time_capture = 0;
-	GLuint vao;
 
 	unique_ptr<Window> window;
 	vector<shared_ptr<RenderingStep>> renderingSteps;
@@ -313,7 +232,7 @@ public:
 	void addConstUniform(const string& uniformName, GLSLType uniformType, shared_ptr<std::function<void(shared_ptr<ShaderProgram>)>> setter) const;
 	void addTimeUniform() const;
 	void addConstFloats(const std::map<string, float>& uniforms) const;
-	void addCustomAction(std::function<void(float)> action);
+	void addCustomAction(HOM(float, void) action);
 	void addCustomAction(std::function<void(float, float)> action);
 	void nonlinearSpeed(const END(float)& speed);
 	void addSurfaceFamilyDeformer(SurfaceParametricPencil& pencil, IndexedMesh& surface);

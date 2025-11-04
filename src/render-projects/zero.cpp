@@ -44,7 +44,8 @@ int main() {
 	PointLight light1 = PointLight(vec3(1,-3, 15), .003, .0005);
 	auto lights = vector<Light>({light1, light1, light1});
 
-	auto floor = make_shared<IndexedMesh>(paraleblahblapid(vec3(-8, -5, -.1), e1*16, e2*10, -e3*1));
+	auto floor = make_shared<IndexedMesh>(paraleblahblapid(vec3(-8, -5, -.1), e1*5, e2*10, -e3*10));
+	auto floor2 = make_shared<IndexedMesh>(paraleblahblapid(vec3(-2, -3, -.1), e1*5, e2*6, -e3*1));
 
 
 	auto shader_curve = ShaderProgram(
@@ -64,7 +65,7 @@ int main() {
 	renderer.setLights(lights);
 
 	renderer.addMeshStep(shader_floor, floor, floormat);
-	renderer.addMeshStep(shader_curve, c1, material_curve);
+	renderer.addMeshStep(shader_floor, floor2, floormat);
 	renderer.addMeshStep(shader_curve, c2, material_curve);
 
 
