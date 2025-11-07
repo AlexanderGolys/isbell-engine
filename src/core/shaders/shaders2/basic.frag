@@ -62,7 +62,7 @@ vec4 colorFromPointlight(mat4 light, vec3 camPos, vec3 pos, vec3 n, vec2 uv)
 	vec3 viewDirection = normalize(camPos - pos);
 	float cosAlpha = max(dot(viewDirection, reflectDirection), 0.);
 //    float cosAlpha = abs(dot(viewDirection, reflectDirection));
-//
+
     return texture(texture_ambient,  uv) * intencities.x +
     texture(texture_diffuse,  uv) * intencities.y * cosTheta * lightFactor(light, pos) +
     texture(texture_specular,  uv) * intencities.z  * pow(cosAlpha, intencities.w) * lightFactor(light, pos);

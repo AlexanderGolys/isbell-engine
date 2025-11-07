@@ -135,6 +135,13 @@ public:
         : ErrorClassWrapper(msg, file, line) {}
 };
 
+class RuntimeError : public ErrorClassWrapper {
+public:
+	RuntimeError(const string& msg, const char* file, int line)
+		: ErrorClassWrapper(msg, file, line) {}
+};
+
+
 class SystemError : public ErrorClassWrapper {
 public:
     SystemError(const string& msg, const char* file, int line)

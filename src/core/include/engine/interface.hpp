@@ -1,6 +1,6 @@
 #pragma once
 #include "dynamicalSystems.hpp"
-#include "glslUtils.hpp"
+#include "renderer.hpp"
 #include "indexedRendering.hpp"
 #include "specific.hpp"
 

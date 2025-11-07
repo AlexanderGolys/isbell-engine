@@ -221,7 +221,7 @@ TemplateCodeFile SDFScene::templateCode(const CodeFileDescriptor &source, const 
 }
 
 Shader SDFScene::fragmentShader(const CodeFileDescriptor &source, const CodeFileDescriptor &target) const {
-	return Shader(templateCode(source, target).generatedCodeFile());
+	return Shader(templateCode(source, target).generatedCodeFile().getPath());
 }
 
 string SDFScene::objectsCode() const {
@@ -256,7 +256,7 @@ void SDFScene::addMainParameterToObject(const string &name, int objectIndex, con
 
 
 SDFRenderingStep::SDFRenderingStep(const std::shared_ptr<ShaderProgram> &shader, const SDFScene &object)
-		: RenderingStep(shader, nullptr, nullptr) {
+		: MeshLayer(shader, nullptr, nullptr) {
 	paramsData = object.getParameterBuffer();
 	paramsSize = object.getParameterSize();
 	materialData = object.getMaterialBuffer();
@@ -264,9 +264,9 @@ SDFRenderingStep::SDFRenderingStep(const std::shared_ptr<ShaderProgram> &shader,
 }
 
 void SDFRenderingStep::addSDFUniforms() {
-	paramsUniformLoc = glGetUniformLocation(shader->programID, "params");
+	paramsUniformLoc = glGetUniformLocation(shader->getID(), "params");
 	if (materialSize > 0)
-		materialUniformLoc = glGetUniformLocation(shader->programID, "materials");
+		materialUniformLoc = glGetUniformLocation(shader->getID(), "materials");
 }
 
 void SDFRenderingStep::loadSDFUniforms() {
@@ -277,8 +277,8 @@ void SDFRenderingStep::loadSDFUniforms() {
 
 
 
-void SDFRenderingStep::init(const std::shared_ptr<Camera> &cam, const std::vector<Light> &lights) {
-	shader->use();
+void SDFRenderingStep::setScene(const std::shared_ptr<Camera> &cam, const std::vector<Light> &lights) {
+	shader->bind();
 	addCameraUniforms(cam);
 	addLightsUniforms(lights);
 	addSDFUniforms();
@@ -289,7 +289,7 @@ void SDFRenderingStep::init(const std::shared_ptr<Camera> &cam, const std::vecto
 }
 
 void SDFRenderingStep::renderStep(float t) {
-	shader->use();
+	shader->bind();
 	setUniforms(t);
 	loadSDFUniforms();
 	attributes[0]->load(&trs[0][0], 6*sizeof(vec3));
@@ -320,7 +320,7 @@ void SDFRenderer::renderAllSteps() {
 void SDFRenderer::initRendering() {
 	window->initViewport();
 	for (const auto &renderingStep: sdfSteps)
-		renderingStep->init(camera, lights);
+		renderingStep->setScene(camera, lights);
 }
 
 int SDFRenderer::mainLoop() {

@@ -1,9 +1,8 @@
 #pragma once
 
-#include "renderingUtils.hpp"
 #include "pde.hpp"
 #include "randomUtils.hpp"
-#include "SDFObjects.hpp"
+#include "renderingUtils.hpp"
 
 
 struct Stds {
@@ -535,8 +534,7 @@ struct GeneralIndexedMeshData {
 	vector<VertexStruct> vertices;
 	vector<ivec3> indices;
 
-	GeneralIndexedMeshData()
-	: vertices() {}
+	GeneralIndexedMeshData() : vertices() {}
 
 	GeneralIndexedMeshData(GeneralIndexedMeshData& other) = delete;
 

@@ -2,56 +2,50 @@
 #include "renderingUtils.hpp"
 
 class AttributeBuffer {
-public:
 	string name;
-	GLuint bufferAddress;
+	GLuint bufferID;
 	GLSLType type;
 	int inputNumber;
+	byte_size bufferedSize;
 
+public:
 	AttributeBuffer(const string& name, GLSLType type, int inputNumber);
 	~AttributeBuffer();
 
-	void enable() const;
-	void disable() const;
-	void load(raw_data_ptr firstElementAdress, byte_size bufferSize) const;
-	void update(raw_data_ptr firstElementAdress, byte_size bufferSize) const;
+	void pointAtAttributeBuffer() const;
+	void load(raw_data_ptr firstElementAdress, byte_size bufferSize);
+	void update(raw_data_ptr firstElementAdress, byte_size bufferSize);
 };
 
 class ElementBuffer {
-	GLuint bufferAddress;
+	GLuint bufferID;
+	byte_size bufferedSize = 0;
 
 public:
 	ElementBuffer();
 	~ElementBuffer();
 
-	void bind() const;
-	void unbind() const;
-	void load(raw_data_ptr firstElementAdress, byte_size bufferSize) const;
-	GLuint getAddress() const;
+	void load(raw_data_ptr firstElementAdress, byte_size bufferSize);
+	GLuint getID() const;
+	array_len getNumberOfIndices() const;
 };
 
 class VertexArray {
-	GLuint vaoAddress = 0;
+	GLuint vaoID = 0;
+	sptr<ElementBuffer> elementBuffer = nullptr;
+	vector<sptr<AttributeBuffer>> attributeBuffers;
 public:
-	VertexArray() {
-		glGenVertexArrays(1, &vaoAddress);
-		glBindVertexArray(vaoAddress);
-	}
-	~VertexArray() {
-		glDeleteVertexArrays(1, &vaoAddress);
-	}
-	void bind() const {
-		glBindVertexArray(vaoAddress);
-	}
-	void unbind() const {
-		glBindVertexArray(0);
-	}
-	void addElementBuffer(const ElementBuffer& elementBuffer) const {
-		bind();
-		elementBuffer.bind();
-	}
-	void addAttributeBuffer(const AttributeBuffer& attributeBuffer) const {
-		bind();
-		attributeBuffer.enable();
-	}
+	VertexArray();
+	~VertexArray();
+
+	void bind() const;
+	void unbind() const;
+	void addElementBuffer(sptr<ElementBuffer> elementBuffer);
+	void addAttributeBuffer(sptr<AttributeBuffer> attributeBuffer);
+
+	sptr<ElementBuffer> getElementBuffer() const;
+	vector<sptr<AttributeBuffer>>::iterator begin();
+	vector<sptr<AttributeBuffer>>::iterator end();
+
+	void draw() const;
 };

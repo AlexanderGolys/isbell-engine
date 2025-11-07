@@ -11,11 +11,13 @@ namespace logging {
 	void* Logger::pure_logger = nullptr;
 	void* Logger::test_logger = nullptr;
 	unordered_map<string, long> Logger::time_points = unordered_map<string, long>();
+	Significance Logger::threshold = Significance::Low;
 
-	void Logger::init() {
+	void Logger::init(Significance initialThreshold) {
 		engine_logger = (void*)spdlog::stdout_color_mt("Engine", spdlog::color_mode::always).get();
 		pure_logger = (void*)spdlog::stdout_color_mt("Pure").get();
 		test_logger = (void*)spdlog::stdout_color_mt("Tests").get();
+		threshold = initialThreshold;
 	}
 
 	void* Logger::getEngineLogger() {
@@ -26,6 +28,10 @@ namespace logging {
 	}
 	void* Logger::getTestLogger() {
 		return test_logger;
+	}
+
+	void Logger::setThreshold(Significance level) {
+		threshold = level;
 	}
 
 	static spdlog::logger* get_logger(void* handle) {
@@ -70,6 +76,8 @@ namespace logging {
 	}
 
 	void log_info(const char* fmt, ...) {
+		if (Significance::High < Logger::threshold)
+			return;
 		if (Logger::engine_logger == nullptr)
 			Logger::init();
 		char buf[1024];
@@ -80,6 +88,8 @@ namespace logging {
 		get_logger(Logger::engine_logger)->info(buf);
 	}
 	void log_error(const char* fmt, ...) {
+		if (Significance::High < Logger::threshold)
+			return;
 		if (Logger::engine_logger == nullptr)
 			Logger::init();
 		char buf[1024];
@@ -90,6 +100,8 @@ namespace logging {
 		get_logger(Logger::engine_logger)->error(buf);
 	}
 	void log_warn(const char* fmt, ...) {
+		if (Significance::High < Logger::threshold)
+			return;
 		if (Logger::engine_logger == nullptr)
 			Logger::init();
 		char buf[1024];
@@ -109,6 +121,108 @@ namespace logging {
 	}
 	void log_warn(const string& msg) {
 		log_warn("%s", msg.c_str());
+	}
+
+	void log_info(Significance sig, const char* fmt, ...) {
+		if (sig < Logger::threshold)
+			return;
+		if (Logger::engine_logger == nullptr)
+			Logger::init();
+		char buf[1024];
+		va_list args;
+		va_start(args, fmt);
+		vsnprintf(buf, sizeof(buf), fmt, args);
+		va_end(args);
+		get_logger(Logger::engine_logger)->info(buf);
+	}
+
+	void log_error(Significance sig, const char* fmt, ...) {
+		if (sig < Logger::threshold)
+			return;
+		if (Logger::engine_logger == nullptr)
+			Logger::init();
+		char buf[1024];
+		va_list args;
+		va_start(args, fmt);
+		vsnprintf(buf, sizeof(buf), fmt, args);
+		va_end(args);
+		get_logger(Logger::engine_logger)->error(buf);
+	}
+
+	void log_warn(Significance sig, const char* fmt, ...) {
+		if (sig < Logger::threshold)
+			return;
+		if (Logger::engine_logger == nullptr)
+			Logger::init();
+		char buf[1024];
+		va_list args;
+		va_start(args, fmt);
+		vsnprintf(buf, sizeof(buf), fmt, args);
+		va_end(args);
+		get_logger(Logger::engine_logger)->warn(buf);
+	}
+
+	void log_info(Significance sig, const string& msg) {
+		log_info(sig, "%s", msg.c_str());
+	}
+
+	void log_error(Significance sig, const string& msg) {
+		log_error(sig, "%s", msg.c_str());
+	}
+
+	void log_warn(Significance sig, const string& msg) {
+		log_warn(sig, "%s", msg.c_str());
+	}
+
+	void log_info(int sig, const char* fmt, ...) {
+		if (static_cast<Significance>(sig) < Logger::threshold)
+			return;
+		if (Logger::engine_logger == nullptr)
+			Logger::init();
+		char buf[1024];
+		va_list args;
+		va_start(args, fmt);
+		vsnprintf(buf, sizeof(buf), fmt, args);
+		va_end(args);
+		get_logger(Logger::engine_logger)->info(buf);
+	}
+
+	void log_error(int sig, const char* fmt, ...) {
+		if (static_cast<Significance>(sig) < Logger::threshold)
+			return;
+		if (Logger::engine_logger == nullptr)
+			Logger::init();
+		char buf[1024];
+		va_list args;
+		va_start(args, fmt);
+		vsnprintf(buf, sizeof(buf), fmt, args);
+		va_end(args);
+		get_logger(Logger::engine_logger)->error(buf);
+	}
+
+	void log_warn(int sig, const char* fmt, ...) {
+		if (static_cast<Significance>(sig) < Logger::threshold)
+			return;
+		if (Logger::engine_logger == nullptr)
+			Logger::init();
+		char buf[1024];
+		va_list args;
+		va_start(args, fmt);
+		vsnprintf(buf, sizeof(buf), fmt, args);
+		va_end(args);
+		get_logger(Logger::engine_logger)->warn(buf);
+	}
+
+	void log_info(int sig, const string& msg) {
+		log_info(static_cast<Significance>(sig), msg);
+	}
+
+	void log_error(int sig, const string& msg) {
+		log_error(static_cast<Significance>(sig), msg);
+	}
+
+	void log_warn(int sig, const string& msg) {
+		log_warn(static_cast<Significance>(sig), msg);
 	}
 	void log_test_ok(const char* fmt, ...) {
 		if (Logger::engine_logger == nullptr)
@@ -178,5 +292,107 @@ namespace logging {
 	}
 	void log_warn_pure(const string& msg) {
 		log_warn_pure("%s", msg.c_str());
+	}
+
+	void log_info_pure(Significance sig, const char* fmt, ...) {
+		if (sig < Logger::threshold)
+			return;
+		if (Logger::engine_logger == nullptr)
+			Logger::init();
+		char buf[1024];
+		va_list args;
+		va_start(args, fmt);
+		vsnprintf(buf, sizeof(buf), fmt, args);
+		va_end(args);
+		get_pure_logger(Logger::pure_logger)->info(buf);
+	}
+
+	void log_error_pure(Significance sig, const char* fmt, ...) {
+		if (sig < Logger::threshold)
+			return;
+		if (Logger::engine_logger == nullptr)
+			Logger::init();
+		char buf[1024];
+		va_list args;
+		va_start(args, fmt);
+		vsnprintf(buf, sizeof(buf), fmt, args);
+		va_end(args);
+		get_pure_logger(Logger::pure_logger)->error(buf);
+	}
+
+	void log_warn_pure(Significance sig, const char* fmt, ...) {
+		if (sig < Logger::threshold)
+			return;
+		if (Logger::engine_logger == nullptr)
+			Logger::init();
+		char buf[1024];
+		va_list args;
+		va_start(args, fmt);
+		vsnprintf(buf, sizeof(buf), fmt, args);
+		va_end(args);
+		get_pure_logger(Logger::pure_logger)->warn(buf);
+	}
+
+	void log_info_pure(Significance sig, const string& msg) {
+		log_info_pure(sig, "%s", msg.c_str());
+	}
+
+	void log_error_pure(Significance sig, const string& msg) {
+		log_error_pure(sig, "%s", msg.c_str());
+	}
+
+	void log_warn_pure(Significance sig, const string& msg) {
+		log_warn_pure(sig, "%s", msg.c_str());
+	}
+
+	void log_info_pure(int sig, const char* fmt, ...) {
+		if (static_cast<Significance>(sig) < Logger::threshold)
+			return;
+		if (Logger::engine_logger == nullptr)
+			Logger::init();
+		char buf[1024];
+		va_list args;
+		va_start(args, fmt);
+		vsnprintf(buf, sizeof(buf), fmt, args);
+		va_end(args);
+		get_pure_logger(Logger::pure_logger)->info(buf);
+	}
+
+	void log_error_pure(int sig, const char* fmt, ...) {
+		if (static_cast<Significance>(sig) < Logger::threshold)
+			return;
+		if (Logger::engine_logger == nullptr)
+			Logger::init();
+		char buf[1024];
+		va_list args;
+		va_start(args, fmt);
+		vsnprintf(buf, sizeof(buf), fmt, args);
+		va_end(args);
+		get_pure_logger(Logger::pure_logger)->error(buf);
+	}
+
+	void log_warn_pure(int sig, const char* fmt, ...) {
+		if (static_cast<Significance>(sig) < Logger::threshold)
+			return;
+		if (Logger::engine_logger == nullptr)
+			Logger::init();
+		char buf[1024];
+		va_list args;
+		va_start(args, fmt);
+		vsnprintf(buf, sizeof(buf), fmt, args);
+		va_end(args);
+		get_pure_logger(Logger::pure_logger)->warn(buf);
+	}
+
+	void log_info_pure(int sig, const string& msg) {
+		log_info_pure(static_cast<Significance>(sig), msg);
+	}
+
+	void log_error_pure(int sig, const string& msg) {
+		log_error_pure(static_cast<Significance>(sig), msg);
+	}
+
+	void log_warn_pure(int sig, const string& msg) {
+		log_warn_pure(static_cast<Significance>(sig), msg);
 	}
 } // namespace logging

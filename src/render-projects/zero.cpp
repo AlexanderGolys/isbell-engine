@@ -24,7 +24,6 @@ int main() {
 
 
 	Renderer renderer = Renderer(settings);
-	renderer.initMainWindow();
 
 	vec4 blue = BLUE_PALLETTE[5];
 	blue.w = .8;
@@ -47,15 +46,13 @@ int main() {
 	auto floor = make_shared<IndexedMesh>(paraleblahblapid(vec3(-8, -5, -.1), e1*5, e2*10, -e3*10));
 	auto floor2 = make_shared<IndexedMesh>(paraleblahblapid(vec3(-2, -3, -.1), e1*5, e2*6, -e3*1));
 
+	VertexShader curveVertexShader = VertexShader(Path(R"(C:\Users\shitstem\Desktop\cppProjects\isbell-engine\src\core\shaders\shaders2\curve.vert)"));
+	FragmentShader curveFragmentShader = FragmentShader(Path(R"(C:\Users\shitstem\Desktop\cppProjects\isbell-engine\src\core\shaders\shaders2\basic_alpha1.frag)"));
+	auto shader_curve = ShaderProgram(curveVertexShader, curveFragmentShader);
 
-	auto shader_curve = ShaderProgram(
-		R"(C:\Users\shitstem\Desktop\cppProjects\isbell-engine\src\core\shaders\shaders2\curve.vert)",
-		R"(C:\Users\shitstem\Desktop\cppProjects\isbell-engine\src\core\shaders\shaders2\basic_alpha1.frag)");
-
-
-	auto shader_floor = ShaderProgram(
-	R"(C:\Users\shitstem\Desktop\cppProjects\isbell-engine\src\core\shaders\shaders2\basic.vert)",
-	R"(C:\Users\shitstem\Desktop\cppProjects\isbell-engine\src\core\shaders\shaders2\basic.frag)");
+	VertexShader basicVertexShader = VertexShader(Path(R"(C:\Users\shitstem\Desktop\cppProjects\isbell-engine\src\core\shaders\shaders2\basic.vert)"));
+	FragmentShader basicFragmentShader = FragmentShader(Path(R"(C:\Users\shitstem\Desktop\cppProjects\isbell-engine\src\core\shaders\shaders2\basic.frag)"));
+	auto shader_floor = ShaderProgram(basicVertexShader, basicFragmentShader);
 
 	shared_ptr<Camera> camera = make_shared<Camera>(
 		make_shared<SmoothParametricCurve>([](float t) { return vec3(8, -5, 9); }),

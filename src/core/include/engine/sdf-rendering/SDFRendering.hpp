@@ -114,7 +114,7 @@ public:
 
 
 
-class SDFRenderingStep : public RenderingStep {
+class SDFRenderingStep : public MeshLayer {
 	GLuint paramsUniformLoc = 0;
 	GLuint materialUniformLoc = 0;
 
@@ -129,7 +129,7 @@ public:
 	SDFRenderingStep(const std::shared_ptr<ShaderProgram> &shader, const SDFScene &object);
 	void addSDFUniforms();
 	void loadSDFUniforms();
-	void init(const std::shared_ptr<Camera> &cam, const std::vector<Light> &lights) override;
+	void setScene(const std::shared_ptr<Camera> &cam, const std::vector<Light> &lights) override;
 	void renderStep(float t) override;
 	void addCameraUniforms(const std::shared_ptr<Camera> &camera) override;
 
