@@ -1,150 +1,78 @@
 #pragma once
 #include <GL/glew.h>
-#include "exceptions.hpp"
-#include "logging.hpp"
+#include <glfw/glfw3.h>
 #include "shaderTypes.hpp"
 
+using gl_id = GLuint;
+using gl_uniform_loc = GLint;
 
 class GLCommand {
-	static GLuint currentProgram;
-	static GLuint currentVAO;
+	static gl_id currentProgram;
+	static gl_id currentVAO;
+
 public:
+	static string formatGLenum(GLenum value);
 
-	static void bindProgram(GLuint program) {
-		if (currentProgram != program) {
-			glUseProgram(program);
-			currentProgram = program;
-		}
-	}
+	static void bindProgram(gl_id program);
+	static void unbindProgram();
+	static gl_id createProgram();
+	static void attachShaderToProgram(gl_id programID, gl_id shaderID);
+	static void linkProgram(gl_id programID);
+	static void deleteProgram(gl_id programID);
 
-	static void unbindProgram() {
-		glUseProgram(0);
-		currentProgram = 0;
-	}
+	static gl_uniform_loc getUniformLocation(const string& name);
+	static gl_uniform_loc getUniformLocation(const string& name, gl_id program);
+	static void setUniform(gl_uniform_loc location, raw_data_ptr data, GLSLType type, array_len arraySize = 1);
+	static void setUniform(gl_uniform_loc location, int value);
+	static void setUniform(gl_uniform_loc location, float value);
+	static void setUniform(gl_uniform_loc location, unsigned int value);
+	static void setUniform(gl_uniform_loc location, bool value);
 
-	static GLint getUniformLocation(const string& name) {
-		THROW_IF(currentProgram == 0, RuntimeError, "No shader program is currently bound.");
-		GLint location = glGetUniformLocation(currentProgram, name.c_str());
-		THROW_IF(location == -1, RuntimeError, "Uniform '" + name + "' not found in current shader program.");
-		return location;
-	}
+	static gl_id createShader(GLenum shaderType);
+	static void compileShaderSource(gl_id shaderID, const string& source);
+	static void deleteShader(gl_id shaderID);
 
+	static void bindVAO(gl_id vao);
+	static void unbindVAO();
+	static void deleteVAO(gl_id vao);
+	static void createVAO(gl_id* id);
 
-	static GLint getUniformLocation(const string& name, GLuint program) {
-		GLint location = glGetUniformLocation(program, name.c_str());
-		THROW_IF(location == -1, RuntimeError, "Uniform '" + name + "' not found in given shader program.");
-		return location;
-	}
+	static void createTexture(gl_id* id);
+	static void deleteTexture(gl_id id);
+	static void bindTexture2D(gl_id id, unsigned int slot);
+	static void unbindTexture2D();
+	static void setTexture2DFilters(GLenum minFilter, GLenum magFilter, GLenum wrapS, GLenum wrapT);
+	static void calculateMipmapsTexture2D();
+	static void loadTexture2(GLenum internalFormat, array_len width, array_len height, GLenum format, data_ptr<unsigned char> data);
+	static void setSampler2D(const string& samplerName, unsigned int slot);
 
-	static string formatGLenum(GLenum value) {
-		switch (value) {
-			case GL_VERTEX_SHADER: return "VERTEX SHADER";
-			case GL_FRAGMENT_SHADER: return "FRAGMENT SHADER";
-			case GL_GEOMETRY_SHADER: return "GEOMETRY SHADER";
-			case GL_COMPUTE_SHADER: return "COMPUTE SHADER";
-			default: return "UNKNOWN";
-		}
-	}
+	static void createBuffer(gl_id* id);
+	static void deleteBuffer(gl_id id);
+	static void loadBufferData(gl_id bufferID, raw_data_ptr firstElementAdress, byte_size bufferSize, GLenum usage);
+	static void updateBufferData(gl_id bufferID, raw_data_ptr firstElementAdress, byte_size bufferSize);
 
-	static GLuint createShader(GLenum shaderType) {
-		LOG(1, "Created shader of type " + formatGLenum(shaderType));
-		return glCreateShader(shaderType);
-	}
+	static void bindSSBO(gl_id bufferID, int bindingPoint);
+	static void unbindSSBO();
+	static void loadSSBOData(gl_id bufferID, raw_data_ptr firstElementAdress, byte_size bufferSize);
+	static void updateSSBOData(gl_id bufferID, raw_data_ptr firstElementAdress, byte_size bufferSize);
 
-	static void compileShaderSource(GLuint shaderID, const string& source) {
-		char const* sourcePtr = source.c_str();
-		glShaderSource(shaderID, 1, &sourcePtr, nullptr);
-		glCompileShader(shaderID);
+	static void drawIndexedTriangles(array_len numberOfIndices);
+	static void runComputeShader(int numGroupsX, int numGroupsY, int numGroupsZ);
 
-		int InfoLogLength;
-		glGetShaderiv(shaderID, GL_INFO_LOG_LENGTH, &InfoLogLength);
-		if (InfoLogLength > 0) {
-			vector<char> error(InfoLogLength + 1);
-			glGetShaderInfoLog(shaderID, InfoLogLength, nullptr, &error[0]);
-			THROW(SystemError, &error[0]);
-		}
-		LOG(0, "Shader compiled successfully.");
-	}
+	static void pointAtElementBuffer(gl_id buffer);
+	static void pointAtAttributeBuffer(int inputNumber, gl_id bufferAddress, GLSLType type, byte_size stride,  raw_data_ptr offset);
 
-	static void deleteShader(GLuint shaderID) {
-		glDeleteShader(shaderID);
-		LOG(1, "Shader deleted.");
-	}
+	static void clearScreen(const vec4& color);
+	static void enableBlending();
+	static void enableDepth();
+	static void init();
+};
 
-	static GLuint createProgram() {
-		GLuint programID = glCreateProgram();
-		LOG(1, "New shader program created.");
-		return programID;
-	}
+class GLFWCommand {
+public:
+	static void init();
+	static void terminate();
 
-	static void deleteProgram(GLuint programID) {
-		if (currentProgram == programID)
-			unbindProgram();
-
-		glDeleteProgram(programID);
-		LOG(1, "Shader program deleted.");
-	}
-
-	static void bindVAO(GLuint vao) {
-		if (currentVAO != vao) {
-			glBindVertexArray(vao);
-			currentVAO = vao;
-		}
-	}
-
-	static void unbindVAO() {
-		glBindVertexArray(0);
-		currentVAO = 0;
-	}
-
-	static void deleteVAO(GLuint vao) {
-		if (currentVAO == vao)
-			unbindVAO();
-
-		glDeleteVertexArrays(1, &vao);
-		LOG(1, "VAO deleted.");
-	}
-
-	static void createVAO(GLuint *id) {
-		glGenVertexArrays(1, id);
-		LOG(1, "VAO created.");
-	}
-
-	static void createBuffer(GLuint *id) {
-		glCreateBuffers(1, id);
-		LOG(1, "Buffer created.");
-	}
-	static void deleteBuffer(GLuint id) {
-		glDeleteBuffers(1, &id);
-		LOG(1, "Buffer deleted.");
-	}
-
-	static void drawIndexedTriangles(array_len numberOfIndices) {
-		THROW_IF(currentVAO == 0, RuntimeError, "No VAO is currently bound.");
-		THROW_IF(numberOfIndices == 0, ValueError, "Trying to draw 0 indices.");
-		glDrawElements(GL_TRIANGLES, static_cast<GLsizei>(numberOfIndices), GL_UNSIGNED_INT, nullptr);
-	}
-
-	static void pointAtElementBuffer(GLuint buffer) {
-		THROW_IF(currentVAO == 0, RuntimeError, "No VAO is currently bound.");
-		glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, buffer);
-	}
-
-	static void pointAtAttributeBuffer(int inputNumber, GLuint bufferAddress, GLSLType type) {
-		THROW_IF(currentVAO == 0, RuntimeError, "No VAO is currently bound.");
-		THROW_IF(not supportedAttributeType(type), ValueError, "Unsupported GLSLType for attribute buffer (supported: float/double or vectors of these).");
-		glBindBuffer(GL_ARRAY_BUFFER, bufferAddress);
-		if (primitiveGLSLType(type) == GL_DOUBLE)
-			glVertexAttribLPointer(inputNumber, lengthOfGLSLType(type), GL_DOUBLE, 0, (raw_data_ptr)0);
-		else
-			glVertexAttribPointer(inputNumber, lengthOfGLSLType(type), GL_FLOAT, GL_FALSE, 0, (raw_data_ptr)0);
-		glEnableVertexAttribArray(inputNumber);
-	}
-
-	static void clearScreen(const vec4& color) {
-		glClearColor(color.x, color.y, color.z, color.w);
-		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-	}
-
-
+	static GLFWwindow* createWindow(int width, int height, const string& title);
+	static void destroyWindow(GLFWwindow* window);
 };

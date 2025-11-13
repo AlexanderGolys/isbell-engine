@@ -2,29 +2,14 @@
 #include "renderer.hpp"
 #include "flows.hpp"
 
-
-#include <chrono>
-#include <iosfwd>
-#include <vector>
-
 #include "indexedRendering.hpp"
-#include "renderingUtils.hpp"
-
-
+#include "smoothImplicit.hpp"
 
 
 // const VectorField dabbaX = VectorField::constant(vec3(1, 0, 0));
 // const VectorField dabbaY = VectorField::constant(vec3(0, 1, 0));
 // const VectorField dabbaZ = VectorField::constant(vec3(0, 0, 1));
 //
-
-/**
- * @brief Planar surfaces with boundary
- */
-PlanarMeshWithBoundary PlanarUnitDisk(int radial_res, int vertical_res);
-PlanarMeshWithBoundary PlanarConvexPolygon(const vector<vec2> &verts);
-PlanarMeshWithBoundary PlanarRing(int radial_res, int vertical_res, vec2 center, float radiusBig, float radiusSmall);
-
 
 
 /**
@@ -66,21 +51,21 @@ SmoothParametricCurve segment(vec3 p0, vec3 p1, float t0, float t1);
  * \brief Primitive meshes
  * (triangles, quads, disks, icospheres, icosahedra, boxes, particles)
  */
-IndexedMesh singleTrig(vec3 v0, vec3 v1, vec3 v2, PolyGroupID id=randomID());
-IndexedMesh singleQuadShadeSmooth(vec3 outer1, vec3 inner1, vec3 inner2, vec3 outer2, PolyGroupID id);
-IndexedMesh singleQuadShadeFlat(vec3 inner1, vec3 outer1, vec3 inner2, vec3 outer2, PolyGroupID id=randomID());
-IndexedMesh singleQuadShadeFlat(vec3 inner1, vec3 outer1, vec3 inner2, vec3 outer2, vec4 color, PolyGroupID id=randomID());
-IndexedMesh singleQuadShadeFlat(const vector<vec3> &corners, PolyGroupID id=randomID());
-IndexedMesh icosahedron(float r, vec3 center, PolyGroupID id);
-IndexedMesh icosphere(float r, int n, vec3 center, PolyGroupID id, vec4 color=BLACK);
-IndexedMesh disk3d(float r, vec3 center, vec3 v1, vec3 v2, int radial_res, int vertical_res, const PolyGroupID &id);
-IndexedMesh generate_random_particle_mesh(int n, vec3 bound1, vec3 bound2, float radius);
-IndexedMesh box(vec3 size, vec3 center, PolyGroupID id);
-IndexedMesh box(vec3 size, vec3 center, vec4 color, PolyGroupID id);
+IndexedMesh3D singleTrig(vec3 v0, vec3 v1, vec3 v2, PolyGroupID id=randomID());
+IndexedMesh3D singleQuadShadeSmooth(vec3 outer1, vec3 inner1, vec3 inner2, vec3 outer2, PolyGroupID id);
+IndexedMesh3D singleQuadShadeFlat(vec3 inner1, vec3 outer1, vec3 inner2, vec3 outer2, PolyGroupID id=randomID());
+IndexedMesh3D singleQuadShadeFlat(vec3 inner1, vec3 outer1, vec3 inner2, vec3 outer2, vec4 color, PolyGroupID id=randomID());
+IndexedMesh3D singleQuadShadeFlat(const vector<vec3> &corners, PolyGroupID id=randomID());
+IndexedMesh3D icosahedron(float r, vec3 center, PolyGroupID id);
+IndexedMesh3D icosphere(float r, int n, vec3 center, PolyGroupID id, vec4 color=BLACK);
+IndexedMesh3D disk3d(float r, vec3 center, vec3 v1, vec3 v2, int radial_res, int vertical_res, const PolyGroupID &id);
+IndexedMesh3D generate_random_particle_mesh(int n, vec3 bound1, vec3 bound2, float radius);
+IndexedMesh3D box(vec3 size, vec3 center, PolyGroupID id);
+IndexedMesh3D box(vec3 size, vec3 center, vec4 color, PolyGroupID id);
 
-IndexedMesh box(vector<vec3> cornersUp, vector<vec3> cornersDown, vec4 color=BLACK);
-IndexedMesh paraleblahblapid(vec3 corner, vec3 dir1, vec3 dir2, vec3 dir3);
-IndexedMesh pyramid(const vector<vec3> &cornersDown, vec3 apex, PolyGroupID id=randomID());
+IndexedMesh3D box(vector<vec3> cornersUp, vector<vec3> cornersDown, vec4 color=BLACK);
+IndexedMesh3D paraleblahblapid(vec3 corner, vec3 dir1, vec3 dir2, vec3 dir3);
+IndexedMesh3D pyramid(const vector<vec3> &cornersDown, vec3 apex, PolyGroupID id=randomID());
 
 
 /**
@@ -144,9 +129,9 @@ SmoothImplicitSurface planeImplicit(vec3 normal, float d, vec3 center=ORIGIN_R3,
 /**
  * \brief Non-geometric meshes
  */
-IndexedMesh arrow(vec3 start, vec3 head, float radius, float head_len, float head_radius, int radial, int straight, float eps, std::variant<int, std::string> id);
-IndexedMesh drawArrows(const vector<vec3> &points, const vector<vec3> &directions, float radius, float head_len, float head_radius, int radial, int straight, float eps, const std::variant<int, std::string> &id);
-IndexedMesh drawVectorFieldArrows(const VectorField &field, const vector<vec3> &points, const HOM(float, float)& len, const HOM(float, float) &radius, const HOM(float, float) &head_len, const HOM(float, float)& head_radius, int radial, int straight, float eps, const std::variant<int, std::string> &id);
+IndexedMesh3D arrow(vec3 start, vec3 head, float radius, float head_len, float head_radius, int radial, int straight, float eps, std::variant<int, std::string> id);
+IndexedMesh3D drawArrows(const vector<vec3> &points, const vector<vec3> &directions, float radius, float head_len, float head_radius, int radial, int straight, float eps, const std::variant<int, std::string> &id);
+IndexedMesh3D drawVectorFieldArrows(const VectorField &field, const vector<vec3> &points, const HOM(float, float)& len, const HOM(float, float) &radius, const HOM(float, float) &head_len, const HOM(float, float)& head_radius, int radial, int straight, float eps, const std::variant<int, std::string> &id);
 
 
 /**
@@ -168,13 +153,3 @@ SurfaceParametricPencil freeSurface(vector<float> a_m, vector<float> phi_m, vect
  */
 ImplicitVolume implicitBall(float r, vec3 center=ORIGIN_R3, float eps=.01);
 ImplicitVolume implicitVolumeEllipsoid(float rx, float ry, float rz, vec3 center=ORIGIN_R3, float eps=.01);
-
-
-
-
-/**
- * \brief Deprecated
- *
- * But needed for backward compatibility
- */
-SuperCurve circle(float r, std::function<float(float)> w, const std::function<MaterialPhong(float)> &mat, int n, vec3 center=ORIGIN_R3, vec3 v1=e1, vec3 v2=e2, float eps=.01);

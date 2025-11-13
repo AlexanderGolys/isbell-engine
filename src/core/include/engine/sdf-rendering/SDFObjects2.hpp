@@ -1,6 +1,5 @@
 #pragma once
 #include "func.hpp"
-#include "exceptions.hpp"
 
 struct GLSLPrimitiveType {
 	enum BuiltInType {

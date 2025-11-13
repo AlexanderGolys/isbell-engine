@@ -1,39 +1,72 @@
 #include "buffers.hpp"
-
 #include "formatters.hpp"
 #include "glCommand.hpp"
 #include "logging.hpp"
+#include <GL/glew.h>
 
+
+VertexBufferLayout::VertexBufferLayout(const vector<GLSLType>& types): types(types) {
+	stride = 0;
+	offsets.reserve(types.size());
+	for (const auto& t : types) {
+		offsets.emplace_back(stride);
+		stride += sizeOfGLSLType(t);
+	}
+}
+
+VertexBufferLayout VertexBufferLayout::singleAttribute(GLSLType type) {
+	return VertexBufferLayout({type});
+}
+
+bool VertexBufferLayout::operator==(const VertexBufferLayout& other) const {
+	return types == other.types;
+}
+
+VertexBuffer::VertexBuffer(const VertexBufferLayout& layout, int firstInputNumber)
+: layout(layout), firstInputNumber(firstInputNumber), bufferedSize(0) {
+	GLCommand::createBuffer(&bufferID);
+}
+
+VertexBuffer::~VertexBuffer() {
+	GLCommand::deleteBuffer(bufferID);
+}
+
+void VertexBuffer::pointAtAttributes() const {
+	for (int i = 0; i < layout.types.size(); i++) {
+		int inputNumber = firstInputNumber + i;
+		byte_size offset = layout.offsets[i];
+		GLCommand::pointAtAttributeBuffer(inputNumber, bufferID, layout.types[i], layout.stride, reinterpret_cast<raw_data_ptr>(offset));
+	}
+}
+
+void VertexBuffer::load(raw_data_ptr firstElementAdress, byte_size bufferSize) {
+	if (bufferedSize != 0)
+		LOG_WARN("Loading the vertex buffer again instead of updating it");
+	GLCommand::loadBufferData(bufferID, firstElementAdress, bufferSize, GL_DYNAMIC_DRAW);
+	bufferedSize = bufferSize;
+}
+
+void VertexBuffer::update(raw_data_ptr firstElementAdress, byte_size bufferSize) {
+	GLCommand::updateBufferData(bufferID, firstElementAdress, bufferSize);
+	if (bufferSize != bufferedSize)
+		LOG(1, "Resized vertex buffer from " + formatByteSize(bufferedSize) + " to " + formatByteSize(bufferSize));
+	bufferedSize = bufferSize;
+}
+
+void VertexBuffer::update(raw_data_ptr firstElementAdress) const {
+	GLCommand::updateBufferData(bufferID, firstElementAdress, bufferedSize);
+}
+
+int VertexBuffer::getFirstInputNumber() const {
+	return firstInputNumber;
+}
+
+int VertexBuffer::getNumberOfAttributes() const {
+	return layout.types.size();
+}
 
 AttributeBuffer::AttributeBuffer(const string& name, GLSLType type, int inputNumber)
-: name(name), bufferID(0), type(type), inputNumber(inputNumber), bufferedSize(0) {
-	glCreateBuffers(1, &bufferID);
-}
-
-AttributeBuffer::~AttributeBuffer() {
-	glDeleteBuffers(1, &bufferID);
-}
-
-
-void AttributeBuffer::pointAtAttributeBuffer() const {
-	GLCommand::pointAtAttributeBuffer(inputNumber, bufferID, type);
-}
-
-void AttributeBuffer::load(raw_data_ptr firstElementAdress, byte_size bufferSize) {
-	if (bufferedSize != 0)
-		LOG_WARN("Loading the attribute buffer again instead of updating it");
-	glNamedBufferData(bufferID, bufferSize, firstElementAdress, GL_DYNAMIC_DRAW);
-	bufferedSize = bufferSize;
-	LOG(1, "Loaded attribute buffer " + name + " of size " + formatByteSize(bufferSize));
-}
-
-void AttributeBuffer::update(raw_data_ptr firstElementAdress, byte_size bufferSize) {
-	glNamedBufferSubData(bufferID, 0, bufferSize, firstElementAdress);
-	if (bufferSize != bufferedSize)
-		LOG(1, "Resized attribute buffer " + name + " from " + formatByteSize(bufferedSize) + " to " + formatByteSize(bufferSize));
-	bufferedSize = bufferSize;
-	LOG(0, "Updated attribute buffer " + name + " with new data of size " + formatByteSize(bufferSize));
-
+: VertexBuffer(VertexBufferLayout::singleAttribute(type), inputNumber), name(name), type(type) {
 }
 
 ElementBuffer::ElementBuffer() {
@@ -47,10 +80,9 @@ ElementBuffer::~ElementBuffer() {
 
 void ElementBuffer::load(raw_data_ptr firstElementAdress, byte_size bufferSize) {
 	if (bufferedSize != 0)
-		LOG_WARN("Loading the attribute buffer again instead of updating it");
+		LOG_WARN("Loading the element buffer again instead of updating it");
 	glNamedBufferData(bufferID, bufferSize, firstElementAdress, GL_STATIC_DRAW);
 	bufferedSize = bufferSize;
-	LOG(1, "Loaded element buffer with indices of size " + formatByteSize(bufferSize));
 }
 
 GLuint ElementBuffer::getID() const {
@@ -79,31 +111,132 @@ void VertexArray::unbind() const {
 }
 
 void VertexArray::addElementBuffer(sptr<ElementBuffer> elementBuffer) {
-	THROW_IF(elementBuffer != nullptr, "Element buffer is already set for this VAO");
+	THROW_IF(this->elementBuffer != nullptr, ValueError, "Element buffer is already set for this VAO");
 	GLCommand::bindVAO(vaoID);
 	GLCommand::pointAtElementBuffer(elementBuffer->getID());
 	this->elementBuffer = elementBuffer;
 }
 
-void VertexArray::addAttributeBuffer(sptr<AttributeBuffer> attributeBuffer) {
+void VertexArray::addVertexBuffer(sptr<VertexBuffer> vertexBuffer) {
 	GLCommand::bindVAO(vaoID);
-	attributeBuffer->pointAtAttributeBuffer();
-	attributeBuffers.push_back(attributeBuffer);
+	vertexBuffer->pointAtAttributes();
+	vertexBuffers.push_back(vertexBuffer);
+}
+
+void VertexArray::addAttributeBuffer(sptr<AttributeBuffer> attributeBuffer) {
+	addVertexBuffer(attributeBuffer);
+}
+
+bool VertexArray::empty() const {
+	return vertexBuffers.empty() and elementBuffer == nullptr;
 }
 
 sptr<ElementBuffer> VertexArray::getElementBuffer() const {
 	return elementBuffer;
 }
 
-vector<sptr<AttributeBuffer>>::iterator VertexArray::begin() {
-	return attributeBuffers.begin();
+vector<sptr<VertexBuffer>>::iterator VertexArray::begin() {
+	return vertexBuffers.begin();
 }
 
-vector<sptr<AttributeBuffer>>::iterator VertexArray::end() {
-	return attributeBuffers.end();
+vector<sptr<VertexBuffer>>::iterator VertexArray::end() {
+	return vertexBuffers.end();
+}
+
+void VertexArray::loadIndexedMesh(sptr<IndexedMesh3D> mesh) {
+	THROW_IF(not empty(), ValueError, "Vertex array is already populated");
+	sptr<ElementBuffer> elementBuffer = make_shared<ElementBuffer>();
+	elementBuffer->load(mesh->bufferIndexLocation(), mesh->faceIndicesDataSize());
+	addElementBuffer(elementBuffer);
+
+	sptr<AttributeBuffer> positionBuffer = make_shared<AttributeBuffer>("position", VEC3, 0);
+	positionBuffer->load(mesh->getBufferLocation("position"), mesh->getAttributeDataSize("position"));
+	addAttributeBuffer(positionBuffer);
+
+	sptr<AttributeBuffer> normalBuffer = make_shared<AttributeBuffer>("normal", VEC3, 1);
+	normalBuffer->load(mesh->getBufferLocation("normal"), mesh->getAttributeDataSize("normal"));
+	addAttributeBuffer(normalBuffer);
+
+	sptr<AttributeBuffer> uvBuffer = make_shared<AttributeBuffer>("uv", VEC2, 2);
+	uvBuffer->load(mesh->getBufferLocation("uv"), mesh->getAttributeDataSize("uv"));
+	addAttributeBuffer(uvBuffer);
+
+	sptr<AttributeBuffer> colorBuffer = make_shared<AttributeBuffer>("color", VEC4, 3);
+	colorBuffer->load(mesh->getBufferLocation("color"), mesh->getAttributeDataSize("color"));
+	addAttributeBuffer(colorBuffer);
+
+	int attribIndex = 3;
+	for (string attrName : mesh->getActiveExtraBuffers()) {
+		sptr<AttributeBuffer> attr = make_shared<AttributeBuffer>(attrName, VEC4, ++attribIndex);
+		colorBuffer->load(mesh->getBufferLocation(attrName), mesh->getAttributeDataSize(attrName));
+		addAttributeBuffer(attr);
+	}
+	LOG("Loaded mesh of total size " + formatByteSize(mesh->totalByteSize()) + ".");
+}
+
+void VertexArray::updateIndexedMesh(sptr<IndexedMesh3D> mesh) const {
+	for (auto& vertexBuffer : vertexBuffers) {
+		auto attrBuffer = std::dynamic_pointer_cast<AttributeBuffer>(vertexBuffer);
+		if (attrBuffer) {
+			string name = attrBuffer->get_name();
+			attrBuffer->update(mesh->getBufferLocation(name));
+		}
+	}
+	LOG("Updated buffered mesh attributes of size " + formatByteSize(mesh->totalAttributeDataSize()) + ".");
+}
+
+void VertexArray::loadGeometricData(sptr<GeometricData> data) {
+	THROW_IF(not empty(), ValueError, "VertexArray is not empty");
+	addElementBuffer(make_shared<ElementBuffer>());
+	addVertexBuffer(make_shared<VertexBuffer>(data->layout()));
+	elementBuffer->load(data->indexBufferData(), data->indexBufferSize());
+	vertexBuffers[0]->load(data->vertexBufferData(), data->vertexBufferSize());
+	data->markClean();
+	LOG("Loaded geometric data with total size " + formatByteSize(data->totalSize()) + ".");
+}
+
+void VertexArray::updateGeometricData(sptr<GeometricData> data) const {
+	THROW_IF(not elementBuffer, ValueError, "Element buffer is not set");
+	THROW_IF(vertexBuffers.size() != 1, ValueError, "Vertex array must have exactly one vertex buffer to update geometric data");
+	THROW_IF(vertexBuffers[0]->get_layout() != data->layout(), ValueError, "Vertex buffer layout does not match geometric data layout");
+
+	if (not data->isDirty())
+		return;
+
+	vertexBuffers[0]->update(data->vertexBufferData(), data->vertexBufferSize());
+	data->markClean();
+	LOG("Updated geometric data vertex buffer of size " + formatByteSize(data->vertexBufferSize()) + ".");
+
 }
 
 void VertexArray::draw() const {
-	THROW_IF(not elementBuffer, "No element buffer set for this VAO");
+	THROW_IF(not elementBuffer, ValueError, "No element buffer set for this VAO");
 	GLCommand::drawIndexedTriangles(elementBuffer->getNumberOfIndices());
+}
+
+ShaderStorageBuffer::ShaderStorageBuffer() {
+	GLCommand::createBuffer(&bufferID);
+}
+
+ShaderStorageBuffer::~ShaderStorageBuffer() {
+	GLCommand::deleteBuffer(bufferID);
+}
+
+void ShaderStorageBuffer::bind(int bindingPoint) const {
+	GLCommand::bindSSBO(bufferID, bindingPoint);
+}
+
+void ShaderStorageBuffer::unbind() const {
+	GLCommand::unbindSSBO();
+}
+
+void ShaderStorageBuffer::load(byte_size bufferSize, raw_data_ptr data) const {
+	GLCommand::loadSSBOData(bufferID, data, bufferSize);
+	LOG("Loaded SSBO of size " + formatByteSize(bufferSize) + ".");
+
+}
+
+void ShaderStorageBuffer::update(byte_size bufferSize, raw_data_ptr data) const {
+	GLCommand::updateSSBOData(bufferID, data, bufferSize);
+	LOG("Updated SSBO of size " + formatByteSize(bufferSize) + ".");
 }

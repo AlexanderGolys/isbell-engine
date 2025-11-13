@@ -20,7 +20,7 @@ std::array<ivec3, 12> IndexedHexahedron::getTriangles() const {
 
 
 float IndexedHexahedron::volume() const {
-	return abs(dot(getFaceDown().getVertices()[0].getPosition() - getFaceUp().getVertices()[0].getPosition(), cross(getFaceDown().getVertices()[1].getPosition() - getFaceUp().getVertices()[0].getPosition(), getFaceDown().getVertices()[2].getPosition() - getFaceUp().getVertices()[0].getPosition())))/6.f;
+	return abs(dot(getFaceDown().getVertices()[0].get_position() - getFaceUp().getVertices()[0].get_position(), cross(getFaceDown().getVertices()[1].get_position() - getFaceUp().getVertices()[0].get_position(), getFaceDown().getVertices()[2].get_position() - getFaceUp().getVertices()[0].get_position())))/6.f;
 }
 float IndexedHexahedron::surfaceArea() const {
 	return sum<float, std::array<float, 6>>(mapByVal<IndexedQuadrilateral, float, 6>(getFaces(), [](IndexedQuadrilateral q) { return q.surfaceArea(); }));
@@ -142,7 +142,7 @@ bdVertices(bdVertices)
 						bdVerticesCells[newBdIndices[kk]].push_back(i);
 			}
 
-	boundary = make_shared<IndexedMesh>(bdVerticesRealised, bdTrs, boundaryPolygroup);
+	boundary = make_shared<IndexedMesh3D>(bdVerticesRealised, bdTrs, boundaryPolygroup);
 }
 
 Cell::Cell(int index,
@@ -192,10 +192,10 @@ std::vector<std::array<Vertex, 4>> Cell::getBdVertices() const {
 	vector<std::array<Vertex, 4>> res = {};
 	for (auto &f : getBdFaces()) {
 		vec3 normal = normalise(cross(f[1] - f[0], f[2] - f[0]));
-		res.push_back({Vertex(f[0], vec2(0, 0), normal),
-						    Vertex(f[1], vec2(1, 0), normal),
-							Vertex(f[2], vec2(0, 1), normal),
-							Vertex(f[3], vec2(1, 1), normal)});
+		res.push_back({Vertex(f[0], vec2(0, 0), normal,	vec4(1)),
+						    Vertex(f[1], vec2(1, 0), normal, vec4(1)),
+							Vertex(f[2], vec2(0, 1), normal, vec4(1)),
+							Vertex(f[3], vec2(1, 1), normal, vec4(1))});
 	}
 	return res;
 }
@@ -242,8 +242,8 @@ vec4 CellMesh::colorFromAttributes(const Cell &c, const std::vector<std::string>
 }
 
 
-IndexedMesh CellMesh::bdMesh(const std::vector<std::string>& attrSavedAsColor) const {
-	IndexedMesh mesh = IndexedMesh();
+IndexedMesh3D CellMesh::bdMesh(const std::vector<std::string>& attrSavedAsColor) const {
+	IndexedMesh3D mesh = IndexedMesh3D();
 	for (auto &cell : cells) {
 		auto bdVertices = cell.getBdVertices();
 		if (!bdVertices.empty()) {
@@ -252,7 +252,7 @@ IndexedMesh CellMesh::bdMesh(const std::vector<std::string>& attrSavedAsColor) c
 			vec4 color = colorFromAttributes(cell, attrSavedAsColor);
 			for (auto &v : bdVertices) {
 				for (int i = 0; i < 4; i++) {
-					v.at(i).setColor(color);
+					v.at(i).set_color(color);
 					vertices.push_back(v.at(i));
 				}
 				trs.emplace_back(vertices.size()-4, vertices.size()-3, vertices.size()-2);
@@ -264,13 +264,13 @@ IndexedMesh CellMesh::bdMesh(const std::vector<std::string>& attrSavedAsColor) c
 	return mesh;
 }
 
-void CellMesh::updateBdMeshAtCell(const Cell &c, const std::vector<std::string> &attrSavedAsColor, IndexedMesh &mesh) {
+void CellMesh::updateBdMeshAtCell(const Cell &c, const std::vector<std::string> &attrSavedAsColor, IndexedMesh3D &mesh) {
 	vec4 color = colorFromAttributes(c, attrSavedAsColor);
 	auto def = [color](BufferedVertex &v) { v.setColor(color); };
 	mesh.deformPerVertex(c.getID(), def);
 }
 
-void CellMesh::updateBdMesh(const std::vector<std::string> &attrSavedAsColor, IndexedMesh &mesh) const {
+void CellMesh::updateBdMesh(const std::vector<std::string> &attrSavedAsColor, IndexedMesh3D &mesh) const {
 	for (auto &c : cells)
 		updateBdMeshAtCell(c, attrSavedAsColor, mesh);
 }

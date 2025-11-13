@@ -1,6 +1,6 @@
 #include "smoothImplicit.hpp"
-#include "../utils/func.hpp"
-#include "../engine/indexedRendering.hpp"
+#include "func.hpp"
+#include "indexedRendering.hpp"
 
 using std::vector, std::string, std::shared_ptr, std::unique_ptr, std::pair, std::make_unique, std::make_shared, std::function;
 
@@ -18,7 +18,7 @@ vec3 SmoothImplicitSurface::newtonStepProject(vec3 p, float tolerance, int maxIt
 	return last_q;
 }
 
-void SmoothImplicitSurface::projectPoints(IndexedMesh &mesh, float tolerance, int maxIter) {
+void SmoothImplicitSurface::projectPoints(IndexedMesh3D &mesh, float tolerance, int maxIter) {
 	mesh.deformPerVertex([this, tolerance, maxIter](BufferedVertex &v) {
 		v.setPosition(newtonStepProject(v.getPosition(), tolerance, maxIter));
 		v.setNormal(normal(v.getPosition()));
@@ -35,7 +35,7 @@ SmoothImplicitSurface SmoothImplicitSurface::isoSurface(float level) const {
 	return SmoothImplicitSurface(_F - level);
 }
 
-void SmoothImplicitSurfacePencil::deformMesh(float t, IndexedMesh &mesh, float tolerance, int maxIter) {
+void SmoothImplicitSurfacePencil::deformMesh(float t, IndexedMesh3D &mesh, float tolerance, int maxIter) {
 	(*this)(t).projectPoints(mesh, tolerance, maxIter);
 }
 
@@ -905,12 +905,12 @@ vector<CubeCorner> MarchingCubeChunk::complementaryCorners(const vector<CubeCorn
 }
 
 
-IndexedMesh MarchingCubeChunk::generateMesh(bool tetra) {
+IndexedMesh3D MarchingCubeChunk::generateMesh(bool tetra) {
 	vertices = {};
 	triangles = {};
 	addedVertices = {};
 
-	IndexedMesh mesh = IndexedMesh();
+	IndexedMesh3D mesh = IndexedMesh3D();
 	if (tetra)
 		generateTetra();
 	else
@@ -920,12 +920,12 @@ IndexedMesh MarchingCubeChunk::generateMesh(bool tetra) {
 	return mesh;
 }
 
-IndexedMesh MarchingCubeChunk::generateMesh(bool tetra, float tolerance, int maxIter) {
+IndexedMesh3D MarchingCubeChunk::generateMesh(bool tetra, float tolerance, int maxIter) {
 	vertices = {};
 	triangles = {};
 	addedVertices = {};
 
-	IndexedMesh mesh = IndexedMesh();
+	IndexedMesh3D mesh = IndexedMesh3D();
 	if (tetra)
 		generateTetra();
 	else
@@ -936,18 +936,18 @@ IndexedMesh MarchingCubeChunk::generateMesh(bool tetra, float tolerance, int max
 }
 
 
-void MarchingCubeChunk::addToMesh(IndexedMesh &mesh) {
+void MarchingCubeChunk::addToMesh(IndexedMesh3D &mesh) {
 	vector<Vertex> vertices_hard = {};
 	for (ivec3 v: this->vertices)
-		vertices_hard.emplace_back(vertexPosition(v), vec2(1.f*v.x/res.x, 1.f*v.y/res.y), surface->normal(vertexPosition(v)));
+		vertices_hard.emplace_back(vertexPosition(v), vec2(1.f*v.x/res.x, 1.f*v.y/res.y), surface->normal(vertexPosition(v)), vec4(0) );
 	mesh.addNewPolygroup(vertices_hard, triangles, id);
 }
 
-void MarchingCubeChunk::addToMesh(IndexedMesh &mesh,  float tolerance, int maxIter){
+void MarchingCubeChunk::addToMesh(IndexedMesh3D &mesh,  float tolerance, int maxIter){
 	vector<Vertex> vertices_hard = {};
 	for (ivec3 v: this->vertices) {
 		vec3 p = surface->newtonStepProject(vertexPosition(v), tolerance, maxIter);
-		vertices_hard.emplace_back(p, vec2(1.f*v.x/res.x, 1.f*v.y/res.y), surface->normal(p));
+		vertices_hard.emplace_back(p, vec2(1.f*v.x/res.x, 1.f*v.y/res.y), surface->normal(p), vec4(0) );
 	}
 		mesh.addNewPolygroup(vertices_hard, triangles, id);
 }

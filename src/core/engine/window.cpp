@@ -1,58 +1,24 @@
 #include "window.hpp"
 #include "exceptions.hpp"
+#include "glCommand.hpp"
 
 
-WindowSettings::WindowSettings(ivec2 resolution, const string& windowTitle): resolution(resolution), windowTitle(windowTitle) {}
-
-WindowSettings::WindowSettings(Resolution resolution, const string& windowTitle): windowTitle(windowTitle) {
-	switch (resolution) {
-	case FHD:
-		this->resolution = ivec2(1920, 1080);
-		break;
-	case HD2K:
-		this->resolution = ivec2(2560, 1440);
-		break;
-	case UHD:
-		this->resolution = ivec2(3840, 2160);
-		break;
-	default:
-		THROW(SystemError, "Unknown resolution enum value");
+ivec2 ires2(Resolution r) {
+	switch (r) {
+		case Resolution::FHD: return ivec2(1920, 1080);
+		case Resolution::HD2K: return ivec2(2560, 1440);
+		case Resolution::UHD: return ivec2(3840, 2160);
 	}
+	THROW(SystemError, "Unknown resolution enum value");
 }
 
-Window::Window(int width, int height, const char* title) {
-	// glfwInit();
-	glfwWindowHint(GLFW_SAMPLES, 4);
-	glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 3);
-	glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 3);
-	glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
-	this->width = width;
-	this->height = height;
-	this->aspectRatio = (float)width / (float)height;
-	this->window = glfwCreateWindow(width, height, title, nullptr, nullptr);
-	if (!this->window) {
-		// glfwTerminate(); // removed; handled by Renderer
-		exit(2136);
-	}
-	glfwMakeContextCurrent(this->window);
-	glfwGetFramebufferSize(window, &width, &height);
-}
+WindowSettings::WindowSettings(ivec2 resolution, const string& windowTitle)
+: width(resolution.x), height(resolution.y), windowTitle(windowTitle) {}
 
-Window::Window(Resolution resolution, const char* title) {
-	// glfwInit();
-	glfwWindowHint(GLFW_SAMPLES, 4);
-	glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 3);
-	glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 3);
-	glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
-	width = predefinedWidth(resolution);
-	height = predefinedHeight(resolution);
-	aspectRatio = (float)width / height;
-	window = glfwCreateWindow(width, height, title, nullptr, nullptr);
-	if (!window) {
-		// glfwTerminate(); // removed; handled by Renderer
-		throw SystemError("GLFW window creation failed", __FILE__, __LINE__);
-	}
-	glfwMakeContextCurrent(window);
+WindowSettings::WindowSettings(Resolution resolution, const string& windowTitle) : WindowSettings(ires2(resolution), windowTitle) {}
+
+Window::Window(WindowSettings settings) : settings(settings) {
+	window = GLFWCommand::createWindow(settings.width, settings.height, settings.windowTitle.c_str());
 }
 
 Window::~Window() {
@@ -60,7 +26,8 @@ Window::~Window() {
 }
 
 void Window::destroy() const {
-	glfwDestroyWindow(this->window);
+	GLFWCommand::destroyWindow(this->window);
+	GLFWCommand::terminate();
 }
 
 void Window::renderFramebufferToScreen() const {
@@ -116,5 +83,5 @@ bool Window::isOpen() const {
 }
 
 void Window::initViewport() const {
-	glViewport(0, 0, this->width, this->height);
+	glViewport(0, 0, settings.width, settings.height);
 }

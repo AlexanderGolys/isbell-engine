@@ -41,7 +41,8 @@ local inc = {
     "src/core/include/geometry",
     "src/core/include/physics",
     "src/core/include/file-management",
-    "src/core/include/openglAPI",
+    "src/core/include/controllers",
+    "src/core/include/events",
 
     "external/glew-2.1.0/include",
     "external/glfw-3.4/include",

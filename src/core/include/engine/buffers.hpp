@@ -1,20 +1,36 @@
 #pragma once
-#include "renderingUtils.hpp"
+#include "glCommand.hpp"
+#include "indexedRendering.hpp"
+#include "indexedMesh.hpp"
 
-class AttributeBuffer {
-	string name;
+
+
+class VertexBuffer {
+protected:
+	CONST_PROPERTY(VertexBufferLayout, layout);
 	GLuint bufferID;
-	GLSLType type;
-	int inputNumber;
 	byte_size bufferedSize;
+	int firstInputNumber;
+
+public:
+	explicit VertexBuffer(const VertexBufferLayout& layout, int firstInputNumber=0);
+	virtual ~VertexBuffer();
+
+	void pointAtAttributes() const;
+	void load(raw_data_ptr firstElementAdress, byte_size bufferSize);
+	void update(raw_data_ptr firstElementAdress, byte_size bufferSize);
+	void update(raw_data_ptr firstElementAdress) const;
+
+	int getFirstInputNumber() const;
+	int getNumberOfAttributes() const;
+};
+
+class AttributeBuffer : public VertexBuffer {
+	CONST_PROPERTY(string, name);
+	GLSLType type;
 
 public:
 	AttributeBuffer(const string& name, GLSLType type, int inputNumber);
-	~AttributeBuffer();
-
-	void pointAtAttributeBuffer() const;
-	void load(raw_data_ptr firstElementAdress, byte_size bufferSize);
-	void update(raw_data_ptr firstElementAdress, byte_size bufferSize);
 };
 
 class ElementBuffer {
@@ -33,7 +49,7 @@ public:
 class VertexArray {
 	GLuint vaoID = 0;
 	sptr<ElementBuffer> elementBuffer = nullptr;
-	vector<sptr<AttributeBuffer>> attributeBuffers;
+	vector<sptr<VertexBuffer>> vertexBuffers;
 public:
 	VertexArray();
 	~VertexArray();
@@ -41,11 +57,31 @@ public:
 	void bind() const;
 	void unbind() const;
 	void addElementBuffer(sptr<ElementBuffer> elementBuffer);
+	void addVertexBuffer(sptr<VertexBuffer> vertexBuffer);
 	void addAttributeBuffer(sptr<AttributeBuffer> attributeBuffer);
+	bool empty() const;
 
 	sptr<ElementBuffer> getElementBuffer() const;
-	vector<sptr<AttributeBuffer>>::iterator begin();
-	vector<sptr<AttributeBuffer>>::iterator end();
+	vector<sptr<VertexBuffer>>::iterator begin();
+	vector<sptr<VertexBuffer>>::iterator end();
+
+	void loadIndexedMesh(sptr<IndexedMesh3D> mesh);
+	void updateIndexedMesh(sptr<IndexedMesh3D> mesh) const;
+
+	void loadGeometricData(sptr<GeometricData> data);
+	void updateGeometricData(sptr<GeometricData> data) const;
 
 	void draw() const;
+};
+
+class ShaderStorageBuffer {
+	gl_id bufferID = 0;
+public:
+	ShaderStorageBuffer();
+	~ShaderStorageBuffer();
+
+	void bind(int bindingPoint) const;
+	void unbind() const;
+	void load(byte_size bufferSize, raw_data_ptr data) const;
+	void update(byte_size bufferSize, raw_data_ptr data) const;
 };

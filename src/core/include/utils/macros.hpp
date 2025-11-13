@@ -10,25 +10,19 @@
 #include <map>
 #include <memory>
 #include <initializer_list>
-#include <filesystem>
-#include <string>
 #include <string_view>
 #include <exception>
 #include <expected>
 
-#include "colors.hpp"
+#include "glm/glm.hpp"
 
 
-/**
-* @note: the only commonly used std keywo♥rds that require namespace prefix are std::map and std::function
-*/
-
-using glm::vec2, glm::vec3, glm::vec4;
-using glm::mat2, glm::mat3, glm::mat4, glm::mat2x3;
+using glm::vec2, glm::vec3, glm::vec4, glm::dvec2, glm::dvec3, glm::dvec4;
+using glm::mat2, glm::mat3, glm::mat4, glm::mat2x3, glm::mat2x4, glm::mat3x2, glm::mat3x4, glm::mat4x2, glm::mat4x3;
 using glm::ivec2, glm::ivec3, glm::ivec4;
 using std::vector, std::variant, std::optional, std::array, std::unordered_map, std::pair, std::initializer_list;
 using std::shared_ptr, std::unique_ptr, std::make_unique, std::make_shared, std::weak_ptr;
-using std::string, std::endl, std::format, std::to_string, std::cout, std::printf;
+using std::string, std::format, std::to_string, std::printf, std::size_t;
 using std::expected, std::unexpected, std::bad_expected_access;
 using std::exp, std::log, std::cos, std::sin, std::cosh, std::sinh, std::sqrt, std::pow, std::atan2, std::abs;
 namespace filesystem = std::filesystem;
@@ -36,10 +30,20 @@ namespace filesystem = std::filesystem;
 constexpr float PI = 3.14159265359f;
 constexpr float TAU = 6.28318530718f;
 
-using array_len = std::size_t;
-using byte_size = std::size_t;
+using array_len = size_t;
+using array_index = size_t;
+using byte_size = size_t;
 using vs_dim = unsigned short;
 using raw_data_ptr = const void*;
+using uint = unsigned int;
+using uchar = unsigned char;
+using string_cr = const string&;
+
+template <typename T>
+using sptr = shared_ptr<T>;
+
+template <typename T>
+using uptr = unique_ptr<T>;
 
 template <typename T>
 using data_ptr = const T*;
@@ -53,7 +57,7 @@ using data_ptr_mut = T*;
 #define INT(A) static_cast<int>(A)
 #define UNDEFINED std::nullopt
 
-#define PolyGroupID variant<int, string>
+using PolyGroupID = variant<int, string>;
 #define Mat2C Matrix<Complex, 2>
 #define isClose nearlyEqual
 
@@ -82,9 +86,7 @@ using data_ptr_mut = T*;
 #define Foo313 BIHOM(vec3, float, vec3)
 #define Foo311 BIHOM(vec3, float, float)
 
-#define uptr std::unique_ptr
-#define sptr std::shared_ptr
-#define wptr std::weak_ptr
+
 #define makeUptr std::make_unique
 #define makeSptr std::make_shared
 
@@ -125,7 +127,38 @@ using data_ptr_mut = T*;
 #define CHECK_OUT_OF_BOUNDS(idx, size) THROW_IF(idx < 0 or idx >= size, IndexOutOfBounds, idx, size)
 #define CHECK_OUT_OF_BOUNDS_NAME(idx, size, dsname) THROW_IF(idx < 0 or idx >= size, IndexOutOfBounds, idx, size, dsname)
 
+#define DIRTY_FLAG \
+	private: \
+	bool dirty = true; \
+	public: \
+	void markDirty() { dirty = true; } \
+	void markClean() { dirty = false; } \
+	bool isDirty() const { return dirty; }
 
+#define GETTER(type, name) type get_##name() const { return name; }
+#define SETTER(type, name) void set_##name(const type& value) { this->name = value; }
+
+#define PROPERTY(type, name) \
+private: \
+	type name; \
+public: \
+	GETTER(type, name) \
+	SETTER(type, name)
+
+#define CONST_PROPERTY(type, name) \
+private: \
+	type name; \
+public: \
+	GETTER(type, name) \
+
+#define SETTER_DIRTY(type, name) void set_##name(const type& value) { name = value; markDirty(); }
+
+#define PROPERTY_DIRTY(type, name)\
+private: \
+	type name; \
+public: \
+	GETTER(type, name) \
+	SETTER_DIRTY(type, name)
 
 #ifdef _WIN32
     #define IS_WINDOWS true

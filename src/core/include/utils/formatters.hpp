@@ -127,7 +127,7 @@ namespace std
 
 inline string formatByteSize(byte_size s) {
 	if (s < 1024)
-		return to_string(s) + " B";
+		return format("{:.1f} B", static_cast<double>(s));
 	if (s < 1024 * 1024)
 		return format("{:.1f} KB", static_cast<double>(s) / 1024.0);
 	if (s < 1024 * 1024 * 1024)

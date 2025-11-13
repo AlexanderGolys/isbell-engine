@@ -145,8 +145,8 @@ SmoothImplicitSurface FluidParticleSystem::density_surface(float level) const {
 	return SmoothImplicitSurface([this, level](vec3 p) { return density(p) - level; });
 }
 
-IndexedMesh FluidParticleSystem::particle_mesh(float r, int icosphere_res) const {
-	IndexedMesh mesh = IndexedMesh();
+IndexedMesh3D FluidParticleSystem::particle_mesh(float r, int icosphere_res) const {
+	IndexedMesh3D mesh = IndexedMesh3D();
 	for (int i = 0; i < no_particles; i++) {
 		vec3 x = particles[i].pos();
 

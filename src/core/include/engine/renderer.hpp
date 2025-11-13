@@ -1,20 +1,15 @@
 #pragma once
 
-#include <cstdio>
-#include <cstdlib>
-#include <GL/glew.h>
-#include <GLFW/glfw3.h>
-
 #include "clock.hpp"
-#include "indexedRendering.hpp"
-#include "renderingUtils.hpp"
+#include "colors.hpp"
+#include "eventQueue.hpp"
 #include "renderLayers.hpp"
 #include "window.hpp"
 
 
 struct RenderSettings {
 	WindowSettings windowSettings;
-	vec4 bgColor;
+	Color bgColor;
 	bool alphaBlending = true;
 	bool depthTest = true;
 	bool timeUniform = true;
@@ -28,17 +23,18 @@ class Renderer {
 	RenderSettings settings;
 	unique_ptr<Window> window;
 	vector<sptr<Layer>> layerStack;
-	END(float) animSpeed;
-	BIHOM(float, float, void) perFrameFunction;
 	FPSClock fpsClock;
+	sptr<EventQueue> eventQueue;
 
 public:
 	explicit Renderer(const RenderSettings& settings);
-	virtual ~Renderer();
+	virtual ~Renderer() = default;
 
 	void addLayer(sptr<Layer> layer);
 	virtual void initRendering();
-	void update();
+	void update(float t, float delta) const;
 	void renderStep() const;
-	virtual int mainLoop();
+	void eventHandlingStep(float t, float delta) const;
+	virtual void mainLoop();
+	void run();
 };

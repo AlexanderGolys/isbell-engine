@@ -1,33 +1,42 @@
 #include "renderLayers.hpp"
 
 
-IndexedDrawLayer::IndexedDrawLayer(sptr<ShaderProgram> shader, sptr<VertexArray> vao, const vector<sptr<LayerComponent>>& components)
-: shader(shader), vao(vao), components(components) {}
+DrawLayer::DrawLayer(sptr<ShaderProgram> shader, sptr<VertexArray> vao, const vector<sptr<LayerComponent>>& components)
+: vao(vao), shader(shader), components(components) {}
 
-void IndexedDrawLayer::addComponent(sptr<LayerComponent> comp) {
+void DrawLayer::addComponent(sptr<LayerComponent> comp) {
 	components.push_back(comp);
 }
 
-void IndexedDrawLayer::init() {
-	for (auto& comp : components)
-		comp->init();
+void DrawLayer::addEventListener(sptr<EventListener> listener) {
+	eventListeners.push_back(listener);
 }
 
-void IndexedDrawLayer::renderStep() {
+void DrawLayer::init() {
+	for (auto& comp : components)
+		comp->init();
+	for (auto& listener : eventListeners)
+		listener->init();
+}
+
+void DrawLayer::renderStep() {
 	vao->bind();
 	shader->bind();
 	for (auto& uniform : components)
 		uniform->setDuringRender();
+	customRenderStep();
 	vao->draw();
-	vao->unbind();
 	shader->unbind();
+	vao->unbind();
 }
 
-void IndexedDrawLayer::updateStep(float t, float dt) {
-	vao->bind();
-	shader->bind();
+void DrawLayer::updateStep(float t, float dt) {
 	for (auto& comp : components)
 		comp->update(t, dt);
-	shader->unbind();
-	vao->unbind();
+}
+
+void DrawLayer::onEvent(const Event& event, float t, float dt) const {
+	for (auto& listener : eventListeners)
+		if (listener->listensToEventType(event.getEventType()))
+			listener->onEvent(event, t, dt);
 }

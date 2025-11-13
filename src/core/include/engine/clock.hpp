@@ -4,11 +4,12 @@
 
 
 struct FPSStatsResults {
-	float averageFPS;
-	float worstFPS;
+	uint averageFPS;
+	uint worstFPS;
 	float window;
 
-	FPSStatsResults(float averageFPS, float worstFPS, float window);
+	FPSStatsResults(uint averageFPS, uint worstFPS, float window);
+	void log() const;
 };
 
 struct TimeStep {
@@ -29,9 +30,10 @@ class FPSClock {
 	float worstDelta = 0;
 	vector<FPSStatsResults> statsHistory = {};
 public:
-	float getTime() const;
 	explicit FPSClock(float avgWindowSeconds = -1.f);
+
+	float getTime() const;
 	void reset();
-	void measureFPSStats(const FPSStatsResults &result);
+	void measureFPSStats(uint averageFPS, uint worstFPS, float window);
 	TimeStep tick();
 };

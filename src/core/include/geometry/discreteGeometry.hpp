@@ -3,13 +3,13 @@
 #include "engine/indexedRendering.hpp"
 
 
-class TriangulatedManifold : public IndexedMesh {
+class TriangulatedManifold : public IndexedMesh3D {
 	vector<ivec2> edgesVert;
 	vector<ivec3> facesEdg;
 	PolyGroupID id;
 
 public:
-	vec3 vertexPosition(int i) const { return getVertices(id)[i].getPosition(); }
+	vec3 vertexPosition(int i) const { return getVertices(id)[i].get_position(); }
 	mat2x3 edgeVertices (int i) const { return {
 	mat2x3(vertexPosition(edgesVert[i].x), vertexPosition(edgesVert[i].y))}; }
 	mat3 faceVertices(int i);

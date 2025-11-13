@@ -1,17 +1,20 @@
 #pragma once
+#include <GL/glew.h>
 #include "GLFW/glfw3.h"
 #include "exceptions.hpp"
 
 
-enum Resolution {
+enum class Resolution {
 	FHD,
 	HD2K,
 	UHD,
 	UNKNOWN
 };
 
+ivec2 ires2(Resolution r);
+
 struct WindowSettings {
-	ivec2 resolution;
+	int width, height;
 	string windowTitle;
 
 	WindowSettings(ivec2 resolution, const string& windowTitle);
@@ -20,11 +23,10 @@ struct WindowSettings {
 
 
 class Window {
-public:
 	GLFWwindow* window;
-	int width;
-	int height;
-	float aspectRatio;
+	WindowSettings settings;
+
+public:
 	explicit Window(WindowSettings settings);
 	~Window();
 	void destroy() const;

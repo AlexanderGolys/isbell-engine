@@ -34,7 +34,7 @@ class ErrorClassWrapper : public std::exception {
 public:
     explicit ErrorClassWrapper(const string& msg, const char* file, int line)
         : msg_(msg), file_(file), line_(line) {
-        full_msg_ = msg_ + " [at " + file_ + ":" + std::to_string(line_) + "]";
+        full_msg_ = msg_ + " \n [at " + file_ + ":" + std::to_string(line_) + "]";
     }
     const char* what() const noexcept override {
         return full_msg_.c_str();

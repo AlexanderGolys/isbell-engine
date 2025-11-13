@@ -9,10 +9,50 @@
 
 #include "logging.hpp"
 #include "SDFObjects.hpp"
-#include "SDFObjects.hpp"
 
 using namespace glm;
 using namespace BufferNames;
+
+Vertex::Vertex(vec3 position, vec2 uv, vec3 normal, vec4 color, const std::map<string, vec4>& extraData): position(position), normal(normal), uv(uv), color(color), extraData(extraData) {}
+
+vec4 Vertex::getExtraData(const string& name) const {
+	THROW_IF(not extraData.contains(name), IndexError, "No extra data with name '" + name + "' found in vertex.");
+	return extraData.at(name);
+}
+
+void Vertex::setExtraData(const string& name, vec4 value) {
+	extraData[name] = value;
+}
+
+bool Vertex::hasExtraData(const string& name) const {
+	return extraData.contains(name);
+}
+
+Vertex center(const Vertex& v1, const Vertex& v2) {
+	std::map<string, vec4> extraData;
+	for (const auto& [key, val] : v1.extraData)
+		extraData[key] = 0.5f * (val + v2.getExtraData(key));
+	return Vertex(
+		0.5f * (v1.get_position() + v2.get_position()),
+		0.5f * (v1.get_uv() + v2.get_uv()),
+		normalise(0.5f * (v1.get_normal() + v2.get_normal())),
+		0.5f * (v1.get_color() + v2.get_color()),
+		extraData
+	);
+}
+
+Vertex barycenter(const Vertex& v1, const Vertex& v2, const Vertex& v3) {
+		std::map<string, vec4> extraData;
+	for (const auto& [key, val] : v1.extraData)
+		extraData[key] = (val + v2.getExtraData(key) + v3.getExtraData(key))/3.f;
+	return Vertex(
+		(v1.get_position() + v2.get_position() + v3.get_position()) / 3.f,
+		(v1.get_uv() + v2.get_uv() + v3.get_uv()) / 3.f,
+		normalise(v1.get_normal() + v2.get_normal() + v3.get_normal()),
+		(v1.get_color() + v2.get_color() + v3.get_color()) / 3.f,
+		extraData
+	);
+}
 
 unique_ptr<vector<vec4>>& BufferManager::extraBufferPtrAt(int slot)  {
 	THROW_IF(slot >= extraBufferNames.size(), ValueError, "No extra buffer at slot " + to_string(slot) + ".");
@@ -116,6 +156,10 @@ byte_size BufferManager::indexDataSize() const {
 	return indexDataLength() * 3 * sizeof(GL_UNSIGNED_INT);
 }
 
+byte_size BufferManager::totalAttributeSize() const {
+	return attributeDataLength() * (sizeof(vec3)*2 + sizeof(vec2) + sizeof(vec4)*(1+extraBufferNames.size()));
+}
+
 raw_data_ptr BufferManager::attributeDataPtr(const string& attributeName) const {
 	if (attributeName == POS_BUF)
 		return stds->positions.data();
@@ -178,10 +222,10 @@ int BufferManager::addTriangleVertexIndices(ivec3 ind, int shift) const {
 
 
 int BufferManager::addFullVertexData(const Vertex& v) const {
-	stds->positions.emplace_back(v.getPosition());
-	stds->normals.emplace_back(v.getNormal());
-	stds->uvs.emplace_back(v.getUV());
-	stds->colors.push_back(v.getColor());
+	stds->positions.emplace_back(v.get_position());
+	stds->normals.emplace_back(v.get_normal());
+	stds->uvs.emplace_back(v.get_uv());
+	stds->colors.push_back(v.get_color());
 	if (extraBufferNames.size() > 0)
 		if (v.hasExtraData(extraBufferNames[0]))
 			extra0->push_back(v.getExtraData(extraBufferNames[0]));
@@ -320,10 +364,10 @@ void BufferedVertex::applyFunction(const SpaceEndomorphism& f) {
 }
 
 void BufferedVertex::setVertex(const Vertex& v) {
-	setPosition(v.getPosition());
-	setUV(v.getUV());
-	setNormal(v.getNormal());
-	setColor(v.getColor());
+	setPosition(v.get_position());
+	setUV(v.get_uv());
+	setNormal(v.get_normal());
+	setColor(v.get_color());
 	auto extras = bufferBoss.getExtraBufferNames();
 	for (int i = 0; i < extras.size(); i++) {
 		string extraName = extras[i];
@@ -367,32 +411,32 @@ Vertex IndexedTriangle::getVertex(int i) const {
 
 
 mat3 IndexedTriangle::orthonormalFrame() const {
-	vec3 p0 = getVertex(0).getPosition();
-	vec3 p1 = getVertex(1).getPosition();
-	vec3 p2 = getVertex(2).getPosition();
+	vec3 p0 = getVertex(0).get_position();
+	vec3 p1 = getVertex(1).get_position();
+	vec3 p2 = getVertex(2).get_position();
 	return GramSchmidtProcess(mat3(p0 - p2, p1 - p2, cross(p1 - p2, p0 - p2)));
 }
 
 vec3 IndexedTriangle::fromPlanar(vec2 v) const {
 	mat3 frame = orthonormalFrame();
-	return frame[0] * v.x + frame[1] * v.y + getVertex(2).getPosition();
+	return frame[0] * v.x + frame[1] * v.y + getVertex(2).get_position();
 }
 
 vec2 IndexedTriangle::toPlanar(vec3 v) const {
 	mat3 frame = orthonormalFrame();
-	return vec2(dot(frame[0], v - getVertex(2).getPosition()), dot(frame[1], v - getVertex(2).getPosition()));
+	return vec2(dot(frame[0], v - getVertex(2).get_position()), dot(frame[1], v - getVertex(2).get_position()));
 }
 
 
 vec3 IndexedTriangle::fromBars(vec2 v) const {
-	return getVertex(0).getPosition() * v.x + getVertex(1).getPosition() * v.y + getVertex(2).getPosition() * (1 - v.x - v.y);
+	return getVertex(0).get_position() * v.x + getVertex(1).get_position() * v.y + getVertex(2).get_position() * (1 - v.x - v.y);
 }
 
 
 std::array<vec3, 3> IndexedTriangle::borderTriangle(float width) const {
-	vec3 p0 = getVertex(0).getPosition();
-	vec3 p1 = getVertex(1).getPosition();
-	vec3 p2 = getVertex(2).getPosition();
+	vec3 p0 = getVertex(0).get_position();
+	vec3 p1 = getVertex(1).get_position();
+	vec3 p2 = getVertex(2).get_position();
 	vec3 n = normalize(cross(p1 - p0, p2 - p0));
 	vec3 v01 = p1 - p0;
 	vec3 v12 = p2 - p1;
@@ -426,15 +470,15 @@ std::array<vec3, 3> IndexedTriangle::borderTriangle(float width) const {
 }
 
 vec3 IndexedTriangle::faceNormal() const {
-	return normalize(cross(getVertex(1).getPosition() - getVertex(0).getPosition(), getVertex(2).getPosition() - getVertex(0).getPosition()));
+	return normalize(cross(getVertex(1).get_position() - getVertex(0).get_position(), getVertex(2).get_position() - getVertex(0).get_position()));
 }
 
 vec3 IndexedTriangle::center() const {
-	return (getVertex(0).getPosition() + getVertex(1).getPosition() + getVertex(2).getPosition()) / 3.f;
+	return (getVertex(0).get_position() + getVertex(1).get_position() + getVertex(2).get_position()) / 3.f;
 }
 
 float IndexedTriangle::area() const {
-	return 0.5f * length(cross(getVertex(1).getPosition() - getVertex(0).getPosition(), getVertex(2).getPosition() - getVertex(0).getPosition()));
+	return 0.5f * length(cross(getVertex(1).get_position() - getVertex(0).get_position(), getVertex(2).get_position() - getVertex(0).get_position()));
 }
 
 bool IndexedTriangle::containsEdge(int i, int j) const {
@@ -454,10 +498,10 @@ void IndexedTriangle::changeOrientation() const {
 }
 
 
-IndexedMesh::IndexedMesh(IndexedMesh&& other) noexcept
+IndexedMesh3D::IndexedMesh3D(IndexedMesh3D&& other) noexcept
 : boss(std::move(other.boss)), vertices(std::move(other.vertices)), triangles(std::move(other.triangles)), polygroupIndexOrder(std::move(other.polygroupIndexOrder)) {}
 
-IndexedMesh& IndexedMesh::operator=(IndexedMesh&& other) noexcept {
+IndexedMesh3D& IndexedMesh3D::operator=(IndexedMesh3D&& other) noexcept {
 	if (this == &other)
 		return *this;
 	boss = std::move(other.boss);
@@ -467,24 +511,24 @@ IndexedMesh& IndexedMesh::operator=(IndexedMesh&& other) noexcept {
 	return *this;
 }
 
-IndexedMesh::IndexedMesh() {
+IndexedMesh3D::IndexedMesh3D() {
 	boss = make_unique<BufferManager>();
 	vertices = vector<vector<BufferedVertex>>();
 	triangles = vector<vector<IndexedTriangle>>();
 	polygroupIndexOrder = unordered_map<PolyGroupID, int>();
 }
 
-IndexedMesh::IndexedMesh(const vector<Vertex>& hardVertices, const vector<ivec3>& faceIndices, const PolyGroupID& id)
-: IndexedMesh() {
+IndexedMesh3D::IndexedMesh3D(const vector<Vertex>& hardVertices, const vector<ivec3>& faceIndices, const PolyGroupID& id)
+: IndexedMesh3D() {
 	addNewPolygroup(hardVertices, faceIndices, id);
 }
 
-IndexedMesh::IndexedMesh(const char* filename, const PolyGroupID& id)
-: IndexedMesh() {
+IndexedMesh3D::IndexedMesh3D(const char* filename, const PolyGroupID& id)
+: IndexedMesh3D() {
 	addNewPolygroup(filename, id);
 }
 
-void IndexedMesh::addNewPolygroup(const char* filename, const PolyGroupID& id) {
+void IndexedMesh3D::addNewPolygroup(const char* filename, const PolyGroupID& id) {
 	int shift = boss->attributeDataLength();
 	int index = polygroupIndexOrder.size();
 	if (polygroupIndexOrder.contains(id))
@@ -521,7 +565,7 @@ void IndexedMesh::addNewPolygroup(const char* filename, const PolyGroupID& id) {
 			s >> vert.y;
 			s >> vert.z;
 			pos.emplace_back(vert);
-			vertices[index].emplace_back(*boss, Vertex(vert, UV_DEFAULT, NORM_DEFAULT));
+			vertices[index].emplace_back(*boss, Vertex(vert, UV_DEFAULT, NORM_DEFAULT, vec4(1, 1, 1, 1)));
 		}
 		if (line.substr(0, 3) == "vt ") {
 			std::istringstream s(line.substr(3));
@@ -565,7 +609,7 @@ void IndexedMesh::addNewPolygroup(const char* filename, const PolyGroupID& id) {
 					face[i] = vertexIndex[i];
 
 				else {
-					vertices[index].emplace_back(*boss, Vertex(pos[vertexIndex[i]], uvsVec[i], normsVec[i]));
+					vertices[index].emplace_back(*boss, Vertex(pos[vertexIndex[i]], uvsVec[i], normsVec[i], vec4(1, 1, 1, 1)));
 					face[i] = vertices[index].back().getIndex();
 				}
 
@@ -575,7 +619,7 @@ void IndexedMesh::addNewPolygroup(const char* filename, const PolyGroupID& id) {
 }
 
 
-IndexedMesh& IndexedMesh::operator=(const IndexedMesh& other) {
+IndexedMesh3D& IndexedMesh3D::operator=(const IndexedMesh3D& other) {
 	if (this == &other)
 		return *this;
 	boss = std::make_unique<BufferManager>(*other.boss);
@@ -585,13 +629,13 @@ IndexedMesh& IndexedMesh::operator=(const IndexedMesh& other) {
 	return *this;
 }
 
-IndexedMesh::IndexedMesh(const SmoothParametricSurface& surf, int tRes, int uRes, const PolyGroupID& id)
-: IndexedMesh() {
+IndexedMesh3D::IndexedMesh3D(const SmoothParametricSurface& surf, int tRes, int uRes, const PolyGroupID& id)
+: IndexedMesh3D() {
 	addUniformSurface(surf, tRes, uRes, id);
 }
 
 
-void IndexedMesh::addNewPolygroup(const vector<Vertex>& hardVertices, const vector<ivec3>& faceIndices, const PolyGroupID& id) {
+void IndexedMesh3D::addNewPolygroup(const vector<Vertex>& hardVertices, const vector<ivec3>& faceIndices, const PolyGroupID& id) {
 	if (polygroupIndexOrder.contains(id))
 		throw IllegalVariantError("Polygroup ID already exists in mesh. ", __FILE__, __LINE__);
 
@@ -610,11 +654,11 @@ void IndexedMesh::addNewPolygroup(const vector<Vertex>& hardVertices, const vect
 		triangles[index].emplace_back(*boss, ind, shift);
 }
 
-IndexedMesh::IndexedMesh(const IndexedMesh& other)
+IndexedMesh3D::IndexedMesh3D(const IndexedMesh3D& other)
 : boss(&*other.boss), vertices(other.vertices), polygroupIndexOrder(other.polygroupIndexOrder), triangles(other.triangles) {}
 
 
-void IndexedMesh::addUniformSurface(const SmoothParametricSurface& surf, int tRes, int uRes, const PolyGroupID& id) {
+void IndexedMesh3D::addUniformSurface(const SmoothParametricSurface& surf, int tRes, int uRes, const PolyGroupID& id) {
 	vector<Vertex> hardVertices = {};
 	vector<ivec3> faceIndices = {};
 	hardVertices.reserve(tRes * uRes + uRes + tRes + 1);
@@ -683,60 +727,66 @@ void IndexedMesh::addUniformSurface(const SmoothParametricSurface& surf, int tRe
 }
 
 
-void IndexedMesh::merge(const IndexedMesh& other) {
+void IndexedMesh3D::merge(const IndexedMesh3D& other) {
 	for (const auto& id : other.getPolyGroupIDs())
 		addNewPolygroup(other.getVertices(id), other.getIndices(id), make_unique_id(id));
 }
 
-void IndexedMesh::mergeAndKeepID(const IndexedMesh& other) {
+void IndexedMesh3D::mergeAndKeepID(const IndexedMesh3D& other) {
 	for (const auto& id : other.getPolyGroupIDs())
 		addNewPolygroup(other.getVertices(id), other.getIndices(id), id);
 }
 
-void IndexedMesh::copyPolygroup(const IndexedMesh& other, const PolyGroupID& id, const PolyGroupID& newId) {
+void IndexedMesh3D::copyPolygroup(const IndexedMesh3D& other, const PolyGroupID& id, const PolyGroupID& newId) {
 	vector<Vertex> vertices = other.getVertices(id);
 	vector<ivec3> indices = other.getIndices(id);
 	addNewPolygroup(vertices, indices, newId);
 }
 
-void IndexedMesh::copyPolygroup(const PolyGroupID& id, const PolyGroupID& newId) {
+void IndexedMesh3D::copyPolygroup(const PolyGroupID& id, const PolyGroupID& newId) {
 	vector<Vertex> vertices = getVertices(id);
 	vector<ivec3> indices = getIndices(id);
 	addNewPolygroup(vertices, indices, newId);
 }
 
-vector<string> IndexedMesh::getActiveExtraBuffers() const {
+vector<string> IndexedMesh3D::getActiveExtraBuffers() const {
 	return boss->getExtraBufferNames();
 }
 
-raw_data_ptr IndexedMesh::bufferIndexLocation() const {
+raw_data_ptr IndexedMesh3D::bufferIndexLocation() const {
 	return boss->indexDataPtr();
 }
 
-byte_size IndexedMesh::bufferIndexSize() const {
+byte_size IndexedMesh3D::faceIndicesDataSize() const {
 	return boss->indexDataSize();
 }
 
-array_len IndexedMesh::bufferIndexLength() const {
+array_len IndexedMesh3D::bufferIndexLength() const {
 	return boss->indexDataLength();
 }
 
-raw_data_ptr IndexedMesh::getBufferLocation(const string& name) const {
+raw_data_ptr IndexedMesh3D::getBufferLocation(const string& name) const {
 	return boss->attributeDataPtr(name);
 }
 
-array_len IndexedMesh::getBufferLength() const {
+array_len IndexedMesh3D::getBufferLength() const {
 	return boss->attributeDataLength();
 }
 
-byte_size IndexedMesh::getBufferSize(const string& name) const {
+byte_size IndexedMesh3D::getAttributeDataSize(const string& name) const {
 	return boss->attributeDataSize(name);
 }
 
+byte_size IndexedMesh3D::totalAttributeDataSize() const {
+	return boss->totalAttributeSize();
+}
+
+byte_size IndexedMesh3D::totalByteSize() const {
+	return totalAttributeDataSize() + faceIndicesDataSize();
+}
 
 
-
-vector<PolyGroupID> IndexedMesh::getPolyGroupIDs() const {
+vector<PolyGroupID> IndexedMesh3D::getPolyGroupIDs() const {
 	vector<PolyGroupID> ids;
 	ids.reserve(polygroupIndexOrder.size());
 	for (const auto& key : polygroupIndexOrder | std::views::keys)
@@ -744,7 +794,7 @@ vector<PolyGroupID> IndexedMesh::getPolyGroupIDs() const {
 	return ids;
 }
 
-BufferManager& IndexedMesh::getBufferBoss() const {
+BufferManager& IndexedMesh3D::getBufferBoss() const {
 	return *boss;
 }
 
@@ -752,38 +802,38 @@ BufferManager& IndexedMesh::getBufferBoss() const {
 // 	return !isActive(MATERIAL1) && material->textured();
 // }
 
-BufferedVertex& IndexedMesh::getAnyVertexFromPolyGroup(const PolyGroupID& id) {
+BufferedVertex& IndexedMesh3D::getAnyVertexFromPolyGroup(const PolyGroupID& id) {
 	return vertices.at(polygroupIndexOrder[id]).front();
 }
 
-void IndexedMesh::deformPerVertex(const PolyGroupID& id, const HOM(BufferedVertex&, void)& deformation) {
+void IndexedMesh3D::deformPerVertex(const PolyGroupID& id, const HOM(BufferedVertex&, void)& deformation) {
 	for (auto& v : vertices.at(polygroupIndexOrder[id]))
 		deformation(v);
 }
 
-void IndexedMesh::deformPerVertex(const HOM(BufferedVertex&, void)& deformation) {
+void IndexedMesh3D::deformPerVertex(const HOM(BufferedVertex&, void)& deformation) {
 	for (auto id : getPolyGroupIDs())
 		for (auto& v : vertices.at(polygroupIndexOrder[id]))
 			deformation(v);
 }
 
-void IndexedMesh::deformPerVertex(const PolyGroupID& id, const BIHOM(int, BufferedVertex&, void)& deformation) {
+void IndexedMesh3D::deformPerVertex(const PolyGroupID& id, const BIHOM(int, BufferedVertex&, void)& deformation) {
 	for (int i = 0; i < vertices.at(polygroupIndexOrder[id]).size(); i++)
 		deformation(i, vertices.at(polygroupIndexOrder[id])[i]);
 }
 
-void IndexedMesh::deformPerId(const BIHOM(BufferedVertex&, PolyGroupID, void)& deformation) {
+void IndexedMesh3D::deformPerId(const BIHOM(BufferedVertex&, PolyGroupID, void)& deformation) {
 	for (auto id : getPolyGroupIDs())
 		for (auto& v : vertices.at(polygroupIndexOrder[id]))
 			deformation(v, id);
 }
 
-vec2 IndexedMesh::getSurfaceParameters(const BufferedVertex& v) {
+vec2 IndexedMesh3D::getSurfaceParameters(const BufferedVertex& v) {
 	return vec2(v.getColor().x, v.getColor().y);
 }
 
 
-void IndexedMesh::encodeSurfacePoint(BufferedVertex& v, const SmoothParametricSurface& surf, vec2 tu) {
+void IndexedMesh3D::encodeSurfacePoint(BufferedVertex& v, const SmoothParametricSurface& surf, vec2 tu) {
 	v.setPosition(surf(tu));
 	v.setNormal(surf.normal(tu));
 	v.setUV(vec2((tu.x - surf.tMin()) / (surf.tMax() - surf.tMin()), (tu.y - surf.uMin()) / (surf.uMax() - surf.uMin())));
@@ -791,59 +841,59 @@ void IndexedMesh::encodeSurfacePoint(BufferedVertex& v, const SmoothParametricSu
 	v.setColor(tu.y, 1);
 }
 
-void IndexedMesh::adjustToNewSurface(const SmoothParametricSurface& surf, const PolyGroupID& id) {
+void IndexedMesh3D::adjustToNewSurface(const SmoothParametricSurface& surf, const PolyGroupID& id) {
 	deformPerVertex(id, [&](BufferedVertex& v) {
 		encodeSurfacePoint(v, surf, getSurfaceParameters(v));
 	});
 }
 
-void IndexedMesh::adjustToNewSurface(const SmoothParametricSurface& surf) {
+void IndexedMesh3D::adjustToNewSurface(const SmoothParametricSurface& surf) {
 	for (auto id : getPolyGroupIDs())
 		adjustToNewSurface(surf, id);
 }
 
-void IndexedMesh::moveAlongVectorField(const PolyGroupID& id, const VectorField& X, float delta) {
+void IndexedMesh3D::moveAlongVectorField(const PolyGroupID& id, const VectorField& X, float delta) {
 	for (BufferedVertex& v : vertices.at(polygroupIndexOrder[id]))
 		v.setPosition(X.moveAlong(v.getPosition(), delta));
 }
 
-void IndexedMesh::deformWithAmbientMap(const PolyGroupID& id, const SpaceEndomorphism& f) {
+void IndexedMesh3D::deformWithAmbientMap(const PolyGroupID& id, const SpaceEndomorphism& f) {
 	for (BufferedVertex& v : vertices.at(polygroupIndexOrder[id]))
 		v.applyFunction(f);
 }
 
-void IndexedMesh::deformWithAmbientMap(const SpaceEndomorphism& f) {
+void IndexedMesh3D::deformWithAmbientMap(const SpaceEndomorphism& f) {
 	for (auto id : getPolyGroupIDs())
 		deformWithAmbientMap(id, f);
 }
 
 
-void IndexedMesh::affineTransform(const mat3& M, vec3 v, const PolyGroupID& id) {
+void IndexedMesh3D::affineTransform(const mat3& M, vec3 v, const PolyGroupID& id) {
 	deformWithAmbientMap(id, SpaceEndomorphism::affine(M, v));
 }
 
-void IndexedMesh::affineTransform(const mat3& M, vec3 v) {
+void IndexedMesh3D::affineTransform(const mat3& M, vec3 v) {
 	for (auto& name : getPolyGroupIDs())
 		affineTransform(M, v, name);
 }
 
-void IndexedMesh::shift(vec3 v, const PolyGroupID& id) {
+void IndexedMesh3D::shift(vec3 v, const PolyGroupID& id) {
 	affineTransform(mat3(1), v, id);
 }
 
-void IndexedMesh::shift(vec3 v) {
+void IndexedMesh3D::shift(vec3 v) {
 	affineTransform(mat3(1), v);
 }
 
-void IndexedMesh::scale(float s, const PolyGroupID& id) {
+void IndexedMesh3D::scale(float s, const PolyGroupID& id) {
 	affineTransform(mat3(s), vec3(0), id);
 }
 
-void IndexedMesh::scale(float s) {
+void IndexedMesh3D::scale(float s) {
 	affineTransform(mat3(s), vec3(0));
 }
 
-vector<Vertex> IndexedMesh::getVertices(const PolyGroupID& id) const {
+vector<Vertex> IndexedMesh3D::getVertices(const PolyGroupID& id) const {
 	vector<Vertex> verts = {};
 	verts.reserve(vertices.at(polygroupIndexOrder.at(id)).size());
 	for (const BufferedVertex& v : vertices.at(polygroupIndexOrder.at(id)))
@@ -851,12 +901,12 @@ vector<Vertex> IndexedMesh::getVertices(const PolyGroupID& id) const {
 	return verts;
 }
 
-vector<BufferedVertex> IndexedMesh::getBufferedVertices(const PolyGroupID& id) const {
+vector<BufferedVertex> IndexedMesh3D::getBufferedVertices(const PolyGroupID& id) const {
 	return vertices.at(polygroupIndexOrder.at(id));
 }
 
 
-vector<ivec3> IndexedMesh::getIndices(const PolyGroupID& id) const {
+vector<ivec3> IndexedMesh3D::getIndices(const PolyGroupID& id) const {
 	vector<ivec3> inds = {};
 	inds.reserve(triangles.at(polygroupIndexOrder.at(id)).size());
 	for (const IndexedTriangle& t : triangles.at(polygroupIndexOrder.at(id)))
@@ -864,7 +914,7 @@ vector<ivec3> IndexedMesh::getIndices(const PolyGroupID& id) const {
 	return inds;
 }
 
-vector<IndexedTriangle> IndexedMesh::getTriangles(const PolyGroupID& id) const {
+vector<IndexedTriangle> IndexedMesh3D::getTriangles(const PolyGroupID& id) const {
 	return triangles.at(polygroupIndexOrder.at(id));
 }
 
@@ -881,30 +931,30 @@ vector<IndexedTriangle> IndexedMesh::getTriangles(const PolyGroupID& id) const {
 // 	material = std::make_shared<MaterialPhong>(mat);
 // }
 
-void IndexedMesh::flipNormals(const PolyGroupID& id) {
+void IndexedMesh3D::flipNormals(const PolyGroupID& id) {
 	deformPerVertex(id, [](BufferedVertex& v) {
 		v.setNormal(-v.getNormal());
 	});
 }
 
-void IndexedMesh::flipNormals() {
+void IndexedMesh3D::flipNormals() {
 	for (auto& name : getPolyGroupIDs())
 		flipNormals(name);
 }
 
-void IndexedMesh::pointNormalsInDirection(vec3 dir, const PolyGroupID& id) {
+void IndexedMesh3D::pointNormalsInDirection(vec3 dir, const PolyGroupID& id) {
 	deformPerVertex(id, [dir](BufferedVertex& v) {
 		vec3 n = v.getNormal();
 		v.setNormal(n * 1.f * sgn(dot(n, dir)));
 	});
 }
 
-void IndexedMesh::pointNormalsInDirection(vec3 dir) {
+void IndexedMesh3D::pointNormalsInDirection(vec3 dir) {
 	for (auto& name : getPolyGroupIDs())
 		pointNormalsInDirection(dir, name);
 }
 
-IndexedMesh IndexedMesh::subdivideBarycentric(const PolyGroupID& id) const {
+IndexedMesh3D IndexedMesh3D::subdivideBarycentric(const PolyGroupID& id) const {
 	vector<ivec3> trInds = getIndices(id);
 	vector<Vertex> verts = getVertices(id);
 	verts.reserve(verts.size() + trInds.size());
@@ -918,11 +968,11 @@ IndexedMesh IndexedMesh::subdivideBarycentric(const PolyGroupID& id) const {
 		newInds.push_back(ivec3(tr.y, tr.z, centerInd));
 		newInds.emplace_back(tr.z, tr.x, centerInd);
 	}
-	return IndexedMesh(verts, newInds, id);
+	return IndexedMesh3D(verts, newInds, id);
 }
 
 
-IndexedMesh IndexedMesh::subdivideEdgecentric(const PolyGroupID& id) const {
+IndexedMesh3D IndexedMesh3D::subdivideEdgecentric(const PolyGroupID& id) const {
 	vector<ivec3> trInds = getIndices(id);
 	vector<Vertex> verts = getVertices(id);
 	verts.reserve(verts.size() + 3 * trInds.size());
@@ -935,27 +985,27 @@ IndexedMesh IndexedMesh::subdivideEdgecentric(const PolyGroupID& id) const {
 		int center2 = verts.size() - 1;
 		verts.push_back(center(verts[tr.y], verts[tr.z]));
 		int center3 = verts.size() - 1;
-		newInds.push_back(ivec3(tr.x, center1, center2));
-		newInds.push_back(ivec3(tr.y, center1, center3));
-		newInds.push_back(ivec3(tr.z, center2, center3));
-		newInds.push_back(ivec3(center1, center2, center3));
+		newInds.emplace_back(tr.x, center1, center2);
+		newInds.emplace_back(tr.y, center1, center3);
+		newInds.emplace_back(tr.z, center2, center3);
+		newInds.emplace_back(center1, center2, center3);
 	}
-	return IndexedMesh(verts, newInds, id);
+	return IndexedMesh3D(verts, newInds, id);
 }
 
-IndexedMesh IndexedMesh::wireframe(PolyGroupID id, PolyGroupID targetId, float width, float heightCenter, float heightSide) const {
+IndexedMesh3D IndexedMesh3D::wireframe(PolyGroupID id, PolyGroupID targetId, float width, float heightCenter, float heightSide) const {
 	vector<IndexedTriangle> trs = triangles.at(polygroupIndexOrder.at(id));
 	vector<BufferedVertex> verts = vertices.at(polygroupIndexOrder.at(id));
 	vector<Vertex> new_verts = getVertices(id);
 	vector<ivec3> new_inds = {};
 	for (const auto& v : verts) {
 		Vertex extr = v.getVertex();
-		extr.setPosition(extr.getPosition() + extr.getNormal() * heightCenter);
+		extr.set_position(extr.get_position() + extr.get_normal() * heightCenter);
 		new_verts.push_back(extr);
 	}
 	for (const auto& tr : trs) {
 		array<vec3, 3> border = tr.borderTriangle(width);
-		vec3 n = tr.faceNormal() * sign(dot(tr.getVertex(0).getNormal(), tr.faceNormal()));
+		vec3 n = tr.faceNormal() * sign(dot(tr.getVertex(0).get_normal(), tr.faceNormal()));
 
 
 		for (vec3 p : border)
@@ -983,7 +1033,7 @@ IndexedMesh IndexedMesh::wireframe(PolyGroupID id, PolyGroupID targetId, float w
 		// new_inds.push_back(ivec3(new_verts.size()-5,new_verts.size()-4, new_verts.size()-2));
 		// new_inds.push_back(ivec3(new_verts.size()-4,new_verts.size()-1, new_verts.size()-2));
 	}
-	return IndexedMesh(new_verts, new_inds, targetId);
+	return IndexedMesh3D(new_verts, new_inds, targetId);
 }
 
 
@@ -1133,7 +1183,7 @@ void BufferManager::reserveAdditionalSpace(int extraStorage) const {
 	reserveSpace(attributeDataLength() + extraStorage);
 }
 
-vec3 IndexedMesh::centerOfMass(PolyGroupID id) const {
+vec3 IndexedMesh3D::centerOfMass(PolyGroupID id) const {
 	vec3 sum = vec3(0);
 	float totalArea = 0;
 	for (const IndexedTriangle& t : triangles.at(polygroupIndexOrder.at(id))) {
@@ -1143,7 +1193,7 @@ vec3 IndexedMesh::centerOfMass(PolyGroupID id) const {
 	return sum / totalArea;
 }
 
-vec3 IndexedMesh::centerOfMass() const {
+vec3 IndexedMesh3D::centerOfMass() const {
 	vec3 sum = vec3(0);
 	float totalArea = 0;
 	for (const auto& id : getPolyGroupIDs())
@@ -1156,7 +1206,7 @@ vec3 IndexedMesh::centerOfMass() const {
 
 
 Wireframe::Wireframe(const SmoothParametricSurface& surf, float width, int n, int m, int curve_res_rad, int curve_res_hor)
-: IndexedMesh(), width(width), surf(surf), n(n), m(m), curve_res_rad(curve_res_rad), curve_res_hor(curve_res_hor) {
+: IndexedMesh3D(), width(width), surf(surf), n(n), m(m), curve_res_rad(curve_res_rad), curve_res_hor(curve_res_hor) {
 	for (float t_i : linspace(surf.tMin(), surf.tMax(), n)) {
 		SmoothParametricCurve curve = surf.constT(t_i);
 		auto id = randomID();
@@ -1200,7 +1250,7 @@ vec2 Wireframe::getSurfaceParameters(const BufferedVertex& v) const {
 
 PlanarFlowLines::PlanarFlowLines(const VectorFieldR2& X, float dt, int steps, const std::function<float(float, float, float, vec2, vec2)>& width,
 								 const std::function<vec4(float, float, float, vec2, vec2)>& color)
-: IndexedMesh(), X(X), dt(dt), steps(steps), width(width), color(color) {
+: IndexedMesh3D(), X(X), dt(dt), steps(steps), width(width), color(color) {
 	boss = make_unique<BufferManager>("extra0");
 }
 
@@ -1547,9 +1597,9 @@ void PipeCurveVertexShader::updateCurve(const SmoothParametricCurve& curve) {
 				 min(max(p.z, settings.bound_min.z), settings.bound_max.z));
 		vec3 b = curve.binormal(t);
 		vec3 n = curve.normal(t);
-		// if (dot(n, v.getNormal()) < 0)
+		// if (dot(n, v.get_normal()) < 0)
 		// 	n = -n;
-		// if (dot(b, vec3(v.getColor())) < 0)
+		// if (dot(b, vec3(v.get_color())) < 0)
 		// 	b = -b;
 		v.setPosition(p);
 		v.setNormal(n);
@@ -1653,7 +1703,7 @@ void PipeCurveVertexShader::setExtra(BufferedVertex& v, float value, int extra_i
 }
 
 
-std::function<void(float, float)> deformationOperator(const std::function<void(BufferedVertex&, float, float)>& deformation, IndexedMesh& mesh, const PolyGroupID& id) {
+std::function<void(float, float)> deformationOperator(const std::function<void(BufferedVertex&, float, float)>& deformation, IndexedMesh3D& mesh, const PolyGroupID& id) {
 	return [&deformation, &mesh, id](float t, float delta) {
 		mesh.deformPerVertex(id, [deformation, t, delta](BufferedVertex& v) {
 			deformation(v, t, delta);
@@ -1661,7 +1711,7 @@ std::function<void(float, float)> deformationOperator(const std::function<void(B
 	};
 }
 
-std::function<void(float)> deformationOperator(const std::function<void(BufferedVertex&, float)>& deformation, IndexedMesh& mesh, const PolyGroupID& id) {
+std::function<void(float)> deformationOperator(const std::function<void(BufferedVertex&, float)>& deformation, IndexedMesh3D& mesh, const PolyGroupID& id) {
 	return [&deformation, &mesh, id](float t) {
 		mesh.deformPerVertex(id, [deformation, t](BufferedVertex& v) {
 			deformation(v, t);
@@ -1669,18 +1719,18 @@ std::function<void(float)> deformationOperator(const std::function<void(Buffered
 	};
 }
 
-std::function<void(float, float)> moveAlongCurve(const SmoothParametricCurve& curve, IndexedMesh& mesh, const PolyGroupID& id) {
+std::function<void(float, float)> moveAlongCurve(const SmoothParametricCurve& curve, IndexedMesh3D& mesh, const PolyGroupID& id) {
 	return deformationOperator([curve](BufferedVertex& v, float t, float delta) {
 		v.setPosition(v.getPosition() + curve(t) - curve(t - delta));
 	}, mesh, id);
 }
 
 // ReSharper disable once CppPassValueParameterByConstReference
-mat3 IndexedMesh::inertiaTensorCMAppBd(PolyGroupID id) const {
+mat3 IndexedMesh3D::inertiaTensorCMAppBd(PolyGroupID id) const {
 	return inertiaTensorAppBd(id, centerOfMass(id));
 }
 
-vector<int> IndexedMesh::findVertexNeighbours(int i, const PolyGroupID& id) const {
+vector<int> IndexedMesh3D::findVertexNeighbours(int i, const PolyGroupID& id) const {
 	std::set<int> neighbours = {};
 	for (const IndexedTriangle& t : triangles.at(polygroupIndexOrder.at(id)))
 		if (contains(i, t.getVertexIndices())) {
@@ -1690,7 +1740,7 @@ vector<int> IndexedMesh::findVertexNeighbours(int i, const PolyGroupID& id) cons
 	return vector(neighbours.begin(), neighbours.end());
 }
 
-vector<int> IndexedMesh::findVertexParentTriangles(int i, const PolyGroupID& id) const {
+vector<int> IndexedMesh3D::findVertexParentTriangles(int i, const PolyGroupID& id) const {
 	std::set<int> parentTriangles = {};
 	for (int j = 0; j < triangles.at(polygroupIndexOrder.at(id)).size(); j++)
 		if (contains(i, triangles.at(polygroupIndexOrder.at(id))[j].getVertexIndices()))
@@ -1698,7 +1748,7 @@ vector<int> IndexedMesh::findVertexParentTriangles(int i, const PolyGroupID& id)
 	return vector(parentTriangles.begin(), parentTriangles.end());
 }
 
-void IndexedMesh::recalculateNormal(int i, const PolyGroupID& id) {
+void IndexedMesh3D::recalculateNormal(int i, const PolyGroupID& id) {
 	auto trs = findVertexParentTriangles(i, id);
 	vec3 n = vec3(0);
 	for (int j : trs)
@@ -1706,33 +1756,33 @@ void IndexedMesh::recalculateNormal(int i, const PolyGroupID& id) {
 	vertices.at(polygroupIndexOrder.at(id))[i].setNormal(normalize(n));
 }
 
-void IndexedMesh::recalculateNormalsNearby(int i, const PolyGroupID& id) {
+void IndexedMesh3D::recalculateNormalsNearby(int i, const PolyGroupID& id) {
 	for (int j : findVertexNeighbours(i, id))
 		recalculateNormal(j, id);
 }
 
-void IndexedMesh::recalculateNormals(const PolyGroupID& id) {
+void IndexedMesh3D::recalculateNormals(const PolyGroupID& id) {
 	for (int i = 0; i < vertices.at(polygroupIndexOrder.at(id)).size(); i++)
 		recalculateNormal(i, id);
 }
 
-void IndexedMesh::recalculateNormals() {
+void IndexedMesh3D::recalculateNormals() {
 	for (auto id : getPolyGroupIDs())
 		recalculateNormals(id);
 }
 
-void IndexedMesh::orientFaces(const PolyGroupID& id) {
+void IndexedMesh3D::orientFaces(const PolyGroupID& id) {
 	for (auto& t : triangles.at(polygroupIndexOrder.at(id)))
-		if (dot(t.faceNormal(), t.getVertex(0).getNormal()) < 0)
+		if (dot(t.faceNormal(), t.getVertex(0).get_normal()) < 0)
 			t.changeOrientation();
 }
 
-void IndexedMesh::orientFaces() {
+void IndexedMesh3D::orientFaces() {
 	for (auto id : getPolyGroupIDs())
 		orientFaces(id);
 }
 
-vector<int> IndexedMesh::findNeighboursSorted(int i, const PolyGroupID& id) const {
+vector<int> IndexedMesh3D::findNeighboursSorted(int i, const PolyGroupID& id) const {
 	vector<int> neighbours = findVertexNeighbours(i, id);
 	std::map<int, float> angles = {};
 	auto t = orthogonalComplementBasis(vertices.at(polygroupIndexOrder.at(id))[i].getNormal());
@@ -1745,7 +1795,7 @@ vector<int> IndexedMesh::findNeighboursSorted(int i, const PolyGroupID& id) cons
 	return neighbours;
 }
 
-bool IndexedMesh::checkIfHasCompleteNeighbourhood(int i, const PolyGroupID& id) const {
+bool IndexedMesh3D::checkIfHasCompleteNeighbourhood(int i, const PolyGroupID& id) const {
 	vector<int> trs = findVertexParentTriangles(i, id);
 	vector<int> neighbours = findVertexNeighbours(i, id);
 	for (int p : neighbours) {
@@ -1759,7 +1809,7 @@ bool IndexedMesh::checkIfHasCompleteNeighbourhood(int i, const PolyGroupID& id) 
 	return true;
 }
 
-float IndexedMesh::meanCurvature(int i, const PolyGroupID& id) const {
+float IndexedMesh3D::meanCurvature(int i, const PolyGroupID& id) const {
 	if (!checkIfHasCompleteNeighbourhood(i, id))
 		return 0;
 	float sum = 0;
@@ -1776,11 +1826,11 @@ float IndexedMesh::meanCurvature(int i, const PolyGroupID& id) const {
 	return sum;
 }
 
-vec3 IndexedMesh::meanCurvatureVector(int i, const PolyGroupID& id) const {
+vec3 IndexedMesh3D::meanCurvatureVector(int i, const PolyGroupID& id) const {
 	return meanCurvature(i, id) * vertices.at(polygroupIndexOrder.at(id))[i].getNormal();
 }
 
-float IndexedMesh::GaussCurvature(int i, const PolyGroupID& id) const {
+float IndexedMesh3D::GaussCurvature(int i, const PolyGroupID& id) const {
 	auto nbhd = findNeighboursSorted(i, id);
 	float sum = 0;
 	vec3 p = vertices.at(polygroupIndexOrder.at(id))[i].getPosition();
@@ -1794,7 +1844,7 @@ float IndexedMesh::GaussCurvature(int i, const PolyGroupID& id) const {
 }
 
 
-mat3 IndexedMesh::inertiaTensorAppBd(PolyGroupID id, vec3 p) const {
+mat3 IndexedMesh3D::inertiaTensorAppBd(PolyGroupID id, vec3 p) const {
 	vec3 cm = p;
 	return integrateOverTriangles<mat3>([ cm](const IndexedTriangle& t) {
 		vec3 p = t.center();
@@ -1830,8 +1880,8 @@ SurfacePlotDiscretisedMesh::SurfacePlotDiscretisedMesh(const DiscreteRealFunctio
 			vec3 p = vec3(x, t, plot[i][j]);
 			vec3 n = e3;
 			if (i > 0 && j > 0) {
-				auto p1 = points.back().getPosition();
-				auto p2 = points.at(points.size() - plot.samples_x()).getPosition();
+				auto p1 = points.back().get_position();
+				auto p2 = points.at(points.size() - plot.samples_x()).get_position();
 				n = normalize(cross(p1 - p, p2 - p));
 				if (dot(n, e3) < 0)
 					n = -n;
@@ -1875,10 +1925,10 @@ SurfacePolarPlotDiscretisedMesh::SurfacePolarPlotDiscretisedMesh(const DiscreteR
 			vec3 p = vec3(R * sin(phi), t, R * cos(phi));
 			vec3 n = -vec3(sin(phi), 0, cos(phi));
 			if (i > 0) {
-				auto p1 = points.back().getPosition();
-				auto p2 = points.at(points.size() - nx).getPosition();
+				auto p1 = points.back().get_position();
+				auto p2 = points.at(points.size() - nx).get_position();
 				if (j == 0)
-					p2 = points.at(points.size() - 2).getPosition();
+					p2 = points.at(points.size() - 2).get_position();
 				n = normalize(cross(p1 - p, p2 - p));
 				if (dot(n, vec3(sin(phi), 0, cos(phi))) < 0)
 					n = -n;
@@ -1892,14 +1942,14 @@ SurfacePolarPlotDiscretisedMesh::SurfacePolarPlotDiscretisedMesh(const DiscreteR
 }
 
 FoliatedParametricSurfaceMesh::FoliatedParametricSurfaceMesh(const FoliatedParametricSurfaceMesh& other)
-: IndexedMesh(other), foliation(other.foliation), special_leaves(other.special_leaves), continuous_leaves(other.continuous_leaves), leaf_radial_res(other.leaf_radial_res),
+: IndexedMesh3D(other), foliation(other.foliation), special_leaves(other.special_leaves), continuous_leaves(other.continuous_leaves), leaf_radial_res(other.leaf_radial_res),
   leaf_hor_res(other.leaf_hor_res), color_map(other.color_map), special_leaf_colors(other.special_leaf_colors), leaf_radius_map(other.leaf_radius_map),
   special_leaf_radii(other.special_leaf_radii), id_prefix(other.id_prefix) {
 	// boss = make_unique<BufferManager>(std::set({POSITION, NORMAL, UV, COLOR, INDEX, EXTRA0}));
 }
 
 FoliatedParametricSurfaceMesh::FoliatedParametricSurfaceMesh(FoliatedParametricSurfaceMesh&& other) noexcept
-: IndexedMesh(std::move(other)), foliation(std::move(other.foliation)), special_leaves(other.special_leaves), continuous_leaves(other.continuous_leaves),
+: IndexedMesh3D(std::move(other)), foliation(std::move(other.foliation)), special_leaves(other.special_leaves), continuous_leaves(other.continuous_leaves),
   leaf_radial_res(other.leaf_radial_res), leaf_hor_res(other.leaf_hor_res), color_map(std::move(other.color_map)), special_leaf_colors(std::move(other.special_leaf_colors)),
   leaf_radius_map(std::move(other.leaf_radius_map)), special_leaf_radii(std::move(other.special_leaf_radii)), id_prefix(std::move(other.id_prefix)) {
 	// boss = make_unique<BufferManager>(*other.boss);
@@ -1908,7 +1958,7 @@ FoliatedParametricSurfaceMesh::FoliatedParametricSurfaceMesh(FoliatedParametricS
 FoliatedParametricSurfaceMesh& FoliatedParametricSurfaceMesh::operator=(const FoliatedParametricSurfaceMesh& other) {
 	if (this == &other)
 		return *this;
-	IndexedMesh::operator =(other);
+	IndexedMesh3D::operator =(other);
 	foliation = other.foliation;
 	special_leaves = other.special_leaves;
 	continuous_leaves = other.continuous_leaves;
@@ -1925,7 +1975,7 @@ FoliatedParametricSurfaceMesh& FoliatedParametricSurfaceMesh::operator=(const Fo
 FoliatedParametricSurfaceMesh& FoliatedParametricSurfaceMesh::operator=(FoliatedParametricSurfaceMesh&& other) noexcept {
 	if (this == &other)
 		return *this;
-	IndexedMesh::operator =(std::move(other));
+	IndexedMesh3D::operator =(std::move(other));
 	foliation = std::move(other.foliation);
 	special_leaves = other.special_leaves;
 	continuous_leaves = other.continuous_leaves;
@@ -1942,7 +1992,7 @@ FoliatedParametricSurfaceMesh& FoliatedParametricSurfaceMesh::operator=(Foliated
 FoliatedParametricSurfaceMesh::FoliatedParametricSurfaceMesh(ParametricSurfaceFoliation foliation, int special_leaves, int continuous_leaves, int leaf_radial_res, int leaf_hor_res,
 															 std::function<vec4(float)> color_map, const vector<vec4>& special_leaf_colors, HOM(float, float) leaf_radius_map,
 															 const vector<float>& special_leaf_radii, std::function<vec4(float)> extra1_map, const vector<vec4>& special_extra1s)
-: IndexedMesh(), foliation(foliation), special_leaves(special_leaves), continuous_leaves(continuous_leaves), leaf_radial_res(leaf_radial_res), leaf_hor_res(leaf_hor_res),
+: IndexedMesh3D(), foliation(foliation), special_leaves(special_leaves), continuous_leaves(continuous_leaves), leaf_radial_res(leaf_radial_res), leaf_hor_res(leaf_hor_res),
   color_map(color_map), special_leaf_colors(special_leaf_colors), leaf_radius_map(leaf_radius_map), special_leaf_radii(special_leaf_radii), extra1_map(extra1_map),
   special_extra1s(special_extra1s) {
 	boss = make_unique<BufferManager>("extra0", "extra1");

@@ -3,7 +3,11 @@
 #include "GLFW/glfw3.h"
 
 
-FPSStatsResults::FPSStatsResults(float averageFPS, float worstFPS, float window): averageFPS(averageFPS), worstFPS(worstFPS), window(window) {}
+FPSStatsResults::FPSStatsResults(uint averageFPS, uint worstFPS, float window): averageFPS(averageFPS), worstFPS(worstFPS), window(window) {}
+
+void FPSStatsResults::log() const {
+	LOG(format("FPS: Average FPS = {}, Worst FPS = {} (over {:.1f}s)", averageFPS, worstFPS, window));
+}
 
 float FPSClock::getTime() const {
 	return glfwGetTime() - timeZero;
@@ -26,9 +30,9 @@ void FPSClock::reset() {
 	time = 0;
 }
 
-void FPSClock::measureFPSStats(const FPSStatsResults& result) {
-	LOG(0, "FPS Stats (last " + to_string(avgWindow) + "s): Average FPS: " + to_string(result.averageFPS) + ", Worst FPS: " + to_string(result.worstFPS));
-	statsHistory.push_back(result);
+void FPSClock::measureFPSStats(uint averageFPS, uint worstFPS, float window) {
+	statsHistory.emplace_back(averageFPS, worstFPS, window);
+	statsHistory.back().log();
 }
 
 TimeStep FPSClock::tick() {
@@ -40,9 +44,10 @@ TimeStep FPSClock::tick() {
 		if (dt > worstDelta)
 			worstDelta = dt;
 		if (avgAccumulator >= avgWindow) {
-			float averageFPS = frameCount / avgAccumulator;
-			float worstFPS = 1000.0f / worstDelta;
-			measureFPSStats(FPSStatsResults(averageFPS, worstFPS, avgWindow));
+			uint averageFPS = frameCount / avgAccumulator;
+			worstDelta = std::max(worstDelta, .00001f);
+			uint worstFPS = (uint) 1.0f / worstDelta;
+			measureFPSStats(averageFPS, worstFPS, avgWindow);
 			avgAccumulator = 0;
 			frameCount = 0;
 			worstDelta = 0;

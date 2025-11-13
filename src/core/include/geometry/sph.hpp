@@ -102,7 +102,7 @@ public:
 	void update(float dt);
 
 	SmoothImplicitSurface density_surface(float level) const;
-	IndexedMesh particle_mesh(float r, int icosphere_res) const;
+	IndexedMesh3D particle_mesh(float r, int icosphere_res) const;
 	MarchingCubeChunk boundary_surface_march(const ivec3 &res) const;
 	MarchingCubeChunk free_surface_march(const ivec3 &res, float level) const;
 

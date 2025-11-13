@@ -2,8 +2,22 @@
 
 #include "pde.hpp"
 #include "randomUtils.hpp"
-#include "renderingUtils.hpp"
 
+struct Vertex {
+	PROPERTY(vec3, position);
+	PROPERTY(vec3, normal);
+	PROPERTY(vec2, uv);
+	PROPERTY(vec4, color);
+	std::map<string, vec4> extraData = {};
+
+	Vertex(vec3 position, vec2 uv, vec3 normal, vec4 color, const std::map<string, vec4>& extraData = {});
+	vec4 getExtraData(const string& name) const;
+	void setExtraData(const string& name, vec4 value);
+	bool hasExtraData(const string& name) const;
+};
+
+Vertex center(const Vertex& v1, const Vertex& v2);
+Vertex barycenter(const Vertex& v1, const Vertex& v2, const Vertex& v3);
 
 struct Stds {
 	vector<vec3> positions;
@@ -59,6 +73,7 @@ public:
 	array_len indexDataLength() const;
 	byte_size attributeDataSize(const string& attributeName) const;
 	byte_size indexDataSize() const;
+	byte_size totalAttributeSize() const;
 	raw_data_ptr attributeDataPtr(const string& attributeName) const;
 	raw_data_ptr indexDataPtr() const;
 
@@ -122,7 +137,6 @@ public:
 	vec4 getColor() const;
 	vec4 getExtra(const string& slot) const;
 	Vertex getVertex() const;
-
 	void setPosition(vec3 value) const;
 	void setNormal(vec3 value) const;
 	void setUV(vec2 value) const;
@@ -172,7 +186,7 @@ public:
 
 class SmoothParametricSurface;
 
-class IndexedMesh {
+class IndexedMesh3D {
 protected:
 	unique_ptr<BufferManager> boss;
 	unordered_map<PolyGroupID, int> polygroupIndexOrder = {};
@@ -180,26 +194,26 @@ protected:
 	vector<vector<IndexedTriangle>> triangles = {};
 
 public:
-	virtual ~IndexedMesh() = default;
+	virtual ~IndexedMesh3D() = default;
 
-	IndexedMesh();
-	IndexedMesh(const vector<Vertex>& hardVertices, const vector<ivec3>& faceIndices, const PolyGroupID& id);
-	IndexedMesh(const char* filename, const PolyGroupID& id);
-	IndexedMesh(const SmoothParametricSurface& surf, int tRes, int uRes, const PolyGroupID& id = randomID());
+	IndexedMesh3D();
+	IndexedMesh3D(const vector<Vertex>& hardVertices, const vector<ivec3>& faceIndices, const PolyGroupID& id);
+	IndexedMesh3D(const char* filename, const PolyGroupID& id);
+	IndexedMesh3D(const SmoothParametricSurface& surf, int tRes, int uRes, const PolyGroupID& id = randomID());
 
 	void addNewPolygroup(const vector<Vertex>& hardVertices, const vector<ivec3>& faceIndices, const PolyGroupID& id);
 	void addNewPolygroup(const char* filename, const PolyGroupID& id);
 
-	IndexedMesh& operator=(const IndexedMesh& other);
-	IndexedMesh(IndexedMesh&& other) noexcept;
-	IndexedMesh& operator=(IndexedMesh&& other) noexcept;
-	IndexedMesh(const IndexedMesh& other);
+	IndexedMesh3D& operator=(const IndexedMesh3D& other);
+	IndexedMesh3D(IndexedMesh3D&& other) noexcept;
+	IndexedMesh3D& operator=(IndexedMesh3D&& other) noexcept;
+	IndexedMesh3D(const IndexedMesh3D& other);
 
 	void addUniformSurface(const SmoothParametricSurface& surf, int tRes, int uRes, const PolyGroupID& id = randomID());
 
-	void merge(const IndexedMesh& other);
-	void mergeAndKeepID(const IndexedMesh& other);
-	void copyPolygroup(const IndexedMesh& other, const PolyGroupID& id, const PolyGroupID& newId);
+	void merge(const IndexedMesh3D& other);
+	void mergeAndKeepID(const IndexedMesh3D& other);
+	void copyPolygroup(const IndexedMesh3D& other, const PolyGroupID& id, const PolyGroupID& newId);
 	void copyPolygroup(const PolyGroupID& id, const PolyGroupID& newId);
 
 	vector<string> getActiveExtraBuffers() const;
@@ -207,10 +221,13 @@ public:
 	raw_data_ptr bufferIndexLocation() const;
 	raw_data_ptr getBufferLocation(const string& name) const;
 
-	byte_size bufferIndexSize() const;
+	byte_size faceIndicesDataSize() const;
+	byte_size getAttributeDataSize(const string& name) const;
+	byte_size totalAttributeDataSize() const;
+	byte_size totalByteSize() const;
+
 	array_len bufferIndexLength() const;
 	array_len getBufferLength() const;
-	size_t getBufferSize(const string& name) const;
 
 	vector<PolyGroupID> getPolyGroupIDs() const;
 	BufferManager& getBufferBoss() const;
@@ -244,9 +261,9 @@ public:
 	void pointNormalsInDirection(vec3 dir, const PolyGroupID& id);
 	void pointNormalsInDirection(vec3 dir);
 
-	IndexedMesh subdivideBarycentric(const PolyGroupID& id) const;
-	IndexedMesh subdivideEdgecentric(const PolyGroupID& id) const;
-	IndexedMesh wireframe(PolyGroupID id, PolyGroupID targetId, float width, float heightCenter, float heightSide) const;
+	IndexedMesh3D subdivideBarycentric(const PolyGroupID& id) const;
+	IndexedMesh3D subdivideEdgecentric(const PolyGroupID& id) const;
+	IndexedMesh3D wireframe(PolyGroupID id, PolyGroupID targetId, float width, float heightCenter, float heightSide) const;
 
 	vector<Vertex> getVertices(const PolyGroupID& id) const;
 	vector<BufferedVertex> getBufferedVertices(const PolyGroupID& id) const;
@@ -280,12 +297,12 @@ public:
 };
 
 
-std::function<void(float, float)> deformationOperator(const std::function<void(BufferedVertex&, float, float)>& deformation, IndexedMesh& mesh, const PolyGroupID& id);
-std::function<void(float)> deformationOperator(const std::function<void(BufferedVertex&, float)>& deformation, IndexedMesh& mesh, const PolyGroupID& id);
-std::function<void(float, float)> moveAlongCurve(const SmoothParametricCurve& curve, IndexedMesh& mesh, const PolyGroupID& id);
+std::function<void(float, float)> deformationOperator(const std::function<void(BufferedVertex&, float, float)>& deformation, IndexedMesh3D& mesh, const PolyGroupID& id);
+std::function<void(float)> deformationOperator(const std::function<void(BufferedVertex&, float)>& deformation, IndexedMesh3D& mesh, const PolyGroupID& id);
+std::function<void(float, float)> moveAlongCurve(const SmoothParametricCurve& curve, IndexedMesh3D& mesh, const PolyGroupID& id);
 
 template <typename T>
-T IndexedMesh::integrateOverTriangles(const std::function<T(const IndexedTriangle&)>& f, PolyGroupID id) const {
+T IndexedMesh3D::integrateOverTriangles(const std::function<T(const IndexedTriangle&)>& f, PolyGroupID id) const {
 	T sum = T(0);
 	for (const IndexedTriangle& t : triangles.at(polygroupIndexOrder.at(id)))
 		sum += f(t) * t.area();
@@ -293,7 +310,7 @@ T IndexedMesh::integrateOverTriangles(const std::function<T(const IndexedTriangl
 }
 
 
-class Wireframe : public IndexedMesh {
+class Wireframe : public IndexedMesh3D {
 	SmoothParametricSurface surf;
 	float width;
 	int n, m, curve_res_rad, curve_res_hor;
@@ -305,7 +322,7 @@ public:
 };
 
 
-class PlanarFlowLines : public IndexedMesh {
+class PlanarFlowLines : public IndexedMesh3D {
 	VectorFieldR2 X;
 	float dt;
 	int steps;
@@ -343,7 +360,7 @@ public:
 };
 
 
-class PlanarDiffusedInterval : public IndexedMesh {
+class PlanarDiffusedInterval : public IndexedMesh3D {
 	VectorFieldR2 X;
 	float dt;
 	int steps;
@@ -365,7 +382,7 @@ public:
 };
 
 
-class PlanarDiffusedCurve : public IndexedMesh {
+class PlanarDiffusedCurve : public IndexedMesh3D {
 	VectorFieldR2 X;
 	float dt;
 	int steps;
@@ -388,7 +405,7 @@ public:
 };
 
 
-class PlanarDiffusedPatterns : public IndexedMesh {
+class PlanarDiffusedPatterns : public IndexedMesh3D {
 	// uv = (t, t0)
 	// pos = (x, y, 0)
 	// n = (0, 0, 1)
@@ -425,7 +442,7 @@ struct PIPE_SETTINGS {
  *extra0 loaded by default, filled with 0s
  */
 
-class PipeCurveVertexShader : public IndexedMesh {
+class PipeCurveVertexShader : public IndexedMesh3D {
 	PIPE_SETTINGS settings;
 	PolyGroupID id;
 
@@ -465,20 +482,20 @@ public:
 };
 
 
-class SurfacePlotDiscretisedMesh : public IndexedMesh {
+class SurfacePlotDiscretisedMesh : public IndexedMesh3D {
 public:
 	explicit SurfacePlotDiscretisedMesh(const DiscreteRealFunctionR2& plot);
 	void transform(SpaceAutomorphism F);
 };
 
 
-class SurfacePolarPlotDiscretisedMesh : public IndexedMesh {
+class SurfacePolarPlotDiscretisedMesh : public IndexedMesh3D {
 public:
 	explicit SurfacePolarPlotDiscretisedMesh(const DiscreteRealFunctionR2& plot, float r = 1, float rot_speed = 0);
 };
 
 
-class FoliatedParametricSurfaceMesh : public IndexedMesh {
+class FoliatedParametricSurfaceMesh : public IndexedMesh3D {
 	ParametricSurfaceFoliation foliation;
 	int special_leaves, continuous_leaves, leaf_radial_res, leaf_hor_res;
 	HOM(float, vec4) color_map, extra1_map;

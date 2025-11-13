@@ -1,21 +1,13 @@
 #pragma once
 #include <GL/glew.h>
 #include "filesUtils.hpp"
-#include "macroParsing.hpp"
-#include "renderingUtils.hpp"
-#include "shaderTypes.hpp"
 #include "glCommand.hpp"
-
-enum ShaderType {
-	CLASSIC,
-	GEOMETRY1,
-};
 
 
 class Shader {
 protected:
-	GLenum shaderType;
-	GLuint shaderID;
+	CONST_PROPERTY(GLenum, shaderType);
+	CONST_PROPERTY(gl_id, shaderID);
 
 	void compile(const string& code);
 public:
@@ -23,8 +15,6 @@ public:
 	Shader(const string& code, GLenum shaderType);
 	~Shader();
 
-	GLuint getID() const;
-	GLenum getType() const;
 	static GLenum getTypeFromExtension(const string& extension);
 };
 
@@ -54,18 +44,26 @@ public:
 
 
 class ShaderProgram {
-	unordered_map<string, GLuint> cachedUniformLocations;
-	GLuint programID = 0;
+	CONST_PROPERTY(gl_id, programID);
 
 public:
+	ShaderProgram();
 	ShaderProgram(const Shader& vertexShader, const Shader& fragmentShader);
 	ShaderProgram(const Shader& vertexShader, const Shader& fragmentShader, const Shader& geometryShader);
 	~ShaderProgram();
 
 	void bind() const;
 	void unbind() const;
-	GLuint getID() const;
 
-	GLuint getUniformLocation(const string& uniformName);
+	static sptr<ShaderProgram> standardShaderProgram(Path vertexShaderPath, Path fragmentShaderPath);
+	static sptr<ShaderProgram> geometryShaderProgram(Path vertexShaderPath, Path fragmentShaderPath, Path geometryShaderPath);
+};
+
+class ComputeShaderProgram : public ShaderProgram {
+public:
+	explicit ComputeShaderProgram(const Shader& computeShader);
+	void run(int numGroupsX, int numGroupsY=1, int numGroupsZ=1) const;
+
+	static sptr<ComputeShaderProgram> standardComputeShaderProgram(Path computeShaderPath);
 };
 

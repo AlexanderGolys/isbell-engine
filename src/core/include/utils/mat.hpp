@@ -10,7 +10,6 @@
 
 #include "metaUtils.hpp"
 
-using namespace glm;
 
 template <typename vec>
 vector<float> vecToVecHeHe(vec v) {
@@ -41,6 +40,17 @@ bool nearlyEqual_mat(M a, M b) {
 	return a.nearly_equal(b);
 }
 
+int sgn(float x);
+
+template <RealVectorSpaceConcept T = float>
+T integrate(const HOM(float, T)& f, float a, float b, int n_samples) {
+	float dt = (b - a) / n_samples;
+	T res = f(a)*0.f;
+	for (float t : linspace(a, b, n_samples+1)) {
+		res = res + f(t)*dt;
+	}
+	return res;
+}
 
 template <typename domain, typename codomain=float>
 class Morphism {
@@ -81,9 +91,20 @@ Morphism<X, Z> operator&(const Morphism<Y, Z>& f, const Morphism<X, Y>& g) {
 	});
 }
 
+ivec2 sorted(ivec2 v);
+ivec3 sorted(ivec3 v);
+ivec4 sorted(ivec4 v);
 
 // -----------------------------  MATRICES  ----------------------------------
 
+mat3 blockMatrix(const mat2& A, vec2 b, vec2 c, float d);
+mat3 blockMatrix(float a, vec2 b, vec2 c, const mat2& D);
+mat4 blockMatrix(const mat3& A, vec3 b, vec3 c, float d);
+mat4 blockMatrix(float a, vec3 b, vec3 c, const mat3& D);
+mat4 blockMatrix(const mat2& A, const mat2& B, const mat2& C, const mat2& D);
+mat3 submatrix(const mat4& M, ivec3 rows, ivec3 cols);
+mat2 submatrix(const mat4& M, ivec2 rows, ivec2 cols);
+mat2 submatrix(const mat3& M, ivec2 rows, ivec2 cols);
 
 template <Rng T>
 class Vector {
@@ -1175,162 +1196,61 @@ class Quaternion {
 	vec4 q;
 
 public:
-	explicit Quaternion(vec4 q)
-	: q(q) {}
-
-	explicit Quaternion(Complex z)
-	: q(vec4(z.re(), z.im(), 0, 0)) {}
-
-
-	Quaternion(float x, float y, float z, float w)
-	: q(vec4(x, y, z, w)) {}
-
-	explicit Quaternion(float x)
-	: q(vec4(x, 0, 0, 0)) {}
-
-	explicit Quaternion(vec3 im)
-	: q(vec4(0, im)) {}
+	explicit Quaternion(vec4 q);
+	explicit Quaternion(Complex z);
+	Quaternion(float x, float y, float z, float w);
+	explicit Quaternion(float x);
+	explicit Quaternion(vec3 im);
 
 	Quaternion operator*(Quaternion r) const;
+	Quaternion operator*(float f) const;
+	Quaternion operator/(float f) const;
+	Quaternion operator+(Quaternion r) const;
+	Quaternion operator-(Quaternion r) const;
+	Quaternion operator-() const;
+	Quaternion operator+(float f) const;
+	Quaternion operator-(float f) const;
+	Quaternion operator/(Quaternion r) const;
 
-	Quaternion operator*(float f) const {
-		return Quaternion(q * f);
-	}
 
-	Quaternion operator/(float f) const {
-		return *this * (1.f / f);
-	}
-
-	Quaternion operator+(Quaternion r) const {
-		return Quaternion(q + r.q);
-	}
-
-	Quaternion operator-(Quaternion r) const {
-		return *this + r * -1;
-	}
-
-	Quaternion operator-() const {
-		return *this * -1;
-	}
-
-	float norm2() const {
-		return dot(q, q);
-	}
-
-	float norm() const {
-		return std::sqrt(norm2());
-	}
-
-	Quaternion inv() const {
-		return conj() / norm2();
-	}
-
-	Quaternion operator~() const {
-		return inv();
-	}
-
+	float norm2() const;
+	float norm() const;
+	Quaternion inv() const;
+	Quaternion operator~() const;
 	Quaternion pow(int p) const;
 
-	Quaternion operator+(float f) const {
-		return *this + Quaternion(f);
-	}
+	friend Quaternion operator*(float f, Quaternion x);
+	friend Quaternion operator/(float f, Quaternion x);
+	friend Quaternion operator+(float f, Quaternion x);
+	friend Quaternion operator-(float f, Quaternion x);
+	friend float dot(Quaternion a, Quaternion b);
 
-	Quaternion operator-(float f) const {
-		return *this - Quaternion(f);
-	}
+	explicit operator vec4() const;
+	explicit operator string() const;
 
-	Quaternion operator/(Quaternion r) const {
-		return *this * r.inv();
-	}
+	constexpr float re() const;
+	constexpr vec3 im() const;
 
-	friend Quaternion operator*(float f, Quaternion x) {
-		return x * f;
-	}
+	float x() const;
+	float y() const;
+	float z() const;
+	float w() const;
 
-	friend Quaternion operator/(float f, Quaternion x) {
-		return Quaternion(f) / x;
-	}
-
-	friend Quaternion operator+(float f, Quaternion x) {
-		return x + f;
-	}
-
-	friend Quaternion operator-(float f, Quaternion x) {
-		return Quaternion(f) - x;
-	}
-
-	friend float dot(Quaternion a, Quaternion b) {
-		return dot(a.q, b.q);
-	}
-
-	explicit operator vec4() const {
-		return q;
-	}
-
-	explicit operator string() const {
-		return std::format("{0}+{1}i+{2}j+{3}k", q.x, q.y, q.z, q.w);
-	}
-
-	constexpr float re() const {
-		return q.x;
-	}
-
-	constexpr vec3 im() const {
-		return vec3(q.y, q.z, q.w);
-	}
-
-	float x() const {
-		return q.x;
-	}
-
-	float y() const {
-		return q.y;
-	}
-
-	float z() const {
-		return q.z;
-	}
-
-	float w() const {
-		return q.w;
-	}
-
-	float operator[](int i) const {
-		return q[i];
-	}
-
-	Quaternion conj() const {
-		return Quaternion(q.x, -q.y, -q.z, -q.w);
-	}
-
-	Quaternion normalise() const {
-		return *this / norm();
-	}
+	float operator[](int i) const;
+	Quaternion conj() const;
+	Quaternion normalise() const;
 
 	vec3 rotate(vec3 im_x) const;
 	HOM(vec3, vec3) rotation() const;
 	vec3 Hopf_map() const;
 	vec4 rotateS3(vec4 x) const;
 
-	static Quaternion one() {
-		return Quaternion(1, 0, 0, 0);
-	}
-
-	static Quaternion zero() {
-		return Quaternion(0, 0, 0, 0);
-	}
-
-	static Quaternion i() {
-		return Quaternion(0, 1, 0, 0);
-	}
-
-	static Quaternion j() {
-		return Quaternion(0, 0, 1, 0);
-	}
-
-	static Quaternion k() {
-		return Quaternion(0, 0, 0, 1);
-	}
+	static Quaternion one();
+	static Quaternion zero();
+	static Quaternion i();
+	static Quaternion j();
+	static Quaternion k();
+	static Quaternion fromRotation(const mat3& R);
 };
 
 
@@ -1343,36 +1263,17 @@ const Quaternion k_H = Quaternion::k();
 
 class SO2 : mat2 {
 public:
-	explicit SO2(mat2 m)
-	: mat2(m) {};
-
-	explicit SO2()
-	: SO2(mat2(1, 0, 0, 1)) {}
-
-	explicit SO2(Complex z)
-	: mat2(z.re(), -z.im(), z.im(), z.re()) {}
-
-	explicit SO2(float angle)
-	: SO2(Complex(cos(angle), sin(angle))) {}
-
-	explicit operator Complex() const {
-		return Complex((*this)[0][0], (*this)[1][0]);
-	}
-
-	SO2 inverse() const {
-		return SO2(glm::transpose(*this));
-	}
+	explicit SO2(mat2 m);;
+	explicit SO2();
+	explicit SO2(Complex z);
+	explicit SO2(float angle);
+	explicit operator Complex() const;
+	SO2 inverse() const;
 
 	// explicit operator mat2();
 	bool check() const;
-
-	static SO2 one() {
-		return SO2();
-	}
-
-	static SO2 I() {
-		return SO2();
-	}
+	static SO2 one();
+	static SO2 I();
 };
 
 
@@ -1385,6 +1286,8 @@ inline mat3 doubleCoverSO3(Quaternion q) {
 	return mat3(x0 * x0 + x1 * x1 - x2 * x2 - x3 * x3, 2.0 * (x1 * x2 - x0 * x3), 2.0 * (x1 * x3 + x0 * x2), 2.0 * (x1 * x2 + x0 * x3), x0 * x0 - x1 * x1 + x2 * x2 - x3 * x3,
 				2.0 * (x2 * x3 - x0 * x1), 2.0 * (x1 * x3 - x0 * x2), 2.0 * (x2 * x3 + x0 * x1), x0 * x0 - x1 * x1 - x2 * x2 + x3 * x3);
 }
+
+
 
 class SO3 : public mat3 {
 public:
@@ -1427,38 +1330,23 @@ class SE3 {
 	vec3 t;
 
 public:
-	SE3(Quaternion q, vec3 t)
-	: q(q), t(t) {}
+	SE3(Quaternion q, vec3 t);
+	SE3(const mat3& R, vec3 t) : SE3(Quaternion::fromRotation(R), t) {}
+	explicit SE3(const mat4& M) : SE3(Quaternion::fromRotation(mat3(M)), vec3(M[3])) {}
+	SE3();
 
-	SE3()
-	: SE3(Quaternion::one(), vec3(0)) {}
-
-	SE3 operator*(const SE3& other) const {
-		return SE3(q * other.q, t + q.rotate(other.t));
-	}
-
-	vec3 operator*(vec3 v) const {
-		return q.rotate(v) + t;
-	}
-
-	SE3 inv() const {
-		Quaternion q_inv = q.inv();
-		return SE3(q_inv, q_inv.rotate(-t));
-	}
+	SE3 operator*(const SE3& other) const;
+	vec3 operator()(vec3 v) const;
+	SE3 inv() const;
+	SE3 operator~() const;
 
 	mat4 toMat4() const;
+	Quaternion rotation() const;;
+	vec3 translation() const;
+	mat3 rotationMatrix() const;
 
-	int dim() const {
-		return 6;
-	};
-
-	Quaternion rotation() const {
-		return q;
-	};
-
-	vec3 translation() const {
-		return t;
-	}
+	static SE3 identity();
+	static SE3 one();
 };
 
 
@@ -1466,13 +1354,8 @@ inline float frac(float x) {
 	return x - std::floor(x);
 }
 
-inline int sgn(float x) {
-	return x < 0 ? -1 : 1;
-}
 
-inline int sign(float x) {
-	return sgn(x);
-}
+
 
 float pseudorandomizer(float x, float seed = 0.f);
 int binomial(int n, int k);
@@ -1487,11 +1370,6 @@ float det(const M& m) {
 // inline bool nearlyEqual(float a, int b) { return norm(a - b) < 1e-6; }
 // inline bool nearlyEqual(int a, float b) { return norm(a - b) < 1e-6; }
 
-
-template <typename vec>
-vec barycenter(vec a, vec b, vec c) {
-	return (a + b + c) / 3.f;
-};
 
 
 vec2 intersectLines(vec2 p1, vec2 p2, vec2 q1, vec2 q2);

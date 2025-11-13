@@ -453,6 +453,58 @@ vec4 Quaternion::rotateS3(vec4 x) const {
 	return (q.conj() * h * q).q;
 }
 
+Quaternion Quaternion::one() {
+	return Quaternion(1, 0, 0, 0);
+}
+
+Quaternion Quaternion::zero() {
+	return Quaternion(0, 0, 0, 0);
+}
+
+Quaternion Quaternion::i() {
+	return Quaternion(0, 1, 0, 0);
+}
+
+Quaternion Quaternion::j() {
+	return Quaternion(0, 0, 1, 0);
+}
+
+Quaternion Quaternion::k() {
+	return Quaternion(0, 0, 0, 1);
+}
+
+Quaternion Quaternion::fromRotation(const mat3& R) {
+	return Quaternion(
+		sqrt(1.f + R[0][0] + R[1][1] + R[2][2]) / 2.f,
+		sqrt(1.f + R[0][0] - R[1][1] - R[2][2]) / 2.f * sgn(R[2][1] - R[1][2]),
+		sqrt(1.f - R[0][0] + R[1][1] - R[2][2]) / 2.f * sgn(R[0][2] - R[2][0]),
+		sqrt(1.f - R[0][0] - R[1][1] + R[2][2]) / 2.f * sgn(R[1][0] - R[0][1]));
+}
+
+SO2::SO2(mat2 m): mat2(m) {}
+
+SO2::SO2(): SO2(mat2(1, 0, 0, 1)) {}
+
+SO2::SO2(Complex z): mat2(z.re(), -z.im(), z.im(), z.re()) {}
+
+SO2::SO2(float angle): SO2(Complex(cos(angle), sin(angle))) {}
+
+SO2::operator Complex() const {
+	return Complex((*this)[0][0], (*this)[1][0]);
+}
+
+SO2 SO2::inverse() const {
+	return SO2(glm::transpose(*this));
+}
+
+SO2 SO2::one() {
+	return SO2();
+}
+
+SO2 SO2::I() {
+	return SO2();
+}
+
 
 vec2 intersectLines(vec2 p1, vec2 p2, vec2 q1, vec2 q2) {
 	return (p1 * (q1.y - q2.y) - p2 * (q1.y - q2.y) - q1 * (p1.y - p2.y) + q2 * (p1.y - p2.y)) / ((p1.x - p2.x) * (q1.y - q2.y) - (p1.y - p2.y) * (q1.x - q2.x));
@@ -461,6 +513,128 @@ vec2 intersectLines(vec2 p1, vec2 p2, vec2 q1, vec2 q2) {
 
 Complex intersectLines(Complex p1, Complex p2, Complex q1, Complex q2) {
 	return Complex(intersectLines(p1.z, p2.z, q1.z, q2.z));
+}
+
+Quaternion::Quaternion(vec4 q): q(q) {}
+
+Quaternion::Quaternion(Complex z): q(vec4(z.re(), z.im(), 0, 0)) {}
+
+Quaternion::Quaternion(float x, float y, float z, float w): q(vec4(x, y, z, w)) {}
+
+Quaternion::Quaternion(float x): q(vec4(x, 0, 0, 0)) {}
+
+Quaternion::Quaternion(vec3 im): q(vec4(0, im)) {}
+
+Quaternion Quaternion::operator*(float f) const {
+	return Quaternion(q * f);
+}
+
+Quaternion Quaternion::operator/(float f) const {
+	return *this * (1.f / f);
+}
+
+Quaternion Quaternion::operator+(Quaternion r) const {
+	return Quaternion(q + r.q);
+}
+
+Quaternion Quaternion::operator-(Quaternion r) const {
+	return *this + r * -1;
+}
+
+Quaternion Quaternion::operator-() const {
+	return *this * -1;
+}
+
+float Quaternion::norm2() const {
+	return dot(q, q);
+}
+
+float Quaternion::norm() const {
+	return std::sqrt(norm2());
+}
+
+Quaternion Quaternion::inv() const {
+	return conj() / norm2();
+}
+
+Quaternion Quaternion::operator~() const {
+	return inv();
+}
+
+Quaternion Quaternion::operator+(float f) const {
+	return *this + Quaternion(f);
+}
+
+Quaternion Quaternion::operator-(float f) const {
+	return *this - Quaternion(f);
+}
+
+Quaternion Quaternion::operator/(Quaternion r) const {
+	return *this * r.inv();
+}
+
+Quaternion::operator tvec4<float>() const {
+	return q;
+}
+
+Quaternion::operator string() const {
+	return std::format("{0}+{1}i+{2}j+{3}k", q.x, q.y, q.z, q.w);
+}
+
+constexpr float Quaternion::re() const {
+	return q.x;
+}
+
+constexpr vec3 Quaternion::im() const {
+	return vec3(q.y, q.z, q.w);
+}
+
+float Quaternion::x() const {
+	return q.x;
+}
+
+float Quaternion::y() const {
+	return q.y;
+}
+
+float Quaternion::z() const {
+	return q.z;
+}
+
+float Quaternion::w() const {
+	return q.w;
+}
+
+float Quaternion::operator[](int i) const {
+	return q[i];
+}
+
+Quaternion Quaternion::conj() const {
+	return Quaternion(q.x, -q.y, -q.z, -q.w);
+}
+
+Quaternion Quaternion::normalise() const {
+	return *this / norm();
+}
+
+Quaternion operator*(float f, Quaternion x) {
+	return x * f;
+}
+
+Quaternion operator/(float f, Quaternion x) {
+	return Quaternion(f) / x;
+}
+
+Quaternion operator+(float f, Quaternion x) {
+	return x + f;
+}
+
+Quaternion operator-(float f, Quaternion x) {
+	return Quaternion(f) - x;
+}
+
+float dot(Quaternion a, Quaternion b) {
+	return dot(a.q, b.q);
 }
 
 mat3 scaleMatrix3(vec3 s) {
@@ -624,10 +798,149 @@ bool SO2::check() const {
 	return nearlyEqual<mat2>(tmat2x2(determinant(mat2())), 1.f) && isClose(mat2() * transpose(mat2()), mat2(1));
 }
 
+SE3::SE3(Quaternion q, vec3 t): q(q), t(t) {}
+
+SE3::SE3(): SE3(Quaternion::one(), vec3(0)) {}
+
+SE3 SE3::operator*(const SE3& other) const {
+	return SE3(q * other.q, t + q.rotate(other.t));
+}
+
+vec3 SE3::operator()(vec3 v) const {
+	return q.rotate(v) + t;
+}
+
+SE3 SE3::inv() const {
+	Quaternion q_inv = q.inv();
+	return SE3(q_inv, q_inv.rotate(-t));
+}
+
+SE3 SE3::operator~() const {
+	return inv();
+}
+
+mat4 SE3::toMat4() const {
+	return blockMatrix(doubleCoverSO3(q), t, vec3(0), 1.f);
+}
+
+Quaternion SE3::rotation() const {
+	return q;
+}
+
+vec3 SE3::translation() const {
+	return t;
+}
+
+mat3 SE3::rotationMatrix() const {
+	return doubleCoverSO3(q);
+}
+
+SE3 SE3::identity() {
+	return SE3();
+}
+
+SE3 SE3::one() {
+	return SE3();
+}
+
 float pseudorandomizer(float x, float seed) {
 	return frac(sin(x + seed) * 43758.5453f + seed);
 }
 
+
+int sgn(float x) {
+	return (x > 0) - (x < 0);
+}
+
+ivec2 sorted(ivec2 v) {
+	return ivec2(std::min(v.x, v.y), std::max(v.x, v.y));
+}
+
+ivec3 sorted(ivec3 v) {
+	return ivec3(std::min({v.x, v.y, v.z}),
+				 v.x + v.y + v.z - std::max({v.x, v.y, v.z}) - std::min({v.x, v.y, v.z}),
+				 std::max({v.x, v.y, v.z}));
+}
+
+ivec4 sorted(ivec4 v) {
+	int arr[4] = {v.x, v.y, v.z, v.w};
+	std::sort(arr, arr + 4);
+	return ivec4(arr[0], arr[1], arr[2], arr[3]);
+}
+
+mat3 blockMatrix(const mat2& A, vec2 b, vec2 c, float d) {
+	return mat3(
+		A[0][0], A[0][1], b.x,
+		A[1][0], A[1][1], b.y,
+		c.x,     c.y,     d
+	);
+}
+
+mat3 blockMatrix(float a, vec2 b, vec2 c, const mat2& D) {
+	return mat3(
+		a,     b.x,     b.y,
+		c.x,   D[0][0], D[0][1],
+		c.y,   D[1][0], D[1][1]
+	);
+}
+
+mat4 blockMatrix(const mat3& A, vec3 b, vec3 c, float d) {
+	return mat4(
+		A[0][0], A[0][1], A[0][2], b.x,
+		A[1][0], A[1][1], A[1][2], b.y,
+		A[2][0], A[2][1], A[2][2], b.z,
+		c.x,     c.y,     c.z,     d
+	);
+}
+
+mat4 blockMatrix(float a, vec3 b, vec3 c, const mat3& D) {
+	return mat4(
+		a,     b.x,     b.y,     b.z,
+		c.x,   D[0][0], D[0][1], D[0][2],
+		c.y,   D[1][0], D[1][1], D[1][2],
+		c.z,   D[2][0], D[2][1], D[2][2]
+	);
+}
+
+mat4 blockMatrix(const mat2& A, const mat2& B, const mat2& C, const mat2& D) {
+	return mat4(
+		A[0][0], A[0][1], B[0][0], B[0][1],
+		A[1][0], A[1][1], B[1][0], B[1][1],
+		C[0][0], C[0][1], D[0][0], D[0][1],
+		C[1][0], C[1][1], D[1][0], D[1][1]
+	);
+}
+
+mat3 submatrix(const mat4& M, ivec3 rows, ivec3 cols) {
+	mat3 re;
+	ivec3 rows_sorted = sorted(rows);
+	ivec3 cols_sorted = sorted(cols);
+	for (int i = 0; i < 3; i++)
+		for (int j = 0; j < 3; j++)
+			re[i][j] = M[rows_sorted[i]][cols_sorted[j]];
+	return re;
+
+}
+
+mat2 submatrix(const mat4& M, ivec2 rows, ivec2 cols) {
+	mat2 re;
+	ivec2 rows_sorted = sorted(rows);
+	ivec2 cols_sorted = sorted(cols);
+	for (int i = 0; i < 2; i++)
+		for (int j = 0; j < 2; j++)
+			re[i][j] = M[rows_sorted[i]][cols_sorted[j]];
+	return re;
+}
+
+mat2 submatrix(const mat3& M, ivec2 rows, ivec2 cols) {
+	mat2 re;
+	ivec2 rows_sorted = sorted(rows);
+	ivec2 cols_sorted = sorted(cols);
+	for (int i = 0; i < 2; i++)
+		for (int j = 0; j < 2; j++)
+			re[i][j] = M[rows_sorted[i]][cols_sorted[j]];
+	return re;
+}
 
 SparseMatrix::SparseMatrix(int n, int m) {
 	this->n = n;

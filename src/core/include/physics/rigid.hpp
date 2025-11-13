@@ -119,7 +119,7 @@ class PhysicalEnvironment {
 
 
 class RigidBodyTriangulated2D {
-	shared_ptr<IndexedMesh> mesh;
+	shared_ptr<IndexedMesh3D> mesh;
 	vec3 centerOfMass = vec3(0);
 	mat3 I = mat3(0);
 	vec3 angularVelocity;
@@ -127,7 +127,7 @@ class RigidBodyTriangulated2D {
 	vec3 angularAcceleration;
 	vec3 linearAccelerationCM;
 public:
-	RigidBodyTriangulated2D(shared_ptr<IndexedMesh> mesh, vec3 angularVelocity,  vec3 linearVelocity,  vec3 angularAcceleration,  vec3 linearAcceleration);
+	RigidBodyTriangulated2D(shared_ptr<IndexedMesh3D> mesh, vec3 angularVelocity,  vec3 linearVelocity,  vec3 angularAcceleration,  vec3 linearAcceleration);
 
 	void update(float dt);
 
@@ -163,11 +163,11 @@ class RollingBody {
 	PolyGroupID centerID;
 
 public:
-	shared_ptr<IndexedMesh> mesh;
-	shared_ptr<IndexedMesh> floormesh;
-	shared_ptr<IndexedMesh> centermesh;
+	shared_ptr<IndexedMesh3D> mesh;
+	shared_ptr<IndexedMesh3D> floormesh;
+	shared_ptr<IndexedMesh3D> centermesh;
 
-	RollingBody(shared_ptr<IndexedMesh> mesh, SmoothParametricCurve boundary, SmoothParametricCurve floor, vec3 gravity);
+	RollingBody(shared_ptr<IndexedMesh3D> mesh, SmoothParametricCurve boundary, SmoothParametricCurve floor, vec3 gravity);
 	RollingBody(SmoothParametricCurve boundary, SmoothParametricCurve floor, vec3 polarConeCenter, vec3 gravity, int n, int m, float pipe_r);
 
 	float rollingPathLen(float phi);
@@ -183,17 +183,17 @@ public:
 	void step(float dt);
 	float rotationAngle(float d1, float d2);
 
-	void shift(vec3 v, IndexedMesh &mesh, IndexedMesh &centermesh);
-	void rotate(float angle, IndexedMesh &mesh, IndexedMesh &centermesh);
-	void step(float dt, IndexedMesh &mesh, IndexedMesh &centermesh);
-	void roll(float dt, IndexedMesh &mesh, IndexedMesh &centermesh);
+	void shift(vec3 v, IndexedMesh3D &mesh, IndexedMesh3D &centermesh);
+	void rotate(float angle, IndexedMesh3D &mesh, IndexedMesh3D &centermesh);
+	void step(float dt, IndexedMesh3D &mesh, IndexedMesh3D &centermesh);
+	void roll(float dt, IndexedMesh3D &mesh, IndexedMesh3D &centermesh);
 
 
 	vec3 getCM() {return centerOfMass;}
 	float getAngularVelocity();
-	shared_ptr<IndexedMesh> getMesh();
-	shared_ptr<IndexedMesh> getCenterMesh();
-	shared_ptr<IndexedMesh> getFloorMesh();
+	shared_ptr<IndexedMesh3D> getMesh();
+	shared_ptr<IndexedMesh3D> getCenterMesh();
+	shared_ptr<IndexedMesh3D> getFloorMesh();
 
 };
 
@@ -212,8 +212,8 @@ public:
 	RigidBody3D(vec3 cm, mat3 I, vec3 angularVelocity,
 		vec3 linearVelocity,  vec3 angularAcceleration,  vec3 linearAcceleration, float mass, mat3 R);
 
-	void rotateAroundCM(mat3 M, IndexedMesh &mesh);
-	void rotate(mat3 M, vec3 p, IndexedMesh &mesh);
+	void rotateAroundCM(mat3 M, IndexedMesh3D &mesh);
+	void rotate(mat3 M, vec3 p, IndexedMesh3D &mesh);
 	vec3 angularMomentum(vec3 rotationCenter);
 	float  kineticEnergy(vec3 rotationCenter);
 	mat3 I_p(vec3 p);
@@ -221,11 +221,11 @@ public:
 	mat3 dRdt() {return spin()*R;}
 	mat3 I_rotated(const mat3 &R) {return R*I*transpose(R);}
 	vec3 alpha();
-	void freeMotion(float dt, IndexedMesh &mesh);
-	void shift(vec3 v, IndexedMesh &mesh);
+	void freeMotion(float dt, IndexedMesh3D &mesh);
+	void shift(vec3 v, IndexedMesh3D &mesh);
 	vec3 angularMomentum() {return I*angularVelocity;}
 
 	vec3 getCM() const {return centerOfMass;}
 };
 
-std::pair<RigidBody3D, IndexedMesh> boxRigid(vec3 size, vec3 center, float mass, vec3 velocity, vec3 angularVelocity, vec3 angularAcceleration, vec3 linearAcceleration, const mat3 &R);
+std::pair<RigidBody3D, IndexedMesh3D> boxRigid(vec3 size, vec3 center, float mass, vec3 velocity, vec3 angularVelocity, vec3 angularAcceleration, vec3 linearAcceleration, const mat3 &R);

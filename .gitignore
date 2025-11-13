@@ -21,4 +21,5 @@ example.lane
 **.hs
 TODO.md
 **_.**
-isbell-engine.code-workspace
+.github/isbell-engine.code-workspace
+tmp.md
