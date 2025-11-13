@@ -41,6 +41,7 @@ class DefferedImpulseFromKeypress : public EventListener {
 	float regenerationTime;
 	float lastImpulseTime;
 public:
+
 	DefferedImpulseFromKeypress(sptr<DefferedResponseAccumulator> impulseAccumulator, const Distribution& impulseDistribution, KeyCode key, float regenerationTime = 2.f)
 	: impulseAccumulator(impulseAccumulator), impulseDistribution(impulseDistribution), key(key), regenerationTime(regenerationTime), lastImpulseTime(-regenerationTime) {}
 
