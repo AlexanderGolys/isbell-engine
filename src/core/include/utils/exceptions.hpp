@@ -34,7 +34,7 @@ class ErrorClassWrapper : public std::exception {
 public:
     explicit ErrorClassWrapper(const string& msg, const char* file, int line)
         : msg_(msg), file_(file), line_(line) {
-        full_msg_ = msg_ + " [at " + file_ + ":" + std::to_string(line_) + "]";
+        full_msg_ = msg_ + " \n [at " + file_ + ":" + std::to_string(line_) + "]";
     }
     const char* what() const noexcept override {
         return full_msg_.c_str();
@@ -58,21 +58,25 @@ public:
         : ErrorClassWrapper("Recursion limit (" + std::to_string(limit) + "levels) exceeded during " + where, file, line) {}
 };
 
-
-class IndexOutOfBounds : public ErrorClassWrapper {
+class IndexError : public ErrorClassWrapper {
 public:
-    IndexOutOfBounds(int index, int size, const string &structure_name, const char* file, int line)
-        : ErrorClassWrapper("Index " + to_string(index) + " out of bounds ("+ structure_name + " of size: "+to_string(size)+")", file, line) {}
-    IndexOutOfBounds(int index, const string &size, const string &structure_name, const char* file, int line)
-        : ErrorClassWrapper("Index " + to_string(index) + " out of bounds ("+ structure_name + " of size: "+size+")", file, line) {}
-    IndexOutOfBounds(const string &index, const string &size, const string &structure_name, const char* file, int line)
-    : ErrorClassWrapper("Index " + index + " out of bounds ("+ structure_name + " of size: "+size+")", file, line) {}
+	using ErrorClassWrapper::ErrorClassWrapper;
 };
 
-class IteratorError : public ErrorClassWrapper {
+class IndexOutOfBounds : public IndexError {
 public:
-    IteratorError(const string& msg, const char* file, int line) : ErrorClassWrapper(msg, file, line) {}
-    IteratorError(const char* file, int line) : ErrorClassWrapper("Iterator operation error.", file, line) {}
+    IndexOutOfBounds(int index, int size, const string &structure_name, const char* file, int line) : IndexError("Index " + to_string(index) + " out of bounds ("+ structure_name + " of size: "+to_string(size)+")", file, line) {}
+    IndexOutOfBounds(int index, const string &size, const string &structure_name, const char* file, int line) : IndexError("Index " + to_string(index) + " out of bounds ("+ structure_name + " of size: "+size+")", file, line) {}
+    IndexOutOfBounds(const string &index, const string &size, const string &structure_name, const char* file, int line) : IndexError("Index " + index + " out of bounds ("+ structure_name + " of size: "+size+")", file, line) {}
+	IndexOutOfBounds(const string &msg, const char* file, int line) : IndexError(msg, file, line) {}
+	IndexOutOfBounds(int index, int bounds, const char* file, int line) : IndexError("Index out of bounds [" + to_string(index) + "/" + to_string(bounds) + "]", file, line) {}
+	IndexOutOfBounds(int index, const char* file, int line) : IndexError("Index out of bounds (" + to_string(index) + ")", file, line) {}
+};
+
+class IteratorError : public IndexError {
+public:
+    IteratorError(const string& msg, const char* file, int line) : IndexError(msg, file, line) {}
+    IteratorError(const char* file, int line) : IndexError("Iterator operation error.", file, line) {}
 };
 
 class IteratorEndReferenceError : public IteratorError {
@@ -130,6 +134,13 @@ public:
     ValueError(const string& msg, const char* file, int line)
         : ErrorClassWrapper(msg, file, line) {}
 };
+
+class RuntimeError : public ErrorClassWrapper {
+public:
+	RuntimeError(const string& msg, const char* file, int line)
+		: ErrorClassWrapper(msg, file, line) {}
+};
+
 
 class SystemError : public ErrorClassWrapper {
 public:

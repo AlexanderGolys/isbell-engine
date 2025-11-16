@@ -4,16 +4,6 @@
 
 enum FACE {DOWN = 0, UP = 1, RIGHT = 2, LEFT = 3, FRONT = 4, BACK = 5};
 
-class Quadrilateral {
-	Vertex p0, p1, p2, p3;
-public:
-	Quadrilateral(vec3 p0, vec3 p1, vec3 p2, vec3 p3) : p0(p0), p1(p1), p2(p2), p3(p3) {}
-	std::array<Vertex, 4> getVertices() const;
-	static std::array<glm::ivec3, 2> getTriangles() { return {glm::ivec3(0, 1, 2), glm::ivec3(0, 2, 3)}; }
-};
-
-
-
 
 inline FACE opposite(FACE f) {
 	if (f == DOWN) return UP;
@@ -38,10 +28,10 @@ public:
 	IndexedQuadrilateral(glm::ivec4 indices, HOM(int, Vertex) bufferManagerInterface) : indices(indices), bufferManagerInterface(std::move(bufferManagerInterface)) {}
 	std::array<Vertex, 4> getVertices() const { return {bufferManagerInterface(indices[0]), bufferManagerInterface(indices[1]), bufferManagerInterface(indices[2]), bufferManagerInterface(indices[3])}; }
 	std::array<glm::ivec3, 2> getTriangles() const { return {glm::ivec3(indices[0], indices[1], indices[2]), glm::ivec3(indices[0], indices[2], indices[3])}; }
-	std::array<std::array<vec3, 3>, 2> getTriangleVertexPositions() const { return {bufferManagerInterface(indices[0]).getPosition(), bufferManagerInterface(indices[1]).getPosition(), bufferManagerInterface(indices[2]).getPosition()}; }
+	std::array<std::array<vec3, 3>, 2> getTriangleVertexPositions() const { return {bufferManagerInterface(indices[0]).position, bufferManagerInterface(indices[1]).position, bufferManagerInterface(indices[2]).position}; }
 	float surfaceArea() const { std::array<arr33, 2> v = getTriangleVertexPositions(); return abs(det(toMat3(v[0]))) +  abs(det(toMat3(v[1]))); }
-	std::array<vec3, 4> vertexPositions() const {return {bufferManagerInterface(indices[0]).getPosition(), bufferManagerInterface(indices[1]).getPosition(), bufferManagerInterface(indices[2]).getPosition(), bufferManagerInterface(indices[3]).getPosition()}; }
-	vec3 vertexPosition(int i) const { return bufferManagerInterface(indices[i]).getPosition(); }
+	std::array<vec3, 4> vertexPositions() const {return {bufferManagerInterface(indices[0]).position, bufferManagerInterface(indices[1]).position, bufferManagerInterface(indices[2]).position, bufferManagerInterface(indices[3]).position}; }
+	vec3 vertexPosition(int i) const { return bufferManagerInterface(indices[i]).position; }
 	vec3 normal() const { return normalize(cross(vertexPosition(1) - vertexPosition(0), vertexPosition(2) - vertexPosition(0))); }
 	glm::ivec4 getIndices() const { return indices; }
 	int vertexIndex(int i) const { return indices[i]; }
@@ -69,7 +59,7 @@ public:
 	IndexedQuadrilateral getFaceBack() const  { return faceSampler(facesInd[5]); }
 	int vertexIndex(int i) const { return i < 5 ? getFaceDown().vertexIndex(i) : getFaceUp().vertexIndex(i-4); }
 	std::array<Vertex, 8> getVertices() const { return {getFaceDown().getVertices()[0], getFaceDown().getVertices()[1], getFaceDown().getVertices()[2], getFaceDown().getVertices()[3], getFaceUp().getVertices()[0], getFaceUp().getVertices()[1], getFaceUp().getVertices()[2], getFaceUp().getVertices()[3]}; }
-	std::array<vec3, 8> getVerticesPos() const {return {getFaceDown().getVertices()[0].getPosition(), getFaceDown().getVertices()[1].getPosition(), getFaceDown().getVertices()[2].getPosition(), getFaceDown().getVertices()[3].getPosition(), getFaceUp().getVertices()[0].getPosition(), getFaceUp().getVertices()[1].getPosition(), getFaceUp().getVertices()[2].getPosition(), getFaceUp().getVertices()[3].getPosition()}; }
+	std::array<vec3, 8> getVerticesPos() const {return {getFaceDown().getVertices()[0].position, getFaceDown().getVertices()[1].position, getFaceDown().getVertices()[2].position, getFaceDown().getVertices()[3].position, getFaceUp().getVertices()[0].position, getFaceUp().getVertices()[1].position, getFaceUp().getVertices()[2].position, getFaceUp().getVertices()[3].position}; }
 	std::array<IndexedQuadrilateral, 6> getFaces() const { return {getFaceDown(), getFaceUp(), getFaceRight(), getFaceLeft(), getFaceFront(), getFaceBack()}; }
 	IndexedQuadrilateral getFace(FACE fc) const { return fc == DOWN ? getFaceDown() : fc == UP ? getFaceUp() : fc == RIGHT ? getFaceRight() : fc == LEFT ? getFaceLeft() : fc == FRONT ? getFaceFront() : getFaceBack(); }
 	std::array<glm::ivec3, 12> getTriangles() const;
@@ -166,7 +156,7 @@ class HexVolumetricMeshWithBoundary{
 public:
 	IndexedHexahedralVolumetricMesh mesh;
 	std::vector<int> bdVertices;
-	std::shared_ptr<IndexedMesh> boundary;
+	std::shared_ptr<IndexedMesh3D> boundary;
 	std::map<int, std::vector<int>> bdVerticesCells;
 	PolyGroupID boundaryPolygroup = 0;
 
@@ -254,11 +244,11 @@ public:
 	Cell* cellNeighbour(const Cell &c, FACE f) { return c.getNeighbour(f, cells); }
 	float gradientOnFace(const Cell &c, const std::string &attr, FACE i) { return c.gradientOnFace(attr, i, cells); }
 	float Laplacian(const Cell &c, const std::string &attr);
-	IndexedMesh bdMesh(const std::vector<std::string>& attrSavedAsColor) const;
+	IndexedMesh3D bdMesh(const std::vector<std::string>& attrSavedAsColor) const;
 	static vec4 colorFromAttributes(const Cell &c, const std::vector<std::string>& attrSavedAsColor) ;
 
-	static void updateBdMeshAtCell(const Cell &c, const std::vector<std::string>& attrSavedAsColor, IndexedMesh &mesh);
-	void updateBdMesh(const std::vector<std::string>& attrSavedAsColor, IndexedMesh &mesh) const;
+	static void updateBdMeshAtCell(const Cell &c, const std::vector<std::string>& attrSavedAsColor, IndexedMesh3D &mesh);
+	void updateBdMesh(const std::vector<std::string>& attrSavedAsColor, IndexedMesh3D &mesh) const;
 
 	void removeCell(int i);
 };

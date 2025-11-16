@@ -10,7 +10,9 @@ namespace std
 	template<>
 	struct formatter<Complex>
 	{
-		constexpr format_parse_context::const_iterator parse(format_parse_context &ctx) { return ctx.begin(); }
+		constexpr format_parse_context::const_iterator parse(format_parse_context &ctx) {
+			return ctx.begin();
+		}
 
 		template<typename FormatContext>
 		std::format_context::iterator format(const Complex& c, FormatContext& ctx) const{
@@ -121,4 +123,14 @@ namespace std
 			);
 		}
 	};
+}
+
+inline string formatByteSize(byte_size s) {
+	if (s < 1024)
+		return format("{:.1f} B", static_cast<double>(s));
+	if (s < 1024 * 1024)
+		return format("{:.1f} KB", static_cast<double>(s) / 1024.0);
+	if (s < 1024 * 1024 * 1024)
+		return format("{:.1f} MB", static_cast<double>(s) / (1024.0 * 1024.0));
+	return format("{:.1f} GB", static_cast<double>(s) / (1024.0 * 1024.0 * 1024.0));
 }

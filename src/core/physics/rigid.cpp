@@ -10,7 +10,7 @@ void Force::setDestructionCallback(const std::function<void()> &noLongerValidInt
 	this->noLongerValidInterface = noLongerValidInterface;
 }
 
-RigidBodyTriangulated2D::RigidBodyTriangulated2D(std::shared_ptr<IndexedMesh> mesh, vec3 angularVelocity, vec3 linearVelocity, vec3 angularAcceleration, vec3 linearAcceleration)
+RigidBodyTriangulated2D::RigidBodyTriangulated2D(std::shared_ptr<IndexedMesh3D> mesh, vec3 angularVelocity, vec3 linearVelocity, vec3 angularAcceleration, vec3 linearAcceleration)
 : mesh(mesh), angularVelocity(angularVelocity), linearVelocityCM(linearVelocity), angularAcceleration(angularAcceleration), linearAccelerationCM(linearAcceleration) {
 	calculateCenterOfMass();
 	approximateInertiaTensorCM();
@@ -89,11 +89,11 @@ void RigidBodyTriangulated2D::calculateCenterOfMass() {
 
 
 RollingBody::RollingBody(SmoothParametricCurve boundary, SmoothParametricCurve floor, vec3 polarConeCenter, vec3 gravity, int n, int m, float pipe_r)
-: mesh(make_shared<IndexedMesh>()), boundary(boundary), floor(floor), gravity(gravity), boundaryID(randomID()), floorID(randomID()), centerID(randomID()) {
+: mesh(make_shared<IndexedMesh3D>()), boundary(boundary), floor(floor), gravity(gravity), boundaryID(randomID()), floorID(randomID()), centerID(randomID()) {
 	mesh->addUniformSurface(polarCone(boundary, polarConeCenter), n, m, boundaryID);
 	centerOfMass = mesh->centerOfMass();
-	floormesh = make_shared<IndexedMesh>(floor.pipe(pipe_r, false), n, m, floorID);
-	centermesh = make_shared<IndexedMesh>(icosphere(.02, 2, centerOfMass, centerID));
+	floormesh = make_shared<IndexedMesh3D>(floor.pipe(pipe_r, false), n, m, floorID);
+	centermesh = make_shared<IndexedMesh3D>(icosphere(.02, 2, centerOfMass, centerID));
 	I_center = I_0();
 }
 
@@ -166,14 +166,14 @@ void RollingBody::step(float dt) {
 	roll(dt);
 }
 
-void RollingBody::shift(vec3 v, IndexedMesh &mesh, IndexedMesh &centermesh) {
+void RollingBody::shift(vec3 v, IndexedMesh3D &mesh, IndexedMesh3D &centermesh) {
 	centerOfMass += v;
 	mesh.shift(v, boundaryID);
 	centermesh.shift(v, centerID);
 	boundary = boundary.shift(v);
 }
 
-void RollingBody::rotate(float angle, IndexedMesh &mesh, IndexedMesh &centermesh) {
+void RollingBody::rotate(float angle, IndexedMesh3D &mesh, IndexedMesh3D &centermesh) {
 	SpaceAutomorphism rot = SpaceAutomorphism::rotation(angle).applyWithShift(contactPoint());
 	centerOfMass = rot(centerOfMass);
 	mesh.deformWithAmbientMap(boundaryID, rot);
@@ -181,12 +181,12 @@ void RollingBody::rotate(float angle, IndexedMesh &mesh, IndexedMesh &centermesh
 	boundary = boundary.precompose(rot);
 }
 
-void RollingBody::step(float dt, IndexedMesh &mesh, IndexedMesh &centermesh) {
+void RollingBody::step(float dt, IndexedMesh3D &mesh, IndexedMesh3D &centermesh) {
 	update_omega(dt);
 	roll(dt, mesh, centermesh);
 }
 
-void RollingBody::roll(float dt, IndexedMesh &mesh, IndexedMesh &centermesh) {
+void RollingBody::roll(float dt, IndexedMesh3D &mesh, IndexedMesh3D &centermesh) {
 	if (dt < 1e-6) return;
 	float angle = angularVelocity * dt;
 	float pathLen = rollingPathLen(angle);
@@ -200,13 +200,13 @@ void RollingBody::roll(float dt, IndexedMesh &mesh, IndexedMesh &centermesh) {
 }
 
 float RollingBody::getAngularVelocity() { return angularVelocity; }
-std::shared_ptr<IndexedMesh> RollingBody::getMesh() { return std::make_shared<IndexedMesh>(*mesh); }
-std::shared_ptr<IndexedMesh> RollingBody::getCenterMesh() { return std::make_shared<IndexedMesh>(*centermesh); }
-std::shared_ptr<IndexedMesh> RollingBody::getFloorMesh() { return std::make_shared<IndexedMesh>(*floormesh); }
+std::shared_ptr<IndexedMesh3D> RollingBody::getMesh() { return std::make_shared<IndexedMesh3D>(*mesh); }
+std::shared_ptr<IndexedMesh3D> RollingBody::getCenterMesh() { return std::make_shared<IndexedMesh3D>(*centermesh); }
+std::shared_ptr<IndexedMesh3D> RollingBody::getFloorMesh() { return std::make_shared<IndexedMesh3D>(*floormesh); }
 
 RigidBody3D::RigidBody3D(vec3 cm, mat3 I, vec3 angularVelocity, vec3 linearVelocity, vec3 angularAcceleration, vec3 linearAcceleration, float mass, mat3 R) : centerOfMass(cm), I(I), angularVelocity(angularVelocity), linearVelocityCM(linearVelocity), angularAcceleration(angularAcceleration), linearAccelerationCM(linearAcceleration), mass(mass), R(mat3(1)) {}
 
-void RigidBody3D::rotateAroundCM(mat3 M, IndexedMesh &mesh) {
+void RigidBody3D::rotateAroundCM(mat3 M, IndexedMesh3D &mesh) {
 	mesh.deformWithAmbientMap(SpaceAutomorphism::linear(M).applyWithShift(centerOfMass));
 }
 
@@ -233,7 +233,7 @@ vec3 RigidBody3D::alpha() {
 	return -inverse(I1) * cross(angularVelocity, I1 * angularVelocity);
 }
 
-void RigidBody3D::freeMotion(float dt, IndexedMesh &mesh) {
+void RigidBody3D::freeMotion(float dt, IndexedMesh3D &mesh) {
 	mat3 R0 = R;
 	mat3 I_n = R * I * transpose(R);
 	R += spinTensor(inverse(I_n) * angularMomentum(centerOfMass)) * R * dt;
@@ -244,12 +244,12 @@ void RigidBody3D::freeMotion(float dt, IndexedMesh &mesh) {
 	//	linearVelocityCM += linearAccelerationCM*dt;
 }
 
-void RigidBody3D::shift(vec3 v, IndexedMesh &mesh) {
+void RigidBody3D::shift(vec3 v, IndexedMesh3D &mesh) {
 	mesh.shift(v);
 	centerOfMass += v;
 }
 
-std::pair<RigidBody3D, IndexedMesh> boxRigid(vec3 size, vec3 center, float mass, vec3 velocity, vec3 angularVelocity, vec3 angularAcceleration, vec3 linearAcceleration, const mat3 &R) {
+std::pair<RigidBody3D, IndexedMesh3D> boxRigid(vec3 size, vec3 center, float mass, vec3 velocity, vec3 angularVelocity, vec3 angularAcceleration, vec3 linearAcceleration, const mat3 &R) {
 	mat3 I = size.x * size.y * size.z * mass * mat3(1.f / 12.f * (size.y * size.y + size.z * size.z), 0, 0, 0, 1.f / 12.f * (size.x * size.x + size.z * size.z), 0, 0, 0, 1.f / 12.f * (size.x * size.x + size.y * size.y));
 	return {RigidBody3D(center, I, angularVelocity, velocity, angularAcceleration, linearAcceleration, mass, R), box(size, center, randomID())};
 }

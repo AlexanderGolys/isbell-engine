@@ -512,7 +512,7 @@ public:
 	CompactlySupportedRealFunction(const RealFunction &f, const RealFunction &df, const RealFunction &ddf, vec2 support, float epsilon);
 
 	CompactlySupportedRealFunction df() const;
-	float improper_integral(RP1 a, RP1 b, int prec) const;
+	float improper_integral(optional<float> a, optional<float> b, int prec) const;
 	float full_domain_integral(int prec) const;
 	CompactlySupportedRealFunction antiderivative(float a, int prec) const;
 
@@ -1249,5 +1249,5 @@ const RealFunction EXP_R = RealFunction::exp();
 const RealFunction LOG_R = RealFunction::log();
 const RealFunction SQRT_R = RealFunction::SQRT();
 const RealFunction ONE_R = RealFunction::one();
-const RealFunction X_R = RealFunction::linear(1, 0);
+const RealFunction X_R = RealFunction::x();
 const RealFunction RELU = max(X_R, 0);

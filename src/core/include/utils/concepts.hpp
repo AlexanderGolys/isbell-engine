@@ -86,6 +86,11 @@ concept RAlgebra =  Rng<A> && RModule<A, R>;
 template<typename V, typename K=float>
 concept VectorSpaceConcept = RModule<V, K> && DivisionRing<K>;
 
+template<typename V>
+concept RealVectorSpaceConcept = AbelianGroupConcept<V> && requires(V a, float k) {
+	{ a * k } -> std::same_as<V>;
+};
+
 template<typename T>
 concept Normed = requires(T a) {
 	{norm(a)} -> std::convertible_to<float>;

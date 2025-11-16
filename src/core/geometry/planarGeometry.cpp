@@ -97,3 +97,25 @@ vector<vec3> SmoothParametricPlaneCurve::adjacency_lines_buffer(float t0,
   }
   return result;
 }
+
+PlanarSurface::PlanarSurface(const std::function<vec2(vec2)>& f, vec2 u_bounds, vec2 v_bounds, bool u_periodic, bool v_periodic): f(f), uBounds(u_bounds), vBounds(v_bounds), uPeriodic(u_periodic), vPeriodic(v_periodic) {}
+
+vec2 PlanarSurface::operator()(float u, float v) const { return f(vec2(u, v)); }
+
+vec2 PlanarSurface::operator()(vec2 uv) const { return f(uv); }
+
+bool PlanarSurface::normalisedDomain() const {
+	return nearlyEqual(uBounds, vec2(0,1)) && nearlyEqual(vBounds, vec2(0,1));
+}
+
+void PlanarSurface::normaliseDomain() {
+	if (normalisedDomain())
+		return;
+	f = HOM(vec2, vec2)([old_f=f, uBounds=uBounds, vBounds=vBounds](vec2 uv) {
+		float u = uv.x * (uBounds.y - uBounds.x) + uBounds.x;
+		float v = uv.y * (vBounds.y - vBounds.x) + vBounds.x;
+		return old_f(vec2(u, v));
+	});
+	uBounds = vec2(0, 1);
+	vBounds = vec2(0, 1);
+}

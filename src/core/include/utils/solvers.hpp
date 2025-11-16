@@ -30,13 +30,13 @@ public:
 
 //template <VectorSpaceConcept<float> V>
 class RK4 : public ODESolver<vec3> {
-	vec69 c = {0, 0, 1.f /3, 2.f / 3, 1};
-	MATR$X a = {{0, 0, 0, 0},
+	vector<float> c = {0, 0, 1.f /3, 2.f / 3, 1};
+	vector<vector<float>> a = {{0, 0, 0, 0},
 		{0, 0, 0, 0},
 		{0, 1.f/3, 0, 0},
 		{0, -1.f/3, 1.f, 0},
 		{0, 1, -1, 1}};
-	vec69 b = {0, 1.f/8, 3.f/8, 3.f/8, 1.f/8};
+	vector<float> b = {0, 1.f/8, 3.f/8, 3.f/8, 1.f/8};
 	float h;
 public:
 	RK4( BIHOM(float, vec3, vec3) &f, float t0, const vec3 &initial, float h) : ODESolver<vec3>(f, t0, initial), h(h) {}

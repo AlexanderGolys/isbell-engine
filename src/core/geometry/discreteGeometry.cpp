@@ -1,8 +1,8 @@
  #include "discreteGeometry.hpp"
 
 using namespace glm;
- mat3 TriangulatedManifold::faceVertices(int i) { return mat3(triangles[polygroupIndexOrder.at(id)][i].getVertex(0).getPosition(),
-																   triangles[polygroupIndexOrder.at(id)][i].getVertex(1).getPosition(), triangles[polygroupIndexOrder.at(id)][i].getVertex(2).getPosition()); }
+ mat3 TriangulatedManifold::faceVertices(int i) { return mat3(triangles[polygroupIndexOrder.at(id)][i].getVertex(0).position,
+																   triangles[polygroupIndexOrder.at(id)][i].getVertex(1).position, triangles[polygroupIndexOrder.at(id)][i].getVertex(2).position); }
 
  mat2x3 TriangulatedManifold::orthoFaceTangents(int i) const {
 	 mat3 frame = tangentNormalFrameOfFace(i);
