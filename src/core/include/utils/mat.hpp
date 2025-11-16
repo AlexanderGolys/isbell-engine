@@ -43,7 +43,7 @@ bool nearlyEqual_mat(M a, M b) {
 int sgn(float x);
 
 template <RealVectorSpaceConcept T = float>
-T integrate(const HOM(float, T)& f, float a, float b, int n_samples) {
+T integrate(const HOM(float, T)& f, float a, float b, uint n_samples) {
 	float dt = (b - a) / n_samples;
 	T res = f(a)*0.f;
 	for (float t : linspace(a, b, n_samples+1)) {
@@ -1260,23 +1260,6 @@ const Quaternion i_H = Quaternion::i();
 const Quaternion j_H = Quaternion::j();
 const Quaternion k_H = Quaternion::k();
 
-
-class SO2 : mat2 {
-public:
-	explicit SO2(mat2 m);;
-	explicit SO2();
-	explicit SO2(Complex z);
-	explicit SO2(float angle);
-	explicit operator Complex() const;
-	SO2 inverse() const;
-
-	// explicit operator mat2();
-	bool check() const;
-	static SO2 one();
-	static SO2 I();
-};
-
-
 inline mat3 doubleCoverSO3(Quaternion q) {
 	float x0 = q.x();
 	float x1 = -q.y();
@@ -1287,6 +1270,23 @@ inline mat3 doubleCoverSO3(Quaternion q) {
 				2.0 * (x2 * x3 - x0 * x1), 2.0 * (x1 * x3 - x0 * x2), 2.0 * (x2 * x3 + x0 * x1), x0 * x0 - x1 * x1 - x2 * x2 + x3 * x3);
 }
 
+class SE2 {
+	float angle;
+	vec2 translation;
+public:
+	SE2(vec2 translation, float angle);
+	explicit SE2(vec2 translation);
+	explicit SE2(float angle=0);
+	explicit SE2(const mat3& M);
+
+	mat3 toMat3() const;
+	SE2 operator*(const SE2& other) const;
+	vec2 operator()(vec2 v) const;
+	vec2 operator*(vec2 v) const;
+	SE2 inv() const;
+	SE2 operator~() const;
+	bool operator==(const SE2& other) const;
+};
 
 
 class SO3 : public mat3 {
@@ -1330,9 +1330,10 @@ class SE3 {
 	vec3 t;
 
 public:
-	SE3(Quaternion q, vec3 t);
-	SE3(const mat3& R, vec3 t) : SE3(Quaternion::fromRotation(R), t) {}
+	explicit SE3(Quaternion q, vec3 t);
+	explicit SE3(const mat3& R, vec3 t=vec3(0)) : SE3(Quaternion::fromRotation(R), t) {}
 	explicit SE3(const mat4& M) : SE3(Quaternion::fromRotation(mat3(M)), vec3(M[3])) {}
+	explicit SE3(vec3 t) : SE3(Quaternion::one(), t) {}
 	SE3();
 
 	SE3 operator*(const SE3& other) const;
@@ -1595,6 +1596,15 @@ inline float cos2(float x) {
 	return cos(x) * cos(x);
 }
 
+inline float lowerIncompleteGamma(float s, float x, uint precision=100) {
+	return integrate<float>([s](float t) {
+		return std::pow(t, s - 1) * std::exp(-t);
+	}, 0.f, x, precision);
+}
+
+inline float upperIncompleteGamma(float s, float x, uint precision=100) {
+	return tgamma(s) - lowerIncompleteGamma(s, x, precision);
+}
 
 class vec5 {
 public:

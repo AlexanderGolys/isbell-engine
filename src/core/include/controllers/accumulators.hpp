@@ -3,10 +3,10 @@
 #include "mat.hpp"
 
 class Distribution {
-	PROPERTY(RealFunction, pdf_func);
-	PROPERTY(RealFunction, cdf_func);
-	PROPERTY(float, norm);
-	PROPERTY(vec2, support);
+	CONST_PROPERTY(RealFunction, pdf_func);
+	CONST_PROPERTY(RealFunction, cdf_func);
+	CONST_PROPERTY(float, norm);
+	CONST_PROPERTY(vec2, support);
 public:
 	Distribution(const RealFunction& pdf, const RealFunction& cdf, vec2 support) : pdf_func(pdf), cdf_func(cdf), norm(cdf(support.y)), support(support) {}
 
@@ -14,13 +14,23 @@ public:
 	float pdf(float x) const;
 
 	Distribution operator+(const Distribution& other) const;
+	Distribution operator-(const Distribution& other) const;
+	Distribution operator-() const;
 	Distribution operator*(float a) const;
 	Distribution operator/(float a) const;
 	Distribution normalize() const;
+	Distribution shift(float a) const;
 
 	static sptr<Distribution> fromCDF(END(float) cdf, vec2 support, float eps=.01f);
 	static sptr<Distribution> fromPDF(END(float) pdf, vec2 support, float eps=.01f, uint prec=10000);
-	static sptr<Distribution> normal(float mean, float variance, float tail_cutoff=.01f);
+
+	static sptr<Distribution> normal(float mean, float sigma, float tail_cutoff_sigmas=3);
+	static sptr<Distribution> uniform(float a, float b);
+	static sptr<Distribution> exponential(float lambda, float cutoff);
+	static sptr<Distribution> gamma(float shape, float scale, float cutoff, uint prec=1000);
+	static sptr<Distribution> inverseGamma(float shape, float scale, float cutoff, uint prec=1000);
+
+
 };
 
 class ImpulseResponseAccumulator {
@@ -41,3 +51,4 @@ public:
 	void addImpulse(const Distribution& distribution, float start_t);
 	float step(float dt);
 };
+

@@ -27,10 +27,10 @@ public:
 
 class AttributeBuffer : public VertexBuffer {
 	CONST_PROPERTY(string, name);
-	GLSLType type;
+	GLSLPrimitive type;
 
 public:
-	AttributeBuffer(const string& name, GLSLType type, int inputNumber);
+	AttributeBuffer(const string& name, GLSLPrimitive type, int inputNumber);
 };
 
 class ElementBuffer {
@@ -57,8 +57,8 @@ public:
 	void bind() const;
 	void unbind() const;
 	void addElementBuffer(sptr<ElementBuffer> elementBuffer);
+	void addElementBuffer();
 	void addVertexBuffer(sptr<VertexBuffer> vertexBuffer);
-	void addAttributeBuffer(sptr<AttributeBuffer> attributeBuffer);
 	bool empty() const;
 
 	sptr<ElementBuffer> getElementBuffer() const;
@@ -84,4 +84,18 @@ public:
 	void unbind() const;
 	void load(byte_size bufferSize, raw_data_ptr data) const;
 	void update(byte_size bufferSize, raw_data_ptr data) const;
+};
+
+class UniformBuffer {
+	gl_id bufferID = 0;
+	uint bindingPoint;
+	size_t bufferSize;
+public:
+	UniformBuffer(uint bindingPoint, size_t bufferSize);
+	~UniformBuffer();
+
+	void bind() const;
+	void unbind() const;
+	void load(raw_data_ptr firstElementAdress) const;
+	void update(raw_data_ptr firstElementAdress) const;
 };

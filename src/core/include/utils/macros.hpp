@@ -128,37 +128,73 @@ using PolyGroupID = variant<int, string>;
 #define CHECK_OUT_OF_BOUNDS_NAME(idx, size, dsname) THROW_IF(idx < 0 or idx >= size, IndexOutOfBounds, idx, size, dsname)
 
 #define DIRTY_FLAG \
-	private: \
-	bool dirty = true; \
-	public: \
+public: \
 	void markDirty() { dirty = true; } \
 	void markClean() { dirty = false; } \
-	bool isDirty() const { return dirty; }
+	bool isDirty() const { return dirty; } \
+private: \
+	bool dirty = true;
 
-#define GETTER(type, name) type get_##name() const { return name; }
-#define SETTER(type, name) void set_##name(const type& value) { this->name = value; }
+#define DIRTY_FLAG_STRUCT \
+bool dirty = true; \
+void markDirty() { dirty = true; } \
+void markClean() { dirty = false; } \
+bool isDirty() const { return dirty; }
+
+#define GETTER(type, name) const type& get_##name() const { return name; }
+#define SETTER(type, name) void set_##name(type value__) { name = value__; }
+#define GETTER_VECT(type, name) const type& get_##name(array_index index__) const { return name[index__]; }
+#define SETTER_VECT(type, name) void set_##name(array_index index__, const type& value__) { name[index__] = value__; }
+#define APPEND_VECT(type, name) void append_##name(const type& value__) { name.push_back(value__); }
+#define RESERVE_VECT(type, name) void reserve_##name(array_len size__) { name.reserve(size__); }
+#define LEN_VECT(type, name) array_len len_##name() const { return name.size(); }
+
+#define SETTER_DIRTY(type, name) void set_##name(const type& value__) { name = value__; markDirty(); }
 
 #define PROPERTY(type, name) \
 private: \
 	type name; \
 public: \
 	GETTER(type, name) \
-	SETTER(type, name)
+	SETTER(type, name) \
+private:
+
+
+#define VECT_PROPERTY(type, name) \
+private: \
+	vector<type> name = {};\
+public: \
+	GETTER_VECT(type, name) \
+	GETTER(vector<type>, name) \
+	SETTER_VECT(type, name) \
+	SETTER(vector<type>, name) \
+	APPEND_VECT(type, name) \
+	RESERVE_VECT(type, name) \
+	LEN_VECT(type, name) \
+private:
 
 #define CONST_PROPERTY(type, name) \
 private: \
 	type name; \
 public: \
 	GETTER(type, name) \
+private:
 
-#define SETTER_DIRTY(type, name) void set_##name(const type& value) { name = value; markDirty(); }
+#define CONST_VECT_PROPERTY(type, name) \
+public: \
+	GETTER_VECT(type, name) \
+	GETTER(vector<type>, name) \
+	LEN_VECT(type, name) \
+private: \
+	vector<type> name = {};
+
 
 #define PROPERTY_DIRTY(type, name)\
-private: \
-	type name; \
 public: \
 	GETTER(type, name) \
-	SETTER_DIRTY(type, name)
+	SETTER_DIRTY(type, name) \
+private: \
+	type name;
 
 #ifdef _WIN32
     #define IS_WINDOWS true

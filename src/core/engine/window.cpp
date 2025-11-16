@@ -1,4 +1,7 @@
 #include "window.hpp"
+
+#include "event.hpp"
+#include "eventQueue.hpp"
 #include "exceptions.hpp"
 #include "glCommand.hpp"
 
@@ -12,13 +15,70 @@ ivec2 ires2(Resolution r) {
 	THROW(SystemError, "Unknown resolution enum value");
 }
 
-WindowSettings::WindowSettings(ivec2 resolution, const string& windowTitle)
-: width(resolution.x), height(resolution.y), windowTitle(windowTitle) {}
+WindowSettings::WindowSettings(ivec2 resolution, const string& windowTitle, bool stickyKeys, bool stickyMouseButtons)
+: width(resolution.x), height(resolution.y), windowTitle(windowTitle), stickyKeys(stickyKeys), stickyMouseButtons(stickyMouseButtons) {}
 
-WindowSettings::WindowSettings(Resolution resolution, const string& windowTitle) : WindowSettings(ires2(resolution), windowTitle) {}
+WindowSettings::WindowSettings(Resolution resolution, const string& windowTitle, bool stickyKeys, bool stickyMouseButtons)
+: WindowSettings(ires2(resolution), windowTitle, stickyKeys, stickyMouseButtons) {}
 
-Window::Window(WindowSettings settings) : settings(settings) {
+
+Window::Window(WindowSettings settings)
+: settings(settings) {
 	window = GLFWCommand::createWindow(settings.width, settings.height, settings.windowTitle.c_str());
+	GLFWCommand::setWindowData(window, &this->settings);
+
+	glfwSetInputMode(window, GLFW_STICKY_KEYS, settings.stickyKeys ? GLFW_TRUE : GLFW_FALSE);
+	glfwSetInputMode(window, GLFW_STICKY_MOUSE_BUTTONS, settings.stickyMouseButtons ? GLFW_TRUE : GLFW_FALSE);
+
+	glfwSetWindowSizeCallback(window, [](GLFWwindow* w, int width, int height){
+		EventQueue::push(make_shared<WindowResizeEvent>(width, height));
+		WindowSettings& winData = GLFWCommand::getWindowData(w);
+		winData.width = width;
+		winData.height = height;
+	});
+
+	glfwSetWindowCloseCallback(window, [](GLFWwindow* w){
+		EventQueue::push(make_shared<WindowCloseEvent>());
+		WindowSettings& winData = GLFWCommand::getWindowData(w);
+		winData.open = false;
+	});
+
+	glfwSetKeyCallback(window, [](GLFWwindow* w, int key, int scancode, int action, int mods){
+		if (action == GLFW_PRESS){
+			EventQueue::push(make_shared<KeyPressedEvent>(key));
+			LOG("Key pressed: " + keyCodeToString(key));
+		}
+		else if (action == GLFW_RELEASE) {
+			EventQueue::push(make_shared<KeyReleasedEvent>(key));
+			LOG("Key released: " + keyCodeToString(key));
+		}
+		else if (action == GLFW_REPEAT)
+			EventQueue::push(make_shared<KeyRepeatEvent>(key));
+
+	});
+
+	glfwSetMouseButtonCallback(window, [](GLFWwindow* w, int button, int action, int mods){
+		vec2 mousePos = GLFWCommand::getCursorPosition(w);
+		if (action == GLFW_PRESS) {
+			MouseButtonPressedEvent::emmit(button, mousePos);
+			LOG("Mouse button pressed: " + mouseButtonToString(button));
+		}
+		else if (action == GLFW_RELEASE){
+			MouseButtonReleasedEvent::emmit(button, mousePos);
+			LOG("Mouse button released: " + mouseButtonToString(button));
+		}
+		else if (action == GLFW_REPEAT)
+			MouseButtonRepeatEvent::emmit(button, mousePos);
+
+	});
+
+	glfwSetCursorPosCallback(window, [](GLFWwindow* w, double xpos, double ypos){
+		EventQueue::push(make_shared<MouseMovedEvent>(vec2(static_cast<float>(xpos), static_cast<float>(ypos))));
+	});
+
+	glfwSetScrollCallback(window, [](GLFWwindow* w, double xoffset, double yoffset){
+		EventQueue::push(make_shared<MouseScrolledEvent>(static_cast<float>(xoffset), static_cast<float>(yoffset)));
+	});
 }
 
 Window::~Window() {
@@ -26,62 +86,18 @@ Window::~Window() {
 }
 
 void Window::destroy() const {
-	GLFWCommand::destroyWindow(this->window);
+	GLFWCommand::destroyWindow(window);
 	GLFWCommand::terminate();
 }
 
 void Window::renderFramebufferToScreen() const {
-	glfwSwapBuffers(this->window);
-}
-
-void Window::showCursor() const {
-	glfwSetInputMode(this->window, GLFW_CURSOR, GLFW_CURSOR_NORMAL);
-}
-
-void Window::disableCursor() const {
-	glfwSetInputMode(this->window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
-}
-
-void Window::hideCursorWithinWindow() const {
-	glfwSetInputMode(this->window, GLFW_CURSOR, GLFW_CURSOR_HIDDEN);
-}
-
-void Window::stickyKeys(bool sticky) const {
-	if (sticky)
-		glfwSetInputMode(this->window, GLFW_STICKY_KEYS, GL_TRUE);
-	else
-		glfwSetInputMode(this->window, GLFW_STICKY_KEYS, GL_FALSE);
-}
-
-void Window::stickyMouseButtons(bool sticky) const {
-	if (sticky)
-		glfwSetInputMode(this->window, GLFW_STICKY_MOUSE_BUTTONS, GL_TRUE);
-	else
-		glfwSetInputMode(this->window, GLFW_STICKY_MOUSE_BUTTONS, GL_FALSE);
-}
-
-void Window::setCallbacks(const GLFWkeyfun* keyCallback, const GLFWcharfun* charCallback, const GLFWmousebuttonfun* mouseButtonCallback, GLFWcursorposfun* cursorPosCallback,
-						  GLFWcursorenterfun* cursorEnterCallback, GLFWscrollfun* scrollCallback, GLFWdropfun* dropCallback) const {
-	if (keyCallback != nullptr)
-		glfwSetKeyCallback(this->window, *keyCallback);
-	if (charCallback != nullptr)
-		glfwSetCharCallback(this->window, *charCallback);
-	if (mouseButtonCallback != nullptr)
-		glfwSetMouseButtonCallback(this->window, *mouseButtonCallback);
-	if (cursorPosCallback != nullptr)
-		glfwSetCursorPosCallback(this->window, *cursorPosCallback);
-	if (cursorEnterCallback != nullptr)
-		glfwSetCursorEnterCallback(this->window, *cursorEnterCallback);
-	if (scrollCallback != nullptr)
-		glfwSetScrollCallback(this->window, *scrollCallback);
-	if (dropCallback != nullptr)
-		glfwSetDropCallback(this->window, *dropCallback);
+	GLFWCommand::swapFrameBuffers(window);
 }
 
 bool Window::isOpen() const {
-	return !glfwWindowShouldClose(this->window);
+	return not glfwWindowShouldClose(window) and settings.open;
 }
 
 void Window::initViewport() const {
-	glViewport(0, 0, settings.width, settings.height);
+	GLCommand::initViewport(settings.width, settings.height);
 }

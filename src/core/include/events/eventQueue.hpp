@@ -4,19 +4,19 @@
 
 
 class EventQueue {
-	vector<Event> events;
-	EventQueue() = default;
+	vector<sptr<Event>> events;
+	EventQueue() {}
 	static sptr<EventQueue> instance;
+
   public:
 	EventQueue(const EventQueue&) = delete;
 	EventQueue& operator=(const EventQueue&) = delete;
-	void pushEvent(const Event& event);
+	void pushEvent(sptr<Event> event);
 
-	vector<Event>::iterator begin();
-	vector<Event>::iterator end();
+	vector<sptr<Event>>::iterator begin();
+	vector<sptr<Event>>::iterator end();
 	void clearQueue();
 
 	static sptr<EventQueue> getInstance();
-	static void push(const Event& event);
-
+	static void push(sptr<Event> event);
 };

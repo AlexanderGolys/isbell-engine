@@ -40,9 +40,13 @@ void Texture2D::init() {
 	GLCommand::calculateMipmapsTexture2D();
 }
 
-void Texture2D::update(float t, float dt) {}
 
-void Texture2D::setDuringRender() const {
+
+void Texture2D::setDuringRender() {
 	GLCommand::bindTexture2D(id, slot);
 	GLCommand::setSampler2D(samplerName, slot);
+}
+
+sptr<Texture2D> Texture2D::constColorTexture(const Color& color, uint slot, string_cr samplerName) {
+	return make_shared<Texture2D>(make_shared<ConstColorTextureData>(color), slot, samplerName);
 }

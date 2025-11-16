@@ -4,6 +4,7 @@
 #include "textures.hpp"
 #include "uniforms.hpp"
 #include "indexedMesh.hpp"
+#include "mesh3D.hpp"
 
 struct CameraSettings {
 	float fov_x;
@@ -13,6 +14,16 @@ struct CameraSettings {
 	mat4 projMatrix;
 
 	explicit CameraSettings(float fov_x = PI/4, float aspectRatio = 16/9.f, float clippingRangeMin = .01f, float clippingRangeMax = 100.f);
+};
+
+struct CameraTransform {
+	vec3 position;
+	vec3 lookAtPos;
+	vec3 upVector;
+
+	CameraTransform(vec3 position, vec3 lookAtPos, vec3 upVector = vec3(0,0,1));
+	vec3 getDirection() const;
+	vec3 getRightVector() const;
 };
 
 class Camera {
@@ -29,18 +40,14 @@ public:
 	mat4 v() const;
 	mat4 p() const;
 	void set_transform(vec3 newPosition, vec3 newLookAt, vec3 newUp);
+	void set_transform(const CameraTransform& transform);
+	CameraTransform get_transform() const;
 };
 
 
-class CameraUniform : public LayerComponent {
-	sptr<Camera> camera;
-	ConstantUniform<mat4> vp_uni;
-	ConstantUniform<vec3> campos_uni;
+class CameraUniform : public CombinedLayerComponent {
 public:
-	explicit CameraUniform(sptr<Camera> camera);
-	void setDuringRender() const override;
-	void update(float t, float dt) override;
-	void init() override {}
+	explicit CameraUniform(sptr<Camera> camera, sptr<Object3D> attachedObject = nullptr);
 };
 
 class MaterialModelPhong {
@@ -67,49 +74,62 @@ class MaterialModelPhongComponent : public LayerComponent {
 	Texture2D ambientTexture;
 	Texture2D diffuseTexture;
 	Texture2D specularTexture;
-	ConstantUniform<vec4> intensitiesUni;
+	ConstPrimitiveUniform<vec4> intensitiesUni;
 
 public:
 	explicit MaterialModelPhongComponent(sptr<MaterialModelPhong> materialModel);
 	void init() override;
-	void update(float t, float dt) override;
-	void setDuringRender() const override;
+	void update(TimeStep timeStep) override;
+	void setDuringRender() override;
 };
 
-class SimplePointLight {
-	DIRTY_FLAG;
-	PROPERTY_DIRTY(vec3, position);
-	PROPERTY_DIRTY(Color, color);
-	PROPERTY_DIRTY(vec3, intensities);
+struct SimplePointLight {
+	alignas(16) vec3 position;
+	vec4 color;
+	alignas(16) vec3 intensities;
+
+	SimplePointLight(vec3 position, Color color, vec3 intensities);
+	raw_data_ptr data() const;
+	byte_size byteSize() const;
+};
+
+class PointLightsComponent : public UniformBlockComponent<arrayStruct<SimplePointLight>> {
+	sptr<arrayStruct<SimplePointLight>> lights;
 public:
-	SimplePointLight(vec3 position, Color color, vec3 intensities) : position(position), color(color), intensities(intensities) {}
+	explicit PointLightsComponent(sptr<arrayStruct<SimplePointLight>> lights);
+	void update(TimeStep timeStep) override;
 };
 
-class PointLightsComponent : public LayerComponent {
-	vector<sptr<SimplePointLight>> lights;
-	ConstantUniformArray<vec3> lightsPositionsUni;
-	ConstantUniformArray<vec4> lightsColorsUni;
-	ConstantUniformArray<vec3> lightsIntensitiesUni;
-
-public:
-	explicit PointLightsComponent(const vector<sptr<SimplePointLight>>& lights);
-	void init() override {}
-	void update(float t, float dt) override;
-	void setDuringRender() const override;
-};
-
-class Mesh3DLayer : public DrawLayer {
+class OldMesh3DLayer : public DrawLayer {
 	sptr<IndexedMesh3D> mesh;
 public:
-	Mesh3DLayer(sptr<ShaderProgram> shader, sptr<IndexedMesh3D> mesh, sptr<Camera> camera, sptr<MaterialModelPhong> materialModel, const vector<sptr<SimplePointLight>>& lights);
+	OldMesh3DLayer(sptr<ShaderProgram> shader, sptr<IndexedMesh3D> mesh, sptr<Camera> camera, sptr<MaterialModelPhong> materialModel, sptr<arrayStruct<SimplePointLight>> lights);
 	void init() override;
 };
 
-class GenericMeshLayer : public DrawLayer {
-	sptr<GeometricData> mesh;
+
+
+class Mesh3DLayer : public GenericMeshLayer {
 public:
-	GenericMeshLayer(sptr<ShaderProgram> shader, sptr<GeometricData> mesh);
-	void init() override;
-	void customRenderStep() override;
+	Mesh3DLayer(sptr<ShaderProgram> shader, sptr<Mesh3D> mesh, sptr<Camera> camera, sptr<MaterialModelPhong> materialModel);
 };
 
+class Scene3DLayer : public Layer {
+	vector<Mesh3DLayer> meshLayers;
+	sptr<PointLightsComponent> pointLightsComponent;
+	sptr<Camera> camera;
+	vector<sptr<UpdateComponent>> updateComponents;
+public:
+	Scene3DLayer(sptr<Camera> camera, sptr<arrayStruct<SimplePointLight>> lights);
+
+	void init() override;
+	void renderStep() override;
+	void updateStep(TimeStep timeStep) override;
+	void onEvent(sptr<Event> event, TimeStep timeStep) const override;
+
+	void addMeshLayer(sptr<ShaderProgram> shader, sptr<Mesh3D> mesh, sptr<MaterialModelPhong> materialModel);
+	void addComponentToEachMesh(sptr<LayerComponent> comp);
+	void addEventListenerToEachMesh(sptr<EventListener> listener);
+	void addUpdateComponent(sptr<UpdateComponent> comp);
+
+};

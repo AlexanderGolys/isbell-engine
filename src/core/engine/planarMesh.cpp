@@ -1,7 +1,7 @@
 #include "planarMesh.hpp"
 
 VertexBufferLayout PlanarVertex::layout() {
-	return VertexBufferLayout({ VEC2, VEC2 });
+	return VertexBufferLayout({GLSLPrimitive::VEC2, GLSLPrimitive::VEC2 });
 }
 
 raw_data_ptr PlanarVertex::data() const {
@@ -52,4 +52,21 @@ BasicPlanarMesh::BasicPlanarMesh(const PlanarSurface& surface, int u_res, int v_
 			}
 		}
 	}
+}
+
+void BasicPlanarMesh::translate(const vec2& t) {
+	transform = SE2(t) * transform;
+}
+
+void BasicPlanarMesh::rotate(float angle) {
+	transform = SE2(angle) * transform;
+}
+
+void BasicPlanarMesh::apply(const SE2& T) {
+	transform = T * transform;
+}
+
+BasicPlanarMesh& BasicPlanarMesh::operator*=(const SE2& T) {
+	apply(T);
+	return *this;
 }

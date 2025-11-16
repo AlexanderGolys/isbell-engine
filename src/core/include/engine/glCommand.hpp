@@ -2,6 +2,7 @@
 #include <GL/glew.h>
 #include <glfw/glfw3.h>
 #include "shaderTypes.hpp"
+#include "window.hpp"
 
 using gl_id = GLuint;
 using gl_uniform_loc = GLint;
@@ -22,10 +23,10 @@ public:
 
 	static gl_uniform_loc getUniformLocation(const string& name);
 	static gl_uniform_loc getUniformLocation(const string& name, gl_id program);
-	static void setUniform(gl_uniform_loc location, raw_data_ptr data, GLSLType type, array_len arraySize = 1);
+	static void setUniform(gl_uniform_loc location, raw_data_ptr data, GLSLPrimitive type, array_len arraySize=1);
 	static void setUniform(gl_uniform_loc location, int value);
 	static void setUniform(gl_uniform_loc location, float value);
-	static void setUniform(gl_uniform_loc location, unsigned int value);
+	static void setUniform(gl_uniform_loc location, uint value);
 	static void setUniform(gl_uniform_loc location, bool value);
 
 	static gl_id createShader(GLenum shaderType);
@@ -43,11 +44,11 @@ public:
 	static void unbindTexture2D();
 	static void setTexture2DFilters(GLenum minFilter, GLenum magFilter, GLenum wrapS, GLenum wrapT);
 	static void calculateMipmapsTexture2D();
-	static void loadTexture2(GLenum internalFormat, array_len width, array_len height, GLenum format, data_ptr<unsigned char> data);
-	static void setSampler2D(const string& samplerName, unsigned int slot);
+	static void loadTexture2(GLenum internalFormat, array_len width, array_len height, GLenum format, data_ptr<uchar> data);
+	static void setSampler2D(const string& samplerName, uint slot);
 
 	static void createBuffer(gl_id* id);
-	static void deleteBuffer(gl_id id);
+	static void deleteBuffer(gl_id* id);
 	static void loadBufferData(gl_id bufferID, raw_data_ptr firstElementAdress, byte_size bufferSize, GLenum usage);
 	static void updateBufferData(gl_id bufferID, raw_data_ptr firstElementAdress, byte_size bufferSize);
 
@@ -56,16 +57,22 @@ public:
 	static void loadSSBOData(gl_id bufferID, raw_data_ptr firstElementAdress, byte_size bufferSize);
 	static void updateSSBOData(gl_id bufferID, raw_data_ptr firstElementAdress, byte_size bufferSize);
 
+	static void bindUBO(gl_id bufferID, int bindingPoint);
+	static void unbindUBO();
+	static void loadUBOData(gl_id bufferID, raw_data_ptr firstElementAdress, byte_size bufferSize);
+	static void updateUBOData(gl_id bufferID, raw_data_ptr firstElementAdress, byte_size bufferSize);
+
 	static void drawIndexedTriangles(array_len numberOfIndices);
 	static void runComputeShader(int numGroupsX, int numGroupsY, int numGroupsZ);
 
 	static void pointAtElementBuffer(gl_id buffer);
-	static void pointAtAttributeBuffer(int inputNumber, gl_id bufferAddress, GLSLType type, byte_size stride,  raw_data_ptr offset);
+	static void pointAtAttributeBuffer(int inputNumber, gl_id bufferAddress, GLSLPrimitive type, byte_size stride,  raw_data_ptr offset);
 
 	static void clearScreen(const vec4& color);
 	static void enableBlending();
 	static void enableDepth();
 	static void init();
+	static void initViewport(int width, int height);
 };
 
 class GLFWCommand {
@@ -75,4 +82,10 @@ public:
 
 	static GLFWwindow* createWindow(int width, int height, const string& title);
 	static void destroyWindow(GLFWwindow* window);
+	static void pollEvents();
+	static void swapFrameBuffers(GLFWwindow* window);
+
+	static void setWindowData(GLFWwindow* window, data_ptr_mut<WindowSettings> data);
+	static WindowSettings& getWindowData(GLFWwindow* window);
+	static vec2 getCursorPosition(GLFWwindow* window);
 };

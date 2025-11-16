@@ -1,18 +1,11 @@
 #include "uniforms.hpp"
 
 
-UniformComponent::UniformComponent(const string& name)
-: name(name) {
+UniformComponent::UniformComponent(const string& name): name(name) {
 	if (not name.starts_with("u_"))
-		LOG_WARN("Uniform name '" + name + "' does not start with 'u_' prefix");
+		THROW(ValueError, "Uniform name must start with 'u_'. Given name: " + name);
 }
 
-
-void TimeUniform::setUniformGL(GLint location) const {
-	GLCommand::setUniform(location, value);
-}
-
-
-void UniformComponent::setDuringRender() const {
+void UniformComponent::setDuringRender() {
 	setUniformGL(GLCommand::getUniformLocation(get_name()));
 }

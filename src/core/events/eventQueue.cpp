@@ -1,28 +1,30 @@
 #include "eventQueue.hpp"
 
-void EventQueue::pushEvent(const Event& event) {
+void EventQueue::pushEvent(sptr<Event> event) {
 	events.push_back(event);
 }
 
-vector<Event>::iterator EventQueue::begin() {
+vector<sptr<Event>>::iterator EventQueue::begin() {
 	return events.begin();
 }
 
-vector<Event>::iterator EventQueue::end() {
+vector<sptr<Event>>::iterator EventQueue::end() {
 	return events.end();
 }
 
-void EventQueue::clearQueue() { events.clear(); }
+void EventQueue::clearQueue() {
+	events.clear();
+}
 
 
 
 sptr<EventQueue> EventQueue::getInstance() {
 	if (!instance)
-		instance = make_shared<EventQueue>();
+		instance = sptr<EventQueue>(new EventQueue());
 	return instance;
 }
 
-void EventQueue::push(const Event& event) {
+void EventQueue::push(sptr<Event> event) {
 	getInstance()->pushEvent(event);
 }
 

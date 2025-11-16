@@ -9,7 +9,7 @@ class TriangulatedManifold : public IndexedMesh3D {
 	PolyGroupID id;
 
 public:
-	vec3 vertexPosition(int i) const { return getVertices(id)[i].get_position(); }
+	vec3 vertexPosition(int i) const { return getVertices(id)[i].position; }
 	mat2x3 edgeVertices (int i) const { return {
 	mat2x3(vertexPosition(edgesVert[i].x), vertexPosition(edgesVert[i].y))}; }
 	mat3 faceVertices(int i);

@@ -39,8 +39,8 @@ public:
 	IndexedMesh(const vector<vertex>& vertices, const vector<ivec3>& indices) : vertices(vertices), indices(indices) {}
 	explicit IndexedMesh(const vector<Triangle<vertex>>& triangles);
 
-	vector<vertex>::const_iterator begin() { return vertices.begin(); }
-	vector<vertex>::const_iterator end() { return vertices.end(); }
+	vector<vertex>::iterator begin() { return vertices.begin(); }
+	vector<vertex>::iterator end() { return vertices.end(); }
 
 	void setVertices(const vector<vertex>& verts);
 	void setIndices(const vector<ivec3>& inds);
@@ -67,6 +67,8 @@ public:
 	void setVertex(array_index i, const vertex& v);
 	const ivec3& getTriangleIndices(array_index i) const;
 	Triangle<vertex> getTriangle(array_index i) const;
+
+	void transformVertices(const HOM(const vertex&, vertex)& f);
 };
 
 
@@ -141,4 +143,11 @@ Triangle<vertex> IndexedMesh<vertex>::getTriangle(array_index i) const {
 	CHECK_OUT_OF_BOUNDS(i, indices.size());
 	const ivec3& inds = indices[i];
 	return Triangle<vertex>(vertices[inds.x], vertices[inds.y], vertices[inds.z]);
+}
+
+template <attribute_struct vertex>
+void IndexedMesh<vertex>::transformVertices(const std::function<vertex(const vertex&)>& f) {
+	for (auto& v : vertices)
+		v = f(v);
+	markDirty();
 }

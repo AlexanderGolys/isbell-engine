@@ -481,28 +481,45 @@ Quaternion Quaternion::fromRotation(const mat3& R) {
 		sqrt(1.f - R[0][0] - R[1][1] + R[2][2]) / 2.f * sgn(R[1][0] - R[0][1]));
 }
 
-SO2::SO2(mat2 m): mat2(m) {}
+SE2::SE2(vec2 translation, float angle): angle(angle), translation(translation) {}
 
-SO2::SO2(): SO2(mat2(1, 0, 0, 1)) {}
+SE2::SE2(vec2 translation): SE2(translation, 0.f) {}
 
-SO2::SO2(Complex z): mat2(z.re(), -z.im(), z.im(), z.re()) {}
+SE2::SE2(float angle): SE2(vec2(0.f), angle) {}
 
-SO2::SO2(float angle): SO2(Complex(cos(angle), sin(angle))) {}
-
-SO2::operator Complex() const {
-	return Complex((*this)[0][0], (*this)[1][0]);
+SE2::SE2(const mat3& M) {
+	translation = vec2(M[2]);
+	angle = std::atan2(M[1][0], M[0][0]);
 }
 
-SO2 SO2::inverse() const {
-	return SO2(glm::transpose(*this));
+mat3 SE2::toMat3() const {
+	return blockMatrix(mat2(cos(angle), -sin(angle), sin(angle), cos(angle)), translation, vec2(0, 0), 1);
 }
 
-SO2 SO2::one() {
-	return SO2();
+SE2 SE2::operator*(const SE2& other) const {
+	return SE2((*this)(other.translation) + translation, angle + other.angle);
 }
 
-SO2 SO2::I() {
-	return SO2();
+vec2 SE2::operator()(vec2 v) const {
+	mat2 R = mat2(cos(angle), -sin(angle), sin(angle), cos(angle));
+	return R * v + translation;
+}
+
+vec2 SE2::operator*(vec2 v) const {
+	return (*this)(v);
+}
+
+SE2 SE2::inv() const {
+	mat2 R = mat2(cos(angle), -sin(angle), sin(angle), cos(angle));
+	return SE2(-transpose(R) * translation, -angle);
+}
+
+SE2 SE2::operator~() const {
+	return inv();
+}
+
+bool SE2::operator==(const SE2& other) const {
+	return isClose(angle, other.angle) && isClose(translation, other.translation);
 }
 
 
@@ -794,10 +811,6 @@ pair<vec3, vec3> orthogonalComplementBasis(vec3 v) {
 	return std::make_pair(frame[1], frame[2]);
 }
 
-bool SO2::check() const {
-	return nearlyEqual<mat2>(tmat2x2(determinant(mat2())), 1.f) && isClose(mat2() * transpose(mat2()), mat2(1));
-}
-
 SE3::SE3(Quaternion q, vec3 t): q(q), t(t) {}
 
 SE3::SE3(): SE3(Quaternion::one(), vec3(0)) {}
@@ -820,7 +833,7 @@ SE3 SE3::operator~() const {
 }
 
 mat4 SE3::toMat4() const {
-	return blockMatrix(doubleCoverSO3(q), t, vec3(0), 1.f);
+	return blockMatrix(doubleCoverSO3(q), vec3(0), t, 1.f);
 }
 
 Quaternion SE3::rotation() const {

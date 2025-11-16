@@ -4,10 +4,10 @@
 #include "randomUtils.hpp"
 
 struct Vertex {
-	PROPERTY(vec3, position);
-	PROPERTY(vec3, normal);
-	PROPERTY(vec2, uv);
-	PROPERTY(vec4, color);
+	vec3 position;
+	vec3 normal;
+	vec2 uv;
+	vec4 color;
 	std::map<string, vec4> extraData = {};
 
 	Vertex(vec3 position, vec2 uv, vec3 normal, vec4 color, const std::map<string, vec4>& extraData = {});

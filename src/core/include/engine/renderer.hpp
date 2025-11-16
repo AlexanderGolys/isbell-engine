@@ -32,9 +32,9 @@ public:
 
 	void addLayer(sptr<Layer> layer);
 	virtual void initRendering();
-	void update(float t, float delta) const;
+	void update(TimeStep timeStep) const;
 	void renderStep() const;
-	void eventHandlingStep(float t, float delta) const;
+	void eventHandlingStep(TimeStep timeStep) const;
 	virtual void mainLoop();
 	void run();
 };

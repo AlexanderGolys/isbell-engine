@@ -32,6 +32,8 @@ class Texture2D : public LayerComponent {
 public:
 	Texture2D(sptr<TextureData> imageData, uint slot, string_cr samplerName);
 	void init() override;
-	void update(float t, float dt) override;
-	void setDuringRender() const override;
+	void update(TimeStep timeStep) override {}
+	void setDuringRender() override;
+
+	static sptr<Texture2D> constColorTexture(const Color& color, uint slot, string_cr samplerName);
 };

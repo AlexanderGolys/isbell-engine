@@ -33,10 +33,10 @@ Vertex center(const Vertex& v1, const Vertex& v2) {
 	for (const auto& [key, val] : v1.extraData)
 		extraData[key] = 0.5f * (val + v2.getExtraData(key));
 	return Vertex(
-		0.5f * (v1.get_position() + v2.get_position()),
-		0.5f * (v1.get_uv() + v2.get_uv()),
-		normalise(0.5f * (v1.get_normal() + v2.get_normal())),
-		0.5f * (v1.get_color() + v2.get_color()),
+		0.5f * (v1.position + v2.position),
+		0.5f * (v1.uv + v2.uv),
+		normalise(0.5f * (v1.normal + v2.normal)),
+		0.5f * (v1.color + v2.color),
 		extraData
 	);
 }
@@ -46,10 +46,10 @@ Vertex barycenter(const Vertex& v1, const Vertex& v2, const Vertex& v3) {
 	for (const auto& [key, val] : v1.extraData)
 		extraData[key] = (val + v2.getExtraData(key) + v3.getExtraData(key))/3.f;
 	return Vertex(
-		(v1.get_position() + v2.get_position() + v3.get_position()) / 3.f,
-		(v1.get_uv() + v2.get_uv() + v3.get_uv()) / 3.f,
-		normalise(v1.get_normal() + v2.get_normal() + v3.get_normal()),
-		(v1.get_color() + v2.get_color() + v3.get_color()) / 3.f,
+		(v1.position + v2.position + v3.position) / 3.f,
+		(v1.uv + v2.uv + v3.uv) / 3.f,
+		normalise(v1.normal + v2.normal + v3.normal),
+		(v1.color + v2.color + v3.color) / 3.f,
 		extraData
 	);
 }
@@ -222,10 +222,10 @@ int BufferManager::addTriangleVertexIndices(ivec3 ind, int shift) const {
 
 
 int BufferManager::addFullVertexData(const Vertex& v) const {
-	stds->positions.emplace_back(v.get_position());
-	stds->normals.emplace_back(v.get_normal());
-	stds->uvs.emplace_back(v.get_uv());
-	stds->colors.push_back(v.get_color());
+	stds->positions.emplace_back(v.position);
+	stds->normals.emplace_back(v.normal);
+	stds->uvs.emplace_back(v.uv);
+	stds->colors.push_back(v.color);
 	if (extraBufferNames.size() > 0)
 		if (v.hasExtraData(extraBufferNames[0]))
 			extra0->push_back(v.getExtraData(extraBufferNames[0]));
@@ -364,10 +364,10 @@ void BufferedVertex::applyFunction(const SpaceEndomorphism& f) {
 }
 
 void BufferedVertex::setVertex(const Vertex& v) {
-	setPosition(v.get_position());
-	setUV(v.get_uv());
-	setNormal(v.get_normal());
-	setColor(v.get_color());
+	setPosition(v.position);
+	setUV(v.uv);
+	setNormal(v.normal);
+	setColor(v.color);
 	auto extras = bufferBoss.getExtraBufferNames();
 	for (int i = 0; i < extras.size(); i++) {
 		string extraName = extras[i];
@@ -411,32 +411,32 @@ Vertex IndexedTriangle::getVertex(int i) const {
 
 
 mat3 IndexedTriangle::orthonormalFrame() const {
-	vec3 p0 = getVertex(0).get_position();
-	vec3 p1 = getVertex(1).get_position();
-	vec3 p2 = getVertex(2).get_position();
+	vec3 p0 = getVertex(0).position;
+	vec3 p1 = getVertex(1).position;
+	vec3 p2 = getVertex(2).position;
 	return GramSchmidtProcess(mat3(p0 - p2, p1 - p2, cross(p1 - p2, p0 - p2)));
 }
 
 vec3 IndexedTriangle::fromPlanar(vec2 v) const {
 	mat3 frame = orthonormalFrame();
-	return frame[0] * v.x + frame[1] * v.y + getVertex(2).get_position();
+	return frame[0] * v.x + frame[1] * v.y + getVertex(2).position;
 }
 
 vec2 IndexedTriangle::toPlanar(vec3 v) const {
 	mat3 frame = orthonormalFrame();
-	return vec2(dot(frame[0], v - getVertex(2).get_position()), dot(frame[1], v - getVertex(2).get_position()));
+	return vec2(dot(frame[0], v - getVertex(2).position), dot(frame[1], v - getVertex(2).position));
 }
 
 
 vec3 IndexedTriangle::fromBars(vec2 v) const {
-	return getVertex(0).get_position() * v.x + getVertex(1).get_position() * v.y + getVertex(2).get_position() * (1 - v.x - v.y);
+	return getVertex(0).position * v.x + getVertex(1).position * v.y + getVertex(2).position * (1 - v.x - v.y);
 }
 
 
 std::array<vec3, 3> IndexedTriangle::borderTriangle(float width) const {
-	vec3 p0 = getVertex(0).get_position();
-	vec3 p1 = getVertex(1).get_position();
-	vec3 p2 = getVertex(2).get_position();
+	vec3 p0 = getVertex(0).position;
+	vec3 p1 = getVertex(1).position;
+	vec3 p2 = getVertex(2).position;
 	vec3 n = normalize(cross(p1 - p0, p2 - p0));
 	vec3 v01 = p1 - p0;
 	vec3 v12 = p2 - p1;
@@ -470,15 +470,15 @@ std::array<vec3, 3> IndexedTriangle::borderTriangle(float width) const {
 }
 
 vec3 IndexedTriangle::faceNormal() const {
-	return normalize(cross(getVertex(1).get_position() - getVertex(0).get_position(), getVertex(2).get_position() - getVertex(0).get_position()));
+	return normalize(cross(getVertex(1).position - getVertex(0).position, getVertex(2).position - getVertex(0).position));
 }
 
 vec3 IndexedTriangle::center() const {
-	return (getVertex(0).get_position() + getVertex(1).get_position() + getVertex(2).get_position()) / 3.f;
+	return (getVertex(0).position + getVertex(1).position + getVertex(2).position) / 3.f;
 }
 
 float IndexedTriangle::area() const {
-	return 0.5f * length(cross(getVertex(1).get_position() - getVertex(0).get_position(), getVertex(2).get_position() - getVertex(0).get_position()));
+	return 0.5f * length(cross(getVertex(1).position - getVertex(0).position, getVertex(2).position - getVertex(0).position));
 }
 
 bool IndexedTriangle::containsEdge(int i, int j) const {
@@ -662,21 +662,21 @@ void IndexedMesh3D::addUniformSurface(const SmoothParametricSurface& surf, int t
 	vector<Vertex> hardVertices = {};
 	vector<ivec3> faceIndices = {};
 	hardVertices.reserve(tRes * uRes + uRes + tRes + 1);
-	faceIndices.reserve(2 * (tRes) * (uRes));
+	faceIndices.reserve(2 * tRes * uRes);
 
 
 	for (int i = 0; i < tRes; i++)
 		for (int j = 0; j < uRes; j++) {
 			float t_ = 1.f * i / (tRes - 1);
-			if (surf.isPeriodicT())
+			if (surf.get_periodicT())
 				t_ = 1.f * i / (1.f * tRes);
 
 			float u_ = 1.f * j / (uRes - 1);
-			if (surf.isPeriodicU())
+			if (surf.get_periodicU())
 				u_ = 1.f * j / (1.f * uRes);
 
-			float t = lerp(surf.tMin(), surf.tMax(), t_);
-			float u = lerp(surf.uMin(), surf.uMax(), u_);
+			float t = lerp(surf.t0(), surf.t1(), t_);
+			float u = lerp(surf.u0(), surf.u1(), u_);
 			hardVertices.emplace_back(surf(t, u), vec2(t_, u_), surf.normal(t, u), vec4(t, u, 0, 1));
 		}
 
@@ -694,7 +694,7 @@ void IndexedMesh3D::addUniformSurface(const SmoothParametricSurface& surf, int t
 		}
 
 
-	if (surf.isPeriodicT())
+	if (surf.get_periodicT())
 		for (int j = 1; j < uRes; j++) {
 			int i0 = flattened2DVectorIndex(0, j, size);
 			int i1 = flattened2DVectorIndex(-1, j, size);
@@ -704,7 +704,7 @@ void IndexedMesh3D::addUniformSurface(const SmoothParametricSurface& surf, int t
 			faceIndices.emplace_back(i0, i3, i2);
 		}
 	//
-	if (surf.isPeriodicU())
+	if (surf.get_periodicU())
 		for (int i = 1; i < tRes; i++) {
 			int i0 = flattened2DVectorIndex(i, 0, size);
 			int i1 = flattened2DVectorIndex(i - 1, 0, size);
@@ -714,7 +714,7 @@ void IndexedMesh3D::addUniformSurface(const SmoothParametricSurface& surf, int t
 			faceIndices.emplace_back(i0, i3, i2);
 		}
 
-	if (surf.isPeriodicT() && surf.isPeriodicU()) {
+	if (surf.get_periodicT() && surf.get_periodicU()) {
 		int i0 = flattened2DVectorIndex(0, 0, size);
 		int i1 = flattened2DVectorIndex(-1, 0, size);
 		int i2 = flattened2DVectorIndex(-1, -1, size);
@@ -836,7 +836,7 @@ vec2 IndexedMesh3D::getSurfaceParameters(const BufferedVertex& v) {
 void IndexedMesh3D::encodeSurfacePoint(BufferedVertex& v, const SmoothParametricSurface& surf, vec2 tu) {
 	v.setPosition(surf(tu));
 	v.setNormal(surf.normal(tu));
-	v.setUV(vec2((tu.x - surf.tMin()) / (surf.tMax() - surf.tMin()), (tu.y - surf.uMin()) / (surf.uMax() - surf.uMin())));
+	v.setUV(vec2((tu.x - surf.t0()) / (surf.t1() - surf.t0()), (tu.y - surf.u0()) / (surf.u1() - surf.u0())));
 	v.setColor(tu.x, 0);
 	v.setColor(tu.y, 1);
 }
@@ -1000,12 +1000,12 @@ IndexedMesh3D IndexedMesh3D::wireframe(PolyGroupID id, PolyGroupID targetId, flo
 	vector<ivec3> new_inds = {};
 	for (const auto& v : verts) {
 		Vertex extr = v.getVertex();
-		extr.set_position(extr.get_position() + extr.get_normal() * heightCenter);
+		extr.position = extr.position + extr.normal * heightCenter;
 		new_verts.push_back(extr);
 	}
 	for (const auto& tr : trs) {
 		array<vec3, 3> border = tr.borderTriangle(width);
-		vec3 n = tr.faceNormal() * sign(dot(tr.getVertex(0).get_normal(), tr.faceNormal()));
+		vec3 n = tr.faceNormal() * sign(dot(tr.getVertex(0).normal, tr.faceNormal()));
 
 
 		for (vec3 p : border)
@@ -1207,7 +1207,7 @@ vec3 IndexedMesh3D::centerOfMass() const {
 
 Wireframe::Wireframe(const SmoothParametricSurface& surf, float width, int n, int m, int curve_res_rad, int curve_res_hor)
 : IndexedMesh3D(), width(width), surf(surf), n(n), m(m), curve_res_rad(curve_res_rad), curve_res_hor(curve_res_hor) {
-	for (float t_i : linspace(surf.tMin(), surf.tMax(), n)) {
+	for (float t_i : linspace(surf.t0(), surf.t1(), n)) {
 		SmoothParametricCurve curve = surf.constT(t_i);
 		auto id = randomID();
 		addUniformSurface(curve.pipe(width), curve_res_rad, curve_res_hor, id);
@@ -1217,7 +1217,7 @@ Wireframe::Wireframe(const SmoothParametricSurface& surf, float width, int n, in
 		});
 	}
 
-	for (float u_i : linspace(surf.uMin(), surf.uMax(), m)) {
+	for (float u_i : linspace(surf.u0(), surf.u1(), m)) {
 		SmoothParametricCurve curve = surf.constU(u_i);
 		auto id = randomID();
 		addUniformSurface(curve.pipe(width), curve_res_rad, curve_res_hor, id);
@@ -1597,9 +1597,9 @@ void PipeCurveVertexShader::updateCurve(const SmoothParametricCurve& curve) {
 				 min(max(p.z, settings.bound_min.z), settings.bound_max.z));
 		vec3 b = curve.binormal(t);
 		vec3 n = curve.normal(t);
-		// if (dot(n, v.get_normal()) < 0)
+		// if (dot(n, v.normal) < 0)
 		// 	n = -n;
-		// if (dot(b, vec3(v.get_color())) < 0)
+		// if (dot(b, vec3(v.color)) < 0)
 		// 	b = -b;
 		v.setPosition(p);
 		v.setNormal(n);
@@ -1773,7 +1773,7 @@ void IndexedMesh3D::recalculateNormals() {
 
 void IndexedMesh3D::orientFaces(const PolyGroupID& id) {
 	for (auto& t : triangles.at(polygroupIndexOrder.at(id)))
-		if (dot(t.faceNormal(), t.getVertex(0).get_normal()) < 0)
+		if (dot(t.faceNormal(), t.getVertex(0).normal) < 0)
 			t.changeOrientation();
 }
 
@@ -1880,8 +1880,8 @@ SurfacePlotDiscretisedMesh::SurfacePlotDiscretisedMesh(const DiscreteRealFunctio
 			vec3 p = vec3(x, t, plot[i][j]);
 			vec3 n = e3;
 			if (i > 0 && j > 0) {
-				auto p1 = points.back().get_position();
-				auto p2 = points.at(points.size() - plot.samples_x()).get_position();
+				auto p1 = points.back().position;
+				auto p2 = points.at(points.size() - plot.samples_x()).position;
 				n = normalize(cross(p1 - p, p2 - p));
 				if (dot(n, e3) < 0)
 					n = -n;
@@ -1925,10 +1925,10 @@ SurfacePolarPlotDiscretisedMesh::SurfacePolarPlotDiscretisedMesh(const DiscreteR
 			vec3 p = vec3(R * sin(phi), t, R * cos(phi));
 			vec3 n = -vec3(sin(phi), 0, cos(phi));
 			if (i > 0) {
-				auto p1 = points.back().get_position();
-				auto p2 = points.at(points.size() - nx).get_position();
+				auto p1 = points.back().position;
+				auto p2 = points.at(points.size() - nx).position;
 				if (j == 0)
-					p2 = points.at(points.size() - 2).get_position();
+					p2 = points.at(points.size() - 2).position;
 				n = normalize(cross(p1 - p, p2 - p));
 				if (dot(n, vec3(sin(phi), 0, cos(phi))) < 0)
 					n = -n;

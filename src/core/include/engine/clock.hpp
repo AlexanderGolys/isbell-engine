@@ -13,8 +13,10 @@ struct FPSStatsResults {
 };
 
 struct TimeStep {
-	float time;
-	float deltaTime;
+	float t;
+	float dt;
+
+	explicit TimeStep(float t=0, float dt=.1) : t(t), dt(dt) {}
 };
 
 
@@ -36,4 +38,13 @@ public:
 	void reset();
 	void measureFPSStats(uint averageFPS, uint worstFPS, float window);
 	TimeStep tick();
+};
+
+class WaitTimer {
+	float lastTime;
+	float waitDuration;
+
+public:
+	explicit WaitTimer(float waitDuration);
+	bool available(float currentTime);
 };

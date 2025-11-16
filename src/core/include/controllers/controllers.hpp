@@ -1,59 +1,89 @@
 #pragma once
 #include "accumulators.hpp"
+#include "listeners.hpp"
 #include "sceneRendering.hpp"
 
-class Controller : public LayerComponent {
+template <typename T>
+class Controller : public UpdateComponent {
+	sptr<T> object;
+	BIHOM(sptr<T>, TimeStep, void) controlFunction;
+
 public:
+	Controller(sptr<T> object, BIHOM(sptr<T>, TimeStep, void) controlFunction) : object(object), controlFunction(controlFunction) {}
+	void update(TimeStep timeStep) final { controlFunction(object, timeStep); }
 	void init() final {}
-	void setDuringRender() const final {}
 };
 
-class CameraController : public Controller {
-	std::function<void(sptr<Camera>, float, float)> controlFunction;
-	CONST_PROPERTY(sptr<Camera>, camera);
-
+class CameraController : public Controller<Camera> {
 public:
-	CameraController(sptr<Camera> camera, std::function<void(sptr<Camera>, float, float)> controlFunction);
-	void update(float t, float dt) override;
+	CameraController(sptr<Camera> camera, BIHOM(CameraTransform, TimeStep, CameraTransform) controlFunction);
 };
 
-class CameraPositionController : public CameraController {
-public:
-	CameraPositionController(sptr<Camera> camera, std::function<vec3(vec3, float, float)> controlFunction);
-};
-
-class CameraRotatorFromImpulse : public CameraController {
-	sptr<DefferedResponseAccumulator> impulseAccumulator;
-public:
-	CameraRotatorFromImpulse(sptr<Camera> camera, sptr<DefferedResponseAccumulator> impulseAccumulator)
-	: CameraController(camera, [&impulseAccumulator](sptr<Camera> cam, float t, float dt) {
-		float angle = impulseAccumulator->step(dt);
-		mat3 rot = rotationMatrix(cam->get_upVector(), angle);
-		vec3 pos = rot*(cam->get_position() - cam->get_lookAtPos()) + cam->get_lookAtPos();
-		cam->set_position(pos);
-	}), impulseAccumulator(impulseAccumulator) {}
-};
-
-class DefferedImpulseFromKeypress : public EventListener {
+class ImpulseOnKeyComponent : public KeyPressedListener {
 	sptr<DefferedResponseAccumulator> impulseAccumulator;
 	Distribution impulseDistribution;
-	KeyCode key;
-	float regenerationTime;
-	float lastImpulseTime;
+	WaitTimer forwardTimer, reverseTimer;
+	KeyCode key, keyReverse;
+
 public:
+	ImpulseOnKeyComponent(const Distribution& impulseDistribution, KeyCode key, KeyCode keyReverse, float regenerationTime=0);
+	void onKeyPressed(KeyCode keyCode, TimeStep timeStep) final;
+	float step(float dt) const;
+};
 
-	DefferedImpulseFromKeypress(sptr<DefferedResponseAccumulator> impulseAccumulator, const Distribution& impulseDistribution, KeyCode key, float regenerationTime = 2.f)
-	: impulseAccumulator(impulseAccumulator), impulseDistribution(impulseDistribution), key(key), regenerationTime(regenerationTime), lastImpulseTime(-regenerationTime) {}
+class ImpulseOnScrollComponent : public ScrollListener {
+	uptr<DefferedResponseAccumulator> impulseAccumulator;
+	Distribution impulseDistribution;
+	float scrollSensitivity;
+	bool xAxis;
 
-	void onEvent(const Event& event, float t, float dt) override {
-		if (event.getEventType() == EventType::KeyPressed) {
-			auto& e = static_cast<const KeyPressedEvent&>(event);
-			if (e.get_keycode() == key) {
-				if (t - lastImpulseTime < regenerationTime)
-					return;
-				lastImpulseTime = t;
-				impulseAccumulator->addImpulse(impulseDistribution);
-			}
-		}
-	}
+public:
+	ImpulseOnScrollComponent(const Distribution& impulseDistribution, float scrollSensitivity, bool xAxis=true);
+
+	void onScroll(float xOffset, float yOffset, TimeStep timeStep) final;
+	float step(float dt) const;
+};
+
+class CameraTransformFromImpulseOnKey : public CameraController, public ImpulseOnKeyComponent {
+	BIHOM(CameraTransform, float, CameraTransform) onImpulse;
+public:
+	CameraTransformFromImpulseOnKey(sptr<Camera> camera, const BIHOM(CameraTransform, float, CameraTransform)& onImpulse, const Distribution& impulseDistribution, KeyCode key, KeyCode keyReverse, float regenerationTime=0);
+	CameraTransform onImpulseCall(CameraTransform transform, float impulse) const;
+};
+
+class CameraTransformFromImpulseOnScroll : public CameraController, public ImpulseOnScrollComponent {
+	BIHOM(CameraTransform, float, CameraTransform) onImpulse;
+public:
+	CameraTransformFromImpulseOnScroll(sptr<Camera> camera, const BIHOM(CameraTransform, float, CameraTransform)& onImpulse, const Distribution& impulseDistribution, float scrollSensitivity, bool xAxis=true);
+	CameraTransform onImpulseCall(CameraTransform transform, float impulse) const;
+};
+
+class CameraHorisontalRotationOnKey : public CameraTransformFromImpulseOnKey {
+public:
+	CameraHorisontalRotationOnKey(sptr<Camera> camera, const Distribution& impulseDistribution, KeyCode key, KeyCode keyReverse, float regenerationTime=0);
+};
+
+class CameraHorisontalShiftOnKey : public CameraTransformFromImpulseOnKey {
+public:
+	CameraHorisontalShiftOnKey(sptr<Camera> camera, const Distribution& impulseDistribution, KeyCode key, KeyCode keyReverse, float regenerationTime=0);
+};
+
+class CameraVerticalRotationOnKey : public CameraTransformFromImpulseOnKey {
+public:
+	CameraVerticalRotationOnKey(sptr<Camera> camera, const Distribution& impulseDistribution, KeyCode key, KeyCode keyReverse, float regenerationTime=0);
+};
+
+class CameraVerticalShiftOnKey : public CameraTransformFromImpulseOnKey {
+public:
+	CameraVerticalShiftOnKey(sptr<Camera> camera, const Distribution& impulseDistribution, KeyCode key, KeyCode keyReverse, float regenerationTime=0);
+};
+
+class CameraZoomOnScroll : public CameraTransformFromImpulseOnScroll {
+public:
+	CameraZoomOnScroll(sptr<Camera> camera, const Distribution& impulseDistribution, float scrollSensitivity);
+};
+
+class CameraRotateOnScroll : public CameraTransformFromImpulseOnScroll {
+public:
+	CameraRotateOnScroll(sptr<Camera> camera, const Distribution& impulseDistribution, float scrollSensitivity);
 };

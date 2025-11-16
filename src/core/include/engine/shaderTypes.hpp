@@ -5,7 +5,7 @@
 
 
 
-enum GLSLType {
+enum class GLSLPrimitive {
 	BYTE, BOOL,
 	FLOAT, DOUBLE,
 	SHORT, INT, UINT,
@@ -18,188 +18,228 @@ enum GLSLType {
 	UNKNOWN
 };
 
+enum class GLSLDataTypeShape {
+	SCALAR,
+	VECTOR,
+	MATRIX,
+};
+
 struct VertexBufferLayout {
-	vector<GLSLType> types;
+	vector<GLSLPrimitive> types;
 	byte_size stride;
 	vector<byte_size> offsets;
 
-	explicit VertexBufferLayout(const vector<GLSLType>& types);
-	static VertexBufferLayout singleAttribute(GLSLType type);
+	explicit VertexBufferLayout(const vector<GLSLPrimitive>& types);
+	static VertexBufferLayout singleAttribute(GLSLPrimitive type);
 
 	bool operator==(const VertexBufferLayout& other) const;
 };
 
+
+
 template<typename T>
-constexpr GLSLType glslTypeVariable = UNKNOWN;
+constexpr GLSLPrimitive glslTypeVariable = GLSLPrimitive::UNKNOWN;
 
-template<> constexpr GLSLType glslTypeVariable<bool> = BOOL;
-template<> constexpr GLSLType glslTypeVariable<char> = BYTE;
-template<> constexpr GLSLType glslTypeVariable<short> = SHORT;
-template<> constexpr GLSLType glslTypeVariable<float> = FLOAT;
-template<> constexpr GLSLType glslTypeVariable<double> = DOUBLE;
-template<> constexpr GLSLType glslTypeVariable<int> = INT;
-template<> constexpr GLSLType glslTypeVariable<unsigned int> = UINT;
-template<> constexpr GLSLType glslTypeVariable<array_len> = UINT;
-template<> constexpr GLSLType glslTypeVariable<vec2> = VEC2;
-template<> constexpr GLSLType glslTypeVariable<vec3> = VEC3;
-template<> constexpr GLSLType glslTypeVariable<vec4> = VEC4;
-template<> constexpr GLSLType glslTypeVariable<dvec2> = DVEC2;
-template<> constexpr GLSLType glslTypeVariable<dvec3> = DVEC3;
-template<> constexpr GLSLType glslTypeVariable<dvec4> = DVEC4;
-template<> constexpr GLSLType glslTypeVariable<ivec2> = IVEC2;
-template<> constexpr GLSLType glslTypeVariable<ivec3> = IVEC3;
-template<> constexpr GLSLType glslTypeVariable<ivec4> = IVEC4;
-template<> constexpr GLSLType glslTypeVariable<mat2> = MAT2;
-template<> constexpr GLSLType glslTypeVariable<mat3> = MAT3;
-template<> constexpr GLSLType glslTypeVariable<mat4> = MAT4;
-template<> constexpr GLSLType glslTypeVariable<mat2x3> = MAT2x3;
-template<> constexpr GLSLType glslTypeVariable<mat2x4> = MAT2x4;
-template<> constexpr GLSLType glslTypeVariable<mat3x2> = MAT3x2;
-template<> constexpr GLSLType glslTypeVariable<mat3x4> = MAT3x4;
-template<> constexpr GLSLType glslTypeVariable<mat4x2> = MAT4x2;
-template<> constexpr GLSLType glslTypeVariable<mat4x3> = MAT4x3;
+template<> constexpr GLSLPrimitive glslTypeVariable<bool> = GLSLPrimitive::BOOL;
+template<> constexpr GLSLPrimitive glslTypeVariable<char> = GLSLPrimitive::BYTE;
+template<> constexpr GLSLPrimitive glslTypeVariable<short> = GLSLPrimitive::SHORT;
+template<> constexpr GLSLPrimitive glslTypeVariable<float> = GLSLPrimitive::FLOAT;
+template<> constexpr GLSLPrimitive glslTypeVariable<double> = GLSLPrimitive::DOUBLE;
+template<> constexpr GLSLPrimitive glslTypeVariable<int> = GLSLPrimitive::INT;
+template<> constexpr GLSLPrimitive glslTypeVariable<uint> = GLSLPrimitive::UINT;
+template<> constexpr GLSLPrimitive glslTypeVariable<array_len> = GLSLPrimitive::UINT;
+template<> constexpr GLSLPrimitive glslTypeVariable<vec2> = GLSLPrimitive::VEC2;
+template<> constexpr GLSLPrimitive glslTypeVariable<vec3> = GLSLPrimitive::VEC3;
+template<> constexpr GLSLPrimitive glslTypeVariable<vec4> = GLSLPrimitive::VEC4;
+template<> constexpr GLSLPrimitive glslTypeVariable<dvec2> = GLSLPrimitive::DVEC2;
+template<> constexpr GLSLPrimitive glslTypeVariable<dvec3> = GLSLPrimitive::DVEC3;
+template<> constexpr GLSLPrimitive glslTypeVariable<dvec4> = GLSLPrimitive::DVEC4;
+template<> constexpr GLSLPrimitive glslTypeVariable<ivec2> = GLSLPrimitive::IVEC2;
+template<> constexpr GLSLPrimitive glslTypeVariable<ivec3> = GLSLPrimitive::IVEC3;
+template<> constexpr GLSLPrimitive glslTypeVariable<ivec4> = GLSLPrimitive::IVEC4;
+template<> constexpr GLSLPrimitive glslTypeVariable<mat2> = GLSLPrimitive::MAT2;
+template<> constexpr GLSLPrimitive glslTypeVariable<mat3> = GLSLPrimitive::MAT3;
+template<> constexpr GLSLPrimitive glslTypeVariable<mat4> = GLSLPrimitive::MAT4;
+template<> constexpr GLSLPrimitive glslTypeVariable<mat2x3> = GLSLPrimitive::MAT2x3;
+template<> constexpr GLSLPrimitive glslTypeVariable<mat2x4> = GLSLPrimitive::MAT2x4;
+template<> constexpr GLSLPrimitive glslTypeVariable<mat3x2> = GLSLPrimitive::MAT3x2;
+template<> constexpr GLSLPrimitive glslTypeVariable<mat3x4> = GLSLPrimitive::MAT3x4;
+template<> constexpr GLSLPrimitive glslTypeVariable<mat4x2> = GLSLPrimitive::MAT4x2;
+template<> constexpr GLSLPrimitive glslTypeVariable<mat4x3> = GLSLPrimitive::MAT4x3;
 
-inline int lengthOfGLSLType(GLSLType type) {
+template<typename T>
+constexpr GLSLDataTypeShape typeShape = GLSLDataTypeShape::SCALAR;
+
+template<> constexpr GLSLDataTypeShape typeShape<vec2> = GLSLDataTypeShape::VECTOR;
+template<> constexpr GLSLDataTypeShape typeShape<vec3> = GLSLDataTypeShape::VECTOR;
+template<> constexpr GLSLDataTypeShape typeShape<vec4> = GLSLDataTypeShape::VECTOR;
+template<> constexpr GLSLDataTypeShape typeShape<ivec2> = GLSLDataTypeShape::VECTOR;
+template<> constexpr GLSLDataTypeShape typeShape<ivec3> = GLSLDataTypeShape::VECTOR;
+template<> constexpr GLSLDataTypeShape typeShape<ivec4> = GLSLDataTypeShape::VECTOR;
+template<> constexpr GLSLDataTypeShape typeShape<mat2> = GLSLDataTypeShape::MATRIX;
+template<> constexpr GLSLDataTypeShape typeShape<mat3> = GLSLDataTypeShape::MATRIX;
+template<> constexpr GLSLDataTypeShape typeShape<mat4> = GLSLDataTypeShape::MATRIX;
+template<> constexpr GLSLDataTypeShape typeShape<mat2x3> = GLSLDataTypeShape::MATRIX;
+template<> constexpr GLSLDataTypeShape typeShape<mat2x4> = GLSLDataTypeShape::MATRIX;
+template<> constexpr GLSLDataTypeShape typeShape<mat3x2> = GLSLDataTypeShape::MATRIX;
+template<> constexpr GLSLDataTypeShape typeShape<mat3x4> = GLSLDataTypeShape::MATRIX;
+template<> constexpr GLSLDataTypeShape typeShape<mat4x2> = GLSLDataTypeShape::MATRIX;
+template<> constexpr GLSLDataTypeShape typeShape<mat4x3> = GLSLDataTypeShape::MATRIX;
+
+
+inline int lengthOfGLSLType(GLSLPrimitive type) {
 	switch (type) {
-	case IVEC2:
-	case VEC2:
-	case DVEC2:
+	case GLSLPrimitive::IVEC2:
+	case GLSLPrimitive::VEC2:
+	case GLSLPrimitive::DVEC2:
 		return 2;
-	case VEC3:
-	case IVEC3:
-	case DVEC3:
+	case GLSLPrimitive::VEC3:
+	case GLSLPrimitive::IVEC3:
+	case GLSLPrimitive::DVEC3:
 		return 3;
-	case VEC4:
-	case IVEC4:
-	case MAT2:
-	case DVEC4:
+	case GLSLPrimitive::VEC4:
+	case GLSLPrimitive::IVEC4:
+	case GLSLPrimitive::MAT2:
+	case GLSLPrimitive::DVEC4:
 		return 4;
-	case MAT2x3:
-	case MAT3x2:
+	case GLSLPrimitive::MAT2x3:
+	case GLSLPrimitive::MAT3x2:
 		return 6;
-	case MAT2x4:
-	case MAT4x2:
+	case GLSLPrimitive::MAT2x4:
+	case GLSLPrimitive::MAT4x2:
 		return 8;
-	case MAT3:
+	case GLSLPrimitive::MAT3:
 		return 9;
-	case MAT3x4:
-	case MAT4x3:
+	case GLSLPrimitive::MAT3x4:
+	case GLSLPrimitive::MAT4x3:
 		return 12;
-	case MAT4:
+	case GLSLPrimitive::MAT4:
 		return 16;
-	case UNKNOWN:
+	case GLSLPrimitive::UNKNOWN:
 		THROW(ValueError, "Unknown GLSLType has no length");
 	}
 	return 1;
 }
 
-inline GLenum primitiveTypeEnum(GLSLType type) {
+inline GLenum primitiveTypeEnum(GLSLPrimitive type) {
 	switch (type) {
-	case INT:
-	case IVEC2:
-	case IVEC3:
-	case IVEC4:
+	case GLSLPrimitive::INT:
+	case GLSLPrimitive::IVEC2:
+	case GLSLPrimitive::IVEC3:
+	case GLSLPrimitive::IVEC4:
 		return GL_INT;
-	case UINT:
-	case SAMPLER1D:
-	case SAMPLER2D:
-	case SAMPLER3D:
+	case GLSLPrimitive::UINT:
+	case GLSLPrimitive::SAMPLER1D:
+	case GLSLPrimitive::SAMPLER2D:
+	case GLSLPrimitive::SAMPLER3D:
 		return GL_UNSIGNED_INT;
-	case BYTE:
+	case GLSLPrimitive::BYTE:
 		return GL_BYTE;
-	case BOOL:
+	case GLSLPrimitive::BOOL:
 		return GL_BOOL;
-	case SHORT:
+	case GLSLPrimitive::SHORT:
 		return GL_SHORT;
-	case DOUBLE:
-	case DVEC2:
-	case DVEC3:
-	case DVEC4:
+	case GLSLPrimitive::DOUBLE:
+	case GLSLPrimitive::DVEC2:
+	case GLSLPrimitive::DVEC3:
+	case GLSLPrimitive::DVEC4:
 		return GL_DOUBLE;
-	case UNKNOWN:
+	case GLSLPrimitive::UNKNOWN:
 		THROW(ValueError, "Unknown GLSLType has no primitive type");
 	}
 	return GL_FLOAT;
 }
 
-inline byte_size sizeOfGLSLType(GLSLType type) {
+inline byte_size sizeOfGLSLType(GLSLPrimitive type) {
 	byte_size SINGLE_PREC = 4;
 	byte_size DOUBLE_PREC = 8;
 	byte_size ONE_BYTE = 1;
 
 	switch (type) {
-	case FLOAT:
-	case INT:
-	case UINT:
-	case SAMPLER1D:
-	case SAMPLER2D:
-	case SAMPLER3D:
+	case GLSLPrimitive::FLOAT:
+	case GLSLPrimitive::INT:
+	case GLSLPrimitive::UINT:
+	case GLSLPrimitive::SAMPLER1D:
+	case GLSLPrimitive::SAMPLER2D:
+	case GLSLPrimitive::SAMPLER3D:
 		return SINGLE_PREC;
-	case BYTE:
-	case BOOL:
+	case GLSLPrimitive::BYTE:
+	case GLSLPrimitive::BOOL:
 		return ONE_BYTE;
-	case SHORT:
+	case GLSLPrimitive::SHORT:
 		return ONE_BYTE * 2;
-	case DOUBLE:
+	case GLSLPrimitive::DOUBLE:
 		return DOUBLE_PREC;
-	case DVEC2:
+	case GLSLPrimitive::DVEC2:
 		return DOUBLE_PREC * 2;
-	case DVEC3:
+	case GLSLPrimitive::DVEC3:
 		return DOUBLE_PREC * 3;
-	case DVEC4:
+	case GLSLPrimitive::DVEC4:
 		return DOUBLE_PREC * 4;
-	case VEC2:
-	case IVEC2:
+	case GLSLPrimitive::VEC2:
+	case GLSLPrimitive::IVEC2:
 		return SINGLE_PREC * 2;
-	case VEC3:
-	case IVEC3:
+	case GLSLPrimitive::VEC3:
+	case GLSLPrimitive::IVEC3:
 		return SINGLE_PREC * 3;
-	case VEC4:
-	case IVEC4:
+	case GLSLPrimitive::VEC4:
+	case GLSLPrimitive::IVEC4:
 		return SINGLE_PREC * 4;
-	case MAT2:
+	case GLSLPrimitive::MAT2:
 		return SINGLE_PREC * 2 * 2;
-	case MAT3:
+	case GLSLPrimitive::MAT3:
 		return SINGLE_PREC * 3 * 3;
-	case MAT4:
+	case GLSLPrimitive::MAT4:
 		return SINGLE_PREC * 4 * 4;
-	case MAT2x3:
-	case MAT3x2:
+	case GLSLPrimitive::MAT2x3:
+	case GLSLPrimitive::MAT3x2:
 		return SINGLE_PREC * 2 * 3;
-	case MAT2x4:
-	case MAT4x2:
+	case GLSLPrimitive::MAT2x4:
+	case GLSLPrimitive::MAT4x2:
 		return SINGLE_PREC * 2 * 4;
-	case MAT3x4:
-	case MAT4x3:
+	case GLSLPrimitive::MAT3x4:
+	case GLSLPrimitive::MAT4x3:
 		return SINGLE_PREC * 3 * 4;
 	}
 	THROW(ValueError, "Unknown GLSLType");
 }
 
-inline bool supportedAttributeType(GLSLType type) {
-	return type == FLOAT or type == VEC2 or type == VEC3 or type == VEC4
-		or type == DOUBLE or type == DVEC2 or type == DVEC3 or type == DVEC4;
+inline bool supportedAttributeType(GLSLPrimitive type) {
+	return	type == GLSLPrimitive::FLOAT or
+			type == GLSLPrimitive::VEC2 or
+			type == GLSLPrimitive::VEC3 or
+			type == GLSLPrimitive::VEC4 or
+			type == GLSLPrimitive::DOUBLE or
+			type == GLSLPrimitive::DVEC2 or
+			type == GLSLPrimitive::DVEC3 or
+			type == GLSLPrimitive::DVEC4;
 }
 
-inline bool supportedUniformType(GLSLType type) {
+constexpr bool supportedUniformType(GLSLPrimitive type) {
 	return
-		type == BOOL or
-		type == FLOAT or
-		type == INT or
-		type == UINT or
-		type == IVEC2 or
-		type == IVEC3 or
-		type == IVEC4 or
-		type == VEC2 or
-		type == VEC3 or
-		type == VEC4 or
-		type == MAT2 or
-		type == MAT3 or
-		type == MAT4 or
-		type == MAT2x3 or
-		type == MAT2x4 or
-		type == MAT3x2 or
-		type == MAT3x4 or
-		type == MAT4x2 or
-		type == MAT4x3;
+		type == GLSLPrimitive::BOOL or
+		type == GLSLPrimitive::FLOAT or
+		type == GLSLPrimitive::INT or
+		type == GLSLPrimitive::UINT or
+		type == GLSLPrimitive::IVEC2 or
+		type == GLSLPrimitive::IVEC3 or
+		type == GLSLPrimitive::IVEC4 or
+		type == GLSLPrimitive::VEC2 or
+		type == GLSLPrimitive::VEC3 or
+		type == GLSLPrimitive::VEC4 or
+		type == GLSLPrimitive::MAT2 or
+		type == GLSLPrimitive::MAT3 or
+		type == GLSLPrimitive::MAT4 or
+		type == GLSLPrimitive::MAT2x3 or
+		type == GLSLPrimitive::MAT2x4 or
+		type == GLSLPrimitive::MAT3x2 or
+		type == GLSLPrimitive::MAT3x4 or
+		type == GLSLPrimitive::MAT4x2 or
+		type == GLSLPrimitive::MAT4x3;
 }
+
+template<typename T>
+concept supported_uniform_type = requires {
+	supportedUniformType(glslTypeVariable<T>);
+};
+

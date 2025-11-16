@@ -21,9 +21,9 @@ void Renderer::initRendering() {
 	LOG("OpenGL renderer initialized");
 }
 
-void Renderer::update(float t, float delta) const {
+void Renderer::update(TimeStep timeStep) const {
 	for (const auto& layer : layerStack)
-		layer->updateStep(t, delta);
+		layer->updateStep(timeStep);
 }
 
 void Renderer::renderStep() const {
@@ -34,18 +34,18 @@ void Renderer::renderStep() const {
 	glfwPollEvents();
 }
 
-void Renderer::eventHandlingStep(float t, float delta) const {
-	for (const auto& event : eventQueue->begin(), eventQueue->end())
+void Renderer::eventHandlingStep(TimeStep timeStep) const {
+	for (auto event : *eventQueue)
 		for (const auto& layer : layerStack)
-			layer->onEvent(event, t, delta);
+			layer->onEvent(event, timeStep);
 	eventQueue->clearQueue();
 }
 
 void Renderer::mainLoop() {
 	while (window->isOpen()) {
-		auto [t, dt] = fpsClock.tick();
-		update(t, dt);
-		eventHandlingStep(t, dt);
+		TimeStep t = fpsClock.tick();
+		eventHandlingStep(t);
+		update(t);
 		renderStep();
 	}
 }

@@ -55,3 +55,12 @@ TimeStep FPSClock::tick() {
 	}
 	return TimeStep{time, dt};
 }
+
+WaitTimer::WaitTimer(float waitDuration): lastTime(-waitDuration), waitDuration(waitDuration) {}
+
+bool WaitTimer::available(float currentTime) {
+	if (currentTime - lastTime < waitDuration)
+		return false;
+	lastTime = currentTime;
+	return true;
+}

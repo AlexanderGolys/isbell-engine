@@ -5,7 +5,7 @@
 #include <GL/glew.h>
 
 
-VertexBufferLayout::VertexBufferLayout(const vector<GLSLType>& types): types(types) {
+VertexBufferLayout::VertexBufferLayout(const vector<GLSLPrimitive>& types): types(types) {
 	stride = 0;
 	offsets.reserve(types.size());
 	for (const auto& t : types) {
@@ -14,7 +14,7 @@ VertexBufferLayout::VertexBufferLayout(const vector<GLSLType>& types): types(typ
 	}
 }
 
-VertexBufferLayout VertexBufferLayout::singleAttribute(GLSLType type) {
+VertexBufferLayout VertexBufferLayout::singleAttribute(GLSLPrimitive type) {
 	return VertexBufferLayout({type});
 }
 
@@ -28,7 +28,7 @@ VertexBuffer::VertexBuffer(const VertexBufferLayout& layout, int firstInputNumbe
 }
 
 VertexBuffer::~VertexBuffer() {
-	GLCommand::deleteBuffer(bufferID);
+	GLCommand::deleteBuffer(&bufferID);
 }
 
 void VertexBuffer::pointAtAttributes() const {
@@ -65,7 +65,7 @@ int VertexBuffer::getNumberOfAttributes() const {
 	return layout.types.size();
 }
 
-AttributeBuffer::AttributeBuffer(const string& name, GLSLType type, int inputNumber)
+AttributeBuffer::AttributeBuffer(const string& name, GLSLPrimitive type, int inputNumber)
 : VertexBuffer(VertexBufferLayout::singleAttribute(type), inputNumber), name(name), type(type) {
 }
 
@@ -74,14 +74,14 @@ ElementBuffer::ElementBuffer() {
 }
 
 ElementBuffer::~ElementBuffer() {
-	GLCommand::deleteBuffer(bufferID);
+	GLCommand::deleteBuffer(&bufferID);
 }
 
 
 void ElementBuffer::load(raw_data_ptr firstElementAdress, byte_size bufferSize) {
 	if (bufferedSize != 0)
 		LOG_WARN("Loading the element buffer again instead of updating it");
-	glNamedBufferData(bufferID, bufferSize, firstElementAdress, GL_STATIC_DRAW);
+	GLCommand::loadBufferData(bufferID, firstElementAdress, bufferSize, GL_STATIC_DRAW);
 	bufferedSize = bufferSize;
 }
 
@@ -117,14 +117,14 @@ void VertexArray::addElementBuffer(sptr<ElementBuffer> elementBuffer) {
 	this->elementBuffer = elementBuffer;
 }
 
+void VertexArray::addElementBuffer() {
+	addElementBuffer(make_shared<ElementBuffer>());
+}
+
 void VertexArray::addVertexBuffer(sptr<VertexBuffer> vertexBuffer) {
 	GLCommand::bindVAO(vaoID);
 	vertexBuffer->pointAtAttributes();
 	vertexBuffers.push_back(vertexBuffer);
-}
-
-void VertexArray::addAttributeBuffer(sptr<AttributeBuffer> attributeBuffer) {
-	addVertexBuffer(attributeBuffer);
 }
 
 bool VertexArray::empty() const {
@@ -149,27 +149,27 @@ void VertexArray::loadIndexedMesh(sptr<IndexedMesh3D> mesh) {
 	elementBuffer->load(mesh->bufferIndexLocation(), mesh->faceIndicesDataSize());
 	addElementBuffer(elementBuffer);
 
-	sptr<AttributeBuffer> positionBuffer = make_shared<AttributeBuffer>("position", VEC3, 0);
+	sptr<AttributeBuffer> positionBuffer = make_shared<AttributeBuffer>("position", GLSLPrimitive::VEC3, 0);
 	positionBuffer->load(mesh->getBufferLocation("position"), mesh->getAttributeDataSize("position"));
-	addAttributeBuffer(positionBuffer);
+	addVertexBuffer(positionBuffer);
 
-	sptr<AttributeBuffer> normalBuffer = make_shared<AttributeBuffer>("normal", VEC3, 1);
+	sptr<AttributeBuffer> normalBuffer = make_shared<AttributeBuffer>("normal", GLSLPrimitive::VEC3, 1);
 	normalBuffer->load(mesh->getBufferLocation("normal"), mesh->getAttributeDataSize("normal"));
-	addAttributeBuffer(normalBuffer);
+	addVertexBuffer(normalBuffer);
 
-	sptr<AttributeBuffer> uvBuffer = make_shared<AttributeBuffer>("uv", VEC2, 2);
+	sptr<AttributeBuffer> uvBuffer = make_shared<AttributeBuffer>("uv", GLSLPrimitive::VEC2, 2);
 	uvBuffer->load(mesh->getBufferLocation("uv"), mesh->getAttributeDataSize("uv"));
-	addAttributeBuffer(uvBuffer);
+	addVertexBuffer(uvBuffer);
 
-	sptr<AttributeBuffer> colorBuffer = make_shared<AttributeBuffer>("color", VEC4, 3);
+	sptr<AttributeBuffer> colorBuffer = make_shared<AttributeBuffer>("color", GLSLPrimitive::VEC4, 3);
 	colorBuffer->load(mesh->getBufferLocation("color"), mesh->getAttributeDataSize("color"));
-	addAttributeBuffer(colorBuffer);
+	addVertexBuffer(colorBuffer);
 
 	int attribIndex = 3;
 	for (string attrName : mesh->getActiveExtraBuffers()) {
-		sptr<AttributeBuffer> attr = make_shared<AttributeBuffer>(attrName, VEC4, ++attribIndex);
+		sptr<AttributeBuffer> attr = make_shared<AttributeBuffer>(attrName, GLSLPrimitive::VEC4, ++attribIndex);
 		colorBuffer->load(mesh->getBufferLocation(attrName), mesh->getAttributeDataSize(attrName));
-		addAttributeBuffer(attr);
+		addVertexBuffer(attr);
 	}
 	LOG("Loaded mesh of total size " + formatByteSize(mesh->totalByteSize()) + ".");
 }
@@ -177,20 +177,22 @@ void VertexArray::loadIndexedMesh(sptr<IndexedMesh3D> mesh) {
 void VertexArray::updateIndexedMesh(sptr<IndexedMesh3D> mesh) const {
 	for (auto& vertexBuffer : vertexBuffers) {
 		auto attrBuffer = std::dynamic_pointer_cast<AttributeBuffer>(vertexBuffer);
-		if (attrBuffer) {
-			string name = attrBuffer->get_name();
-			attrBuffer->update(mesh->getBufferLocation(name));
-		}
+		attrBuffer->update(mesh->getBufferLocation(attrBuffer->get_name()));
 	}
 	LOG("Updated buffered mesh attributes of size " + formatByteSize(mesh->totalAttributeDataSize()) + ".");
 }
 
 void VertexArray::loadGeometricData(sptr<GeometricData> data) {
 	THROW_IF(not empty(), ValueError, "VertexArray is not empty");
-	addElementBuffer(make_shared<ElementBuffer>());
-	addVertexBuffer(make_shared<VertexBuffer>(data->layout()));
-	elementBuffer->load(data->indexBufferData(), data->indexBufferSize());
-	vertexBuffers[0]->load(data->vertexBufferData(), data->vertexBufferSize());
+
+	sptr<ElementBuffer> eb = make_shared<ElementBuffer>();
+	eb->load(data->indexBufferData(), data->indexBufferSize());
+	addElementBuffer(eb);
+
+	sptr<VertexBuffer> vb = make_shared<VertexBuffer>(data->layout());
+	vb->load(data->vertexBufferData(), data->vertexBufferSize());
+	addVertexBuffer(vb);
+
 	data->markClean();
 	LOG("Loaded geometric data with total size " + formatByteSize(data->totalSize()) + ".");
 }
@@ -219,7 +221,7 @@ ShaderStorageBuffer::ShaderStorageBuffer() {
 }
 
 ShaderStorageBuffer::~ShaderStorageBuffer() {
-	GLCommand::deleteBuffer(bufferID);
+	GLCommand::deleteBuffer(&bufferID);
 }
 
 void ShaderStorageBuffer::bind(int bindingPoint) const {
@@ -239,4 +241,28 @@ void ShaderStorageBuffer::load(byte_size bufferSize, raw_data_ptr data) const {
 void ShaderStorageBuffer::update(byte_size bufferSize, raw_data_ptr data) const {
 	GLCommand::updateSSBOData(bufferID, data, bufferSize);
 	LOG("Updated SSBO of size " + formatByteSize(bufferSize) + ".");
+}
+
+UniformBuffer::UniformBuffer(uint bindingPoint, size_t bufferSize): bindingPoint(bindingPoint), bufferSize(bufferSize) {
+	GLCommand::createBuffer(&bufferID);
+}
+
+UniformBuffer::~UniformBuffer() {
+	GLCommand::deleteBuffer(&bufferID);
+}
+
+void UniformBuffer::bind() const {
+	GLCommand::bindUBO(bufferID, bindingPoint);
+}
+
+void UniformBuffer::unbind() const {
+	GLCommand::unbindUBO();
+}
+
+void UniformBuffer::load(raw_data_ptr firstElementAdress) const {
+	GLCommand::loadUBOData(bufferID, firstElementAdress, bufferSize);
+}
+
+void UniformBuffer::update(raw_data_ptr firstElementAdress) const {
+	GLCommand::updateUBOData(bufferID, firstElementAdress, bufferSize);
 }

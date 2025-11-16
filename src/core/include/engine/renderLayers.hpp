@@ -1,50 +1,71 @@
 #pragma once
 #include "buffers.hpp"
+#include "clock.hpp"
 #include "event.hpp"
+#include "listeners.hpp"
 #include "logging.hpp"
 #include "shaders.hpp"
 
 
 class Layer {
+	vector<sptr<EventListener>> eventListeners;
+
 public:
 	virtual ~Layer() = default;
 	virtual void init() = 0;
 	virtual void renderStep() = 0;
-	virtual void updateStep(float t, float dt) = 0;
-	virtual void onEvent(const Event& event, float t, float delta) const {}
+	virtual void updateStep(TimeStep timeStep) {}
+	virtual void onEvent(sptr<Event> event, TimeStep timeStep) const;
+
+	void addEventListener(sptr<EventListener> listener);
 };
 
 class LayerComponent {
 public:
 	virtual ~LayerComponent() = default;
 	virtual void init() = 0;
-	virtual void update(float t, float dt) = 0;
-	virtual void setDuringRender() const = 0;
+	virtual void update(TimeStep timeStep) = 0;
+	virtual void setDuringRender() = 0;
 };
 
-class EventListener {
+class CombinedLayerComponent : public LayerComponent {
+	vector<sptr<LayerComponent>> components;
 public:
-	virtual ~EventListener() = default;
-	virtual void init() {}
-	virtual void onEvent(const Event& event, float t, float dt) = 0;
-	virtual bool listensToEventType(EventType type) const = 0;
+	explicit CombinedLayerComponent(const vector<sptr<LayerComponent>>& components={});
+
+	void addComponent(sptr<LayerComponent> comp);
+
+	void init() override;
+	void update(TimeStep timeStep) override;
+	void setDuringRender() override;
 };
+
+class UpdateComponent : public LayerComponent {
+public:
+	void setDuringRender() final {}
+};
+
 
 class DrawLayer : public Layer {
 	CONST_PROPERTY(sptr<VertexArray>, vao);
 	sptr<ShaderProgram> shader;
 	vector<sptr<LayerComponent>> components;
-	vector<sptr<EventListener>> eventListeners;
 
 public:
 	DrawLayer(sptr<ShaderProgram> shader, sptr<VertexArray> vao, const vector<sptr<LayerComponent>>& components = {});
 	void addComponent(sptr<LayerComponent> comp);
-	void addEventListener(sptr<EventListener> listener);
 
 	void init() override;
 	void renderStep() final;
 	virtual void customRenderStep() {}
-	void updateStep(float t, float dt) override;
-	void onEvent(const Event& event, float t, float dt) const override;
+	virtual bool prerenderStep() { return true; }
+	void updateStep(TimeStep timeStep) override;
 };
 
+class GenericMeshLayer : public DrawLayer {
+	sptr<GeometricData> mesh;
+public:
+	GenericMeshLayer(sptr<ShaderProgram> shader, sptr<GeometricData> mesh);
+	void init() override;
+	void customRenderStep() override;
+};

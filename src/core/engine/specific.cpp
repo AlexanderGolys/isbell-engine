@@ -239,15 +239,15 @@ inline IndexedMesh3D icosahedron(float r, vec3 center, PolyGroupID id) {
     for (int i = 0; i < verts_.size()-2; i++) {
         for (int j = i+1; j < verts_.size()-1; j++) {
             for (int k = j+1; k < verts_.size(); k++) {
-                vec3 a = verts_[i].get_position();
-                vec3 b = verts_[j].get_position();
-                vec3 c = verts_[k].get_position();
+                vec3 a = verts_[i].position;
+                vec3 b = verts_[j].position;
+                vec3 c = verts_[k].position;
                 if (norm(a-b) < 2.1 && norm(b-c) < 2.1 && norm(c-a) < 2.1) {
                 	vec3 normal = normalise(cross(b - a, c - a));
                 	if (dot(normal, a) > 0) normal = -normal;
-                	verts.emplace_back(a, verts_[i].get_uv(), normal, BLACK);
-                	verts.emplace_back(b, verts_[j].get_uv(), normal, BLACK);
-                	verts.emplace_back(c, verts_[k].get_uv(), normal, BLACK);
+                	verts.emplace_back(a, verts_[i].uv, normal, BLACK);
+                	verts.emplace_back(b, verts_[j].uv, normal, BLACK);
+                	verts.emplace_back(c, verts_[k].uv, normal, BLACK);
                 	int l = verts.size();
                     faceInds.push_back(ivec3(l-3, l-2, l-1));
                 }
@@ -255,7 +255,7 @@ inline IndexedMesh3D icosahedron(float r, vec3 center, PolyGroupID id) {
         }
     }
     for (int i = 0; i < verts.size(); i++) {
-        verts[i].set_position(normalise(verts[i].get_position())*r + center);
+        verts[i].position=normalise(verts[i].position)*r + center;
     }
     return IndexedMesh3D(verts, faceInds, id);
 }

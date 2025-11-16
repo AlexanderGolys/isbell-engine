@@ -20,7 +20,7 @@ std::array<ivec3, 12> IndexedHexahedron::getTriangles() const {
 
 
 float IndexedHexahedron::volume() const {
-	return abs(dot(getFaceDown().getVertices()[0].get_position() - getFaceUp().getVertices()[0].get_position(), cross(getFaceDown().getVertices()[1].get_position() - getFaceUp().getVertices()[0].get_position(), getFaceDown().getVertices()[2].get_position() - getFaceUp().getVertices()[0].get_position())))/6.f;
+	return abs(dot(getFaceDown().getVertices()[0].position - getFaceUp().getVertices()[0].position, cross(getFaceDown().getVertices()[1].position - getFaceUp().getVertices()[0].position, getFaceDown().getVertices()[2].position - getFaceUp().getVertices()[0].position)))/6.f;
 }
 float IndexedHexahedron::surfaceArea() const {
 	return sum<float, std::array<float, 6>>(mapByVal<IndexedQuadrilateral, float, 6>(getFaces(), [](IndexedQuadrilateral q) { return q.surfaceArea(); }));
@@ -252,8 +252,8 @@ IndexedMesh3D CellMesh::bdMesh(const std::vector<std::string>& attrSavedAsColor)
 			vec4 color = colorFromAttributes(cell, attrSavedAsColor);
 			for (auto &v : bdVertices) {
 				for (int i = 0; i < 4; i++) {
-					v.at(i).set_color(color);
-					vertices.push_back(v.at(i));
+					v[i].color=color;
+					vertices.push_back(v[i]);
 				}
 				trs.emplace_back(vertices.size()-4, vertices.size()-3, vertices.size()-2);
 				trs.emplace_back(vertices.size()-4, vertices.size()-1, vertices.size()-2);

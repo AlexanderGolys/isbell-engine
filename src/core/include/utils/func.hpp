@@ -1249,5 +1249,5 @@ const RealFunction EXP_R = RealFunction::exp();
 const RealFunction LOG_R = RealFunction::log();
 const RealFunction SQRT_R = RealFunction::SQRT();
 const RealFunction ONE_R = RealFunction::one();
-const RealFunction X_R = RealFunction::linear(1, 0);
+const RealFunction X_R = RealFunction::x();
 const RealFunction RELU = max(X_R, 0);

@@ -6,18 +6,28 @@ layout (location = 1) in vec3 normal;
 layout (location = 2) in vec2 uv;
 layout (location = 3) in vec4 color;
 
-
-
-
 out vec4 v_color;
 out vec3 v_position;
 out vec3 v_normal;
 out vec2 v_uv;
 
+struct LightIntencity {
+    float constant;
+    float linear;
+    float quadratic;
+};
+
+struct Light {
+    vec3 pos;
+    vec4 color;
+    LightIntencity intencity;
+};
+
+layout(std140, binding = 0) uniform Lights {
+    Light u_lights[3];
+};
+
 uniform mat4 u_mvp;
-uniform vec3[3] u_lightPos;
-uniform vec4[3] u_lightColor;
-uniform vec3[3] u_lightIntencities;
 uniform vec4 u_intencities;
 uniform sampler2D u_texture_ambient;
 uniform sampler2D u_texture_diffuse;
