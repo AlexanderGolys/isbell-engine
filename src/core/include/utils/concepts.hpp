@@ -3,8 +3,14 @@
 #include "macros.hpp"
 
 template<typename T>
-concept vec_float_type = same_as<T, float> || same_as<T, vec2> || same_as<T, vec3> || same_as<T, vec4>;
+concept vec_float_type = same_as<T, float> or
+						 same_as<T, vec2> or
+						 same_as<T, vec3> or
+						 same_as<T, vec4>;
 
+
+template<vec_float_type T>
+consteval
 
 template<typename T>
 concept uniform_struct = derived_from<T, IDataBlock>;

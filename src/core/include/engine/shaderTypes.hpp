@@ -4,56 +4,32 @@
 
 
 
-
-
 template<uniform_struct S>
 class arrayStruct : public IDataBlock, public DirtyFlag {
-private:
-	vector<S> dataArray = {};
+	vector<S> dataArray;
 
 public:
 	explicit arrayStruct(const vector<S>& dataArray);
-	raw_data_ptr data() const final { return dataArray[0].data(); }
-	byte_size blockSize() const final { return dataArray.size() * dataArray[0].byteSize(); }
+	raw_data_ptr data() const final;
+	byte_size blockSize() const final;
 };
-
 
 
 template<vec_float_type VecType>
-class primitiveVecStruct {
+class primitiveVecStruct  : public IDataBlock, public DirtyFlag {
 	vec4 value;
 
 	vec4 make_vec4__(VecType v) const;
-
 public:
-	explicit primitiveVecStruct(VecType d) : value(make_vec4__(d)) {}
-	raw_data_ptr data() const { return &value[0]; }
-	byte_size byteSize() const { return sizeof(vec4); }
-	VecType get_value() const { return VecType(value); }
-	void set_value(VecType d) { value = make_vec4__(d); markDirty(); }
+	explicit primitiveVecStruct(VecType d);
+	raw_data_ptr data() const override;
+	byte_size blockSize() const override;
+	VecType get_value() const;
+	void set_value(VecType d);
 };
 
 
 
-
-enum class GLSLPrimitive {
-	BYTE, BOOL,
-	FLOAT, DOUBLE,
-	SHORT, INT, UINT,
-	IVEC2, IVEC3, IVEC4,
-	VEC2, VEC3, VEC4,
-	DVEC2, DVEC3, DVEC4,
-	MAT2, MAT3, MAT4,
-	MAT2x3, MAT2x4, MAT3x2, MAT3x4, MAT4x2, MAT4x3,
-	SAMPLER1D, SAMPLER2D, SAMPLER3D,
-	UNKNOWN
-};
-
-enum class GLSLDataTypeShape {
-	SCALAR,
-	VECTOR,
-	MATRIX,
-};
 
 struct VertexBufferLayout {
 	vector<GLSLPrimitive> types;
@@ -283,9 +259,30 @@ concept supported_uniform_type = requires {
 template <uniform_struct S>
 arrayStruct<S>::arrayStruct(const vector<S>& dataArray): dataArray(dataArray) {}
 
+template <uniform_struct S>
+raw_data_ptr arrayStruct<S>::data() const { return dataArray[0].data(); }
+
+template <uniform_struct S>
+byte_size arrayStruct<S>::blockSize() const { return dataArray.size() * dataArray[0].byteSize(); }
+
 template <vec_float_type VecType>
 vec4 primitiveVecStruct<VecType>::make_vec4__(VecType v) const {
 	if constexpr (same_as<VecType, float>)
 		return vec4(v, 0.f, 0.f, 0.f);
 	return vec4(v);
 }
+
+template <vec_float_type VecType>
+primitiveVecStruct<VecType>::primitiveVecStruct(VecType d): value(make_vec4__(d)) {}
+
+template <vec_float_type VecType>
+raw_data_ptr primitiveVecStruct<VecType>::data() const { return &value[0]; }
+
+template <vec_float_type VecType>
+byte_size primitiveVecStruct<VecType>::blockSize() const { return sizeof(vec4); }
+
+template <vec_float_type VecType>
+VecType primitiveVecStruct<VecType>::get_value() const { return VecType(value); }
+
+template <vec_float_type VecType>
+void primitiveVecStruct<VecType>::set_value(VecType d) { value = make_vec4__(d); markDirty(); }

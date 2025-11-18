@@ -4,9 +4,8 @@
 #include "indexedMesh.hpp"
 
 
-
 class VertexBuffer {
-	CONST_PROPERTY(VertexBufferLayout, layout);
+	VertexBufferLayout layout;
 	GLuint bufferID;
 	byte_size bufferedSize;
 	int firstInputNumber;
@@ -27,12 +26,10 @@ public:
 };
 
 class AttributeBuffer : public VertexBuffer {
-	CONST_PROPERTY(string, name);
-	GLSLPrimitive type;
+	string name;
 
 public:
-	AttributeBuffer(const string& name, GLSLPrimitive type, int inputNumber);
-
+	AttributeBuffer(const string& name, int inputNumber);
 };
 
 class ElementBuffer {

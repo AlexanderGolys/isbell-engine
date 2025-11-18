@@ -40,8 +40,7 @@ void VertexBuffer::pointAtAttributes() const {
 }
 
 void VertexBuffer::load(raw_data_ptr firstElementAdress, byte_size bufferSize) {
-	if (bufferedSize != 0)
-		LOG_WARN("Loading the vertex buffer again instead of updating it");
+	if (bufferedSize != 0) LOG_WARN("Loading the vertex buffer again instead of updating it");
 	GLCommand::loadBufferData(bufferID, firstElementAdress, bufferSize, GL_DYNAMIC_DRAW);
 	bufferedSize = bufferSize;
 }
@@ -65,9 +64,8 @@ int VertexBuffer::getNumberOfAttributes() const {
 	return layout.types.size();
 }
 
-AttributeBuffer::AttributeBuffer(const string& name, GLSLPrimitive type, int inputNumber)
-: VertexBuffer(VertexBufferLayout::singleAttribute(type), inputNumber), name(name), type(type) {
-}
+AttributeBuffer::AttributeBuffer(string_cr name, int inputNumber)
+: VertexBuffer(VertexBufferLayout::singleAttribute(type), inputNumber), name(name){}
 
 ElementBuffer::ElementBuffer() {
 	GLCommand::createBuffer(bufferID);
