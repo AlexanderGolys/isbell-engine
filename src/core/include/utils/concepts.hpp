@@ -1,12 +1,20 @@
 #pragma once
+#include "interfaces.hpp"
 #include "macros.hpp"
 
+template<typename T>
+concept vec_float_type = same_as<T, float> || same_as<T, vec2> || same_as<T, vec3> || same_as<T, vec4>;
 
-// template<typename A>
-// A one = A(1);
-//
-// template<typename A>
-// A zero = A(0);
+
+template<typename T>
+concept uniform_struct = derived_from<T, IDataBlock>;
+
+template<typename T>
+concept has_dirty_flag = derived_from<T, DirtyFlag>;
+
+template<typename T>
+concept uniform_struct_dirty = uniform_struct<T> and has_dirty_flag<T>;
+
 
 template<typename T>
 concept AbelianSemigroup = requires(T a, T b) {

@@ -8,6 +8,7 @@ Renderer::Renderer(const RenderSettings& settings): settings(settings), eventQue
 	GLCommand::init();
 	GLCommand::enableDepth();
 	GLCommand::enableBlending();
+
 	fpsClock = FPSClock(settings.measureFPSStats ? settings.FPSAverageWindowSeconds : -1.f);
 }
 
@@ -34,6 +35,11 @@ void Renderer::renderStep() const {
 	glfwPollEvents();
 }
 
+void Renderer::finalStep() const {
+	for (auto& layer : layerStack)
+		layer->finalize();
+}
+
 void Renderer::eventHandlingStep(TimeStep timeStep) const {
 	for (auto event : *eventQueue)
 		for (const auto& layer : layerStack)
@@ -47,6 +53,7 @@ void Renderer::mainLoop() {
 		eventHandlingStep(t);
 		update(t);
 		renderStep();
+		finalStep();
 	}
 }
 

@@ -1,9 +1,7 @@
 #pragma once
-#include <format>
 #include "func.hpp"
 // ReSharper disable CppParameterMayBeConstPtrOrRef
 
-using std::formatter, std::format, std::to_string;
 
 namespace std
 {

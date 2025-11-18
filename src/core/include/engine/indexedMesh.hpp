@@ -4,7 +4,6 @@
 
 template<typename T>
 concept attribute_struct = requires(T a) {
-	{ a.data() } -> std::same_as<raw_data_ptr>;
 	{ T::layout() } -> std::same_as<VertexBufferLayout>;
 };
 
@@ -14,8 +13,7 @@ struct Triangle {
 	Triangle(vertex v0, vertex v1, vertex v2) : v0(v0), v1(v1), v2(v2) {}
 };
 
-class GeometricData {
-	DIRTY_FLAG;
+class GeometricData : public DirtyFlag {
 public:
 	virtual ~GeometricData() = default;
 	virtual array_len numberOfVertices() const = 0;
@@ -26,7 +24,6 @@ public:
 	virtual raw_data_ptr vertexBufferData() const = 0;
 	virtual raw_data_ptr indexBufferData() const = 0;
 	virtual VertexBufferLayout layout() const = 0;
-
 };
 
 template<attribute_struct vertex>
@@ -36,32 +33,38 @@ class IndexedMesh : public GeometricData {
 
 public:
 	IndexedMesh() = default;
-	IndexedMesh(const vector<vertex>& vertices, const vector<ivec3>& indices) : vertices(vertices), indices(indices) {}
+	IndexedMesh(const vector<vertex>& vertices, const vector<ivec3>& indices);
 	explicit IndexedMesh(const vector<Triangle<vertex>>& triangles);
 
-	vector<vertex>::iterator begin() { return vertices.begin(); }
-	vector<vertex>::iterator end() { return vertices.end(); }
+	IndexedMesh(const IndexedMesh&) = delete;
+	IndexedMesh& operator=(const IndexedMesh&) = delete;
+
+	vector<vertex>::const_iterator begin();
+	vector<vertex>::const_iterator end();
+	vector<vertex>::iterator begin_mut();
+	vector<vertex>::iterator end_mut();
 
 	void setVertices(const vector<vertex>& verts);
 	void setIndices(const vector<ivec3>& inds);
 	void addVertex(const vertex& v);
 
 	void addTriangleIndices(const ivec3& ind);
-	void reserveVertices(array_len n) { vertices.reserve(n); }
-	void reserveIndices(array_len n) { indices.reserve(n); }
+	void reserveVertices(array_len n);
+	void reserveIndices(array_len n);
 
 	template<typename... Args>
-	void emplaceVertex(Args&&... args) { vertices.emplace_back(std::forward<Args>(args)...); }
-	void emplaceFace(int a, int b, int c) { indices.emplace_back(a, b, c); }
+	void emplaceVertex(Args&&... args);
 
-	array_len numberOfVertices() const override { return vertices.size(); }
-	array_len numberOfTriangles() const override { return indices.size(); }
-	byte_size vertexBufferSize() const override { return vertices.size() * sizeof(vertex);  }
-	byte_size indexBufferSize() const override { return indices.size() * sizeof(ivec3);  }
-	byte_size totalSize() const override { return vertexBufferSize() + indexBufferSize(); }
-	raw_data_ptr vertexBufferData() const override { return vertices[0].data();  }
-	raw_data_ptr indexBufferData() const override { return &indices[0]; }
-	VertexBufferLayout layout() const override { return vertex::layout(); }
+	void emplaceFace(int a, int b, int c);
+
+	array_len numberOfVertices() const final;
+	array_len numberOfTriangles() const final;
+	byte_size vertexBufferSize() const final;
+	byte_size indexBufferSize() const final;
+	byte_size totalSize() const final;
+	raw_data_ptr vertexBufferData() const final;
+	raw_data_ptr indexBufferData() const final;
+	VertexBufferLayout layout() const final;
 
 	const vertex& getVertex(array_index i) const;
 	void setVertex(array_index i, const vertex& v);
@@ -78,9 +81,9 @@ public:
 // Implementation
 
 
-
-
-
+template <attribute_struct vertex>
+IndexedMesh<vertex>::IndexedMesh(const vector<vertex>& vertices, const vector<ivec3>& indices)
+: vertices(vertices), indices(indices) {}
 
 template <attribute_struct vertex>
 IndexedMesh<vertex>::IndexedMesh(const vector<Triangle<vertex>>& triangles) {
@@ -94,6 +97,18 @@ IndexedMesh<vertex>::IndexedMesh(const vector<Triangle<vertex>>& triangles) {
 		indices.push_back(ivec3(baseIndex, baseIndex + 1, baseIndex + 2));
 	}
 }
+
+template <attribute_struct vertex>
+typename vector<vertex>::const_iterator IndexedMesh<vertex>::begin() { return vertices.begin(); }
+
+template <attribute_struct vertex>
+typename vector<vertex>::const_iterator IndexedMesh<vertex>::end() { return vertices.end(); }
+
+template <attribute_struct vertex>
+typename vector<vertex>::iterator IndexedMesh<vertex>::begin_mut() { return vertices.begin(); }
+
+template <attribute_struct vertex>
+typename vector<vertex>::iterator IndexedMesh<vertex>::end_mut() { return vertices.end(); }
 
 template <attribute_struct vertex>
 void IndexedMesh<vertex>::setVertices(const vector<vertex>& verts) {
@@ -117,6 +132,69 @@ template <attribute_struct vertex>
 void IndexedMesh<vertex>::addTriangleIndices(const ivec3& ind) {
 	indices.push_back(ind);
 	markDirty();
+}
+
+template <attribute_struct vertex>
+void IndexedMesh<vertex>::reserveVertices(array_len n) {
+	vertices.reserve(n);
+}
+
+template <attribute_struct vertex>
+void IndexedMesh<vertex>::reserveIndices(array_len n) {
+	indices.reserve(n);
+}
+
+template <attribute_struct vertex>
+template <typename ... Args>
+void IndexedMesh<vertex>::emplaceVertex(Args&&... args) {
+	vertices.emplace_back(std::forward<Args>(args)...);
+	markDirty();
+}
+
+template <attribute_struct vertex>
+void IndexedMesh<vertex>::emplaceFace(int a, int b, int c) {
+	indices.emplace_back(a, b, c);
+	markDirty();
+}
+
+template <attribute_struct vertex>
+array_len IndexedMesh<vertex>::numberOfVertices() const {
+	return vertices.size();
+}
+
+template <attribute_struct vertex>
+array_len IndexedMesh<vertex>::numberOfTriangles() const {
+	return indices.size();
+}
+
+template <attribute_struct vertex>
+byte_size IndexedMesh<vertex>::vertexBufferSize() const {
+	return vertices.size() * sizeof(vertex);
+}
+
+template <attribute_struct vertex>
+byte_size IndexedMesh<vertex>::indexBufferSize() const {
+	return indices.size() * sizeof(ivec3);
+}
+
+template <attribute_struct vertex>
+byte_size IndexedMesh<vertex>::totalSize() const {
+	return vertexBufferSize() + indexBufferSize();
+}
+
+template <attribute_struct vertex>
+raw_data_ptr IndexedMesh<vertex>::vertexBufferData() const {
+	return vertices[0].data();
+}
+
+template <attribute_struct vertex>
+raw_data_ptr IndexedMesh<vertex>::indexBufferData() const {
+	return &indices[0];
+}
+
+template <attribute_struct vertex>
+VertexBufferLayout IndexedMesh<vertex>::layout() const {
+	return vertex::layout();
 }
 
 template <attribute_struct vertex>

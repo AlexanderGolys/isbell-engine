@@ -6,7 +6,6 @@
 
 
 class VertexBuffer {
-protected:
 	CONST_PROPERTY(VertexBufferLayout, layout);
 	GLuint bufferID;
 	byte_size bufferedSize;
@@ -15,6 +14,8 @@ protected:
 public:
 	explicit VertexBuffer(const VertexBufferLayout& layout, int firstInputNumber=0);
 	virtual ~VertexBuffer();
+	VertexBuffer(const VertexBuffer&) = delete;
+	VertexBuffer& operator=(const VertexBuffer&) = delete;
 
 	void pointAtAttributes() const;
 	void load(raw_data_ptr firstElementAdress, byte_size bufferSize);
@@ -31,6 +32,7 @@ class AttributeBuffer : public VertexBuffer {
 
 public:
 	AttributeBuffer(const string& name, GLSLPrimitive type, int inputNumber);
+
 };
 
 class ElementBuffer {
@@ -40,6 +42,8 @@ class ElementBuffer {
 public:
 	ElementBuffer();
 	~ElementBuffer();
+	ElementBuffer(const ElementBuffer&) = delete;
+	ElementBuffer& operator=(const ElementBuffer&) = delete;
 
 	void load(raw_data_ptr firstElementAdress, byte_size bufferSize);
 	GLuint getID() const;
@@ -53,6 +57,8 @@ class VertexArray {
 public:
 	VertexArray();
 	~VertexArray();
+	VertexArray(const VertexArray&) = delete;
+	VertexArray& operator=(const VertexArray&) = delete;
 
 	void bind() const;
 	void unbind() const;
@@ -61,7 +67,6 @@ public:
 	void addVertexBuffer(sptr<VertexBuffer> vertexBuffer);
 	bool empty() const;
 
-	sptr<ElementBuffer> getElementBuffer() const;
 	vector<sptr<VertexBuffer>>::iterator begin();
 	vector<sptr<VertexBuffer>>::iterator end();
 
@@ -79,6 +84,8 @@ class ShaderStorageBuffer {
 public:
 	ShaderStorageBuffer();
 	~ShaderStorageBuffer();
+	ShaderStorageBuffer(const ShaderStorageBuffer&) = delete;
+	ShaderStorageBuffer& operator=(const ShaderStorageBuffer&) = delete;
 
 	void bind(int bindingPoint) const;
 	void unbind() const;
@@ -86,15 +93,18 @@ public:
 	void update(byte_size bufferSize, raw_data_ptr data) const;
 };
 
-class UniformBuffer {
+class UniformBufferObject {
 	gl_id bufferID = 0;
 	uint bindingPoint;
-	size_t bufferSize;
+	byte_size bufferSize;
+	string name;
 public:
-	UniformBuffer(uint bindingPoint, size_t bufferSize);
-	~UniformBuffer();
+	UniformBufferObject(uint bindingPoint, byte_size bufferSize, string_cr name);
+	~UniformBufferObject();
+	UniformBufferObject(const UniformBufferObject&) = delete;
+	UniformBufferObject& operator=(const UniformBufferObject&) = delete;
 
-	void bind() const;
+	void initPerShader(gl_id currentProgram) const;
 	void unbind() const;
 	void load(raw_data_ptr firstElementAdress) const;
 	void update(raw_data_ptr firstElementAdress) const;

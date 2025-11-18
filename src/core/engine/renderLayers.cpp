@@ -1,59 +1,27 @@
 #include "renderLayers.hpp"
 
 
-void Layer::onEvent(sptr<Event> event, TimeStep timeStep) const {
-	for (auto& listener : eventListeners)
-		if (listener->listensToEventType(event->getEventType()))
-			listener->onEvent(event, timeStep);
-}
-
-void Layer::addEventListener(sptr<EventListener> listener) {
-	eventListeners.push_back(listener);
-}
-
-CombinedLayerComponent::CombinedLayerComponent(const vector<sptr<LayerComponent>>& components): components(components) {}
-
-void CombinedLayerComponent::addComponent(sptr<LayerComponent> comp) { components.push_back(comp); }
-
-void CombinedLayerComponent::init() {
-	for (auto& comp : components)
-		comp->init();
-}
-
-void CombinedLayerComponent::update(TimeStep timeStep) {
-	for (auto& comp : components)
-		comp->update(timeStep);
-}
-
-void CombinedLayerComponent::setDuringRender() {
-	for (auto& comp : components)
-		comp->setDuringRender();
-}
-
-DrawLayer::DrawLayer(sptr<ShaderProgram> shader, sptr<VertexArray> vao, const vector<sptr<LayerComponent>>& components)
-: vao(vao), shader(shader), components(components) {}
-
-void DrawLayer::addComponent(sptr<LayerComponent> comp) {
-	components.push_back(comp);
+void DrawLayer::addComponent(const sptr<LayerComponent>& comp) {
+	return components.push_back(comp);
 }
 
 void DrawLayer::init() {
+	shader->bind();
 	for (auto& comp : components)
-		comp->init();
+		comp->initPerShader(shader->get_programID());
+	shader->unbind();
 
 }
 
 void DrawLayer::renderStep() {
-	if (not prerenderStep())
-		return;
-	vao->bind();
+	vao.bind();
 	shader->bind();
 	for (auto& uniform : components)
 		uniform->setDuringRender();
 	customRenderStep();
-	vao->draw();
+	vao.draw();
 	shader->unbind();
-	vao->unbind();
+	vao.unbind();
 }
 
 void DrawLayer::updateStep(TimeStep timeStep) {
@@ -61,14 +29,21 @@ void DrawLayer::updateStep(TimeStep timeStep) {
 		comp->update(timeStep);
 }
 
-GenericMeshLayer::GenericMeshLayer(sptr<ShaderProgram> shader, sptr<GeometricData> mesh)
-: DrawLayer(shader, make_shared<VertexArray>(), {}), mesh(mesh) {}
+void DrawLayer::finalize() {
+	for (auto& comp : components)
+		comp->finalize();
+}
+
+gl_id DrawLayer::get_shaderProgramID() const {
+	return shader->get_programID();
+}
+
 
 void GenericMeshLayer::init() {
 	DrawLayer::init();
-	get_vao()->loadGeometricData(mesh);
+	vao.loadGeometricData(mesh);
 }
 
 void GenericMeshLayer::customRenderStep() {
-	get_vao()->updateGeometricData(mesh);
+	vao.updateGeometricData(mesh);
 }

@@ -1,7 +1,6 @@
 #include "window.hpp"
 
 #include "event.hpp"
-#include "eventQueue.hpp"
 #include "exceptions.hpp"
 #include "glCommand.hpp"
 
@@ -31,29 +30,25 @@ Window::Window(WindowSettings settings)
 	glfwSetInputMode(window, GLFW_STICKY_MOUSE_BUTTONS, settings.stickyMouseButtons ? GLFW_TRUE : GLFW_FALSE);
 
 	glfwSetWindowSizeCallback(window, [](GLFWwindow* w, int width, int height){
-		EventQueue::push(make_shared<WindowResizeEvent>(width, height));
+		WindowResizeEvent::emmit(width, height);
 		WindowSettings& winData = GLFWCommand::getWindowData(w);
 		winData.width = width;
 		winData.height = height;
 	});
 
 	glfwSetWindowCloseCallback(window, [](GLFWwindow* w){
-		EventQueue::push(make_shared<WindowCloseEvent>());
+		WindowCloseEvent::emmit();
 		WindowSettings& winData = GLFWCommand::getWindowData(w);
 		winData.open = false;
 	});
 
 	glfwSetKeyCallback(window, [](GLFWwindow* w, int key, int scancode, int action, int mods){
-		if (action == GLFW_PRESS){
-			EventQueue::push(make_shared<KeyPressedEvent>(key));
-			LOG("Key pressed: " + keyCodeToString(key));
-		}
-		else if (action == GLFW_RELEASE) {
-			EventQueue::push(make_shared<KeyReleasedEvent>(key));
-			LOG("Key released: " + keyCodeToString(key));
-		}
+		if (action == GLFW_PRESS)
+			KeyPressedEvent::emmit(key);
+		else if (action == GLFW_RELEASE)
+			KeyReleasedEvent::emmit(key);
 		else if (action == GLFW_REPEAT)
-			EventQueue::push(make_shared<KeyRepeatEvent>(key));
+			KeyRepeatEvent::emmit(key);
 
 	});
 
@@ -61,11 +56,9 @@ Window::Window(WindowSettings settings)
 		vec2 mousePos = GLFWCommand::getCursorPosition(w);
 		if (action == GLFW_PRESS) {
 			MouseButtonPressedEvent::emmit(button, mousePos);
-			LOG("Mouse button pressed: " + mouseButtonToString(button));
 		}
 		else if (action == GLFW_RELEASE){
 			MouseButtonReleasedEvent::emmit(button, mousePos);
-			LOG("Mouse button released: " + mouseButtonToString(button));
 		}
 		else if (action == GLFW_REPEAT)
 			MouseButtonRepeatEvent::emmit(button, mousePos);
@@ -73,11 +66,11 @@ Window::Window(WindowSettings settings)
 	});
 
 	glfwSetCursorPosCallback(window, [](GLFWwindow* w, double xpos, double ypos){
-		EventQueue::push(make_shared<MouseMovedEvent>(vec2(static_cast<float>(xpos), static_cast<float>(ypos))));
+		MouseMovedEvent::emmit(vec2(xpos, ypos));
 	});
 
 	glfwSetScrollCallback(window, [](GLFWwindow* w, double xoffset, double yoffset){
-		EventQueue::push(make_shared<MouseScrolledEvent>(static_cast<float>(xoffset), static_cast<float>(yoffset)));
+		MouseScrolledEvent::emmit(xoffset, yoffset);
 	});
 }
 
@@ -95,7 +88,7 @@ void Window::renderFramebufferToScreen() const {
 }
 
 bool Window::isOpen() const {
-	return not glfwWindowShouldClose(window) and settings.open;
+	return GLFWCommand::isWindowOpen(window);
 }
 
 void Window::initViewport() const {

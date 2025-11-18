@@ -1,23 +1,29 @@
 #pragma once
 #include "accumulators.hpp"
 #include "listeners.hpp"
-#include "sceneRendering.hpp"
+#include "renderLayers.hpp"
+
+template <typename Func, typename Obj>
+concept controller_function =
+	same_as<Func, BIHOM(sptr<Obj>&, TimeStep, void)> ||
+	same_as<Func, HOM(TimeStep, Obj)> ||
+	same_as<Func, HOM(TimeStep, sptr<Obj>)>;
+
 
 template <typename T>
 class Controller : public UpdateComponent {
 	sptr<T> object;
-	BIHOM(sptr<T>, TimeStep, void) controlFunction;
+	BIHOM(sptr<T>&, TimeStep, void) controlFunction;
 
 public:
-	Controller(sptr<T> object, BIHOM(sptr<T>, TimeStep, void) controlFunction) : object(object), controlFunction(controlFunction) {}
-	void update(TimeStep timeStep) final { controlFunction(object, timeStep); }
-	void init() final {}
+	Controller(sptr<T> object, BIHOM(sptr<T>&, TimeStep, void) controlFunction);
+	Controller(sptr<T> object, HOM(TimeStep, T) setterFunction);
+	Controller(sptr<T> object, HOM(TimeStep, sptr<T>) setterFunction);
+
+	void update(TimeStep timeStep) final;
+	void init() override {}
 };
 
-class CameraController : public Controller<Camera> {
-public:
-	CameraController(sptr<Camera> camera, BIHOM(CameraTransform, TimeStep, CameraTransform) controlFunction);
-};
 
 class ImpulseOnKeyComponent : public KeyPressedListener {
 	sptr<DefferedResponseAccumulator> impulseAccumulator;
@@ -44,46 +50,29 @@ public:
 	float step(float dt) const;
 };
 
-class CameraTransformFromImpulseOnKey : public CameraController, public ImpulseOnKeyComponent {
-	BIHOM(CameraTransform, float, CameraTransform) onImpulse;
-public:
-	CameraTransformFromImpulseOnKey(sptr<Camera> camera, const BIHOM(CameraTransform, float, CameraTransform)& onImpulse, const Distribution& impulseDistribution, KeyCode key, KeyCode keyReverse, float regenerationTime=0);
-	CameraTransform onImpulseCall(CameraTransform transform, float impulse) const;
-};
 
-class CameraTransformFromImpulseOnScroll : public CameraController, public ImpulseOnScrollComponent {
-	BIHOM(CameraTransform, float, CameraTransform) onImpulse;
-public:
-	CameraTransformFromImpulseOnScroll(sptr<Camera> camera, const BIHOM(CameraTransform, float, CameraTransform)& onImpulse, const Distribution& impulseDistribution, float scrollSensitivity, bool xAxis=true);
-	CameraTransform onImpulseCall(CameraTransform transform, float impulse) const;
-};
 
-class CameraHorisontalRotationOnKey : public CameraTransformFromImpulseOnKey {
-public:
-	CameraHorisontalRotationOnKey(sptr<Camera> camera, const Distribution& impulseDistribution, KeyCode key, KeyCode keyReverse, float regenerationTime=0);
-};
 
-class CameraHorisontalShiftOnKey : public CameraTransformFromImpulseOnKey {
-public:
-	CameraHorisontalShiftOnKey(sptr<Camera> camera, const Distribution& impulseDistribution, KeyCode key, KeyCode keyReverse, float regenerationTime=0);
-};
 
-class CameraVerticalRotationOnKey : public CameraTransformFromImpulseOnKey {
-public:
-	CameraVerticalRotationOnKey(sptr<Camera> camera, const Distribution& impulseDistribution, KeyCode key, KeyCode keyReverse, float regenerationTime=0);
-};
+// ------------------- Implementation ------------------ //
 
-class CameraVerticalShiftOnKey : public CameraTransformFromImpulseOnKey {
-public:
-	CameraVerticalShiftOnKey(sptr<Camera> camera, const Distribution& impulseDistribution, KeyCode key, KeyCode keyReverse, float regenerationTime=0);
-};
 
-class CameraZoomOnScroll : public CameraTransformFromImpulseOnScroll {
-public:
-	CameraZoomOnScroll(sptr<Camera> camera, const Distribution& impulseDistribution, float scrollSensitivity);
-};
+template <typename T>
+Controller<T>::Controller(sptr<T> object, std::function<void(sptr<T>&, TimeStep)> controlFunction): object(object), controlFunction(controlFunction) {}
 
-class CameraRotateOnScroll : public CameraTransformFromImpulseOnScroll {
-public:
-	CameraRotateOnScroll(sptr<Camera> camera, const Distribution& impulseDistribution, float scrollSensitivity);
-};
+template <typename T>
+Controller<T>::Controller(sptr<T> object, std::function<T(TimeStep)> setterFunction): object(object) {
+	controlFunction = [setterFunction](sptr<T> &obj, TimeStep timeStep) {
+		obj = make_shared<T>(setterFunction(timeStep));
+	};
+}
+
+template <typename T>
+Controller<T>::Controller(sptr<T> object, std::function<sptr<T>(TimeStep)> setterFunction): object(object) {
+	controlFunction = [setterFunction](sptr<T>& obj, TimeStep timeStep) {
+		obj = setterFunction(timeStep);
+	};
+}
+
+template <typename T>
+void Controller<T>::update(TimeStep timeStep) { controlFunction(object, timeStep); }

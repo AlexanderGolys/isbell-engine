@@ -27,13 +27,24 @@ layout(std140, binding = 0) uniform Lights {
     Light u_lights[3];
 };
 
-uniform mat4 u_mvp;
-uniform vec4 u_intencities;
+layout(std140, binding = 1) uniform Camera {
+    vec3 u_camPosition;
+    mat4 u_vp;
+};
+layout(std140, binding = 2) uniform Model {
+    mat4 u_m;
+};
+layout(std140, binding = 3) uniform Time {
+    float u_t;
+    float u_dt;
+};
+layout(std140, binding = 4) uniform Material {
+    vec4 u_intencities;
+};
+
 uniform sampler2D u_texture_ambient;
 uniform sampler2D u_texture_diffuse;
 uniform sampler2D u_texture_specular;
-uniform float u_time;
-uniform vec3 u_camPosition;
 
 vec3 normalise(vec3 v)
 {
@@ -42,9 +53,10 @@ vec3 normalise(vec3 v)
 
 void main()
 {
+    mat4 mvp = u_vp * u_m;
 	v_normal = normal;
 	v_position = position;
 	v_uv = uv;
-	gl_Position = (u_mvp * vec4(v_position, 1.0));
+	gl_Position = (mvp * vec4(v_position, 1.0));
 	v_color = color;
 }

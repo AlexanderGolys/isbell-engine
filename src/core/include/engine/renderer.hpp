@@ -34,7 +34,8 @@ public:
 	virtual void initRendering();
 	void update(TimeStep timeStep) const;
 	void renderStep() const;
+	void finalStep() const;
 	void eventHandlingStep(TimeStep timeStep) const;
-	virtual void mainLoop();
+	void mainLoop();
 	void run();
 };

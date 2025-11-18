@@ -127,14 +127,10 @@ bool ImpulseResponseAccumulator::isFinished() const {
 
 void DefferedResponseAccumulator::addImpulse(const Distribution& distribution) {
 	impulses.emplace_back(distribution);
-	LOG(format("Added impulse of norm {:.3f} and support [{:.1f}, {:.1f}] from {:.1f}",
-		distribution.get_norm(), distribution.get_support().x, distribution.get_support().y, distribution.get_support().x));
 }
 
 void DefferedResponseAccumulator::addImpulse(const Distribution& distribution, float start_t) {
 	impulses.emplace_back(distribution, start_t);
-	LOG(format("Added impulse of norm {:.3f} and support [{:.1f}, {:.1f}] from {:.1f}",
-		distribution.get_norm(), distribution.get_support().x, distribution.get_support().y, start_t));
 }
 
 float DefferedResponseAccumulator::step(float dt) {

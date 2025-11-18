@@ -23,12 +23,12 @@ bool VertexBufferLayout::operator==(const VertexBufferLayout& other) const {
 }
 
 VertexBuffer::VertexBuffer(const VertexBufferLayout& layout, int firstInputNumber)
-: layout(layout), firstInputNumber(firstInputNumber), bufferedSize(0) {
-	GLCommand::createBuffer(&bufferID);
+: layout(layout), bufferedSize(0), firstInputNumber(firstInputNumber) {
+	GLCommand::createBuffer(bufferID);
 }
 
 VertexBuffer::~VertexBuffer() {
-	GLCommand::deleteBuffer(&bufferID);
+	GLCommand::deleteBuffer(bufferID);
 }
 
 void VertexBuffer::pointAtAttributes() const {
@@ -70,11 +70,11 @@ AttributeBuffer::AttributeBuffer(const string& name, GLSLPrimitive type, int inp
 }
 
 ElementBuffer::ElementBuffer() {
-	GLCommand::createBuffer(&bufferID);
+	GLCommand::createBuffer(bufferID);
 }
 
 ElementBuffer::~ElementBuffer() {
-	GLCommand::deleteBuffer(&bufferID);
+	GLCommand::deleteBuffer(bufferID);
 }
 
 
@@ -94,7 +94,7 @@ array_len ElementBuffer::getNumberOfIndices() const {
 }
 
 VertexArray::VertexArray() {
-	GLCommand::createVAO(&vaoID);
+	GLCommand::createVAO(vaoID);
 	GLCommand::bindVAO(vaoID);
 }
 
@@ -129,10 +129,6 @@ void VertexArray::addVertexBuffer(sptr<VertexBuffer> vertexBuffer) {
 
 bool VertexArray::empty() const {
 	return vertexBuffers.empty() and elementBuffer == nullptr;
-}
-
-sptr<ElementBuffer> VertexArray::getElementBuffer() const {
-	return elementBuffer;
 }
 
 vector<sptr<VertexBuffer>>::iterator VertexArray::begin() {
@@ -217,11 +213,11 @@ void VertexArray::draw() const {
 }
 
 ShaderStorageBuffer::ShaderStorageBuffer() {
-	GLCommand::createBuffer(&bufferID);
+	GLCommand::createBuffer(bufferID);
 }
 
 ShaderStorageBuffer::~ShaderStorageBuffer() {
-	GLCommand::deleteBuffer(&bufferID);
+	GLCommand::deleteBuffer(bufferID);
 }
 
 void ShaderStorageBuffer::bind(int bindingPoint) const {
@@ -243,26 +239,27 @@ void ShaderStorageBuffer::update(byte_size bufferSize, raw_data_ptr data) const 
 	LOG("Updated SSBO of size " + formatByteSize(bufferSize) + ".");
 }
 
-UniformBuffer::UniformBuffer(uint bindingPoint, size_t bufferSize): bindingPoint(bindingPoint), bufferSize(bufferSize) {
-	GLCommand::createBuffer(&bufferID);
+UniformBufferObject::UniformBufferObject(uint bindingPoint, size_t bufferSize, string_cr name)
+: bindingPoint(bindingPoint), bufferSize(bufferSize) , name(name) {
+	GLCommand::createBuffer(bufferID);
 }
 
-UniformBuffer::~UniformBuffer() {
-	GLCommand::deleteBuffer(&bufferID);
+UniformBufferObject::~UniformBufferObject() {
+	GLCommand::deleteBuffer(bufferID);
 }
 
-void UniformBuffer::bind() const {
-	GLCommand::bindUBO(bufferID, bindingPoint);
+void UniformBufferObject::initPerShader(gl_id currentProgram) const {
+	GLCommand::initUBO(bufferID, bindingPoint, name, currentProgram);
 }
 
-void UniformBuffer::unbind() const {
+void UniformBufferObject::unbind() const {
 	GLCommand::unbindUBO();
 }
 
-void UniformBuffer::load(raw_data_ptr firstElementAdress) const {
+void UniformBufferObject::load(raw_data_ptr firstElementAdress) const {
 	GLCommand::loadUBOData(bufferID, firstElementAdress, bufferSize);
 }
 
-void UniformBuffer::update(raw_data_ptr firstElementAdress) const {
+void UniformBufferObject::update(raw_data_ptr firstElementAdress) const {
 	GLCommand::updateUBOData(bufferID, firstElementAdress, bufferSize);
 }

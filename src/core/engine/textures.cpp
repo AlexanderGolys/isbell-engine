@@ -25,7 +25,7 @@ GLenum ConstColorTextureData::targetFormat() const {
 	return GL_RGBA8;
 }
 
-data_ptr<uchar> ConstColorTextureData::dataPtr() const {
+raw_data_ptr<uchar> ConstColorTextureData::dataPtr() const {
 	return data.data();
 }
 
@@ -33,14 +33,12 @@ Texture2D::Texture2D(sptr<TextureData> imageData, uint slot, string_cr samplerNa
 : imageData(imageData), slot(slot), samplerName(samplerName) {}
 
 void Texture2D::init() {
-	GLCommand::createTexture(&id);
+	GLCommand::createTexture(id);
 	GLCommand::bindTexture2D(id, slot);
 	GLCommand::setTexture2DFilters(GL_LINEAR_MIPMAP_LINEAR, GL_LINEAR, GL_REPEAT, GL_REPEAT);
 	GLCommand::loadTexture2(imageData->targetFormat(), imageData->width(), imageData->height(), imageData->format(), imageData->dataPtr());
 	GLCommand::calculateMipmapsTexture2D();
 }
-
-
 
 void Texture2D::setDuringRender() {
 	GLCommand::bindTexture2D(id, slot);

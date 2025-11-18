@@ -25,19 +25,25 @@ using std::shared_ptr, std::unique_ptr, std::make_unique, std::make_shared, std:
 using std::string, std::format, std::to_string, std::printf, std::size_t;
 using std::expected, std::unexpected, std::bad_expected_access;
 using std::exp, std::log, std::cos, std::sin, std::cosh, std::sinh, std::sqrt, std::pow, std::atan2, std::abs;
+using std::same_as, std::convertible_to, std::derived_from, std::is_base_of;
 namespace filesystem = std::filesystem;
 
 constexpr float PI = 3.14159265359f;
 constexpr float TAU = 6.28318530718f;
 
-using array_len = size_t;
-using array_index = size_t;
-using byte_size = size_t;
-using vs_dim = unsigned short;
-using raw_data_ptr = const void*;
 using uint = unsigned int;
 using uchar = unsigned char;
+using ushort = unsigned short;
+using ulong = unsigned long;
 using string_cr = const string&;
+
+using array_len = size_t;
+using array_index = long long int;
+using byte_size = size_t;
+using vs_dim = unsigned short;
+
+using raw_data_ptr = const void*;
+using raw_data_mut = void*;
 
 template <typename T>
 using sptr = shared_ptr<T>;
@@ -49,10 +55,8 @@ template <typename T>
 using data_ptr = const T*;
 
 template <typename T>
-using data_ptr_mut = T*;
+using data_mut = T*;
 
-// template <typename A, typename B>
-// using dict = std::map<A, B>;
 
 #define INT(A) static_cast<int>(A)
 #define UNDEFINED std::nullopt
@@ -149,7 +153,10 @@ bool isDirty() const { return dirty; }
 #define RESERVE_VECT(type, name) void reserve_##name(array_len size__) { name.reserve(size__); }
 #define LEN_VECT(type, name) array_len len_##name() const { return name.size(); }
 
-#define SETTER_DIRTY(type, name) void set_##name(const type& value__) { name = value__; markDirty(); }
+#define DIRTY_SETTER(type, name) void set_##name(const type& value__) { name = value__; markDirty(); }
+#define DIRTY_SETTER_VECT(type, name) void set_##name(array_index index__, const type& value__) { name[index__] = value__; markDirty(); }
+#define DIRTY_APPEND(type, name) void append_##name(const type& value__) { name.push_back(value__); markDirty(); }
+
 
 #define PROPERTY(type, name) \
 private: \
@@ -192,7 +199,7 @@ private: \
 #define PROPERTY_DIRTY(type, name)\
 public: \
 	GETTER(type, name) \
-	SETTER_DIRTY(type, name) \
+	DIRTY_SETTER(type, name) \
 private: \
 	type name;
 

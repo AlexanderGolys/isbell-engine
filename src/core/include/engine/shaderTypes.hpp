@@ -1,7 +1,38 @@
 #pragma once
-#include <GL/glew.h>
-#include <GLFW/glfw3.h>
 #include "exceptions.hpp"
+#include "concepts.hpp"
+
+
+
+
+
+template<uniform_struct S>
+class arrayStruct : public IDataBlock, public DirtyFlag {
+private:
+	vector<S> dataArray = {};
+
+public:
+	explicit arrayStruct(const vector<S>& dataArray);
+	raw_data_ptr data() const final { return dataArray[0].data(); }
+	byte_size blockSize() const final { return dataArray.size() * dataArray[0].byteSize(); }
+};
+
+
+
+template<vec_float_type VecType>
+class primitiveVecStruct {
+	vec4 value;
+
+	vec4 make_vec4__(VecType v) const;
+
+public:
+	explicit primitiveVecStruct(VecType d) : value(make_vec4__(d)) {}
+	raw_data_ptr data() const { return &value[0]; }
+	byte_size byteSize() const { return sizeof(vec4); }
+	VecType get_value() const { return VecType(value); }
+	void set_value(VecType d) { value = make_vec4__(d); markDirty(); }
+};
+
 
 
 
@@ -243,3 +274,18 @@ concept supported_uniform_type = requires {
 	supportedUniformType(glslTypeVariable<T>);
 };
 
+
+
+
+
+// ------------------- Implementation ------------------ //
+
+template <uniform_struct S>
+arrayStruct<S>::arrayStruct(const vector<S>& dataArray): dataArray(dataArray) {}
+
+template <vec_float_type VecType>
+vec4 primitiveVecStruct<VecType>::make_vec4__(VecType v) const {
+	if constexpr (same_as<VecType, float>)
+		return vec4(v, 0.f, 0.f, 0.f);
+	return vec4(v);
+}

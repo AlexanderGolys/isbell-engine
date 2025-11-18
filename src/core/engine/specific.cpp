@@ -210,12 +210,14 @@ SmoothParametricSurface parametricPlane2ptHull(vec3 v1, vec3 v2, float normal_sh
 	return SmoothParametricSurface([v1, v2, normal_shift](float u, float v) { return u*v1 + v*v2 + normalise(cross(v1, v2))*normal_shift; }, vec2(0, 1), vec2(0, 1), false, false, eps);
 }
 
-SmoothParametricSurface twistedTorus(float a, float m, float n, int dommul1, int dommul2, float eps) {
+SmoothParametricSurface twistedTorus(float a, float n, float m, float eps) {
 	return SmoothParametricSurface([a, m, n](float u, float v) {
-		return vec3((a + std::cos(n * u / 2) * std::sin(v) - std::sin(n * u / 2) * std::sin(2 * v)) * std::cos(m * u / 2),
-			(a + std::cos(n * u / 2) * std::sin(v) - std::sin(n * u / 2) * std::sin(2 * v)) * std::sin(m * u / 2),
-			std::sin(n * u / 2) * std::sin(v) + std::cos(n * u / 2) * std::sin(2 * v));
-	}, vec2(0, TAU*dommul1), vec2(0, TAU*dommul2), true, true, eps);
+		return vec3(
+		(a + cos(n*u/2) * sin(v) - sin(n*u/2) * sin(2*v)) * cos(m*u/2),
+		(a + cos(n*u/2.0) * sin(v) - sin(n*u/2.0) * sin(2*v)) * sin(m*u/2.0),
+		sin(n*u/2.0) * sin(v) + cos(n*u/2.0) * sin(2*v)
+			);
+	}, vec2(0, TAU*4), vec2(0, TAU), true, true, eps);
 }
 
 inline IndexedMesh3D icosahedron(float r, vec3 center, PolyGroupID id) {
@@ -335,7 +337,7 @@ SmoothParametricSurface coneSide(float r, float h, vec3 center, vec3 v1, vec3 v2
 
 SmoothParametricSurface torus(float r, float R, vec3 center, float eps) {
 	return SmoothParametricSurface([r, R, center](float u, float v) {
-		return center + vec3((R + r * ::cos(v)) * ::cos(u), (R + r * ::cos(v)) * ::sin(u), r * ::sin(v));
+		return center + vec3((R + r * cos(v)) * ::cos(u), (R + r * ::cos(v)) * ::sin(u), r * ::sin(v));
 	}, vec2(0, TAU), vec2(0, TAU), true, true, eps);
 }
 

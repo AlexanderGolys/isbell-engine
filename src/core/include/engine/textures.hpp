@@ -10,7 +10,7 @@ public:
 	virtual array_len height() const = 0;
 	virtual GLenum format() const = 0;
 	virtual GLenum targetFormat() const = 0;
-	virtual data_ptr<uchar> dataPtr() const = 0;
+	virtual raw_data_ptr<uchar> dataPtr() const = 0;
 };
 
 class ConstColorTextureData : public TextureData {
@@ -21,7 +21,7 @@ public:
 	array_len height() const override;
 	GLenum format() const override;
 	GLenum targetFormat() const override;
-	data_ptr<uchar> dataPtr() const override;
+	raw_data_ptr<uchar> dataPtr() const override;
 };
 
 class Texture2D : public LayerComponent {

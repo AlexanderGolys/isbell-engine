@@ -8,7 +8,8 @@ class Distribution {
 	CONST_PROPERTY(float, norm);
 	CONST_PROPERTY(vec2, support);
 public:
-	Distribution(const RealFunction& pdf, const RealFunction& cdf, vec2 support) : pdf_func(pdf), cdf_func(cdf), norm(cdf(support.y)), support(support) {}
+	Distribution(const RealFunction& pdf, const RealFunction& cdf, vec2 support)
+	: pdf_func(pdf), cdf_func(cdf), norm(cdf(support.y)), support(support) {}
 
 	float cdf(float x) const;
 	float pdf(float x) const;

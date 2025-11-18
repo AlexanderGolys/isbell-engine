@@ -7,59 +7,63 @@
 #include "shaders.hpp"
 
 
-class Layer {
-	vector<sptr<EventListener>> eventListeners;
 
-public:
-	virtual ~Layer() = default;
-	virtual void init() = 0;
-	virtual void renderStep() = 0;
-	virtual void updateStep(TimeStep timeStep) {}
-	virtual void onEvent(sptr<Event> event, TimeStep timeStep) const;
-
-	void addEventListener(sptr<EventListener> listener);
-};
 
 class LayerComponent {
 public:
-	virtual ~LayerComponent() = default;
+	LayerComponent(const LayerComponent&) = delete;
+	virtual ~LayerComponent();
+
 	virtual void init() = 0;
+	virtual void initPerShader(gl_id currentProgram) = 0;
 	virtual void update(TimeStep timeStep) = 0;
 	virtual void setDuringRender() = 0;
+	virtual void finalize() = 0;
 };
 
-class CombinedLayerComponent : public LayerComponent {
-	vector<sptr<LayerComponent>> components;
+template<typename LayerCompType>
+concept layer_component = derived_from<LayerCompType, LayerComponent>;
+
+class Layer {
 public:
-	explicit CombinedLayerComponent(const vector<sptr<LayerComponent>>& components={});
+	Layer(const Layer&) = delete;
+	Layer& operator=(const Layer&) = delete;
+	virtual ~Layer();
 
-	void addComponent(sptr<LayerComponent> comp);
+	virtual void init() = 0;
+	virtual void renderStep() = 0;
+	virtual void updateStep(TimeStep timeStep) = 0;
+	virtual void finalize() = 0;
 
-	void init() override;
-	void update(TimeStep timeStep) override;
-	void setDuringRender() override;
+	virtual void addComponent(const sptr<LayerComponent>& comp) = 0;
+
+	template<layer_component LayerCompType, typename... Args>
+	void emplaceComponent(Args&&... args);
 };
 
-class UpdateComponent : public LayerComponent {
-public:
-	void setDuringRender() final {}
-};
+template <layer_component LayerCompType, typename ... Args>
+void Layer::emplaceComponent(Args&&... args) {
+	addComponent(make_shared<LayerCompType>(std::forward<Args>(args)...));
+}
 
 
 class DrawLayer : public Layer {
-	CONST_PROPERTY(sptr<VertexArray>, vao);
 	sptr<ShaderProgram> shader;
 	vector<sptr<LayerComponent>> components;
 
+protected:
+	VertexArray vao;
+	gl_id getProgramID() const;
+
 public:
-	DrawLayer(sptr<ShaderProgram> shader, sptr<VertexArray> vao, const vector<sptr<LayerComponent>>& components = {});
-	void addComponent(sptr<LayerComponent> comp);
+	explicit DrawLayer(sptr<ShaderProgram> shader);
 
 	void init() override;
-	void renderStep() final;
 	virtual void customRenderStep() {}
-	virtual bool prerenderStep() { return true; }
 	void updateStep(TimeStep timeStep) override;
+	void finalize() override;
+	void addComponent(const sptr<LayerComponent>& comp) override;
+	void renderStep() final;
 };
 
 class GenericMeshLayer : public DrawLayer {

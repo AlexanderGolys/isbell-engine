@@ -2,6 +2,10 @@
 
 #include "eventQueue.hpp"
 
+void WindowCloseEvent::emmit() {
+	EventQueue::push(make_shared<WindowCloseEvent>());
+}
+
 void WindowResizeEvent::emmit(uint width, uint height) {
 	EventQueue::push(make_shared<WindowResizeEvent>(width, height));
 }

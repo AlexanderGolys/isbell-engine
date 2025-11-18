@@ -1,5 +1,6 @@
 #include "clock.hpp"
 
+#include "glCommand.hpp"
 #include "GLFW/glfw3.h"
 
 
@@ -13,15 +14,9 @@ float FPSClock::getTime() const {
 	return glfwGetTime() - timeZero;
 }
 
-FPSClock::FPSClock(float avgWindowSeconds) {
-	if (avgWindowSeconds > 0) {
-		measureFPS = true;
-		avgWindow = avgWindowSeconds;
-	} else {
-		measureFPS = false;
-		avgWindow = 0;
-	}
-	timeZero = glfwGetTime();
+FPSClock::FPSClock(float avgWindowSeconds)
+: measureFPS(avgWindowSeconds > 0), avgWindow(avgWindowSeconds) {
+	timeZero = GLFWCommand::getTime();
 	time = 0;
 }
 

@@ -3,6 +3,22 @@
 #include "logging.hpp"
 
 
+
+temp
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 enum class EventType : uint {
 	WINDOW_CLOSE = 0,
 	WINDOW_RESIZE = 1,
@@ -54,6 +70,7 @@ class WindowCloseEvent : public Event {
 public:
 	WindowCloseEvent() = default;
 	EVENT_TYPE(WINDOW_CLOSE);
+	static void emmit();
 };
 
 

@@ -17,69 +17,98 @@ vec3 CameraTransform::getRightVector() const {
 	return normalize(cross(getDirection(), upVector));
 }
 
+CameraUniformData::CameraUniformData(vec3 position, const mat4& vp)
+: position(position), vp(vp) {}
+
+raw_data_ptr CameraUniformData::data() const {
+	return &position[0];
+}
+
+byte_size CameraUniformData::blockSize() const { return sizeof(vec3) + sizeof(mat4); }
+
 Camera::Camera(const CameraSettings& settings, vec3 position, vec3 lookAtPos, vec3 upVector)
-: position(position), lookAtPos(lookAtPos), upVector(upVector), settings(settings){
+: transform(position, lookAtPos, upVector), settings(settings), uniformData(position, vp()) {}
+
+vec3 Camera::get_position() const {
+	return transform.position;
+}
+
+vec3 Camera::get_lookAtPos() const {
+	return transform.lookAtPos;
+}
+
+vec3 Camera::get_upVector() const {
+	return transform.upVector;
+}
+
+void Camera::set_position(const vec3& position) {
+	transform.position = position;
+	setUniformData();
+	markDirty();
+}
+
+void Camera::set_lookAtPos(const vec3& lookAtPos) {
+	transform.lookAtPos = lookAtPos;
+	setUniformData();
+	markDirty();
+}
+
+void Camera::set_upVector(const vec3& upVector) {
+	transform.upVector = upVector;
+	setUniformData();
+	markDirty();
+}
+
+raw_data_ptr Camera::data() const {
+	return uniformData.data();
+}
+
+byte_size Camera::blockSize() const {
+	return sizeof(mat4) + sizeof(vec4);
+}
+
+void Camera::set_transform(const CameraTransform& transform) {
+	this->transform = transform;
+	setUniformData();
+	markDirty();
+}
+
+const CameraTransform& Camera::get_transform() const {
+	return transform;
 }
 
 mat4 Camera::v() const {
-	return glm::lookAt(position, lookAtPos, upVector);
+	return glm::lookAt(get_position(), get_lookAtPos(), get_upVector());
 }
 
 mat4 Camera::p() const {
 	return settings.projMatrix;
 }
 
-void Camera::set_transform(vec3 newPosition, vec3 newLookAt, vec3 newUp) {
-	set_position(newPosition);
-	set_lookAtPos(newLookAt);
-	set_upVector(newUp);
+void Camera::setUniformData() {
+	uniformData.position = transform.position;
+	uniformData.vp = vp();
 }
 
-void Camera::set_transform(const CameraTransform& transform) {
-	set_transform(transform.position, transform.lookAtPos, transform.upVector);
-}
-
-CameraTransform Camera::get_transform() const {
-	return CameraTransform(position, lookAtPos, upVector);
-}
 
 mat4 Camera::vp() const {
 	return p() * v();
 }
 
 
-mat4 Camera::mvp(const mat4& modelTransform) const {
-	return vp() * modelTransform;
-}
-
-CameraUniform::CameraUniform(sptr<Camera> camera, sptr<Object3D> attachedObject){
-	addComponent(make_shared<DynamicPrimitiveUniform<mat4>>("u_mvp", [camera, attachedObject](TimeStep){
-		if (attachedObject)
-			return camera->mvp(attachedObject->get_transform().toMat4());
-		return camera->vp();
-	}));
-	addComponent(make_shared<DynamicPrimitiveUniform<vec3>>("u_cameraPos", [camera](TimeStep){
-		return camera->get_position();
-	}));
-}
-
 MaterialModelPhong::MaterialModelPhong(sptr<TextureData> ambientTextureData, sptr<TextureData> diffuseTextureData, sptr<TextureData> specularTextureData, float ambientIntensity, float diffuseIntensity, float specularIntensity, float shininess)
 :	ambientTextureData(ambientTextureData),
 	diffuseTextureData(diffuseTextureData),
 	specularTextureData(specularTextureData),
-	ambientIntensity(ambientIntensity),
-	diffuseIntensity(diffuseIntensity),
-	specularIntensity(specularIntensity),
-	shininess(shininess) {}
+	intensities(vec4(ambientIntensity, diffuseIntensity, specularIntensity, shininess))
+{}
 
 MaterialModelPhong::MaterialModelPhong(Color ambientColor, Color diffuseColor, Color specularColor, float ambientIntensity, float diffuseIntensity, float specularIntensity, float shininess)
 :	ambientTextureData(make_shared<ConstColorTextureData>(ambientColor)),
 	diffuseTextureData(make_shared<ConstColorTextureData>(diffuseColor)),
 	specularTextureData(make_shared<ConstColorTextureData>(specularColor)),
-	ambientIntensity(ambientIntensity),
-	diffuseIntensity(diffuseIntensity),
-	specularIntensity(specularIntensity),
-	shininess(shininess) {}
+	intensities(vec4(ambientIntensity, diffuseIntensity, specularIntensity, shininess)){}
+
 
 sptr<TextureData> MaterialModelPhong::getAmbientTextureData() const {
 	return ambientTextureData;
@@ -93,16 +122,12 @@ sptr<TextureData> MaterialModelPhong::getSpecularTextureData() const {
 	return specularTextureData;
 }
 
-vec4 MaterialModelPhong::getIntensities() const {
-	return vec4(ambientIntensity, diffuseIntensity, specularIntensity, shininess);
-}
+
 
 MaterialModelPhongComponent::MaterialModelPhongComponent(sptr<MaterialModelPhong> materialModel):
-materialModel(materialModel),
 ambientTexture(materialModel->getAmbientTextureData(), 0, "u_texture_ambient"),
 diffuseTexture(materialModel->getDiffuseTextureData(), 1, "u_texture_diffuse"),
-specularTexture(materialModel->getSpecularTextureData(), 2, "u_texture_specular"),
-intensitiesUni("u_intencities", materialModel->getIntensities()) {}
+specularTexture(materialModel->getSpecularTextureData(), 2, "u_texture_specular"){}
 
 void MaterialModelPhongComponent::init() {
 	ambientTexture.init();
@@ -110,13 +135,11 @@ void MaterialModelPhongComponent::init() {
 	specularTexture.init();
 }
 
-void MaterialModelPhongComponent::update(TimeStep timeStep) {}
 
 void MaterialModelPhongComponent::setDuringRender() {
 	ambientTexture.setDuringRender();
 	diffuseTexture.setDuringRender();
 	specularTexture.setDuringRender();
-	intensitiesUni.setDuringRender();
 }
 
 SimplePointLight::SimplePointLight(vec3 position, Color color, vec3 intensities):
@@ -133,22 +156,17 @@ byte_size SimplePointLight::byteSize() const {
 }
 
 
-PointLightsComponent::PointLightsComponent(sptr<arrayStruct<SimplePointLight>> lights): UniformBlockComponent(*lights, 0), lights(lights) {}
 
-void PointLightsComponent::update(TimeStep timeStep) {
-	if (lights->isDirty()) {
-		setValue(*lights);
-		lights->markClean();
-	}
-}
-
-OldMesh3DLayer::OldMesh3DLayer(sptr<ShaderProgram> shader, sptr<IndexedMesh3D> mesh, sptr<Camera> camera, sptr<MaterialModelPhong> materialModel, sptr<arrayStruct<SimplePointLight>> lights)
+OldMesh3DLayer::OldMesh3DLayer(sptr<ShaderProgram> shader, sptr<IndexedMesh3D> mesh, sptr<Camera> camera,
+							   sptr<MaterialModelPhong> materialModel, sptr<arrayStruct<SimplePointLight>> lights)
 	: DrawLayer(shader, make_shared<VertexArray>(), {}), mesh(mesh)
 {
+	addComponent(make_shared<UniformBlock<MaterialModelPhong>>(materialModel, 4, "Material"));
+	addComponent(make_shared<UniformArrayBlock<SimplePointLight>>(lights, 0, "Lights"));
+	addComponent(make_shared<UniformVecInnerBlock<vec2>>(vec2(0), 3, "Time", [](TimeStep t){ return vec2(t.t, t.dt); }));
+	addComponent(make_shared<UniformBlock<Camera>>(camera, 1, "Camera"));
 	addComponent(make_shared<MaterialModelPhongComponent>(materialModel));
-	addComponent(make_shared<PointLightsComponent>(lights));
-	addComponent(make_shared<DynamicPrimitiveUniform<float>>("u_time", [](TimeStep t){ return t.t; }));
-	addComponent(make_shared<CameraUniform>(camera));
+
 }
 
 void OldMesh3DLayer::init() {
@@ -156,24 +174,43 @@ void OldMesh3DLayer::init() {
 	get_vao()->loadIndexedMesh(mesh);
 }
 
-Mesh3DLayer::Mesh3DLayer(sptr<ShaderProgram> shader, sptr<Mesh3D> mesh, sptr<Camera> camera, sptr<MaterialModelPhong> materialModel)
+
+
+
+
+
+
+
+
+
+
+Mesh3DLayer::Mesh3DLayer(sptr<ShaderProgram> shader, sptr<Mesh3D> mesh, sptr<MaterialModelPhong> materialModel)
 : GenericMeshLayer(shader, mesh) {
 	addComponent(make_shared<MaterialModelPhongComponent>(materialModel));
-	addComponent(make_shared<CameraUniform>(camera, mesh));
-	addComponent(make_shared<DynamicPrimitiveUniform<float>>("u_time", [](TimeStep t){ return t.t; }));
+	addComponent(make_shared<UniformBlock<Mesh3D>>(mesh, 2, "Model"));
+	addComponent(make_shared<UniformVecInnerBlock<vec2>>(vec2(0), 3, "Time", [](TimeStep t){ return vec2(t.t, t.dt); }));
+	addComponent(make_shared<UniformBlock<MaterialModelPhong>>(materialModel, 4, "Material"));
 }
 
-Scene3DLayer::Scene3DLayer(sptr<Camera> camera, sptr<arrayStruct<SimplePointLight>> lights)
-: pointLightsComponent(make_shared<PointLightsComponent>(lights)), camera(camera) {}
+
+
+
+Scene3DLayer::Scene3DLayer(sptr<Camera> camera, sptr<arrayStruct<SimplePointLight>> lights){
+	addLocalComponent(make_shared<UniformArrayBlock<SimplePointLight>>(lights, 0, "Lights"));
+	addLocalComponent(make_shared<UniformBlock<Camera>>(camera, 1, "Camera"));
+}
 
 void Scene3DLayer::addMeshLayer(sptr<ShaderProgram> shader, sptr<Mesh3D> mesh, sptr<MaterialModelPhong> materialModel) {
-	meshLayers.emplace_back(shader, mesh, camera, materialModel);
-	meshLayers.back().addComponent(pointLightsComponent);
+	meshLayers.emplace_back(shader, mesh, materialModel);
+	for (auto& comp : localComponents)
+		meshLayers.back().addComponent(comp);
 }
 
 void Scene3DLayer::init() {
 	for (auto& layer : meshLayers)
 		layer.init();
+	for (auto& comp : globalComponents)
+		comp->init();
 }
 
 void Scene3DLayer::renderStep() {
@@ -184,7 +221,7 @@ void Scene3DLayer::renderStep() {
 void Scene3DLayer::updateStep(TimeStep timeStep) {
 	for (auto& layer : meshLayers)
 		layer.updateStep(timeStep);
-	for (auto& comp : updateComponents)
+	for (auto& comp : globalComponents)
 		comp->update(timeStep);
 }
 
@@ -194,7 +231,8 @@ void Scene3DLayer::onEvent(sptr<Event> event, TimeStep timeStep) const {
 	Layer::onEvent(event, timeStep);
 }
 
-void Scene3DLayer::addComponentToEachMesh(sptr<LayerComponent> comp) {
+void Scene3DLayer::addLocalComponent(sptr<LayerComponent> comp) {
+	localComponents.push_back(comp);
 	for (auto& layer : meshLayers)
 		layer.addComponent(comp);
 }
@@ -204,8 +242,15 @@ void Scene3DLayer::addEventListenerToEachMesh(sptr<EventListener> listener) {
 		layer.addEventListener(listener);
 }
 
-void Scene3DLayer::addUpdateComponent(sptr<UpdateComponent> comp) {
-	updateComponents.push_back(comp);
+void Scene3DLayer::addGlobalComponent(sptr<UpdateComponent> comp) {
+	globalComponents.push_back(comp);
+}
+
+void Scene3DLayer::finalize() {
+	for (auto& layer : meshLayers)
+		layer.finalize();
+	for (auto& comp : globalComponents)
+		comp->finalize();
 }
 
 

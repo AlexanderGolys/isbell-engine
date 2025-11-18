@@ -4,13 +4,6 @@ VertexBufferLayout Vertex3D::layout() {
 	return VertexBufferLayout({GLSLPrimitive::VEC3, GLSLPrimitive::VEC3, GLSLPrimitive::VEC2, GLSLPrimitive::VEC4 });
 }
 
-void Object3D::translate(const vec3& t) {
-	transform = SE3(t) * transform;
-}
-
-void Object3D::apply(const SE3& T) {
-	transform = T * transform;
-}
 
 Mesh3D::Mesh3D(const SmoothParametricSurface& surf, int uRes, int vRes) {
 	reserveVertices(uRes * vRes);
