@@ -1,2 +1,2 @@
 @echo off
-.\external\premake\premake5 --scene=isbell-2.0-demo cmake
+.\external\premake\premake5 --scene=impulsiveInteractions cmake

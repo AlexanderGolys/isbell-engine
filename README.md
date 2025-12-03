@@ -6,7 +6,7 @@
 ## Gallery of renders done with Isbell
 https://www.behance.net/alexandergolys
 
-## Changes in Isbell 2.0
+## Changes in Isbell 0.2.0
 
 1. Rendering sessions now configure from a single hub. Tweaking window behaviour or frame pacing no longer requires rummaging through old scripts.
 2. Window, keyboard, mouse, and UI input moves through one queue. Bursts of events stay in order instead of disappearing during frame spikes.
@@ -64,11 +64,6 @@ https://www.behance.net/alexandergolys
 
 
 
-*This is true besides two windows specific methods responsible for creating handle, mapping and flushing the file, although as I've included <windows.h> only in their cpp file and they are not using by different parts of the of isbell-engine (as for now), 
-at at least in theory they should not cause problems with cross-platform compilation. 
-Thus the interface for compute shaders using SSBO may require user to map a file to work as intended and tested.
-These are also tested in unittests, so should be removed from tests or overriden on other systems if needed to run tests (although there is little chance anywhere will need to do that on the single-dev project besides the one guy that is writing this instructions, so probably is aware of these complications after the windows.h macro hell it caused after including this innocent little header that is overriding half of my namespace such as min and max).
-
 
 Isbell can be (and has been successfully) used for rendering different things as well, although it may lack certaing features or design patterns used and expected from game engines, as instead I've 
 focused more on developping interfaces and ways of constructing and manipulating various types of mathematical objects, such as manifolds, hyperbolic spaces, integral transforms, differential equations, surface deformations etc. 
@@ -84,3 +79,4 @@ For the build system works on Windows only, but all* the tools used in the proje
 - alternatively, you can do this by running the script file `rebuild.bat`, editting the scene name in it if needed
 - after premake generates the CMakeLists.txt file, load it as usual CMake project in your IDE or with any other way you use to do that if you are the notepad type of guy (although C++ is probably the last language you want to look at in this case, so it is rather extremely unlikely you'd be reading this file, but if I'm wrong hit me up as I'm curious about your story)
 
+<!-- TODO: update this readme to something nice looking  -->

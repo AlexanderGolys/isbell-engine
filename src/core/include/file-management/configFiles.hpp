@@ -23,18 +23,13 @@ public:
 	}
 
 	Path getRoot() const;
-
 	Path getMainShaderDirectory() const;
-
 	Path getSDFMacroShader() const;
-
 	Path getMathToolsShaderMacro() const;
-
 	Path getLightToolsShaderMacro() const;
-
 	Path getStructsShaderMacro() const;
-
 	Path getShadersDir() const;
-
 	Path getScreenshotsDir() const;
+
+	static Path getProjectRoot();
 };

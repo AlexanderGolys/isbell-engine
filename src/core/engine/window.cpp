@@ -4,26 +4,37 @@
 #include "exceptions.hpp"
 #include "glCommand.hpp"
 
-
-ivec2 ires2(Resolution r) {
+Resolution::Resolution(TypicalResolution r) {
 	switch (r) {
-		case Resolution::FHD: return ivec2(1920, 1080);
-		case Resolution::HD2K: return ivec2(2560, 1440);
-		case Resolution::UHD: return ivec2(3840, 2160);
+		case TypicalResolution::p480:
+			width = 854;
+			height = 480;
+			break;
+		case TypicalResolution::HD720:
+			width = 1280;
+			height = 720;
+			break;
+		case TypicalResolution::FHD:
+			width = 1920;
+			height = 1080;
+			break;
+		case TypicalResolution::HD2K:
+			width = 2560;
+			height = 1440;
+			break;
+		case TypicalResolution::UHD:
+			width = 3840;
+			height = 2160;
+			break;
 	}
-	THROW(SystemError, "Unknown resolution enum value");
+	THROW(ValueError, "Unknown resolution.");
 }
 
-WindowSettings::WindowSettings(ivec2 resolution, const string& windowTitle, bool stickyKeys, bool stickyMouseButtons)
-: width(resolution.x), height(resolution.y), windowTitle(windowTitle), stickyKeys(stickyKeys), stickyMouseButtons(stickyMouseButtons) {}
+WindowSettings::WindowSettings(Resolution resolution, string_cr windowTitle, bool stickyKeys, bool stickyMouseButtons)
+: resolution(resolution), windowTitle(windowTitle), stickyKeys(stickyKeys), stickyMouseButtons(stickyMouseButtons) {}
 
-WindowSettings::WindowSettings(Resolution resolution, const string& windowTitle, bool stickyKeys, bool stickyMouseButtons)
-: WindowSettings(ires2(resolution), windowTitle, stickyKeys, stickyMouseButtons) {}
-
-
-Window::Window(WindowSettings settings)
-: settings(settings) {
-	window = GLFWCommand::createWindow(settings.width, settings.height, settings.windowTitle.c_str());
+Window::Window(WindowSettings settings) : settings(settings) {
+	window = GLFWCommand::createWindow(settings.resolution, settings.windowTitle.c_str());
 	GLFWCommand::setWindowData(window, &this->settings);
 
 	glfwSetInputMode(window, GLFW_STICKY_KEYS, settings.stickyKeys ? GLFW_TRUE : GLFW_FALSE);

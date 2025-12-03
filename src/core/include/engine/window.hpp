@@ -1,5 +1,6 @@
 #pragma once
 #include "exceptions.hpp"
+#include "glfw/glfw3.h"
 
 
 enum class TypicalResolution : uint {
@@ -23,7 +24,7 @@ struct WindowSettings {
 	string windowTitle;
 	bool stickyKeys;
 	bool stickyMouseButtons;
-	bool open = true;
+	bool open = false;
 
 	WindowSettings(Resolution resolution, string_cr windowTitle, bool stickyKeys=true, bool stickyMouseButtons=true);
 };
