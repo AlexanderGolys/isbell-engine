@@ -1,26 +1,31 @@
 #pragma once
-#include <GL/glew.h>
-#include "GLFW/glfw3.h"
 #include "exceptions.hpp"
 
 
-enum class Resolution {
-	FHD,
-	HD2K,
-	UHD,
-	UNKNOWN
+enum class TypicalResolution : uint {
+	p480 = 480,
+	HD720 = 720,
+	FHD = 1080,
+	HD2K = 1440,
+	UHD = 2160
 };
 
-ivec2 ires2(Resolution r);
+struct Resolution {
+	int width;
+	int height;
+
+	Resolution(int width, int height);
+	explicit Resolution(TypicalResolution r);
+};
 
 struct WindowSettings {
-	int width, height;
+	Resolution resolution;
 	string windowTitle;
-	bool stickyKeys, stickyMouseButtons;
+	bool stickyKeys;
+	bool stickyMouseButtons;
 	bool open = true;
 
-	WindowSettings(ivec2 resolution, const string& windowTitle, bool stickyKeys=true, bool stickyMouseButtons=true);
-	WindowSettings(Resolution resolution, const string& windowTitle, bool stickyKeys=true, bool stickyMouseButtons=true);
+	WindowSettings(Resolution resolution, string_cr windowTitle, bool stickyKeys=true, bool stickyMouseButtons=true);
 };
 
 

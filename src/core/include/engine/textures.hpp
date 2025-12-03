@@ -3,6 +3,12 @@
 #include "renderLayers.hpp"
 #include "GL/glew.h"
 
+
+struct TextureDataFormat {
+	GLenum format;
+	GLenum targetFormat;
+	Dimension dimension;
+};
 class TextureData {
 public:
 	virtual ~TextureData() = default;
