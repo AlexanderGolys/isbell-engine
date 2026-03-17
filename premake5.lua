@@ -14,6 +14,11 @@ workspace "Renderer"
         links(winlibs)
     filter {}
 
+    filter "system:linux"
+        defines { "GLEW_STATIC", "_GLFW_X11" }
+        links { "GL", "X11", "Xrandr", "Xi", "Xinerama", "Xcursor", "pthread", "dl" }
+    filter {}
+
 -- Options
 newoption {
     trigger = "scene",
@@ -60,7 +65,11 @@ project "engine"
     targetdir ("build/core/%{cfg.architecture}/bin")
     objdir    ("build/core/%{cfg.architecture}/obj")
 
-    links { "opengl32" }
+    filter "system:windows"
+        links { "opengl32" }
+    filter "system:linux"
+        links { "GL" }
+    filter {}
 
     files {
         "src/core/**.hpp",

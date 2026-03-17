@@ -72,11 +72,29 @@ I also implemented some elements of physics simulation, for example 2D rigid bod
 
 ## Build instructions:
 
-For the build system works on Windows only, but all* the tools used in the project are cross-platform, I just didn't test it on other systems but it can be done if needed in the future with with no substancial changes 
+### Prerequisites
+- CMake 3.20+
+- C++23 compatible compiler (GCC 13+, Clang 16+, or MSVC 2022+)
+- OpenGL development libraries
 
-- choose the main file with selected animation. It should be placed in src/render-projects and be a cpp file.
-- run premake `.\premake\premake5 --scene=SCENE_NAME_FILE cmake` (for SCENE_NAME_FILE using the name without .cpp suffix)
-- alternatively, you can do this by running the script file `rebuild.bat`, editting the scene name in it if needed
-- after premake generates the CMakeLists.txt file, load it as usual CMake project in your IDE or with any other way you use to do that if you are the notepad type of guy (although C++ is probably the last language you want to look at in this case, so it is rather extremely unlikely you'd be reading this file, but if I'm wrong hit me up as I'm curious about your story)
+### Windows
+- Choose the main file with selected animation. It should be placed in src/render-projects and be a cpp file.
+- Run premake: `.\external\premake\premake5 --scene=SCENE_NAME_FILE cmake` (use the name without .cpp suffix)
+- Alternatively, run `rebuild.bat` (edit the scene name inside if needed)
+- Load the generated CMakeLists.txt in your IDE or build manually
+
+### Linux (Arch)
+- Install premake5: `sudo pacman -S premake`
+- Install OpenGL libraries: `sudo pacman -S mesa glu libx11 libxrandr libxi libxinerama libxcursor`
+- Run `./rebuild.sh [SCENE_NAME]` (defaults to `impulsiveInteractions`)
+- The script generates CMake files and builds automatically
+- Binary will be at: `build/SCENE_NAME/bin/build-x64/`
+
+### Manual CMake Build (All Platforms)
+After running premake5:
+```bash
+cmake -B build -S . -DCMAKE_BUILD_TYPE=Release
+cmake --build build --parallel
+```
 
 <!-- TODO: update this readme to something nice looking  -->
